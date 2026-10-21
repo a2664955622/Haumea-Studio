@@ -632,7 +632,10 @@ jobs:
           tag="v$version-$CHANNEL"
           [ "$GITHUB_REF_TYPE" = tag ] && tag=$GITHUB_REF_NAME
           git fetch -q origin main
+          # On main: a tag's commit must be on main; a manual run must also be
+          # run from the main branch itself.
           on_main=no; git merge-base --is-ancestor "$GITHUB_SHA" origin/main && on_main=yes
+          [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ "$GITHUB_REF_NAME" != main ] && on_main=no
           exists=no; [ -n "$(git ls-remote --tags origin "refs/tags/$tag")" ] && exists=yes
           python3 tools/release/release_plan.py --event "$GITHUB_EVENT_NAME" --ref-type "$GITHUB_REF_TYPE" \
             --ref-name "$GITHUB_REF_NAME" --version "$version" --channel "$CHANNEL" \
