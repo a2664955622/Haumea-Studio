@@ -394,7 +394,9 @@ static bool
 initializeAgentSocket(void)
 {
 	if(strlen(gAgentSocketPath) >= sizeof(sockaddr_un::sun_path)){
-		log("Agent socket path is too long: %s\n", gAgentSocketPath);
+		log("Agent socket path is too long (%d bytes; AF_UNIX allows %d): %s\n"
+			"Use a shorter --agent-socket, such as $XDG_RUNTIME_DIR/haumea.sock.\n",
+			(int)strlen(gAgentSocketPath), (int)sizeof(sockaddr_un::sun_path) - 1, gAgentSocketPath);
 		return false;
 	}
 	gAgentSocket = socket(AF_UNIX, SOCK_STREAM, 0);
