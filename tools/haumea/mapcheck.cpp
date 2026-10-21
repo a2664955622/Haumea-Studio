@@ -659,6 +659,56 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 					"so which one comes first is undefined.", raceName, (int)order.second.size(), order.first);
 	}
 
+	// --- Dynamic areas (streamer only) ---
+	const char *AREAS = "Dynamic areas";
+	std::vector<ObjectInst*> limited;
+	std::map<std::string, int> uses;
+	for(CPtrNode *p = instances.first; p; p = p->next){
+		ObjectInst *inst = (ObjectInst*)p->item;
+		if(inst->m_isDeleted || inst->m_isVehicle || !PawnObjectNeedsExport(inst))
+			continue;
+		const ObjectPawnProperties *props = GetObjectPawnProperties(inst);
+		if(props->areaName[0] && SampElementTakesArea(GetSampElementKind(inst))){
+			limited.push_back(inst);
+			uses[props->areaName]++;
+		}
+	}
+	if(!streamer){
+		if(!byKind[SAMP_ELEMENT_AREA].empty())
+			c.add(MAPCHECK_WARNING, AREAS, ids(byKind[SAMP_ELEMENT_AREA]), "%d dynamic area(s) are not written in "
+				"native code (they are the streamer's). Save as Streamer code.", (int)byKind[SAMP_ELEMENT_AREA].size());
+		if(!limited.empty())
+			c.add(MAPCHECK_WARNING, AREAS, ids(limited), "%d item(s) are set to show only inside a dynamic area, "
+				"but native code shows them everywhere. Save as Streamer code.", (int)limited.size());
+	}else{
+		for(ObjectInst *inst : limited){
+			const ObjectPawnProperties *props = GetObjectPawnProperties(inst);
+			ObjectInst *area = FindAreaByName(props->areaName);
+			if(area == nil){
+				c.add(MAPCHECK_WARNING, AREAS, inst, "%s is set to show only inside area \"%s\", which is not in "
+					"the map: it is written without one and shows everywhere.",
+					label(inst, name, sizeof(name)), props->areaName);
+				continue;
+			}
+			const ObjectPawnProperties *ap = GetObjectPawnProperties(area);
+			bool world = ap->virtualWorld < 0 || props->virtualWorld < 0 || ap->virtualWorld == props->virtualWorld;
+			bool interior = area->m_area <= 0 || inst->m_area <= 0 || area->m_area == inst->m_area;
+			if(!world || !interior)
+				c.add(MAPCHECK_WARNING, AREAS, { inst->m_id, area->m_id }, "%s only shows inside area \"%s\", "
+					"but they are in different virtual worlds or interiors: no player is ever in both.",
+					label(inst, name, sizeof(name)), ap->name);
+		}
+		for(ObjectInst *area : byKind[SAMP_ELEMENT_AREA]){
+			const ObjectPawnProperties *ap = GetObjectPawnProperties(area);
+			if(ap->areaShape == SAMP_AREA_POLYGON && ap->areaPointCount < 3)
+				c.add(MAPCHECK_ERROR, AREAS, area, "Polygon area \"%s\" has %d corner(s): it needs 3 or more, "
+					"or nobody is ever inside it.", ap->name, ap->areaPointCount);
+			else if(uses.count(ap->name) == 0)
+				c.add(MAPCHECK_INFO, AREAS, area, "Area \"%s\" has no items limited to it (fine if the script "
+					"uses it for something else).", ap->name);
+		}
+	}
+
 	// --- TextDraws ---
 	const char *TEXTDRAWS = "TextDraws";
 	const std::vector<TextDraw> &textDraws = GetTextDraws();

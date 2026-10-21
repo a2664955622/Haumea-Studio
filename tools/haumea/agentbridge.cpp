@@ -8,6 +8,7 @@
 #include "editoricons.h"
 #include "trains.h"
 #include "agentbridge.h"
+#include "areas.h"
 #include "materialtext.h"
 #include "mapcheck.h"
 #include "maptools.h"
@@ -1423,9 +1424,13 @@ agentMaterialTarget(const std::string &requestId, const std::vector<std::string>
 // enum but a separate kind to the agent.
 static const char *const agentKindNames[NUM_SAMP_ELEMENT_KINDS] = {
 	"object", "pickup", "label", "actor", "class", "gangzone", "mapicon", "npc", "pathpoint", "sound",
-	"checkpoint"
+	"checkpoint", "area"
 };
 static const int AGENT_KIND_VEHICLE = NUM_SAMP_ELEMENT_KINDS;
+
+static const char *const agentAreaShapes[NUM_SAMP_AREA_SHAPES] = {
+	"circle", "cylinder", "sphere", "rectangle", "cuboid", "cube", "polygon"
+};
 
 static int
 parseAgentKind(const std::string &text)
@@ -1443,6 +1448,8 @@ parseAgentKind(const std::string &text)
 		return SAMP_ELEMENT_PATHPOINT;
 	if(name == "cp" || name == "race_checkpoint")
 		return SAMP_ELEMENT_CHECKPOINT;
+	if(name == "dynamic_area")
+		return SAMP_ELEMENT_AREA;
 	for(int i = 0; i < NUM_SAMP_ELEMENT_KINDS; i++)
 		if(name == agentKindNames[i])
 			return i;
@@ -1496,10 +1503,12 @@ agentPropertiesJson(ObjectInst *inst)
 	add("world", std::to_string(p.virtualWorld));
 	add("interior", std::to_string(inst->m_area));
 	if(kind != SAMP_ELEMENT_NPC && kind != SAMP_ELEMENT_CLASS && kind != SAMP_ELEMENT_PATHPOINT &&
-	   kind != SAMP_ELEMENT_SOUND && kind != SAMP_ELEMENT_CHECKPOINT){
+	   kind != SAMP_ELEMENT_SOUND && kind != SAMP_ELEMENT_CHECKPOINT && kind != SAMP_ELEMENT_AREA){
 		add("draw_distance", jsonFloat(p.drawDistance));
 		add("stream_distance", jsonFloat(p.streamDistance));
 	}
+	if(kind != AGENT_KIND_VEHICLE && SampElementTakesArea(kind) && p.areaName[0])
+		add("area", str(p.areaName));
 	switch(kind){
 	case SAMP_ELEMENT_OBJECT:
 		if(p.attachParent >= 0){
@@ -1598,6 +1607,29 @@ agentPropertiesJson(ObjectInst *inst)
 			add("order", std::to_string(p.cpOrder));
 		}
 		break;
+	case SAMP_ELEMENT_AREA:{
+		int shape = p.areaShape;
+		add("area_shape", std::string("\"") + agentAreaShapes[shape] + "\"");
+		if(shape == SAMP_AREA_CIRCLE || shape == SAMP_AREA_CYLINDER || shape == SAMP_AREA_SPHERE)
+			add("radius", jsonFloat(p.areaRadius));
+		if(shape == SAMP_AREA_RECTANGLE || shape == SAMP_AREA_CUBOID || shape == SAMP_AREA_CUBE){
+			add("size_x", jsonFloat(p.areaSize.x));
+			add("size_y", jsonFloat(p.areaSize.y));
+		}
+		if(shape == SAMP_AREA_CUBOID || shape == SAMP_AREA_CUBE)
+			add("size_z", jsonFloat(p.areaSize.z));
+		if(shape == SAMP_AREA_CYLINDER || shape == SAMP_AREA_POLYGON)
+			add("height", jsonFloat(p.areaHeight));
+		if(shape == SAMP_AREA_POLYGON){
+			std::string points = "[";
+			for(int k = 0; k < p.areaPointCount; k++)
+				points += std::string(k ? "," : "") + "[" + jsonFloat(inst->m_translation.x + p.areaPoints[k][0]) +
+					"," + jsonFloat(inst->m_translation.y + p.areaPoints[k][1]) + "]";
+			add("points", points + "]");
+		}
+		add("items", std::to_string(CountItemsInArea(p.name)));
+		break;
+	}
 	case SAMP_ELEMENT_SOUND:
 		add("sound_kind", p.soundKind == SAMP_SOUND_STREAM ? "\"stream\"" : "\"game\"");
 		add("radius", jsonFloat(p.soundRadius));
@@ -1874,9 +1906,68 @@ applyAgentProperty(ObjectInst *inst, int kind, ObjectPawnProperties &p, AgentIns
 		return true;
 	}
 	if(key == "size_x" || key == "size_y"){
-		if(!only({ SAMP_ELEMENT_GANGZONE })) return false;
+		if(!only({ SAMP_ELEMENT_GANGZONE, SAMP_ELEMENT_AREA })) return false;
 		if(!parseFloat(value, &f) || f <= 0.0f) return fail("expects a size > 0");
-		(key == "size_x" ? p.zoneSizeX : p.zoneSizeY) = f; return true;
+		if(kind == SAMP_ELEMENT_AREA)
+			(key == "size_x" ? p.areaSize.x : p.areaSize.y) = f;
+		else
+			(key == "size_x" ? p.zoneSizeX : p.zoneSizeY) = f;
+		return true;
+	}
+	if(key == "size_z"){
+		if(!only({ SAMP_ELEMENT_AREA })) return false;
+		if(!parseFloat(value, &f) || f <= 0.0f) return fail("expects a height > 0");
+		p.areaSize.z = f; return true;
+	}
+	if(key == "area_shape"){
+		if(!only({ SAMP_ELEMENT_AREA })) return false;
+		std::string name = lowercase(value.c_str());
+		for(int k = 0; k < NUM_SAMP_AREA_SHAPES; k++)
+			if(name == agentAreaShapes[k]){
+				p.areaShape = k;
+				return true;
+			}
+		return fail("expects circle, cylinder, sphere, rectangle, cuboid, cube or polygon");
+	}
+	if(key == "height"){
+		if(!only({ SAMP_ELEMENT_AREA })) return false;
+		if(!parseFloat(value, &f) || f < 0.0f) return fail("expects a height >= 0 (a polygon's 0: no height limit)");
+		p.areaHeight = f; return true;
+	}
+	if(key == "points"){
+		if(!only({ SAMP_ELEMENT_AREA })) return false;
+		// x,y pairs in world coordinates, comma-separated; kept relative to the area's position.
+		std::string list = value;
+		for(char &ch : list)
+			if(ch == '[' || ch == ']' || ch == ';') ch = ',';
+		float coords[PAWN_AREA_POINTS * 2];
+		int n = 0;
+		const char *at = list.c_str();
+		while(*at){
+			while(*at == ',' || *at == ' ') at++;
+			if(*at == '\0') break;
+			char *end;
+			float v = strtof(at, &end);
+			if(end == at) return fail("expects x,y pairs of numbers");
+			if(n == PAWN_AREA_POINTS * 2) return fail("has more than 32 corners");
+			coords[n++] = v;
+			at = end;
+		}
+		if(n % 2 || n < 6) return fail("expects 3 or more x,y pairs");
+		p.areaShape = SAMP_AREA_POLYGON;
+		p.areaPointCount = n / 2;
+		for(int k = 0; k < n / 2; k++){
+			p.areaPoints[k][0] = coords[k*2] - inst->m_translation.x;
+			p.areaPoints[k][1] = coords[k*2+1] - inst->m_translation.y;
+		}
+		return true;
+	}
+	if(key == "area"){
+		if(kind == AGENT_KIND_VEHICLE || !SampElementTakesArea(kind))
+			return fail("only objects, pickups, labels, actors, map icons and checkpoints can be limited to an area");
+		if(!value.empty() && FindAreaByName(value.c_str()) == nil)
+			return fail("is not the name of a dynamic area in the map (\"\" for none)");
+		return copy(p.areaName, sizeof(p.areaName));
 	}
 	if(key == "zone_mode"){
 		if(!only({ SAMP_ELEMENT_GANGZONE })) return false;
@@ -1937,9 +2028,9 @@ applyAgentProperty(ObjectInst *inst, int kind, ObjectPawnProperties &p, AgentIns
 		p.soundId = i; return true;
 	}
 	if(key == "radius"){
-		if(!only({ SAMP_ELEMENT_SOUND })) return false;
+		if(!only({ SAMP_ELEMENT_SOUND, SAMP_ELEMENT_AREA })) return false;
 		if(!parseFloat(value, &f) || f <= 0.0f) return fail("expects a distance > 0");
-		p.soundRadius = f; return true;
+		(kind == SAMP_ELEMENT_AREA ? p.areaRadius : p.soundRadius) = f; return true;
 	}
 	if(key == "use_position" || key == "stop_on_leave"){
 		if(!only({ SAMP_ELEMENT_SOUND })) return false;
@@ -3170,7 +3261,7 @@ handleRequest(const std::vector<std::string> &lines)
 		int snap;
 		if(kind < 0){
 			writeError(requestId, ("unknown element kind " + lines[2] + "; one of object, vehicle, "
-				"pickup, label, actor, class, gangzone, mapicon, npc, pathpoint, sound").c_str());
+				"pickup, label, actor, class, gangzone, mapicon, npc, pathpoint, sound, checkpoint, area").c_str());
 			return;
 		}
 		if(!parseFloat(lines[4], &x) || !parseFloat(lines[5], &y) || !parseFloat(lines[6], &z) ||

@@ -1946,6 +1946,17 @@ SetObjectPawnProperties(ObjectInst *inst, const ObjectPawnProperties &properties
 		UndoRecordProperties(inst, old);
 	StampChangeSeq(inst);
 	inst->m_isDirty = true;
+	// A renamed area keeps its items (undo restores each one by its own record).
+	if(recordUndo && normalized.elementKind == SAMP_ELEMENT_AREA && old.elementKind == SAMP_ELEMENT_AREA &&
+	   old.name[0] && normalized.name[0] && strcmp(old.name, normalized.name) != 0)
+		for(CPtrNode *p = instances.first; p; p = p->next){
+			ObjectInst *item = (ObjectInst*)p->item;
+			if(item->m_isDeleted || item->m_pawnProperties == nil || strcmp(item->m_pawnProperties->areaName, old.name) != 0)
+				continue;
+			ObjectPawnProperties relinked = *item->m_pawnProperties;
+			strcpy(relinked.areaName, normalized.name);
+			SetObjectPawnProperties(item, relinked);
+		}
 }
 
 // Plays the actor's or NPC's animation in the viewport, or stops it. An NPC

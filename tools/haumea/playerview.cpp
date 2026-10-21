@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
 #include "playerview.h"
+#include "areas.h"
 
 #include <algorithm>
 #include <vector>
@@ -45,6 +46,17 @@ streamNearest(std::vector<Candidate> &list, int limit)
 	return min((int)list.size(), limit);
 }
 
+bool
+playerInArea(const ObjectInst *area)
+{
+	const ObjectPawnProperties *props = GetObjectPawnProperties(area);
+	if(props->virtualWorld >= 0 && props->virtualWorld != gPlayerViewWorld)
+		return false;
+	if(area->m_area > 0 && area->m_area != currentArea)
+		return false;
+	return IsPointInDynamicArea(area, TheCamera.m_position);
+}
+
 }	// namespace
 
 void
@@ -86,6 +98,22 @@ PlayerViewUpdate(void)
 			if(!world || !interior){
 				inst->m_playerView = PV_HIDDEN;
 				stats.otherWorld++;
+				continue;
+			}
+		}
+
+		// Areas are never seen; an item limited to one streams only while the
+		// player is in it (by its shape, world and interior). One whose area
+		// is missing is written without an areaid, so it shows everywhere.
+		if(kind == SAMP_ELEMENT_AREA){
+			inst->m_playerView = PV_HIDDEN;
+			continue;
+		}
+		if(streamer && props->areaName[0]){
+			ObjectInst *area = FindAreaByName(props->areaName);
+			if(area && !playerInArea(area)){
+				inst->m_playerView = PV_HIDDEN;
+				stats.outsideArea++;
 				continue;
 			}
 		}

@@ -5,6 +5,7 @@
 #include "npcpreview.h"
 #include "testserver.h"
 #include "maptools.h"
+#include "areas.h"
 #include "samp_loader.h"
 #include "agentbridge.h"
 #include "modloader.h"
@@ -2014,6 +2015,9 @@ handleTool(void)
 	if(SAPaths::HandleNodesViewportClick())
 		return;
 	// Tools > Along a line, picking its points
+	// A dynamic area's handles and polygon corners
+	if(DynamicAreaHandleViewport())
+		return;
 	if(MapToolsHandleViewportClick())
 		return;
 

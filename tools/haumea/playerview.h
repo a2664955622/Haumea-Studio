@@ -7,7 +7,8 @@
 // objects are created within their stream distance (STREAMER_OBJECT_SD, 300,
 // when 0), the nearest 1000 at most, and show within their draw distance.
 // Streamer elements only appear in their virtual world and interior; native
-// objects have neither. Vehicles and actors stream within 200 m like the
+// objects have neither. An item limited to a dynamic area only appears while
+// the camera is inside that area. Vehicles and actors stream within 200 m like the
 // server's, up to the client's 700 vehicles and 50 actors. World buildings
 // are drawn as usual.
 
@@ -28,6 +29,7 @@ struct PlayerViewStats
 	int objectsVisible, objectsStreamed, objectsInRange;
 	int vehiclesStreamed, actorsStreamed;
 	int otherWorld;	// elements left out for their virtual world or interior
+	int outsideArea;	// items limited to a dynamic area the camera is outside
 	bool streamer;
 };
 const PlayerViewStats &GetPlayerViewStats(void);

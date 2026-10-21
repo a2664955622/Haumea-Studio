@@ -114,7 +114,7 @@ class SceneOperation(BaseModel):
 	action: Literal["place", "place_relative", "transform", "transform3d", "delete", "array_line", "array_ring"]
 	key: str | None = None
 	kind: Literal["object", "vehicle", "pickup", "label", "actor", "class", "gangzone",
-	              "mapicon", "npc", "pathpoint", "sound", "checkpoint"] = "object"
+	              "mapicon", "npc", "pathpoint", "sound", "checkpoint", "area"] = "object"
 	properties: dict | None = None
 	model: int | str | None = None
 	instance_id: int | None = None
@@ -849,7 +849,16 @@ ELEMENT_PROPERTIES_DOC = """Properties by kind (all optional; defaults in bracke
 	checkpoint (streamer only; native saves leave them out): checkpoint_kind (normal:
 	  CreateDynamicCP; race: CreateDynamicRaceCP pointing at the next one of its race),
 	  size [5], race_type [0 normal; 1 finish, 3-8 air], race (name; sets kind race),
-	  order [after the race's last checkpoint]"""
+	  order [after the race's last checkpoint]
+	area (streamer only; a dynamic area, CreateDynamicCircle..Polygon; the position is its
+	  centre, or the bottom centre for a cuboid, cube or cylinder): area_shape [cuboid; circle,
+	  cylinder, sphere, rectangle, cuboid, cube, polygon], radius [10] (circle, cylinder,
+	  sphere), size_x, size_y [10 each] (rectangle, cuboid, cube), size_z [5] (cuboid, cube),
+	  height [5] (cylinder; polygon: 0 means no height limit), points (polygon: [[x, y], ...]
+	  world coordinates, 3-32 corners); name is the area's Pawn variable [area, area_2...]
+	  and what items refer to; renaming it keeps its items. Read back: items (how many use it)
+	object, pickup, label, actor, mapicon, checkpoint: area (a dynamic area's name: the item
+	  only streams for players inside it; "" for everywhere)"""
 
 
 @mcp.tool()
@@ -896,8 +905,8 @@ def save_map(path: str | None = None, format: Literal["native", "streamer"] | No
 PLACE_DOC = inspect.cleandoc("""
 	model: an object or vehicle model id/name (required for those kinds); the
 	skin for actor, class and npc (default 0, CJ); the pickup model (default
-	1239); omitted for label, gangzone, mapicon, pathpoint, sound and checkpoint.
-	Labels, gang zones, map icons, path points and sounds have no model: the
+	1239); omitted for label, gangzone, mapicon, pathpoint, sound, checkpoint and area.
+	Labels, gang zones, map icons, path points, sounds and areas have no model: the
 	editor and its captures show them as small coloured icons.
 	snap (default) puts it on the highest surface below (x, y) (an icon kind at
 	that point, peds 1 m above it), so a roof, awning or lamp post counts too:
@@ -916,7 +925,7 @@ PLACE_DOC = inspect.cleandoc("""
 	""") + "\n\n" + PLACE_DOC + "\n\n" + ELEMENT_PROPERTIES_DOC)
 def place_element(kind: Literal["object", "vehicle", "pickup", "label", "actor", "class",
                                 "gangzone", "mapicon", "npc", "pathpoint", "sound",
-                                "checkpoint"],
+                                "checkpoint", "area"],
                   x: float, y: float, z: float = 0.0, heading: float = 0.0,
                   model: int | str | None = None, snap: bool = True,
                   properties: dict | None = None) -> dict:

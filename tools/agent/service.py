@@ -363,10 +363,10 @@ class HaumeaService:
 	# SA-MP / open.mp elements. Every kind is placed and edited the same way;
 	# `properties` holds the kind's settings (see ELEMENT_PROPERTIES).
 	ELEMENT_KINDS = ("object", "vehicle", "pickup", "label", "actor", "class",
-	                 "gangzone", "mapicon", "npc", "pathpoint", "sound", "checkpoint")
+	                 "gangzone", "mapicon", "npc", "pathpoint", "sound", "checkpoint", "area")
 	TEXT_PROPERTIES = {"name", "group", "comment", "text", "npc_name", "path", "recording",
 	                   "anim_lib", "anim_name", "plate",
-	                   "url", "sound_kind", "checkpoint_kind", "race"}
+	                   "url", "sound_kind", "checkpoint_kind", "race", "area", "area_shape"}
 
 	@classmethod
 	def _property_lines(cls, properties: dict | None, *, raw: bool = False) -> list[str]:
@@ -377,6 +377,10 @@ class HaumeaService:
 				raise ValueError(f"invalid property name {key!r}")
 			if isinstance(value, bool):
 				text = "1" if value else "0"
+			elif key == "points" and isinstance(value, (list, tuple)):
+				# [[x, y], ...] or [x, y, ...]: world coordinates of a polygon area
+				flat = [v for point in value for v in (point if isinstance(point, (list, tuple)) else [point])]
+				text = ",".join(repr(float(v)) for v in flat)
 			elif isinstance(value, (list, tuple)):
 				text = ",".join(str(int(v)) for v in value)
 			elif value is None:
@@ -396,8 +400,8 @@ class HaumeaService:
 			raise ValueError(f"kind must be one of {', '.join(self.ELEMENT_KINDS)}")
 		result = self.engine("place_element", [kind, -1 if model is None else model, x, y, z,
 			heading, int(bool(snap)), *self._property_lines(properties, raw=raw)])
-		if kind == "checkpoint" and result.get("map", self.client.command("map_status").get("map", {})).get("format") == "native":
-			result["warning"] = ("checkpoints are only written in the streamer format: "
+		if kind in ("checkpoint", "area") and result.get("map", self.client.command("map_status").get("map", {})).get("format") == "native":
+			result["warning"] = (f"{kind}s are only written in the streamer format: "
 			                     "save_map(format='streamer') keeps them")
 		return result
 
@@ -663,9 +667,9 @@ class HaumeaService:
 		if committed:
 			result["committed_session"] = committed
 		saved = result.get("map", {}).get("format")
-		if saved == "native" and any(item.get("kind") == "checkpoint" for item in self.enumerate_scene()):
-			result["warning"] = ("checkpoints are only written in the streamer format; save again with "
-			                     "format='streamer' to keep them")
+		if saved == "native" and any(item.get("kind") in ("checkpoint", "area") for item in self.enumerate_scene()):
+			result["warning"] = ("checkpoints and dynamic areas are only written in the streamer format; "
+			                     "save again with format='streamer' to keep them")
 		return result
 
 	def _restore_materials(self, instance_id: int, materials: list[dict]) -> None:

@@ -16,6 +16,7 @@
 #include "testserver.h"
 #include "interiors.h"
 #include "maptools.h"
+#include "areas.h"
 #include "radarart.h"
 #include "encoding.h"
 #include "shortcuts.h"
@@ -8780,6 +8781,82 @@ uiSampElementSettings(ObjectInst *inst, ObjectPawnProperties &edited)
 		}
 		break;
 	}
+	case SAMP_ELEMENT_AREA: {
+		UiBadge("streamer only");
+		ImGui::SetItemTooltip("Saved as CreateDynamicCircle .. CreateDynamicPolygon. Streamer items\n"
+			"limited to it are shown only to players inside it.");
+		if(gPawnSaveFormat != PAWN_CODE_STREAMER){
+			ImGui::TextColored(ImVec4(1.0f, 0.78f, 0.25f, 1.0f), "Not saved: this map is native code.");
+			ImGui::SetItemTooltip("Native code has no dynamic areas. Save the map as streamer code to keep\n"
+				"them, and the items limited to them.");
+		}
+		static const char *shapes[] = { "Circle", "Cylinder", "Sphere", "Rectangle", "Cuboid", "Cube", "Polygon" };
+		if(ImGui::Combo("Shape", &edited.areaShape, shapes, IM_ARRAYSIZE(shapes))){
+			if(edited.areaShape == SAMP_AREA_POLYGON && edited.areaPointCount == 0){
+				// A square to start from, the size of the box or circle it was.
+				float h = edited.areaSize.x > 0.0f ? edited.areaSize.x * 0.5f : max(edited.areaRadius, 5.0f);
+				float square[4][2] = { { -h, -h }, { h, -h }, { h, h }, { -h, h } };
+				memcpy(edited.areaPoints, square, sizeof(square));
+				edited.areaPointCount = 4;
+			}
+			changed = true;
+		}
+		ImGui::SetItemTooltip("Circle and rectangle cover every height. The others go up from where the\n"
+			"area stands (a sphere is around it).");
+		switch(edited.areaShape){
+		case SAMP_AREA_CIRCLE: case SAMP_AREA_CYLINDER: case SAMP_AREA_SPHERE:
+			if(ImGui::DragFloat("Radius", &edited.areaRadius, 0.25f, 0.5f, 20000.0f, "%.1f m")) changed = true;
+			break;
+		case SAMP_AREA_RECTANGLE:
+			if(ImGui::DragFloat2("Size (X, Y)", &edited.areaSize.x, 0.25f, 0.5f, 40000.0f, "%.1f m")) changed = true;
+			break;
+		case SAMP_AREA_CUBOID: case SAMP_AREA_CUBE:
+			if(ImGui::DragFloat3("Size (X, Y, Z)", &edited.areaSize.x, 0.25f, 0.5f, 40000.0f, "%.1f m")) changed = true;
+			break;
+		}
+		if(edited.areaShape == SAMP_AREA_CYLINDER || edited.areaShape == SAMP_AREA_POLYGON){
+			if(ImGui::DragFloat("Height", &edited.areaHeight, 0.25f, 0.0f, 20000.0f, "%.1f m")) changed = true;
+			if(edited.areaShape == SAMP_AREA_POLYGON)
+				ImGui::SetItemTooltip("Up from where the area stands. 0 covers every height.");
+		}
+		if(edited.areaShape == SAMP_AREA_POLYGON){
+			ImGui::Text("%d corner(s)", edited.areaPointCount);
+			ImGui::SameLine();
+			bool picking = IsAreaPointPicking(inst);
+			if(ImGui::SmallButton(picking ? "Stop adding" : ICON_FA_PLUS " Add corners")){
+				if(picking)
+					StopAreaPointPicking();
+				else
+					StartAreaPointPicking(inst);
+			}
+			ImGui::SetItemTooltip("Click in the world to add a corner; Shift+click keeps adding.\n"
+				"Esc or a right click stops. Drag a corner's handle to move it.");
+			ImGui::SameLine();
+			if(ImGui::SmallButton("Remove last") && edited.areaPointCount > 0){
+				edited.areaPointCount--;
+				changed = true;
+			}
+			if(edited.areaPointCount < 3)
+				ImGui::TextColored(ImVec4(1.0f, 0.78f, 0.25f, 1.0f), "A polygon needs at least 3 corners.");
+		}
+		int items = CountItemsInArea(edited.name);
+		ImGui::TextDisabled("%d item(s) shown only inside it", items);
+		ImGui::SetItemTooltip("Pick this area in an object's World & streaming, under \"Only inside area\".\n"
+			"Items name the area by its variable (Name above).");
+		if(items > 0){
+			ImGui::SameLine();
+			if(ImGui::SmallButton("Select them")){
+				std::string name = edited.name;
+				ClearSelection();
+				for(CPtrNode *p = instances.first; p; p = p->next){
+					ObjectInst *item = (ObjectInst*)p->item;
+					if(!item->m_isDeleted && name == GetObjectPawnProperties(item)->areaName)
+						item->Select();
+				}
+			}
+		}
+		break;
+	}
 	case SAMP_ELEMENT_SOUND: {
 		static const char *soundKinds[] = { "Audio stream", "Game sound" };
 		if(ImGui::Combo("Kind", &edited.soundKind, soundKinds, IM_ARRAYSIZE(soundKinds))) changed = true;
@@ -8885,6 +8962,10 @@ static const UiBatchField uiBatchFields[] = {
 	UI_BATCH_FIELD(soundStopOnLeave, true), UI_BATCH_FIELD(cpKind, true),
 	UI_BATCH_FIELD(cpSize, true), UI_BATCH_FIELD(cpRaceType, true),
 	UI_BATCH_FIELD(cpRace, true),
+	UI_BATCH_FIELD(areaShape, true), UI_BATCH_FIELD(areaRadius, true), UI_BATCH_FIELD(areaSize, true),
+	UI_BATCH_FIELD(areaHeight, true),
+	// Any item kind that takes an area: select the canal's objects, pick the area.
+	UI_BATCH_FIELD(areaName, false),
 };
 #undef UI_BATCH_FIELD
 
@@ -8997,6 +9078,47 @@ uiHasWorldSettings(int kind)
 	return kind != SAMP_ELEMENT_CLASS && kind != SAMP_ELEMENT_GANGZONE && kind != SAMP_ELEMENT_PATHPOINT;
 }
 
+// "Only inside area": the dynamic area a streamer item is limited to (its
+// areaid), from the map's areas. Streamer only.
+static bool
+uiAreaPicker(ObjectPawnProperties &edited)
+{
+	std::vector<std::string> names;
+	for(CPtrNode *p = instances.first; p; p = p->next){
+		ObjectInst *inst = (ObjectInst*)p->item;
+		const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+		if(!inst->m_isDeleted && properties->elementKind == SAMP_ELEMENT_AREA && properties->name[0])
+			names.push_back(properties->name);
+	}
+	std::sort(names.begin(), names.end());
+	bool changed = false;
+	bool missing = edited.areaName[0] && FindAreaByName(edited.areaName) == nil;
+	char preview[64];
+	snprintf(preview, sizeof(preview), "%s%s", edited.areaName[0] ? edited.areaName : "Everywhere",
+		missing ? " (missing)" : "");
+	if(ImGui::BeginCombo("Only inside area", preview)){
+		if(ImGui::Selectable("Everywhere", edited.areaName[0] == '\0')){
+			edited.areaName[0] = '\0';
+			changed = true;
+		}
+		for(const std::string &name : names)
+			if(ImGui::Selectable(name.c_str(), name == edited.areaName)){
+				snprintf(edited.areaName, sizeof(edited.areaName), "%s", name.c_str());
+				changed = true;
+			}
+		if(names.empty())
+			ImGui::TextDisabled("No dynamic areas: place one from the SA-MP tab.");
+		ImGui::EndCombo();
+	}
+	ImGui::SetItemTooltip("Shown only to players inside this dynamic area (the streamer's areaid).\n"
+		"Select several items to set it on all of them.");
+	ImGui::SameLine();
+	UiBadge("streamer only");
+	if(edited.areaName[0] && gPawnSaveFormat != PAWN_CODE_STREAMER)
+		ImGui::TextColored(ImVec4(1.0f, 0.78f, 0.25f, 1.0f), "Ignored: this map is native code.");
+	return changed;
+}
+
 static void
 uiObjectProperties(ObjectInst *inst, int part)
 {
@@ -9055,7 +9177,7 @@ uiObjectProperties(ObjectInst *inst, int part)
 			"(the model's own distance natively, STREAMER_OBJECT_DD for the streamer).");
 	}
 	if(kind != SAMP_ELEMENT_CLASS && kind != SAMP_ELEMENT_GANGZONE && kind != SAMP_ELEMENT_NPC &&
-	   kind != SAMP_ELEMENT_PATHPOINT && kind != SAMP_ELEMENT_SOUND){
+	   kind != SAMP_ELEMENT_PATHPOINT && kind != SAMP_ELEMENT_SOUND && kind != SAMP_ELEMENT_AREA){
 		if(ImGui::InputFloat("Stream distance", &edited.streamDistance, 10.0f, 100.0f, "%.1f")) changed = true;
 		ImGui::SetItemTooltip("Streamer only. 0 uses the streamer's default for this kind.");
 	}
@@ -9077,6 +9199,8 @@ uiObjectProperties(ObjectInst *inst, int part)
 			"-1 shows it in every world (with the streamer; native labels and\n"
 			"actors use world 0 then).");
 	}
+	if(SampElementTakesArea(kind) && !inst->m_isVehicle)
+		if(uiAreaPicker(edited)) changed = true;
 	}
 
 	if(part != UI_PROPS_ATTACH || kind != SAMP_ELEMENT_OBJECT){
@@ -10153,6 +10277,9 @@ uiBrowserSampTab(void)
 		{ SAMP_ELEMENT_SOUND, ICON_FA_VOLUME_HIGH, "An audio stream or game sound players hear near this place", nil },
 		{ SAMP_ELEMENT_CHECKPOINT, ICON_FA_LOCATION_CROSSHAIRS,
 		  "CreateDynamicCP / CreateDynamicRaceCP: a checkpoint, or a race of them", "streamer only" },
+		{ SAMP_ELEMENT_AREA, ICON_FA_VECTOR_SQUARE,
+		  "CreateDynamicCuboid and the other shapes: items limited to it are shown only to players inside",
+		  "streamer only" },
 	};
 	auto row = [&](const Row &r){
 		ImGui::PushID(r.kind);
@@ -10609,6 +10736,16 @@ uiDrawSampElementOverlays(void)
 			}
 			break;
 		}
+		case SAMP_ELEMENT_AREA: {
+			DrawDynamicAreaOverlay(inst, selected);
+			if((selected || dist < 200.0f) && uiWorldToScreen(inst->m_translation, &screen)){
+				static const char *shapes[] = { "circle", "cylinder", "sphere", "rectangle", "cuboid", "cube", "polygon" };
+				snprintf(tag, sizeof(tag), "Area %s (%s, %d item(s))", properties->name,
+					shapes[clamp(properties->areaShape, 0, 6)], CountItemsInArea(properties->name));
+				uiDrawWorldTag(drawList, screen, tag, tagColor);
+			}
+			break;
+		}
 		case SAMP_ELEMENT_CHECKPOINT: {
 			// The marker itself is a mesh (checkpoints.cpp); this is its tag.
 			if(dist > 400.0f && !selected)
@@ -10940,10 +11077,7 @@ uiOutlinerAddObject(ObjectInst *inst, int depth, const std::unordered_map<int32,
 	std::unordered_map<int32, const char*>::const_iterator problem = problems.find(inst->m_id);
 	row.problem = problem != problems.end() ? problem->second : nil;
 	gOutliner.rows.push_back(row);
-	// An NPC's vehicle, path, nodes or recording, one line each.
 	const ObjectPawnProperties *p = GetObjectPawnProperties(inst);
-	if(inst->m_isVehicle || p->elementKind != SAMP_ELEMENT_NPC)
-		return;
 	auto note = [&](const std::string &text, const std::vector<ObjectInst*> &refs){
 		UiOutlinerRow n = {};
 		n.type = UiOutlinerRow::NOTE;
@@ -10954,6 +11088,24 @@ uiOutlinerAddObject(ObjectInst *inst, int depth, const std::unordered_map<int32,
 		n.textDraw = -1;
 		gOutliner.rows.push_back(n);
 	};
+	// Dynamic areas: an area lists what is shown only inside it, an item its area.
+	if(!inst->m_isVehicle && p->elementKind == SAMP_ELEMENT_AREA && p->name[0]){
+		std::vector<ObjectInst*> items;
+		for(CPtrNode *q = instances.first; q; q = q->next){
+			ObjectInst *item = (ObjectInst*)q->item;
+			if(!item->m_isDeleted && !item->m_isVehicle && strcmp(GetObjectPawnProperties(item)->areaName, p->name) == 0)
+				items.push_back(item);
+		}
+		if(!items.empty())
+			note(std::to_string(items.size()) + " item(s) only inside it", items);
+	}else if(!inst->m_isVehicle && p->areaName[0]){
+		ObjectInst *area = FindAreaByName(p->areaName);
+		note(std::string("only inside ") + p->areaName + (area ? "" : " (missing)"),
+			area ? std::vector<ObjectInst*>{ area } : std::vector<ObjectInst*>{});
+	}
+	// An NPC's vehicle, path, nodes or recording, one line each.
+	if(inst->m_isVehicle || p->elementKind != SAMP_ELEMENT_NPC)
+		return;
 	if(ObjectInst *vehicle = GetNpcVehicle(inst)){
 		char name[160];
 		uiObjectLabel(vehicle, name, sizeof(name));
@@ -11029,6 +11181,7 @@ uiOutlinerRebuild(void)
 			{ SAMP_ELEMENT_CHECKPOINT, "Checkpoints and races" }, { SAMP_ELEMENT_PICKUP, "Pickups" },
 			{ SAMP_ELEMENT_LABEL, "3D text labels" }, { SAMP_ELEMENT_GANGZONE, "Gang zones" },
 			{ SAMP_ELEMENT_MAPICON, "Map icons" }, { SAMP_ELEMENT_SOUND, "Sounds" },
+			{ SAMP_ELEMENT_AREA, "Dynamic areas" },
 		};
 		std::unordered_set<ObjectInst*> shown(objects.begin(), objects.end());
 		for(const Category &c : categories){
@@ -11902,6 +12055,8 @@ uiPlayerViewOverlay(void)
 			s.actorsStreamed, gPlayerViewWorld, currentArea);
 		if(s.otherWorld)
 			ImGui::TextDisabled("%d element(s) are in another virtual world or interior", s.otherWorld);
+		if(s.outsideArea)
+			ImGui::TextDisabled("%d item(s) only show inside a dynamic area the camera is outside", s.outsideArea);
 	}
 	ImGui::End();
 }
