@@ -1,0 +1,35 @@
+# Preferences > Shortcuts: rebind Map Check from F6 to Ctrl+Shift+M, use it, then reset to the defaults.
+open "$UI_FIXTURES/ui_floor.pwn"
+# From the menu: librw's ImGui backend has no ',' key, so Ctrl+, doesn't reach the editor.
+click_item '*' 'Windows'
+wait 3
+click_item '*' 'Preferences...'
+wait 5
+assert window "Preferences"
+click_item 'Preferences' 'Shortcuts'
+wait 3
+click_item 'Preferences' '##shortcut_filter'
+type "Map Check"
+wait 5
+click_item 'Preferences' 'F6'
+wait 3
+assert item 'Preferences' 'Press a key...'
+key Ctrl+Shift+M
+wait 3
+assert item 'Preferences' 'Ctrl+Shift+M'
+# The new chord opens it; F6 no longer does.
+key F6
+wait 5
+assert no_window "Map Check"
+key Ctrl+Shift+M
+wait 5
+assert window "Map Check"
+key Ctrl+Shift+M
+wait 5
+assert no_window "Map Check"
+click_item 'Preferences' 'Reset all to defaults'
+wait 3
+assert item 'Preferences' 'F6'
+key F6
+wait 5
+assert window "Map Check"

@@ -1,0 +1,46 @@
+# Player view (P): a label in virtual world 1 is left out in world 0, shown in world 1, and everything is back with P off.
+open "$UI_FIXTURES/ui_floor.pwn"
+shortcut window_browser
+wait 5
+click_item 'Object Browser' 'SA-MP'
+wait 5
+click_item 'Object Browser' 'Place' 6
+wait 3
+click_world 2003 -3003 4
+wait 5
+key Esc
+assert objects == 2
+shortcut window_object_info
+wait 5
+set_item 'Object Info' 'Text' "World one" tab
+wait 3
+set_item 'Object Info' 'Draw distance' "500" tab
+wait 3
+click_item 'Object Info' 'World & streaming'
+wait 3
+set_item 'Object Info' 'Virtual world' "1"
+wait 3
+close_popup
+# The player view always draws the selection: select the floor instead.
+click_object model=19377
+wait 5
+assert selected.model == 19377
+assert player_view_hidden == 0
+shortcut player_view
+wait 5
+assert player_view_hidden == 1
+shortcut window_view
+wait 5
+set_item 'View' 'Virtual world' "1"
+wait 3
+close_popup
+wait 3
+assert player_view_hidden == 0
+set_item 'View' 'Virtual world' "0"
+wait 3
+close_popup
+wait 3
+assert player_view_hidden == 1
+shortcut player_view
+wait 5
+assert player_view_hidden == 0

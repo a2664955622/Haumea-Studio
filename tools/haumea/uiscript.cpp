@@ -1,6 +1,7 @@
 #include "haumea.h"
 #include "workspace.h"
 #include "shortcuts.h"
+#include "playerview.h"
 #include "imgui/imgui_internal.h"
 
 #include <ctype.h>
@@ -539,6 +540,7 @@ windowOpen(const std::string &title)
 // assert toast_contains "text"
 // assert window "Title"     / no_window "Title"
 // assert item 'Window' 'Label'   / no_item
+// assert hidden|player_view_hidden|fov|ui_scale|camera_moved <op> N   (camera_moved: metres since mark_camera)
 static bool
 uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 {
@@ -598,10 +600,15 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		why = "gizmo is " + mode;
 		return mode == arg(1);
 	}
-	if(what == "hidden" || what == "fov" || what == "ui_scale" || what == "camera_moved"){
+	if(what == "hidden" || what == "player_view_hidden" || what == "fov" || what == "ui_scale" ||
+	   what == "camera_moved"){
 		double v = 0;
 		if(what == "hidden"){
 			v = CountHiddenInstances();
+		}else if(what == "player_view_hidden"){
+			for(CPtrNode *p = instances.first; p; p = p->next)
+				if(PlayerViewHides((ObjectInst*)p->item))
+					v++;
 		}else if(what == "fov") v = TheCamera.m_fov;
 		else if(what == "ui_scale") v = GetUiScale();
 		else v = rw::length(rw::sub(TheCamera.m_position, gMarkedCamera));
