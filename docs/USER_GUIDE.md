@@ -18,10 +18,24 @@ Haumea needs two folders:
 - **Workspace**: the SA-MP or open.mp server you map for. Haumea takes maps, custom models,
   NPC files and the test server from it.
 
-To install Haumea, see [Install](../README.md#install). The first start asks for both: type
-each path or use **Browse...** (on Linux that needs `zenity` or `kdialog`). You can change them later in **File → Workspace** or in
-**Preferences → Workspace**. Haumea keeps its own settings, autosaves and prefabs in its
-config folder (`~/.config/haumea` on Linux, `%APPDATA%\Haumea` on Windows).
+To install Haumea, see [Install](../README.md#install). Haumea opens on the **start screen**:
+
+- **Workspaces** you used, newest first, with when you last opened them. **Pin** (the star) keeps
+  one at the top; the folder button opens it in your file manager, and × takes it off the list (the
+  folder stays). **New workspace** makes a server folder with `gamemodes`, `filterscripts` and
+  `scriptfiles`; **Open folder as workspace** uses one you already have.
+- **Maps** in the selected workspace that you opened before, with a picture of each. Double-click
+  one, or select it and press **Open map**. **Open workspace** opens it with a new map.
+- **GTA San Andreas**: the game folder, with the SA-MP client version found there and the
+  workspace's 0.3.DL custom models. A new game folder loads after a restart.
+- **Continue without a workspace**, or **Skip** to keep what is open.
+
+The first start asks for the game folder here before anything loads. Type each path or use
+**Browse...** (on Linux that needs `zenity` or `kdialog`). Tick **Open the last workspace
+automatically** to skip the screen; **File → Switch Workspace** shows it again. Both folders can
+also be changed in **File → Workspace** or **Preferences → Workspace**. Haumea keeps its own
+settings, autosaves and prefabs in its config folder (`~/.config/haumea` on Linux,
+`%APPDATA%\Haumea` on Windows).
 
 ## Moving around
 

@@ -580,12 +580,15 @@ SetWorkspaceDir(const char *dir)
 			gWorkspaceDir), gRecentWorkspaces.end());
 		gRecentWorkspaces.insert(gRecentWorkspaces.begin(), gWorkspaceDir);
 		gRecentInfo[gWorkspaceDir].lastOpened = (long long)time(nil);
-		// Too many: the oldest unpinned one goes. Pinned ones stay.
+		// Too many: the oldest unpinned one goes, so pinned ones stay, up to
+		// twice as many (what is read back); past that the oldest pinned one.
 		while((int)gRecentWorkspaces.size() > MAX_RECENT_WORKSPACES){
 			int drop = -1;
 			for(int i = (int)gRecentWorkspaces.size() - 1; i > 0 && drop < 0; i--)
 				if(!gRecentInfo[gRecentWorkspaces[i]].pinned)
 					drop = i;
+			if(drop < 0 && (int)gRecentWorkspaces.size() > MAX_RECENT_WORKSPACES * 2)
+				drop = (int)gRecentWorkspaces.size() - 1;
 			if(drop < 0)
 				break;
 			gRecentInfo.erase(gRecentWorkspaces[drop]);

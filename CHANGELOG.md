@@ -97,6 +97,11 @@ run Map Check and Test in game, and grab frames with the panels.
   folder** (GTA San Andreas, only ever read) and an optional **workspace**
   (the server you map for). Haumea never writes into the game folder. The old
   layout, inside the GTA folder, still works.
+- **Start screen** on every launch: recent workspaces (pin, remove, open the
+  folder), the selected workspace's recent maps with thumbnails, a new
+  workspace or any folder as one, and the game folder with the SA-MP client
+  version it has. "Open the last workspace automatically" skips it; File >
+  Switch Workspace shows it again.
 - **Settings moved** from `<GTA>/haumea_data` to `~/.config/haumea`
   (`%APPDATA%\Haumea` on Windows, `~/Library/Application Support/Haumea` on
   macOS). They are copied over once; the old folder is left as it was.

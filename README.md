@@ -184,9 +184,12 @@ start it asks for two folders:
   come from its `npcmodes/recordings` and the Nodes tool uses
   `scriptfiles/NPCs/nodes`. It is optional.
 
-Both can be changed in **File → Workspace** or **Preferences**, and recent
-workspaces are listed in the menu. The window title shows the workspace. A
-new game folder loads after a restart.
+Haumea opens on a start screen with your recent workspaces (pinnable), the
+maps you opened in the selected one, with thumbnails, and the game folder.
+"Open the last workspace automatically" skips it, and **File → Switch
+Workspace** brings it back. Both folders can also be changed in **File →
+Workspace** or **Preferences**. The window title shows the workspace. A new
+game folder loads after a restart.
 
 Settings and editor data (autosaves, recent maps, favourites, `imgui.ini`)
 live in `~/.config/haumea` (`%APPDATA%\Haumea` on Windows, `~/Library/Application

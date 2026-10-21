@@ -1050,7 +1050,11 @@ static bool
 privateConfig(void)
 {
 	// Only with a config folder of its own: a script must never change the
-	// user's settings, recent maps or shortcuts.
+	// user's settings, recent maps or shortcuts. HAUMEA_CONFIG_DIR names one
+	// directly (Windows and Wine, which don't use XDG_CONFIG_HOME).
+	const char *own = getenv("HAUMEA_CONFIG_DIR");
+	if(own && own[0])
+		return true;
 	const char *xdg = getenv("XDG_CONFIG_HOME");
 	const char *home = getenv("HOME");
 	if(xdg == nil || xdg[0] == '\0')
