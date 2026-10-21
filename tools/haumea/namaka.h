@@ -19,5 +19,16 @@ bool NamakaUpdateAvailable(void);
 // Waits behind an Install/Repair already running.
 void NamakaUpdateAfterEditorUpdate(void);
 
+// Listening for Namaka on a plain start: when it is installed, "Let Namaka
+// connect" is on (Preferences, the panel) and this isn't a test or script run.
+// The bridge then opens NamakaDefaultSocketPath() (agentbridge.cpp).
+bool NamakaShouldListen(void);
+bool NamakaListenEnabled(void);	// the switch, on by default
+void SetNamakaListenEnabled(bool on);	// from the next start
+// ~/.cache/haumea-agent.sock, haumea_ipc's default too, so MCP clients need
+// no env; HAUMEA_NAMAKA_SOCKET moves it (tests). Creates ~/.cache (0700) if missing.
+std::string NamakaDefaultSocketPath(void);
+void NamakaListenSwitch(void);	// the checkbox, for Preferences too
+
 // Tools > Namaka: Install / Repair / Uninstall, status and MCP config.
 void DrawNamakaWindow(bool *open);

@@ -247,6 +247,79 @@ NamakaUpdateAvailable(void)
 	return offered.valid && (!have.valid || newer(offered, have));
 }
 
+// ---- Listening ----
+
+static std::string
+listenSettingPath(void)
+{
+	return namakaDir() + "/listen";
+}
+
+bool
+NamakaListenEnabled(void)
+{
+	// Off only when the file says 0: on by default.
+	FILE *f = fopen(listenSettingPath().c_str(), "r");
+	if(f == nil)
+		return true;
+	int c = fgetc(f);
+	fclose(f);
+	return c != '0';
+}
+
+void
+SetNamakaListenEnabled(bool on)
+{
+	EnsureParentDirectoriesForPath(listenSettingPath().c_str());
+	FILE *f = fopen(listenSettingPath().c_str(), "w");
+	if(f){
+		fputs(on ? "1\n" : "0\n", f);
+		fclose(f);
+	}
+}
+
+static bool
+hasArgument(const char *name)
+{
+	for(int i = 1; i < sk::args.argc; i++)
+		if(strcmp(sk::args.argv[i], name) == 0)
+			return true;
+	return false;
+}
+
+bool
+NamakaShouldListen(void)
+{
+	// Tests and scripts never listen on their own. HAUMEA_NAMAKA_LISTEN=1
+	// lets a test check that it does (with HAUMEA_NAMAKA_SOCKET elsewhere).
+	const char *forced = getenv("HAUMEA_NAMAKA_LISTEN");
+	bool test = SettingsAreReadOnly() || hasArgument("--ui-script") || hasArgument("--textdraw-roundtrip") ||
+		getenv("HAUMEA_TEST_XVFB") != nil;
+	if(forced && forced[0])
+		test = atoi(forced) == 0;
+	return !test && NamakaInstalled() && NamakaListenEnabled();
+}
+
+std::string
+NamakaDefaultSocketPath(void)
+{
+	const char *env = getenv("HAUMEA_NAMAKA_SOCKET");
+	if(env && env[0])
+		return env;
+#ifdef _WIN32
+	return "";
+#else
+	// As haumea_ipc finds it: Path.home() / ".cache" / "haumea-agent.sock".
+	const char *home = getenv("HOME");
+	if(home == nil || home[0] == '\0')
+		return "";
+	std::string cache = std::string(home) + "/.cache";
+	if(!isDir(cache))
+		mkdir(cache.c_str(), 0700);	// an existing one is left as it is
+	return cache + "/haumea-agent.sock";
+#endif
+}
+
 // ---- Python ----
 
 struct PythonCandidate {
@@ -577,12 +650,11 @@ connectionEnv(void)
 		env.push_back({ "HAUMEA_ENGINE_TOKEN", token });
 		return env;
 	}
+	// The default socket is haumea_ipc's default too: no env needed. Only a
+	// socket given with --agent-socket has to be named.
 	std::string socket = AgentBridgeSocketPath();
-	if(socket.empty()){
-		const char *home = getenv("HOME");
-		socket = std::string(home ? home : "~") + "/.cache/haumea-agent.sock";
-	}
-	env.push_back({ "HAUMEA_ENGINE_SOCKET", socket });
+	if(!socket.empty() && socket != NamakaDefaultSocketPath())
+		env.push_back({ "HAUMEA_ENGINE_SOCKET", socket });
 	return env;
 }
 
@@ -604,12 +676,15 @@ claudeCodeConfig(void)
 static std::string
 claudeDesktopConfig(void)
 {
-	std::string text = "{\n  \"mcpServers\": {\n    \"haumea\": {\n      \"command\": " + jsonString(mcpCommand()) +
-		",\n      \"env\": {";
+	std::string text = "{\n  \"mcpServers\": {\n    \"haumea\": {\n      \"command\": " + jsonString(mcpCommand());
 	std::vector<std::pair<std::string, std::string>> env = connectionEnv();
-	for(size_t i = 0; i < env.size(); i++)
-		text += std::string(i ? "," : "") + "\n        " + jsonString(env[i].first) + ": " + jsonString(env[i].second);
-	return text + "\n      }\n    }\n  }\n}\n";
+	if(!env.empty()){
+		text += ",\n      \"env\": {";
+		for(size_t i = 0; i < env.size(); i++)
+			text += std::string(i ? "," : "") + "\n        " + jsonString(env[i].first) + ": " + jsonString(env[i].second);
+		text += "\n      }";
+	}
+	return text + "\n    }\n  }\n}\n";
 }
 
 // ---- The panel ----
@@ -715,15 +790,37 @@ actionsSection(void)
 	}
 }
 
+// "Let Namaka connect", in the panel and Preferences.
+void
+NamakaListenSwitch(void)
+{
+	bool on = NamakaListenEnabled();
+	if(ImGui::Checkbox("Let Namaka connect", &on))
+		SetNamakaListenEnabled(on);
+	ImGui::SetItemTooltip("When Namaka is installed, Haumea listens for it on its own socket\n"
+		"(only your user can use it). Changes apply from the next start.");
+}
+
 static void
 connectSection(void)
 {
 	ImGui::SeparatorText("Connect an AI assistant");
+	NamakaListenSwitch();
+	ImGui::PushTextWrapPos(0.0f);
 	if(AgentBridgeSocketPath()[0] || getenv("HAUMEA_ENGINE_TCP_PORT"))
-		ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.5f, 1.0f), ICON_FA_CHECK " This Haumea is listening for Namaka.");
+		ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.5f, 1.0f), ICON_FA_CHECK " Listening for Namaka%s%s",
+			AgentBridgeSocketPath()[0] ? " on " : "", AgentBridgeSocketPath());
+	else if(AgentBridgeSocketBusy())
+		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.35f, 1.0f),
+			"Another Haumea is using the Namaka socket, so this one isn't listening. "
+			"Close the other one and start this again to connect here.");
+	else if(!NamakaInstalled())
+		ImGui::TextDisabled("Once Namaka is installed, Haumea listens for it from its next start.");
+	else if(!NamakaListenEnabled())
+		ImGui::TextDisabled("Not listening: \"Let Namaka connect\" is off.");
 	else
-		ImGui::TextWrapped("This Haumea is not listening for Namaka: start it with launch-haumea-agent "
-			"(or --agent-socket) so the assistant can reach it.");
+		ImGui::TextDisabled("Haumea starts listening for Namaka from its next start.");
+	ImGui::PopTextWrapPos();
 	ImGui::BeginDisabled(!NamakaInstalled());
 	if(ImGui::Button(ICON_FA_COPY " Copy for Claude Code")){
 		ImGui::SetClipboardText(claudeCodeConfig().c_str());

@@ -10,6 +10,7 @@
 #include "radarart.h"
 #include "testserver.h"
 #include "encoding.h"
+#include "namaka.h"
 #ifdef RW_GL3
 #include <GLFW/glfw3.h>
 #endif
@@ -109,6 +110,7 @@ static AgentSocket gAgentReplySocket = INVALID_AGENT_SOCKET;
 static std::string gAgentToken;
 static bool gAgentTcp;
 static bool gAgentUnixBound;
+static bool gAgentSocketBusy;	// another process answers on the socket: left to it
 
 static void closeAgentSocket(AgentSocket &socket)
 {
@@ -412,6 +414,23 @@ initializeAgentSocket(void)
 	sockaddr_un address = {};
 	address.sun_family = AF_UNIX;
 	strncpy(address.sun_path, gAgentSocketPath, sizeof(address.sun_path) - 1);
+	// Another Haumea's socket is never taken over: only one nobody answers on
+	// (refused, or no file) is stale and replaced. The probe doesn't block, so
+	// a stuck peer can't hold up the start; anything unclear counts as busy.
+	int probe = socket(AF_UNIX, SOCK_STREAM, 0);
+	if(probe >= 0){
+		fcntl(probe, F_SETFL, fcntl(probe, F_GETFL, 0) | O_NONBLOCK);
+		bool stale = connect(probe, (sockaddr*)&address, sizeof(address)) < 0 &&
+			(errno == ECONNREFUSED || errno == ENOENT);
+		close(probe);
+		if(!stale){
+			gAgentSocketBusy = true;
+			shutdownAgentSocket();
+			log("Agent socket %s is in use by another process (another Haumea?); not listening\n",
+				gAgentSocketPath);
+			return false;
+		}
+	}
 	unlink(gAgentSocketPath);
 	if(bind(gAgentSocket, (sockaddr*)&address, sizeof(address)) < 0){
 		shutdownAgentSocket();
@@ -456,6 +475,13 @@ initializeBridge(void)
 		return; // Explicit TCP configuration must never fall back to an unauthenticated bridge.
 	}
 #ifndef _WIN32
+	// A plain start listens for Namaka when it is installed (and allowed).
+	if(!gAgentSocketPath[0] && !gAgentBridgeDirectory[0] && NamakaShouldListen()){
+		std::string path = NamakaDefaultSocketPath();
+		snprintf(gAgentSocketPath, sizeof(gAgentSocketPath), "%s", path.c_str());
+		if(path.size() >= sizeof(gAgentSocketPath))
+			gAgentSocketPath[0] = '\0';
+	}
 	if(gAgentSocketPath[0]){
 		gAgentBridgeEnabled = initializeAgentSocket();
 		if(gAgentBridgeEnabled)
@@ -4506,4 +4532,10 @@ const char*
 AgentBridgeSocketPath(void)
 {
 	return gAgentBridgeEnabled && !gAgentTcp ? gAgentSocketPath : "";
+}
+
+bool
+AgentBridgeSocketBusy(void)
+{
+	return gAgentSocketBusy;
 }
