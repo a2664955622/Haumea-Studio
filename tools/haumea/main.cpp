@@ -36,9 +36,9 @@ rw::Texture *whiteTex;
 static char gHotReloadTracePath[1024];
 static char gImGuiIniPath[1024];
 
-#ifdef _WIN32
+// Windows restarts pass it (the new process waits for the old one); a
+// restart elsewhere never forwards it.
 static const char *RESTART_PARENT_PID_ARG = "--haumea-restart-parent-pid";
-#endif
 
 static bool
 GetEditorExecutablePath(char *path, size_t size)
@@ -92,46 +92,136 @@ WaitForRestartParentIfRequested(void)
 #endif
 
 bool
-RestartHaumea(void)
+GetHaumeaExecutablePath(char *path, size_t size)
+{
+	return GetEditorExecutablePath(path, size);
+}
+
+// This run's arguments, without a restart's own --haumea-restart-parent-pid.
+static std::vector<std::string>
+forwardedArgs(void)
+{
+	std::vector<std::string> args;
+	for(int i = 1; i < sk::args.argc; i++){
+		if(strcmp(sk::args.argv[i], RESTART_PARENT_PID_ARG) == 0){
+			i++;
+			continue;
+		}
+		args.push_back(sk::args.argv[i]);
+	}
+	return args;
+}
+
+#ifdef _WIN32
+// One argument for CreateProcess's command line, quoted the way the C runtime
+// splits it again.
+static void
+appendQuotedArg(std::string &line, const std::string &arg)
+{
+	line += " \"";
+	int slashes = 0;
+	for(char c : arg){
+		if(c == '\\'){ slashes++; continue; }
+		line.append(c == '"' ? slashes * 2 + 1 : slashes, '\\');
+		slashes = 0;
+		line += c;
+	}
+	line.append(slashes * 2, '\\');
+	line += '"';
+}
+#endif
+
+static bool
+restartHaumea(bool keepArgs)
 {
 	// The new process finds the game folder in the saved settings, so a
 	// changed one takes effect; the working directory does not matter.
 	char exePath[1024];
 	if(!GetEditorExecutablePath(exePath, sizeof(exePath)))
 		return false;
+	std::vector<std::string> args;
+	if(keepArgs)
+		args = forwardedArgs();
 
 #ifdef _WIN32
-	char commandLine[2300];
-	if(snprintf(commandLine, sizeof(commandLine), "\"%s\" %s %lu",
-	            exePath, RESTART_PARENT_PID_ARG, (unsigned long)GetCurrentProcessId()) >= (int)sizeof(commandLine))
-		return false;
+	std::string commandLine = std::string("\"") + exePath + "\" " + RESTART_PARENT_PID_ARG + " " +
+		std::to_string((unsigned long)GetCurrentProcessId());
+	for(const std::string &a : args)
+		appendQuotedArg(commandLine, a);
 
 	STARTUPINFOA startupInfo = {};
 	PROCESS_INFORMATION processInfo = {};
 	startupInfo.cb = sizeof(startupInfo);
-	if(!CreateProcessA(exePath, commandLine, nil, nil, FALSE, 0, nil, nil,
+	if(!CreateProcessA(exePath, &commandLine[0], nil, nil, FALSE, 0, nil, nil,
 	                   &startupInfo, &processInfo))
 		return false;
 
 	CloseHandle(processInfo.hThread);
 	CloseHandle(processInfo.hProcess);
 #else
+	// argv is built before the fork: only async-signal-safe calls after it.
+	std::vector<char*> argv;
+	argv.push_back(exePath);
+	for(std::string &a : args)
+		argv.push_back(&a[0]);
+	argv.push_back(nil);
 	pid_t parentPid = getpid();
 	pid_t childPid = fork();
 	if(childPid < 0)
 		return false;
 	if(childPid == 0){
-		// Only async-signal-safe operations are used between fork and exec. The
-		// child stays invisible until the old Haumea process has fully exited.
+		// The child stays invisible until the old Haumea process has fully exited.
 		while(getppid() == parentPid)
 			usleep(50000);
-		execl(exePath, exePath, (char*)nil);
+		execv(exePath, argv.data());
 		_exit(127);
 	}
 #endif
 
 	sk::globals.quit = 1;
 	return true;
+}
+
+bool
+RestartHaumea(void)
+{
+	return restartHaumea(false);
+}
+
+bool
+RestartHaumeaKeepingArgs(void)
+{
+	return restartHaumea(true);
+}
+
+void
+ExecHaumeaInPlace(void)
+{
+	char exePath[1024];
+	if(!GetEditorExecutablePath(exePath, sizeof(exePath)))
+		return;
+	std::vector<std::string> args = forwardedArgs();
+#ifdef _WIN32
+	std::string commandLine = std::string("\"") + exePath + "\"";
+	for(const std::string &a : args)
+		appendQuotedArg(commandLine, a);
+	STARTUPINFOA startupInfo = {};
+	PROCESS_INFORMATION processInfo = {};
+	startupInfo.cb = sizeof(startupInfo);
+	if(!CreateProcessA(exePath, &commandLine[0], nil, nil, FALSE, 0, nil, nil,
+	                   &startupInfo, &processInfo))
+		return;
+	CloseHandle(processInfo.hThread);
+	CloseHandle(processInfo.hProcess);
+	exit(0);
+#else
+	std::vector<char*> argv;
+	argv.push_back(exePath);
+	for(std::string &a : args)
+		argv.push_back(&a[0]);
+	argv.push_back(nil);
+	execv(exePath, argv.data());
+#endif
 }
 
 static bool
@@ -627,6 +717,13 @@ Init(void)
 			fflush(stdout);
 			exit(0);
 		}
+	// --update-check, --update-install, --update-rollback: the updater on
+	// its own, for the tests.
+	int updateExit = UpdaterCommandLine(sk::args.argc, sk::args.argv);
+	if(updateExit >= 0){
+		fflush(stdout);
+		exit(updateExit);
+	}
 #ifdef _WIN32
 	// A restarted copy is created before the current process exits, but waits
 	// here before any window or RenderWare resources are initialized.
@@ -635,6 +732,9 @@ Init(void)
 
 	// Where the game, the server and the settings are, before anything loads.
 	InitWorkspace();
+	// A downloaded update installs now, before any window, and starts in this
+	// one's place.
+	UpdaterInstallStaged();
 
 	static char windowTitle[256];
 	static bool saveHookRegistered;

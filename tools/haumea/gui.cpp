@@ -2849,6 +2849,8 @@ uiMainmenu(void)
 			ImGui::Separator();
 			if(ImGui::MenuItem(ICON_FA_BOLT " Namaka (AI assistant)...")) showNamakaWindow = true;
 			ImGui::SetItemTooltip("Install Namaka and connect Claude, like Windows > Namaka.");
+			ImGui::Separator();
+			UpdaterHelpMenuItems();
 			ImGui::EndMenu();
 		}
 
@@ -6286,6 +6288,7 @@ loadSaveSettings(void)
 			parseFloatSetting(value, &gFlySpeed);
 		}else if(strcmp(key, "fly_fast_mul") == 0){
 			parseFloatSetting(value, &gFlyFastMul);
+		}else if(UpdaterParseSetting(key, value)){
 		}else if(strcmp(key, "fly_slow_mul") == 0){
 			parseFloatSetting(value, &gFlySlowMul);
 		}else if(strcmp(key, "fov_wheel_step") == 0){
@@ -6586,6 +6589,7 @@ saveSaveSettings(void)
 	fprintf(f, "fly_speed %.9g\n", gFlySpeed);
 	fprintf(f, "fly_fast_mul %.9g\n", gFlyFastMul);
 	fprintf(f, "fly_slow_mul %.9g\n", gFlySlowMul);
+	UpdaterWriteSettings(f);
 	fprintf(f, "fov_wheel_step %.9g\n", gFovWheelStep);
 	fprintf(f, "camera_look_button %d\n", gCameraLookButton);
 	fprintf(f, "render_all_timed_objects %d\n", gNoTimeCull ? 1 : 0);
@@ -7642,6 +7646,10 @@ uiPreferencesWindow(void)
 		}
 		if(ImGui::BeginTabItem("Test server")){
 			TestServerPreferences();
+			ImGui::EndTabItem();
+		}
+		if(ImGui::BeginTabItem("Updates")){
+			UpdaterPreferences();
 			ImGui::EndTabItem();
 		}
 		if(ImGui::BeginTabItem("Shortcuts")){

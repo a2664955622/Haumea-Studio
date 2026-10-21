@@ -1,12 +1,32 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
-// Auto-updater for Haumea Studio
-// Checks GitHub Releases for the current channel (master or PE)
-// and offers to download + apply the update.
+#include <stdio.h>
 
-// Call once after the window is created (non-blocking, spawns a thread)
+// Haumea Studio's updater: checks GitHub Releases for this channel, shows a
+// banner (never a modal), downloads and verifies the release bundle in the
+// background and installs it at the next start, only the files its manifest
+// lists. The previous version is kept for Help > Roll back.
+
+// --update-check / --update-install / --update-rollback (the tests' way in,
+// no window): the exit code, or -1 when the command line has none of them.
+int UpdaterCommandLine(int argc, char **argv);
+
+// At startup, before any window: install a downloaded update and start the
+// new version in this one's place (does not return then).
+void UpdaterInstallStaged(void);
+
+// After the window is up: start the background check (when allowed).
 void UpdaterCheckForUpdate(void);
-
-// Call every frame from the GUI — renders the update popup if an update is available
+// Help > Check for updates.
+void UpdaterCheckNow(void);
+// Every frame: the banner and What's new.
 void UpdaterDrawGui(void);
+// Help menu: Check for updates, Roll back.
+void UpdaterHelpMenuItems(void);
+// Preferences > Updates.
+void UpdaterPreferences(void);
+
+// settings.cfg: true when key was the updater's.
+bool UpdaterParseSetting(const char *key, const char *value);
+void UpdaterWriteSettings(FILE *f);

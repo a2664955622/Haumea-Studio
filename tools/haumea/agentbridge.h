@@ -4,6 +4,8 @@
 // Native, main-thread control primitives for local visual agent loops. The
 // engine owns scene safety and rendering; CLI/MCP concerns stay out-of-process.
 void AgentBridgeUpdate(void);
+// An agent edit session is open (begin_edit_session until commit or rollback).
+bool AgentBridgeSessionActive(void);
 void AgentBridgeCaptureAfterWorldRender(void);
 void AgentBridgeCaptureAfterUiRender(void);	// capture_screen: with the panels
 // The socket this editor listens on for Namaka, or "" (not listening, or TCP).

@@ -190,6 +190,7 @@ GENERATED += $(OBJDIR)/telemetry.o
 GENERATED += $(OBJDIR)/timecycle.o
 GENERATED += $(OBJDIR)/tstudio.o
 GENERATED += $(OBJDIR)/txdstore.o
+GENERATED += $(OBJDIR)/updatecore.o
 GENERATED += $(OBJDIR)/updater.o
 GENERATED += $(OBJDIR)/win.o
 GENERATED += $(OBJDIR)/testserver.o
@@ -272,6 +273,7 @@ OBJECTS += $(OBJDIR)/telemetry.o
 OBJECTS += $(OBJDIR)/timecycle.o
 OBJECTS += $(OBJDIR)/tstudio.o
 OBJECTS += $(OBJDIR)/txdstore.o
+OBJECTS += $(OBJDIR)/updatecore.o
 OBJECTS += $(OBJDIR)/updater.o
 OBJECTS += $(OBJDIR)/win.o
 OBJECTS += $(OBJDIR)/testserver.o
@@ -598,6 +600,9 @@ $(OBJDIR)/tstudio.o: ../tools/haumea/tstudio.cpp
 	@echo "$(notdir $<)"
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/txdstore.o: ../tools/haumea/txdstore.cpp
+	@echo "$(notdir $<)"
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/updatecore.o: ../tools/haumea/updatecore.cpp
 	@echo "$(notdir $<)"
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/updater.o: ../tools/haumea/updater.cpp

@@ -120,6 +120,12 @@ void UpdateEditorWindowState(void);
 void OnEditorWindowResized(int width, int height);
 void SaveEditorSettingsNow(void);
 bool RestartHaumea(void);
+// Restart with this run's arguments (--agent-socket, --game...), e.g. after an update.
+bool RestartHaumeaKeepingArgs(void);
+// At startup, before any window: replace this process with a new start of the
+// executable on disk, same arguments. Returns only if that failed.
+void ExecHaumeaInPlace(void);
+bool GetHaumeaExecutablePath(char *path, size_t size);
 
 char *getPath(const char *path);
 FILE *fopen_ci(const char *path, const char *mode);

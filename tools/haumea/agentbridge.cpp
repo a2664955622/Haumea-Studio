@@ -167,6 +167,12 @@ struct AgentSceneSnapshot
 	uint16 vehicleMods[VEHICLE_MOD_SLOTS];
 };
 static bool gAgentSessionActive;
+
+bool
+AgentBridgeSessionActive(void)
+{
+	return gAgentSessionActive;
+}
 static std::string gAgentSessionId;
 static std::vector<AgentSceneSnapshot> gAgentSessionSnapshot;
 static std::vector<TextDraw> gAgentTextDrawSnapshot;	// rollback restores the textdraws too

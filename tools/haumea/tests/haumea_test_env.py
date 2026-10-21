@@ -53,6 +53,8 @@ def editor_env(scratch, virtual_display=False):
     env['HAUMEA_NO_MIGRATE'] = '1'
     env.update(SOFTWARE_GL)
     env.setdefault('LP_NUM_THREADS', '2')
+    # Never look for updates, or install one, from a test.
+    env['HAUMEA_NO_UPDATE'] = '1'
     if sys.platform == 'darwin':
         env['HOME'] = config
     return env

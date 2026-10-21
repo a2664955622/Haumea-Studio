@@ -2,538 +2,935 @@
 #include "haumea.h"
 #include "version.h"
 #include "versionutil.h"
+#include "updatecore.h"
 #include "updater.h"
+#include "textdraws.h"
+#include "testserver.h"
+#include "agentbridge.h"
+#include "workspace.h"
+#include "icons.h"
+
+#include <atomic>
+#include <string>
+#include <sys/stat.h>
 
 #ifdef _WIN32
 #include <winhttp.h>
-#include <shellapi.h>
 #include <process.h>
-#include <stdio.h>
-#include <string.h>
 #pragma comment(lib, "winhttp.lib")
+#else
+#include <pthread.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
 
-// ---- State shared between background thread and main thread ----
-// Threading model: write side uses InterlockedExchange (full barrier on x86),
-// read side uses plain volatile loads. This is safe on MSVC/x86/x64 due to
-// strong hardware memory ordering — once the interlocked write publishes a flag,
-// all preceding stores (string buffers etc.) are visible to any core reading that flag.
-// Not portable to ARM or non-MSVC compilers; fine for this D3D9-only Windows app.
-//
-// Update policy: a release of this channel with a higher version, all four
-// parts compared (versionutil.h). Tags are v1.41.0.<build>-<channel>; older
-// ones v1.41.0-<channel>-<sha> count as build 0.
+// The flow: a background check reads this channel's releases; a newer one
+// shows the banner. Update now (or "download automatically") fetches
+// SHA256SUMS and this platform's bundle, checks the bundle's sha256, unpacks
+// it into <config>/update/staged and checks every file against its MANIFEST.
+// The next start (or Restart now) installs it before any window opens:
+// UpdateInstall moves only manifest files, keeping the old ones for Roll back.
+// Integrity, not authenticity (see updatecore.cpp).
 
-static volatile long gUpdateCheckDone = 0;
-static volatile long gUpdateAvailable = 0;
-static volatile long gUpdateDownloading = 0;
-static volatile long gUpdateDownloaded = 0;
-static volatile long gUpdateFailed = 0;
-static volatile long gDownloadPercent = 0;
-static char gNewVersion[64] = {};
-static char gDownloadUrl[1024] = {};
-static char gChangelog[2048] = {};
+// ---- Settings ----
 
-// ---- Helpers ----
+static bool gUpdateCheckAuto = true;
+static bool gUpdateDownloadAuto = false;
+static char gUpdateChannel[32] = HAUMEA_CHANNEL;
+static char gUpdateSkip[32];	// "Skip this version"
 
-static void
-GetExePath(char *out, int size)
+bool
+UpdaterParseSetting(const char *key, const char *value)
 {
-	GetModuleFileNameA(nil, out, size);
+	if(strcmp(key, "update_check") == 0)
+		gUpdateCheckAuto = atoi(value) != 0;
+	else if(strcmp(key, "update_download") == 0)
+		gUpdateDownloadAuto = atoi(value) != 0;
+	else if(strcmp(key, "update_channel") == 0)
+		snprintf(gUpdateChannel, sizeof(gUpdateChannel), "%s", value);
+	else if(strcmp(key, "update_skip") == 0)
+		snprintf(gUpdateSkip, sizeof(gUpdateSkip), "%s", value);
+	else
+		return false;
+	return true;
 }
 
-static void
-GetUpdatePath(char *out, int size)
+void
+UpdaterWriteSettings(FILE *f)
 {
-	char exePath[MAX_PATH] = {};
-	GetExePath(exePath, MAX_PATH);
-	snprintf(out, size, "%s.update", exePath);
+	fprintf(f, "update_check %d\n", gUpdateCheckAuto ? 1 : 0);
+	fprintf(f, "update_download %d\n", gUpdateDownloadAuto ? 1 : 0);
+	if(gUpdateChannel[0] && strcmp(gUpdateChannel, HAUMEA_CHANNEL) != 0)
+		fprintf(f, "update_channel %s\n", gUpdateChannel);
+	if(gUpdateSkip[0])
+		fprintf(f, "update_skip %s\n", gUpdateSkip);
 }
 
-// The script that swaps the binary lives in %TEMP%: the editor may sit in
-// the game folder (the old drop-in layout), and only its own exe, the
-// downloaded .update and the kept .old are ever written there.
-static void
-GetBatPath(char *out, int size)
+// ---- Paths ----
+
+static std::string
+updateDir(void)
 {
-	char temp[MAX_PATH] = {};
-	if(GetTempPathA(MAX_PATH, temp) == 0)
-		snprintf(temp, sizeof(temp), ".\\");
-	snprintf(out, size, "%shaumea_update_%lu.bat", temp, (unsigned long)GetCurrentProcessId());
+	return std::string(GetConfigDir()) + "/update";
 }
 
-static void
-GetOldPath(char *out, int size)
+static std::string
+installDir(void)
 {
-	char exePath[MAX_PATH] = {};
-	GetExePath(exePath, MAX_PATH);
-	snprintf(out, size, "%s.old", exePath);
+	char exe[1024];
+	if(!GetHaumeaExecutablePath(exe, sizeof(exe)))
+		return std::string();
+	std::string path = exe;
+	size_t slash = path.find_last_of("/\\");
+	return slash == std::string::npos ? std::string(".") : path.substr(0, slash);
 }
 
-// A downloaded update must be a Windows executable of plausible size, never
-// an error page or a zip, or installing it would leave Haumea unable to start.
+// Why this install can only be told about updates, or "" when it can update.
+static std::string
+notifyOnlyReason(const std::string &dir)
+{
+	if(UpdateBundleName() == nil)
+		return "Updates for this platform are downloaded from the release page.";
+	if(dir.empty())
+		return "Haumea can't find its own folder.";
+#ifdef __linux__
+	if(dir.compare(0, 5, "/usr/") == 0 || dir.compare(0, 5, "/opt/") == 0 || dir.compare(0, 5, "/nix/") == 0)
+		return "Haumea was installed by a package manager: update it there.";
+#endif
+	if(UpdateFileExists(dir + "/.package-managed"))
+		return "Haumea was installed by a package manager: update it there.";
+	if(!UpdateDirWritable(dir))
+		return "Haumea's folder can't be written to.";
+	return std::string();
+}
+
+// The test suite points the updater at a local release server; nothing else
+// may use plain http.
+static const char*
+testServer(void)
+{
+	const char *url = getenv("HAUMEA_UPDATE_URL");
+	return url && url[0] ? url : nil;
+}
+
+static std::string
+releaseListUrl(void)
+{
+	if(const char *test = testServer())
+		return std::string(test) + "/releases";
+	return "https://api.github.com/repos/itsneufox/haumea/releases?per_page=30";
+}
+
 static bool
-IsValidUpdateFile(const char *path)
+urlAllowed(const std::string &url)
 {
-	FILE *f = fopen(path, "rb");
-	if(f == nil)
-		return false;
-	char magic[2] = {};
-	bool ok = fread(magic, 1, 2, f) == 2 && magic[0] == 'M' && magic[1] == 'Z';
-	fseek(f, 0, SEEK_END);
-	long size = ftell(f);
-	fclose(f);
-	return ok && size > 512 * 1024;
+	if(url.compare(0, 8, "https://") == 0)
+		return true;
+	const char *test = testServer();
+	return test && url.compare(0, strlen(test), test) == 0;
 }
 
-// Apply a pending .update file: write the bat, run it, exit
+// ---- Threads ----
+
+static void
+startThread(void (*fn)(void))
+{
+#ifdef _WIN32
+	struct Trampoline {
+		static unsigned __stdcall run(void *arg){ ((void (*)(void))arg)(); return 0; }
+	};
+	HANDLE h = (HANDLE)_beginthreadex(nil, 0, Trampoline::run, (void*)fn, 0, nil);
+	if(h) CloseHandle(h);
+#else
+	struct Trampoline {
+		static void *run(void *arg){ ((void (*)(void))arg)(); return nil; }
+	};
+	pthread_t t;
+	if(pthread_create(&t, nil, Trampoline::run, (void*)fn) == 0)
+		pthread_detach(t);
+#endif
+}
+
+// ---- Downloads ----
+
+static std::atomic<long long> gDownloadedBytes(0);
+
+#ifdef _WIN32
 static bool
-ApplyPendingUpdate(void)
+httpFetch(const std::string &url, const std::string &outPath, std::string *error)
 {
-	char exePath[MAX_PATH] = {};
-	char updatePath[MAX_PATH] = {};
-	char batPath[MAX_PATH] = {};
-	GetExePath(exePath, MAX_PATH);
-	GetUpdatePath(updatePath, MAX_PATH);
-	GetBatPath(batPath, MAX_PATH);
-
-	char oldPath[MAX_PATH] = {};
-	GetOldPath(oldPath, MAX_PATH);
-
-	// Check that the .update file actually exists
-	DWORD attr = GetFileAttributesA(updatePath);
-	if(attr == INVALID_FILE_ATTRIBUTES)
-		return false;
-	if(!IsValidUpdateFile(updatePath)){
-		DeleteFileA(updatePath);
+	if(!urlAllowed(url)){
+		*error = "refusing a non-https address";
 		return false;
 	}
-
-	// Binary: the lines already end in \r\n, and text mode would make that
-	// \r\r\n, which breaks cmd's labels (goto wait).
-	FILE *bat = fopen(batPath, "wb");
-	if(!bat){
-		// Can't write bat — delete .update to avoid retry loop
-		DeleteFileA(updatePath);
+	std::wstring wurl(url.begin(), url.end());
+	URL_COMPONENTS parts = {};
+	parts.dwStructSize = sizeof(parts);
+	wchar_t host[256], path[2048];
+	parts.lpszHostName = host; parts.dwHostNameLength = 256;
+	parts.lpszUrlPath = path; parts.dwUrlPathLength = 2048;
+	wchar_t extra[1024];
+	parts.lpszExtraInfo = extra; parts.dwExtraInfoLength = 1024;
+	if(!WinHttpCrackUrl(wurl.c_str(), 0, 0, &parts)){
+		*error = "bad address " + url;
 		return false;
 	}
-	// Keep the running binary as .old, retrying while this process exits; if
-	// the new one cannot be moved in, put the old one back. Either way the
-	// .update is gone afterwards and Haumea starts again.
-	fprintf(bat, "@echo off\r\n");
-	fprintf(bat, "echo Updating Haumea Studio...\r\n");
-	fprintf(bat, "set tries=0\r\n");
-	fprintf(bat, ":wait\r\n");
-	fprintf(bat, "timeout /t 1 /nobreak >nul\r\n");
-	fprintf(bat, "if exist \"%s\" del /f /q \"%s\" >nul 2>&1\r\n", oldPath, oldPath);
-	fprintf(bat, "move /y \"%s\" \"%s\" >nul 2>&1\r\n", exePath, oldPath);
-	fprintf(bat, "if exist \"%s\" (\r\n", exePath);
-	fprintf(bat, "  set /a tries+=1\r\n");
-	fprintf(bat, "  if %%tries%% lss 15 goto wait\r\n");
-	fprintf(bat, "  goto done\r\n");
-	fprintf(bat, ")\r\n");
-	fprintf(bat, "move /y \"%s\" \"%s\" >nul 2>&1\r\n", updatePath, exePath);
-	fprintf(bat, "if not exist \"%s\" move /y \"%s\" \"%s\" >nul 2>&1\r\n", exePath, oldPath, exePath);
-	fprintf(bat, ":done\r\n");
-	fprintf(bat, "if exist \"%s\" del /f /q \"%s\" >nul 2>&1\r\n", updatePath, updatePath);
-	fprintf(bat, "start \"\" \"%s\"\r\n", exePath);
-	fprintf(bat, "del \"%%~f0\"\r\n");
-	fclose(bat);
-
-	HINSTANCE result = ShellExecuteA(nil, "open", batPath, nil, nil, SW_HIDE);
-	if((INT_PTR)result <= 32){
-		// Failed to launch — clean up to avoid retry loop on next launch
-		DeleteFileA(batPath);
-		DeleteFileA(updatePath);
-		return false;
-	}
-	exit(0);
-	return true; // not reached
-}
-
-// Extract a JSON string value for a given key (very simple, no nesting)
-static bool
-JsonGetString(const char *json, const char *key, char *out, int outsize)
-{
-	char pattern[128];
-	snprintf(pattern, sizeof(pattern), "\"%s\"", key);
-	const char *p = strstr(json, pattern);
-	if(!p) return false;
-	p += strlen(pattern);
-	// skip whitespace and colon
-	while(*p == ' ' || *p == '\t' || *p == ':' || *p == '\n' || *p == '\r') p++;
-	if(*p != '"') return false;
-	p++;
-	int i = 0;
-	while(*p && *p != '"' && i < outsize - 1){
-		// handle escaped characters
-		if(*p == '\\' && *(p+1)){
-			p++;
-			if(*p == 'n'){ out[i++] = '\n'; p++; continue; }
-			if(*p == 'r'){ p++; continue; }
-		}
-		out[i++] = *p++;
-	}
-	out[i] = '\0';
-	return i > 0;
-}
-
-// WinHTTP GET request, returns malloc'd response body (caller frees)
-static char*
-HttpGet(const wchar_t *host, const wchar_t *path, int *outSize)
-{
-	*outSize = 0;
-	HINTERNET hSession = WinHttpOpen(L"Haumea-Updater/1.0",
-		WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
+	std::wstring fullPath = std::wstring(path) + extra;
+	bool secure = parts.nScheme == INTERNET_SCHEME_HTTPS;
+	std::string ua = std::string("Haumea-Updater/") + HaumeaFullVersion();
+	std::wstring wua(ua.begin(), ua.end());
+	HINTERNET session = WinHttpOpen(wua.c_str(), WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
 		WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
-	if(!hSession) return nil;
-
-	HINTERNET hConnect = WinHttpConnect(hSession, host,
-		INTERNET_DEFAULT_HTTPS_PORT, 0);
-	if(!hConnect){
-		WinHttpCloseHandle(hSession);
-		return nil;
+	HINTERNET connect = session ? WinHttpConnect(session, host, parts.nPort, 0) : nil;
+	HINTERNET request = connect ? WinHttpOpenRequest(connect, L"GET", fullPath.c_str(), nil,
+		WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, secure ? WINHTTP_FLAG_SECURE : 0) : nil;
+	bool ok = false;
+	DWORD status = 0, statusSize = sizeof(status);
+	if(request){
+		// GitHub sends release assets through a redirect (https to https).
+		DWORD policy = WINHTTP_OPTION_REDIRECT_POLICY_DISALLOW_HTTPS_TO_HTTP;
+		WinHttpSetOption(request, WINHTTP_OPTION_REDIRECT_POLICY, &policy, sizeof(policy));
+		ok = WinHttpSendRequest(request, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
+			WinHttpReceiveResponse(request, nil) &&
+			WinHttpQueryHeaders(request, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+				WINHTTP_HEADER_NAME_BY_INDEX, &status, &statusSize, nil) && status == 200;
 	}
-
-	HINTERNET hRequest = WinHttpOpenRequest(hConnect, L"GET", path,
-		nil, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES,
-		WINHTTP_FLAG_SECURE);
-	if(!hRequest){
-		WinHttpCloseHandle(hConnect);
-		WinHttpCloseHandle(hSession);
-		return nil;
+	if(!ok)
+		*error = status ? "the server answered " + std::to_string(status) : std::string("no connection");
+	FILE *f = ok ? fopen(outPath.c_str(), "wb") : nil;
+	if(ok && f == nil){
+		*error = "can't write " + outPath;
+		ok = false;
 	}
-
-	if(!WinHttpSendRequest(hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0,
-		WINHTTP_NO_REQUEST_DATA, 0, 0, 0) ||
-	   !WinHttpReceiveResponse(hRequest, nil)){
-		WinHttpCloseHandle(hRequest);
-		WinHttpCloseHandle(hConnect);
-		WinHttpCloseHandle(hSession);
-		return nil;
-	}
-
-	// Read response
-	char *buf = nil;
-	int total = 0;
-	int capacity = 0;
-	DWORD bytesRead;
-	char tmp[4096];
-	while(WinHttpReadData(hRequest, tmp, sizeof(tmp), &bytesRead) && bytesRead > 0){
-		if(total + (int)bytesRead + 1 > capacity){
-			capacity = (total + (int)bytesRead + 1) * 2;
-			buf = (char*)realloc(buf, capacity);
+	if(ok){
+		char buf[65536];
+		DWORD got = 0;
+		for(;;){
+			if(!WinHttpReadData(request, buf, sizeof(buf), &got)){
+				ok = false;
+				*error = "the download broke off";
+				break;
+			}
+			if(got == 0)
+				break;
+			if(fwrite(buf, 1, got, f) != got){
+				ok = false;
+				*error = "can't write " + outPath;
+				break;
+			}
+			gDownloadedBytes += got;
 		}
-		memcpy(buf + total, tmp, bytesRead);
-		total += bytesRead;
+		ok = fclose(f) == 0 && ok;
 	}
-	if(buf) buf[total] = '\0';
-	*outSize = total;
-
-	WinHttpCloseHandle(hRequest);
-	WinHttpCloseHandle(hConnect);
-	WinHttpCloseHandle(hSession);
-	return buf;
+	if(request) WinHttpCloseHandle(request);
+	if(connect) WinHttpCloseHandle(connect);
+	if(session) WinHttpCloseHandle(session);
+	if(!ok)
+		remove(outPath.c_str());
+	return ok;
 }
-
-// Download a file from a full HTTPS URL, saving to disk
+#else
+// curl, run as a program: every Linux and macOS install has it, and it
+// handles proxies and certificates the way the system does.
 static bool
-HttpDownloadFile(const char *url, const char *outPath)
+httpFetch(const std::string &url, const std::string &outPath, std::string *error)
 {
-	// Parse host and path from URL like https://github.com/...
-	if(strncmp(url, "https://", 8) != 0) return false;
-	const char *hostStart = url + 8;
-	const char *pathStart = strchr(hostStart, '/');
-	if(!pathStart) return false;
-
-	int hostLen = (int)(pathStart - hostStart);
-	wchar_t whost[256] = {};
-	for(int i = 0; i < hostLen && i < 255; i++) whost[i] = hostStart[i];
-
-	int pathLen = (int)strlen(pathStart);
-	wchar_t wpath[1024] = {};
-	for(int i = 0; i < pathLen && i < 1023; i++) wpath[i] = pathStart[i];
-
-	HINTERNET hSession = WinHttpOpen(L"Haumea-Updater/1.0",
-		WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
-		WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
-	if(!hSession) return false;
-
-	HINTERNET hConnect = WinHttpConnect(hSession, whost,
-		INTERNET_DEFAULT_HTTPS_PORT, 0);
-	if(!hConnect){
-		WinHttpCloseHandle(hSession);
+	if(!urlAllowed(url)){
+		*error = "refusing a non-https address";
 		return false;
 	}
-
-	HINTERNET hRequest = WinHttpOpenRequest(hConnect, L"GET", wpath,
-		nil, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES,
-		WINHTTP_FLAG_SECURE);
-	if(!hRequest){
-		WinHttpCloseHandle(hConnect);
-		WinHttpCloseHandle(hSession);
+	bool https = url.compare(0, 8, "https://") == 0;
+	std::string ua = std::string("Haumea-Updater/") + HaumeaFullVersion();
+	std::vector<std::string> args = { "curl", "-fsSL", "--connect-timeout", "15", "--max-time", "1800",
+		"--proto", https ? "=https" : "=http", "--proto-redir", https ? "=https" : "=http",
+		"-A", ua, "-o", outPath, url };
+	std::vector<char*> argv;
+	for(std::string &a : args)
+		argv.push_back(&a[0]);
+	argv.push_back(nil);
+	remove(outPath.c_str());
+	pid_t pid = fork();
+	if(pid < 0){
+		*error = "can't start curl";
 		return false;
 	}
-
-	// Follow redirects (GitHub uses them for release assets)
-	DWORD opt = WINHTTP_OPTION_REDIRECT_POLICY_ALWAYS;
-	WinHttpSetOption(hRequest, WINHTTP_OPTION_REDIRECT_POLICY, &opt, sizeof(opt));
-
-	if(!WinHttpSendRequest(hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0,
-		WINHTTP_NO_REQUEST_DATA, 0, 0, 0) ||
-	   !WinHttpReceiveResponse(hRequest, nil)){
-		WinHttpCloseHandle(hRequest);
-		WinHttpCloseHandle(hConnect);
-		WinHttpCloseHandle(hSession);
-		return false;
+	if(pid == 0){
+		execvp("curl", argv.data());
+		_exit(127);
 	}
-
-	// Get content length for progress
-	DWORD contentLength = 0;
-	DWORD headerSize = sizeof(contentLength);
-	WinHttpQueryHeaders(hRequest,
-		WINHTTP_QUERY_CONTENT_LENGTH | WINHTTP_QUERY_FLAG_NUMBER,
-		WINHTTP_HEADER_NAME_BY_INDEX, &contentLength, &headerSize, nil);
-
-	FILE *f = fopen(outPath, "wb");
-	if(!f){
-		WinHttpCloseHandle(hRequest);
-		WinHttpCloseHandle(hConnect);
-		WinHttpCloseHandle(hSession);
-		return false;
-	}
-
-	DWORD bytesRead;
-	char tmp[8192];
-	int totalRead = 0;
-	bool ok = true;
-	while(WinHttpReadData(hRequest, tmp, sizeof(tmp), &bytesRead) && bytesRead > 0){
-		if(fwrite(tmp, 1, bytesRead, f) != bytesRead){
-			ok = false;
+	long long last = 0;
+	int status = 0;
+	for(;;){
+		pid_t done = waitpid(pid, &status, WNOHANG);
+		struct stat st;
+		if(stat(outPath.c_str(), &st) == 0 && st.st_size > last){
+			gDownloadedBytes += st.st_size - last;
+			last = st.st_size;
+		}
+		if(done == pid)
 			break;
+		if(done < 0){
+			*error = "lost curl";
+			return false;
 		}
-		totalRead += bytesRead;
-		if(contentLength > 0)
-			InterlockedExchange(&gDownloadPercent, (long)((totalRead * 100LL) / contentLength));
+		usleep(100000);
 	}
+	int code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+	if(code == 0)
+		return true;
+	remove(outPath.c_str());
+	*error = code == 127 ? "curl isn't installed" :
+		code == 22 ? "the server refused the download" :
+		code == 6 || code == 7 || code == 28 ? "no connection" : "the download failed (curl " + std::to_string(code) + ")";
+	return false;
+}
+#endif
 
-	fclose(f);
-	WinHttpCloseHandle(hRequest);
-	WinHttpCloseHandle(hConnect);
-	WinHttpCloseHandle(hSession);
+static bool
+httpGetString(const std::string &url, const std::string &tempPath, std::string *out, std::string *error)
+{
+	bool ok = httpFetch(url, tempPath, error) && UpdateReadFile(tempPath, out);
+	remove(tempPath.c_str());
 	return ok;
 }
 
-// ---- Background threads ----
+// ---- Checking, downloading, staging ----
 
-static unsigned __stdcall
-CheckThread(void *arg)
+enum UpdateStatus {
+	UPD_IDLE,
+	UPD_CHECKING,
+	UPD_UP_TO_DATE,
+	UPD_OFFLINE,
+	UPD_AVAILABLE,
+	UPD_DOWNLOADING,
+	UPD_READY,
+	UPD_FAILED,
+};
+
+// Releases larger than this, unpacked, are refused.
+static const size_t MAX_UNPACKED_BYTES = (size_t)1024 * 1024 * 1024;
+
+static int
+checkReleases(const std::string &work, const char *channel, const HaumeaVersion &current, const char *skip,
+	UpdateRelease *rel, std::string *error)
 {
-	// Query GitHub API for the latest release matching our channel:
-	// v1.41.0.<build>-<channel>, or an older v1.41.0-<channel>-<sha>.
-	wchar_t path[512];
-	swprintf(path, 512, L"/repos/itsneufox/haumea/releases?per_page=20");
+	std::string json;
+	if(!UpdateMakeDirs(work) || !httpGetString(releaseListUrl(), work + "/releases.json", &json, error))
+		return UPD_OFFLINE;
+	error->clear();
+	if(UpdatePickRelease(json, channel, current, skip, rel, error))
+		return UPD_AVAILABLE;
+	return error->empty() ? UPD_UP_TO_DATE : UPD_FAILED;
+}
 
-	int size = 0;
-	char *json = HttpGet(L"api.github.com", path, &size);
-	if(!json || size == 0){
-		InterlockedExchange(&gUpdateCheckDone, 1);
-		free(json);
-		return 0;
+static bool
+moveDir(const std::string &src, const std::string &dst)
+{
+#ifdef _WIN32
+	return MoveFileExA(src.c_str(), dst.c_str(), 0) != 0;
+#else
+	return rename(src.c_str(), dst.c_str()) == 0;
+#endif
+}
+
+// Download this platform's bundle, check it against SHA256SUMS, unpack it
+// and check it against its MANIFEST, then make it work/staged.
+static bool
+downloadAndStage(const std::string &work, const UpdateRelease &rel, std::string *error, bool *badChecksum)
+{
+	*badChecksum = false;
+	const char *bundle = UpdateBundleName();
+	const UpdateAsset *asset = bundle ? rel.Find(bundle) : nil;
+	const UpdateAsset *sumsAsset = rel.Find("SHA256SUMS");
+	if(asset == nil || sumsAsset == nil){
+		*error = "the release has no " + std::string(bundle ? bundle : "bundle") + " or SHA256SUMS";
+		return false;
 	}
-
-	// Releases of our channel with a higher version, newest first.
-	const char *p = json;
-	bool found = false;
-	int changelogLen = 0;
-	gChangelog[0] = '\0';
-
-	while((p = strstr(p, "\"tag_name\"")) != nil){
-		char tag[128] = {};
-		const char *cursor = p + 10;
-		while(*cursor == ' ' || *cursor == ':' || *cursor == '\t' || *cursor == '"') cursor++;
-		int i = 0;
-		while(*cursor && *cursor != '"' && i < 127) tag[i++] = *cursor++;
-		tag[i] = '\0';
-
-		char channel[64];
-		HaumeaVersion remote;
-		if(HaumeaTagChannel(tag, channel, sizeof(channel)) && strcmp(channel, HAUMEA_CHANNEL) == 0 &&
-		   ParseHaumeaVersion(tag, &remote)){
-			const char *ver = tag;
-			if(*ver == 'v') ver++;
-			char verClean[64] = {};
-			for(int j = 0; ver[j] && ver[j] != '-' && j < 63; j++)
-				verClean[j] = ver[j];
-
-			if(CompareHaumeaVersion(remote, HaumeaCurrentVersion()) > 0){
-				// Only grab version + download URL from the latest release
-				if(!found){
-					strncpy(gNewVersion, verClean, sizeof(gNewVersion) - 1);
-
-					// Only this release's assets: up to the next release's tag.
-					const char *releaseEnd = strstr(p + 1, "\"tag_name\"");
-					const char *assetSearch = p;
-					for(;;){
-						const char *dlUrl = strstr(assetSearch, "\"browser_download_url\"");
-						if(!dlUrl || (releaseEnd && dlUrl > releaseEnd)) break;
-						char url[1024] = {};
-						const char *u = dlUrl + 21;
-						while(*u == ' ' || *u == ':' || *u == '\t' || *u == '"') u++;
-						int k = 0;
-						while(*u && *u != '"' && k < 1023) url[k++] = *u++;
-						url[k] = '\0';
-
-						size_t urlLen = strlen(url);
-						if(urlLen >= 11 && _stricmp(url + urlLen - 11, "/haumea.exe") == 0){
-							strncpy(gDownloadUrl, url, sizeof(gDownloadUrl) - 1);
-							found = true;
-							break;
-						}
-						assetSearch = u;
-					}
-				}
-
-				// Accumulate changelog from all newer releases
-				const char *nextTag = strstr(p + 1, "\"tag_name\"");
-				const char *bodyTag = strstr(p, "\"body\"");
-				if(bodyTag && (!nextTag || bodyTag < nextTag)){
-					char bodyBuf[1024] = {};
-					JsonGetString(p, "body", bodyBuf, sizeof(bodyBuf));
-					if(bodyBuf[0]){
-						int remaining = (int)sizeof(gChangelog) - changelogLen - 1;
-						if(changelogLen > 0 && remaining > 2){
-							gChangelog[changelogLen++] = '\n';
-							gChangelog[changelogLen++] = '\n';
-							remaining -= 2;
-						}
-						int blen = (int)strlen(bodyBuf);
-						if(blen > remaining) blen = remaining;
-						if(blen > 0){
-							memcpy(gChangelog + changelogLen, bodyBuf, blen);
-							changelogLen += blen;
-							gChangelog[changelogLen] = '\0';
-						}
-					}
-				}
-			}
+	std::string downloads = work + "/download";
+	if(!UpdateMakeDirs(downloads)){
+		*error = "can't make " + downloads;
+		return false;
+	}
+	std::string sums, expected;
+	if(!httpGetString(sumsAsset->url, downloads + "/SHA256SUMS", &sums, error))
+		return false;
+	if(!UpdateSumFor(sums, bundle, &expected)){
+		*error = "SHA256SUMS doesn't list " + std::string(bundle);
+		*badChecksum = true;
+		return false;
+	}
+	std::string part = downloads + "/" + bundle + ".part";
+	gDownloadedBytes = 0;
+	if(!httpFetch(asset->url, part, error))
+		return false;
+	std::string actual;
+	if(!Sha256File(part, &actual) || actual != expected){
+		remove(part.c_str());
+		*error = "the download doesn't match SHA256SUMS";
+		*badChecksum = true;
+		return false;
+	}
+	std::string unpacked = work + "/staged.new";
+	UpdateRemoveTree(unpacked);
+	bool ok = UpdateUnpackTarGz(part, unpacked, MAX_UNPACKED_BYTES, error);
+	remove(part.c_str());
+	if(!ok)
+		return false;
+	std::vector<ManifestEntry> manifest;
+	if(!UpdateReadManifest(unpacked + "/MANIFEST", &manifest, error)){
+		UpdateRemoveTree(unpacked);
+		return false;
+	}
+	for(const ManifestEntry &e : manifest){
+		std::string hex;
+		if(!Sha256File(unpacked + "/" + e.path, &hex) || hex != e.sha256){
+			UpdateRemoveTree(unpacked);
+			*error = e.path + " doesn't match the manifest";
+			*badChecksum = true;
+			return false;
 		}
-		p = cursor;
 	}
-
-	// Write data first, then publish the flags with a barrier
-	MemoryBarrier();
-	InterlockedExchange(&gUpdateAvailable, found ? 1 : 0);
-	InterlockedExchange(&gUpdateCheckDone, 1);
-	free(json);
-	return 0;
+	// What the next start needs to know: the version and its notes.
+	if(!UpdateWriteFile(unpacked + "/.haumea-release", rel.version + "\n" + rel.pageUrl + "\n") ||
+	   !UpdateWriteFile(unpacked + "/.haumea-notes", rel.body)){
+		UpdateRemoveTree(unpacked);
+		*error = "can't write the staged update";
+		return false;
+	}
+	UpdateRemoveTree(work + "/staged");
+	if(!moveDir(unpacked, work + "/staged")){
+		UpdateRemoveTree(unpacked);
+		*error = "can't stage the update";
+		return false;
+	}
+	return true;
 }
 
-static unsigned __stdcall
-DownloadThread(void *arg)
+static std::string
+stagedVersion(const std::string &staged)
 {
-	InterlockedExchange(&gUpdateDownloading, 1);
-	InterlockedExchange(&gDownloadPercent, 0);
-
-	char exePath[MAX_PATH] = {};
-	char updatePath[MAX_PATH] = {};
-	GetExePath(exePath, MAX_PATH);
-	GetUpdatePath(updatePath, MAX_PATH);
-
-	if(HttpDownloadFile(gDownloadUrl, updatePath) && IsValidUpdateFile(updatePath)){
-		MemoryBarrier();
-		InterlockedExchange(&gUpdateDownloaded, 1);
-	}else{
-		DeleteFileA(updatePath);
-		InterlockedExchange(&gUpdateFailed, 1);
-	}
-
-	InterlockedExchange(&gUpdateDownloading, 0);
-	return 0;
+	std::string text;
+	if(!UpdateReadFile(staged + "/.haumea-release", &text))
+		return std::string();
+	return text.substr(0, text.find('\n'));
 }
 
-// ---- Public API ----
+// ---- When updating is allowed at all ----
+
+static bool
+hasArg(const char *arg)
+{
+	for(int i = 1; i < sk::args.argc; i++)
+		if(strcmp(sk::args.argv[i], arg) == 0)
+			return true;
+	return false;
+}
+
+// Only an interactive start looks for, downloads or installs updates: never
+// the tests, UI scripts, round trips or CI.
+static bool
+updatesAllowed(void)
+{
+	const char *off = getenv("HAUMEA_NO_UPDATE");
+	if(off && off[0] && strcmp(off, "0") != 0)
+		return false;
+	return !SettingsAreReadOnly() && !UiScriptActive() && !hasArg("--ui-script") &&
+		!hasArg("--textdraw-roundtrip") && !hasArg("--pawn-roundtrip");
+}
+
+// What stops Restart now (the update then waits for the next start), or nil.
+static const char*
+restartBlocker(void)
+{
+	if(PawnMapHasUnsavedChanges() || TextDrawFileHasUnsavedChanges())
+		return "Save your changes first.";
+	if(InTextDrawMode())
+		return "Leave TextDraw mode first.";
+	if(TestServerIsRunning())
+		return "Stop Test in game first.";
+	if(AgentBridgeSessionActive())
+		return "An agent edit session is open.";
+	return nil;
+}
+
+// ---- After a restart: what the previous run did ----
+
+// <config>/update/notice, written before the restart, read once:
+//   updated <new> <old>, then "local <path>" lines (files kept as .local)
+//   rolledback <from> <to>
+//   failed <message>
+static std::string gNoticeKind, gNoticeVersion, gNoticeOther, gNoticeError;
+static std::vector<std::string> gNoticeLocal;
+static std::string gNotes;	// What's new for the banner's version
+
+static void
+writeNotice(const std::string &text)
+{
+	UpdateMakeDirs(updateDir());
+	UpdateWriteFile(updateDir() + "/notice", text);
+}
+
+static void
+readNotice(void)
+{
+	std::string path = updateDir() + "/notice", text;
+	if(!UpdateReadFile(path, &text))
+		return;
+	remove(path.c_str());
+	size_t at = 0;
+	while(at < text.size()){
+		size_t eol = text.find('\n', at);
+		if(eol == std::string::npos) eol = text.size();
+		std::string line = text.substr(at, eol - at);
+		at = eol + 1;
+		size_t sp = line.find(' ');
+		std::string word = line.substr(0, sp), rest = sp == std::string::npos ? "" : line.substr(sp + 1);
+		if(word == "updated" || word == "rolledback"){
+			gNoticeKind = word;
+			size_t sp2 = rest.find(' ');
+			gNoticeVersion = rest.substr(0, sp2);
+			gNoticeOther = sp2 == std::string::npos ? "" : rest.substr(sp2 + 1);
+		}else if(word == "local")
+			gNoticeLocal.push_back(rest);
+		else if(word == "failed"){
+			gNoticeKind = word;
+			gNoticeError = rest;
+		}
+	}
+	// An "updated" notice is only this version's (not a stale one).
+	if(gNoticeKind == "updated" && gNoticeVersion != HaumeaFullVersion())
+		gNoticeKind.clear();
+	if(gNoticeKind == "updated")
+		UpdateReadFile(updateDir() + "/notes", &gNotes);
+}
+
+// ---- Startup: install what was downloaded ----
+
+void
+UpdaterInstallStaged(void)
+{
+	if(!updatesAllowed())
+		return;
+	std::string staged = updateDir() + "/staged";
+	if(!UpdateIsDirectory(staged))
+		return;
+	std::string version = stagedVersion(staged);
+	HaumeaVersion v;
+	if(!ParseHaumeaVersion(version.c_str(), &v) || CompareHaumeaVersion(v, HaumeaCurrentVersion()) <= 0){
+		UpdateRemoveTree(staged);
+		return;
+	}
+	std::string dir = installDir();
+	std::string reason = notifyOnlyReason(dir);
+	if(!reason.empty()){
+		UpdateRemoveTree(staged);
+		writeNotice("failed " + reason + "\n");
+		return;
+	}
+	std::string notes;
+	UpdateReadFile(staged + "/.haumea-notes", &notes);
+	UpdateInstallResult result;
+	std::string error;
+	if(!UpdateInstall(staged, dir, &result, &error)){
+		UpdateRemoveTree(staged);
+		writeNotice("failed " + error + "\n");
+		log("Update to %s failed: %s\n", version.c_str(), error.c_str());
+		return;
+	}
+	// The version Roll back returns to.
+	UpdateWriteFile(dir + "/.haumea-previous/VERSION", std::string(HaumeaFullVersion()) + "\n");
+	std::string notice = "updated " + version + " " + HaumeaFullVersion() + "\n";
+	for(const std::string &p : result.keptLocal)
+		notice += "local " + p + "\n";
+	writeNotice(notice);
+	UpdateWriteFile(updateDir() + "/notes", notes);
+	UpdateRemoveTree(staged);
+	log("Updated to %s; starting it\n", version.c_str());
+	ExecHaumeaInPlace();
+	log("Couldn't start the new version; it starts next time\n");
+}
+
+static std::string
+previousVersion(void)
+{
+	std::string text;
+	if(!UpdateReadFile(installDir() + "/.haumea-previous/VERSION", &text))
+		return std::string();
+	return text.substr(0, text.find('\n'));
+}
+
+// ---- The background check and download ----
+
+// The worker writes the strings, then publishes them by setting gStatus;
+// the GUI reads them only after seeing that status. One worker at a time.
+static std::atomic<int> gStatus(UPD_IDLE);
+static std::atomic<bool> gWorking(false);
+static UpdateRelease gRelease;
+static std::string gError, gNotifyOnly;
+static bool gManualCheck;		// Help > Check for updates: also say "up to date"
+static bool gBannerHidden;		// Later
+static bool gShowWhatsNew;
+
+static void
+downloadWorker(void)
+{
+	std::string error;
+	bool badChecksum;
+	bool ok = downloadAndStage(updateDir(), gRelease, &error, &badChecksum);
+	gError = error;
+	gStatus = ok ? UPD_READY : UPD_FAILED;
+	gWorking = false;
+}
+
+static void
+checkWorker(void)
+{
+	UpdateRelease rel;
+	std::string error;
+	int status = checkReleases(updateDir(), gUpdateChannel, HaumeaCurrentVersion(), gUpdateSkip, &rel, &error);
+	gRelease = rel;
+	gError = error;
+	gNotifyOnly = status == UPD_AVAILABLE ? notifyOnlyReason(installDir()) : std::string();
+	if(status == UPD_AVAILABLE && gNotifyOnly.empty() && UpdateBundleName() && !rel.Find(UpdateBundleName()))
+		gNotifyOnly = "This release has no download for this platform.";
+	// Already downloaded (the banner was put off with Later last time).
+	if(status == UPD_AVAILABLE && stagedVersion(updateDir() + "/staged") == rel.version){
+		gStatus = UPD_READY;
+		gWorking = false;
+		return;
+	}
+	if(status == UPD_AVAILABLE && gNotifyOnly.empty() && gUpdateDownloadAuto && !gManualCheck){
+		gStatus = UPD_DOWNLOADING;
+		downloadWorker();
+		return;
+	}
+	gStatus = status;
+	gWorking = false;
+}
+
+static void
+startCheck(bool manual)
+{
+	if(gWorking.exchange(true))
+		return;
+	gManualCheck = manual;
+	gBannerHidden = false;
+	gStatus = UPD_CHECKING;
+	startThread(checkWorker);
+}
+
+static void
+startDownload(void)
+{
+	if(gWorking.exchange(true))
+		return;
+	gStatus = UPD_DOWNLOADING;
+	gDownloadedBytes = 0;
+	startThread(downloadWorker);
+}
 
 void
 UpdaterCheckForUpdate(void)
 {
-	// Check for a pending .update file from a previous "Later" click
-	char updatePath[MAX_PATH] = {};
-	GetUpdatePath(updatePath, MAX_PATH);
-	DWORD attr = GetFileAttributesA(updatePath);
-	if(attr != INVALID_FILE_ATTRIBUTES){
-		ApplyPendingUpdate();
-		// If ApplyPendingUpdate fails (e.g. can't write bat), just continue
-	}
+	if(!updatesAllowed())
+		return;
+	readNotice();
+	if(gUpdateCheckAuto)
+		startCheck(false);
+}
 
-	_beginthreadex(nil, 0, CheckThread, nil, 0, nil);
+void
+UpdaterCheckNow(void)
+{
+	if(!updatesAllowed()){
+		Toast(TOAST_SELECTION, "Updates are off in this run");
+		return;
+	}
+	startCheck(true);
+}
+
+static void
+rollBack(void)
+{
+	std::string from = HaumeaFullVersion(), to = previousVersion();
+	std::string error;
+	if(!UpdateRollback(installDir(), &error)){
+		Toast(TOAST_SELECTION, "Couldn't roll back: %s", error.c_str());
+		return;
+	}
+	// Don't offer the version just left again.
+	snprintf(gUpdateSkip, sizeof(gUpdateSkip), "%s", from.c_str());
+	SaveEditorSettingsNow();
+	writeNotice("rolledback " + from + " " + to + "\n");
+	if(!RestartHaumeaKeepingArgs())
+		Toast(TOAST_SELECTION, "Rolled back to %s: restart Haumea to use it", to.c_str());
+}
+
+// ---- GUI ----
+
+static void
+whatsNewWindow(void)
+{
+	if(!gShowWhatsNew)
+		return;
+	const std::string &version = gNoticeKind == "updated" ? gNoticeVersion : gRelease.version;
+	const std::string &notes = gNoticeKind == "updated" ? gNotes : gRelease.body;
+	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 30.0f, ImGui::GetFontSize() * 24.0f), ImGuiCond_FirstUseEver);
+	char title[96];
+	snprintf(title, sizeof(title), "What's new in %s###updater_whats_new", version.c_str());
+	if(ImGui::Begin(title, &gShowWhatsNew)){
+		if(notes.empty())
+			ImGui::TextDisabled("This release has no notes.");
+		else
+			ImGui::TextWrapped("%s", notes.c_str());
+		if(!gRelease.pageUrl.empty() && version == gRelease.version)
+			ImGui::TextLinkOpenURL("Release page", gRelease.pageUrl.c_str());
+	}
+	ImGui::End();
+}
+
+static bool
+bannerBegin(const char *id)
+{
+	ImGuiIO &io = ImGui::GetIO();
+	KeepNextEditorOverlayOnMainWindow();
+	ImGui::SetNextWindowPos(EditorUiPoint(io.DisplaySize.x - 10.0f, 40.0f), ImGuiCond_Always, ImVec2(1.0f, 0.0f));
+	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 22.0f, 0));
+	return ImGui::Begin(id, nil, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+		ImGuiWindowFlags_NoFocusOnAppearing);
+}
+
+// After an update or a roll back: once, until dismissed.
+static void
+noticeBanner(void)
+{
+	if(gNoticeKind.empty())
+		return;
+	if(bannerBegin("##updater_notice")){
+		if(gNoticeKind == "updated"){
+			ImGui::Text(ICON_FA_CHECK " Updated to Haumea Studio %s", gNoticeVersion.c_str());
+			for(const std::string &p : gNoticeLocal)
+				ImGui::TextWrapped("You had changed %s: your copy is %s.local.", p.c_str(), p.c_str());
+			if(ImGui::Button("What's new"))
+				gShowWhatsNew = true;
+			ImGui::SameLine();
+		}else if(gNoticeKind == "rolledback"){
+			ImGui::Text(ICON_FA_ROTATE_LEFT " Back to Haumea Studio %s", gNoticeOther.c_str());
+			ImGui::TextDisabled("%s won't be offered again.", gNoticeVersion.c_str());
+		}else{
+			ImGui::TextWrapped(ICON_FA_TRIANGLE_EXCLAMATION " The update wasn't installed: %s", gNoticeError.c_str());
+		}
+		if(ImGui::Button("OK"))
+			gNoticeKind.clear();
+	}
+	ImGui::End();
 }
 
 void
 UpdaterDrawGui(void)
 {
-	if(!gUpdateCheckDone || !gUpdateAvailable)
+	noticeBanner();
+	whatsNewWindow();
+	int status = gStatus;
+	if(gManualCheck && (status == UPD_UP_TO_DATE || status == UPD_OFFLINE || status == UPD_FAILED)){
+		if(status == UPD_UP_TO_DATE)
+			Toast(TOAST_SELECTION, "Haumea Studio %s is up to date", HaumeaFullVersion());
+		else
+			Toast(TOAST_SELECTION, "Couldn't check for updates: %s", gError.c_str());
+		gManualCheck = false;
+		gStatus = UPD_IDLE;
 		return;
-
-	static bool dismissed = false;
-	if(dismissed) return;
-
-	ImGuiIO &io = ImGui::GetIO();
-	KeepNextEditorOverlayOnMainWindow();
-	ImVec2 windowPos = EditorUiPoint(io.DisplaySize.x - 10.0f, 10.0f);
-	ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always, ImVec2(1.0f, 0.0f));
-	ImGui::SetNextWindowSize(ImVec2(340, 0));
-
-	ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize |
-		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
-		ImGuiWindowFlags_AlwaysAutoResize;
-
-	char title[128];
-	snprintf(title, sizeof(title), "Update Available (%s)###updater", HAUMEA_CHANNEL_DISPLAY);
-
-	if(ImGui::Begin(title, nil, flags)){
-		ImGui::Text("New version: %s", gNewVersion);
-		ImGui::Text("Current: %s", HaumeaFullVersion());
-		ImGui::Text("Channel: %s", HAUMEA_CHANNEL_DISPLAY);
-
-		if(gChangelog[0]){
-			ImGui::Separator();
-			ImGui::TextWrapped("%s", gChangelog);
-		}
-
-		ImGui::Separator();
-
-		if(gUpdateDownloading){
-			ImGui::ProgressBar(gDownloadPercent / 100.0f);
-			ImGui::Text("Downloading...");
-		}else if(gUpdateDownloaded){
-			ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f),
-				"Download complete!");
-			if(ImGui::Button("Restart Now", ImVec2(-1, 0))){
-				ApplyPendingUpdate();
+	}
+	if(gBannerHidden || !(status == UPD_AVAILABLE || status == UPD_DOWNLOADING || status == UPD_READY ||
+	   (status == UPD_FAILED && !gRelease.version.empty())))
+		return;
+	if(bannerBegin("##updater")){
+		ImGui::Text(ICON_FA_BELL " Haumea Studio %s is available", gRelease.version.c_str());
+		if(status == UPD_AVAILABLE){
+			if(!gNotifyOnly.empty())
+				ImGui::TextDisabled("%s", gNotifyOnly.c_str());
+			if(ImGui::Button("What's new"))
+				gShowWhatsNew = true;
+			ImGui::SameLine();
+			if(gNotifyOnly.empty()){
+				if(ImGui::Button("Update now"))
+					startDownload();
+				ImGui::SetItemTooltip("Downloads it in the background; it installs when Haumea restarts.");
+			}else if(!gRelease.pageUrl.empty())
+				ImGui::TextLinkOpenURL("Release page", gRelease.pageUrl.c_str());
+			ImGui::SameLine();
+			if(ImGui::Button("Later"))
+				gBannerHidden = true;
+			ImGui::SameLine();
+			if(ImGui::Button("Skip this version")){
+				snprintf(gUpdateSkip, sizeof(gUpdateSkip), "%s", gRelease.version.c_str());
+				SaveEditorSettingsNow();
+				gBannerHidden = true;
 			}
-			if(ImGui::Button("Later (apply on next launch)", ImVec2(-1, 0))){
-				dismissed = true;
-			}
-		}else if(gUpdateFailed){
-			ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f),
-				"Download failed. Try again later.");
-			if(ImGui::Button("Dismiss", ImVec2(-1, 0))){
-				dismissed = true;
-			}
+		}else if(status == UPD_DOWNLOADING){
+			const UpdateAsset *asset = UpdateBundleName() ? gRelease.Find(UpdateBundleName()) : nil;
+			long long total = asset ? asset->size : 0;
+			if(total > 0)
+				ImGui::ProgressBar((float)((double)gDownloadedBytes / total));
+			else
+				ImGui::ProgressBar(-1.0f * (float)ImGui::GetTime());
+			if(ImGui::Button("Hide"))
+				gBannerHidden = true;
+			ImGui::SetItemTooltip("The download goes on; the update installs when Haumea restarts.");
+		}else if(status == UPD_READY){
+			const char *blocker = restartBlocker();
+			ImGui::BeginDisabled(blocker != nil);
+			if(ImGui::Button("Restart now") && !RestartHaumeaKeepingArgs())
+				Toast(TOAST_SELECTION, "Couldn't restart: the update installs next time");
+			ImGui::EndDisabled();
+			if(blocker)
+				ImGui::SetItemTooltip("%s The update installs the next time Haumea starts.", blocker);
+			ImGui::SameLine();
+			if(ImGui::Button("Later"))
+				gBannerHidden = true;
+			ImGui::SetItemTooltip("It installs the next time Haumea starts.");
 		}else{
-			if(ImGui::Button("Update Now", ImVec2(-1, 0))){
-				_beginthreadex(nil, 0, DownloadThread, nil, 0, nil);
-			}
-			if(ImGui::Button("Skip", ImVec2(-1, 0))){
-				dismissed = true;
-			}
+			ImGui::TextWrapped("The update failed: %s", gError.c_str());
+			if(ImGui::Button("Try again"))
+				startDownload();
+			ImGui::SameLine();
+			if(ImGui::Button("Dismiss"))
+				gBannerHidden = true;
 		}
 	}
 	ImGui::End();
 }
 
-#else
-// Non-Windows stubs
-void UpdaterCheckForUpdate(void) {}
-void UpdaterDrawGui(void) {}
-#endif
+void
+UpdaterHelpMenuItems(void)
+{
+	if(ImGui::MenuItem(ICON_FA_BELL " Check for updates", nil, false, !gWorking))
+		UpdaterCheckNow();
+	std::string dir = installDir();
+	if(!dir.empty() && UpdateCanRollback(dir)){
+		std::string prev = previousVersion();
+		char label[96];
+		snprintf(label, sizeof(label), ICON_FA_ROTATE_LEFT " Roll back to %s", prev.empty() ? "the previous version" : prev.c_str());
+		const char *blocker = restartBlocker();
+		if(ImGui::MenuItem(label, nil, false, blocker == nil))
+			rollBack();
+		ImGui::SetItemTooltip(blocker ? blocker : "Puts back the version before the last update, then restarts.");
+	}
+}
+
+void
+UpdaterPreferences(void)
+{
+	bool changed = false;
+	changed |= ImGui::Checkbox("Check for updates when Haumea starts", &gUpdateCheckAuto);
+	changed |= ImGui::Checkbox("Download updates automatically", &gUpdateDownloadAuto);
+	ImGui::SetItemTooltip("Downloads in the background; the update still installs only when Haumea restarts.");
+	static const char *channels[] = { "master", "PE", "agent-alpha" };
+	if(ImGui::BeginCombo("Channel", gUpdateChannel)){
+		for(const char *c : channels)
+			if(ImGui::Selectable(c, strcmp(c, gUpdateChannel) == 0)){
+				snprintf(gUpdateChannel, sizeof(gUpdateChannel), "%s", c);
+				changed = true;
+			}
+		ImGui::EndCombo();
+	}
+	ImGui::SetItemTooltip("Which releases to follow. This build is %s.", HAUMEA_CHANNEL);
+	if(gUpdateSkip[0]){
+		ImGui::TextDisabled("Skipping %s", gUpdateSkip);
+		ImGui::SameLine();
+		if(ImGui::SmallButton("Offer it again")){
+			gUpdateSkip[0] = '\0';
+			changed = true;
+		}
+	}
+	ImGui::TextDisabled("This is %s.", HaumeaVersionDisplay());
+	if(ImGui::Button("Check now"))
+		UpdaterCheckNow();
+	if(changed)
+		SaveEditorSettingsNow();
+}
+
+// ---- Command line (the tests) ----
+
+static std::string
+jsonString(const std::string &s)
+{
+	std::string out = "\"";
+	for(unsigned char c : s){
+		if(c == '"' || c == '\\'){ out += '\\'; out += (char)c; }
+		else if(c == '\n') out += "\\n";
+		else if(c < 0x20){ char buf[8]; snprintf(buf, sizeof(buf), "\\u%04x", c); out += buf; }
+		else out += (char)c;
+	}
+	return out + "\"";
+}
+
+static int
+writeReport(const char *path, const std::string &result, const std::string &fields)
+{
+	std::string json = "{\"result\": " + jsonString(result) + fields + "}\n";
+	if(!UpdateWriteFile(path, json)){
+		fprintf(stderr, "can't write %s\n", path);
+		return 2;
+	}
+	printf("%s", json.c_str());
+	return 0;
+}
+
+//   --update-check <work dir> <report.json>
+//       Check HAUMEA_UPDATE_URL (else GitHub) and, for a newer release,
+//       download, verify and stage it in <work dir>/staged. The version to
+//       compare with, the channel and the skipped version come from
+//       HAUMEA_UPDATE_CURRENT, HAUMEA_UPDATE_CHANNEL and HAUMEA_UPDATE_SKIP
+//       when set. result: up_to_date, offline, staged, bad_checksum, error.
+//   --update-install <staged dir> <install dir> <report.json>
+//   --update-rollback <install dir> <report.json>
+int
+UpdaterCommandLine(int argc, char **argv)
+{
+	for(int i = 1; i < argc; i++){
+		if(strcmp(argv[i], "--update-check") == 0 && i + 2 < argc){
+			std::string work = argv[i + 1];
+			const char *report = argv[i + 2];
+			HaumeaVersion current = HaumeaCurrentVersion();
+			if(const char *c = getenv("HAUMEA_UPDATE_CURRENT"))
+				ParseHaumeaVersion(c, &current);
+			const char *channel = getenv("HAUMEA_UPDATE_CHANNEL");
+			const char *skip = getenv("HAUMEA_UPDATE_SKIP");
+			UpdateRelease rel;
+			std::string error;
+			int status = checkReleases(work, channel ? channel : HAUMEA_CHANNEL, current, skip ? skip : "",
+				&rel, &error);
+			if(status != UPD_AVAILABLE)
+				return writeReport(report, status == UPD_UP_TO_DATE ? "up_to_date" :
+					status == UPD_OFFLINE ? "offline" : "error", ", \"error\": " + jsonString(error));
+			bool badChecksum;
+			std::string fields = ", \"version\": " + jsonString(rel.version);
+			if(!downloadAndStage(work, rel, &error, &badChecksum))
+				return writeReport(report, badChecksum ? "bad_checksum" : "error",
+					fields + ", \"error\": " + jsonString(error));
+			return writeReport(report, "staged", fields + ", \"staged\": " + jsonString(work + "/staged"));
+		}
+		if(strcmp(argv[i], "--update-install") == 0 && i + 3 < argc){
+			UpdateInstallResult result;
+			std::string error;
+			if(!UpdateInstall(argv[i + 1], argv[i + 2], &result, &error))
+				return writeReport(argv[i + 3], "error", ", \"error\": " + jsonString(error));
+			std::string local;
+			for(const std::string &p : result.keptLocal)
+				local += (local.empty() ? "" : ", ") + jsonString(p);
+			return writeReport(argv[i + 3], "installed", ", \"replaced\": " + std::to_string(result.replaced) +
+				", \"added\": " + std::to_string(result.added) + ", \"removed\": " + std::to_string(result.removed) +
+				", \"kept_local\": [" + local + "]");
+		}
+		if(strcmp(argv[i], "--update-rollback") == 0 && i + 2 < argc){
+			std::string error;
+			if(!UpdateRollback(argv[i + 1], &error))
+				return writeReport(argv[i + 2], "error", ", \"error\": " + jsonString(error));
+			return writeReport(argv[i + 2], "rolled_back", "");
+		}
+	}
+	return -1;
+}
