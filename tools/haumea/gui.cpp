@@ -5682,6 +5682,17 @@ uiMaterialFontPicker(ObjectMaterialOverride *material)
 	return changed;
 }
 
+// The user's fonts folder, made if it isn't there yet.
+static void
+uiOpenFontsFolder(void)
+{
+	std::string dir = GetMaterialUserFontsDir();
+	if(dir.empty())
+		return;
+	EnsureParentDirectoriesForPath((dir + "/x").c_str());
+	OpenInFileManager(dir);
+}
+
 static void
 uiMaterialTextPreview(const ObjectMaterialOverride &material)
 {
@@ -5895,7 +5906,13 @@ uiMaterialInfo(ObjectInst *inst)
 		RescanMaterialFonts();
 		RefreshMaterialTextTextures();
 	}
-	ImGui::SetItemTooltip("Searches haumea_data/fonts, the Wine prefix's Windows\\Fonts and the system font folders again.");
+	ImGui::SetItemTooltip("Searches your fonts folder, the GTA folder (SA-MP's fonts), the Wine prefix's\n"
+		"Windows\\Fonts and the system font folders again.");
+	ImGui::SameLine();
+	if(ImGui::SmallButton("Open fonts folder"))
+		uiOpenFontsFolder();
+	ImGui::SetItemTooltip("Your fonts folder: SA-MP's fonts and the free stand-ins are put there;\n"
+		"add other .ttf files to it, then Rescan fonts.");
 }
 
 
@@ -7780,6 +7797,11 @@ uiPreferencesWindow(void)
 	if(ImGui::BeginTabBar("##preferences_tabs")){
 		if(ImGui::BeginTabItem("General")){
 			uiGeneralPreferences();
+			ImGui::Spacing();
+			if(ImGui::Button("Open fonts folder"))
+				uiOpenFontsFolder();
+			ImGui::SetItemTooltip("Fonts for material text: SA-MP's own and the free stand-ins are put\n"
+				"there; add other .ttf files to it.");
 			ImGui::EndTabItem();
 		}
 		if(ImGui::BeginTabItem("Camera")){
@@ -12162,6 +12184,8 @@ gui(void)
 		static bool startupMapHandled;
 		if(!startupMapHandled){
 			startupMapHandled = true;
+			// SA-MP's fonts and the free stand-ins, into the user's fonts folder.
+			InstallBundledMaterialFonts();
 			// The workspace's 0.3.DL / open.mp custom models, map or not.
 			LoadCustomModelsForMap(nil, std::string());
 			gPawnSavePath[0] = '\0';

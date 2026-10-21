@@ -30,5 +30,9 @@ bool DescribeMaterialFont(const char *fontName, bool bold, std::string *descript
 
 // Forgets the font index so newly installed fonts are found.
 void RescanMaterialFonts(void);
+// The per-user fonts folder (SA-MP's fonts, the free substitutes, and any
+// .ttf the user adds), and putting the bundled fonts there at start.
+std::string GetMaterialUserFontsDir(void);
+void InstallBundledMaterialFonts(void);
 
 #endif

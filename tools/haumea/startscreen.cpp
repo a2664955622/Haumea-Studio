@@ -137,8 +137,8 @@ whenText(long long when)
 	return buf;
 }
 
-static void
-openInFileManager(const std::string &path)
+void
+OpenInFileManager(const std::string &path)
 {
 #ifdef _WIN32
 	ShellExecuteA(nil, "open", path.c_str(), nil, nil, SW_SHOWNORMAL);
@@ -408,7 +408,7 @@ workspaceList(void)
 		ImGui::SameLine();
 		ImGui::BeginDisabled(missing);
 		if(ImGui::Button(ICON_FA_FOLDER_OPEN "##folder"))
-			openInFileManager(w.path);
+			OpenInFileManager(w.path);
 		ImGui::EndDisabled();
 		ImGui::SetItemTooltip("Open the folder");
 		ImGui::SameLine();

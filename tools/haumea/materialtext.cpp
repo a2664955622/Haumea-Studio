@@ -274,6 +274,145 @@ scanFontDirectory(const std::string &dir, int depth, int *budget)
 #endif
 }
 
+// Font files right in dir, not in its subfolders (the GTA folder, where
+// SA-MP installs gtaweap3.ttf and sampaux3.ttf beside everything else).
+static void
+scanFontFilesIn(const std::string &dir, int *budget)
+{
+#ifdef _WIN32
+	WIN32_FIND_DATAA entry;
+	HANDLE handle = FindFirstFileA((dir + "\\*").c_str(), &entry);
+	if(handle == INVALID_HANDLE_VALUE)
+		return;
+	do{
+		if(!(entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && hasFontExtension(entry.cFileName) &&
+		   (*budget)-- > 0)
+			indexFontFile(dir + "\\" + entry.cFileName);
+	}while(FindNextFileA(handle, &entry));
+	FindClose(handle);
+#else
+	DIR *d = opendir(dir.c_str());
+	if(d == nil)
+		return;
+	std::vector<std::string> names;
+	while(dirent *ent = readdir(d))
+		names.push_back(ent->d_name);
+	closedir(d);
+	std::sort(names.begin(), names.end());
+	for(size_t i = 0; i < names.size(); i++){
+		std::string child = dir + "/" + names[i];
+		if(hasFontExtension(names[i].c_str()) && !isDirectory(child) && (*budget)-- > 0)
+			indexFontFile(child);
+	}
+#endif
+}
+
+// The per-user fonts folder: SA-MP's fonts and the free substitutes are
+// installed there from the bundle, and the user can add .ttf files.
+// HAUMEA_USER_FONTS_DIR moves it (tests).
+std::string
+GetMaterialUserFontsDir(void)
+{
+	const char *custom = getenv("HAUMEA_USER_FONTS_DIR");
+	if(custom && custom[0])
+		return custom;
+#ifdef _WIN32
+	const char *appData = getenv("APPDATA");
+	return appData && appData[0] ? std::string(appData) + "\\haumea\\fonts" : std::string();
+#elif defined(__APPLE__)
+	const char *home = getenv("HOME");
+	return home && home[0] ? std::string(home) + "/Library/Application Support/Haumea/fonts" : std::string();
+#else
+	const char *data = getenv("XDG_DATA_HOME");
+	if(data && data[0])
+		return std::string(data) + "/haumea/fonts";
+	const char *home = getenv("HOME");
+	return home && home[0] ? std::string(home) + "/.local/share/haumea/fonts" : std::string();
+#endif
+}
+
+// fonts/material beside the editor (a release), or in the source tree above
+// a developer build. HAUMEA_BUNDLED_FONTS_DIR moves it (tests).
+static std::string
+bundledFontsDir(void)
+{
+	const char *custom = getenv("HAUMEA_BUNDLED_FONTS_DIR");
+	if(custom && custom[0])
+		return custom;
+	char root[1024];
+	if(!GetEditorRootDirectory(root, sizeof(root)))
+		return "";
+	std::string dir = root;
+	for(int up = 0; up < 5; up++){
+		if(isDirectory(dir + "/fonts/material"))
+			return dir + "/fonts/material";
+		size_t slash = dir.find_last_of("/\\");
+		if(slash == std::string::npos || slash == 0)
+			break;
+		dir.resize(slash);
+	}
+	return "";
+}
+
+static long
+fileSize(const std::string &path)
+{
+	FILE *f = fopen(path.c_str(), "rb");
+	if(f == nil)
+		return -1;
+	fseek(f, 0, SEEK_END);
+	long size = ftell(f);
+	fclose(f);
+	return size;
+}
+
+void
+InstallBundledMaterialFonts(void)
+{
+	// Tests and scripts only ever write a private folder.
+	if(IsAutomatedRun() && getenv("HAUMEA_USER_FONTS_DIR") == nil)
+		return;
+	std::string from = bundledFontsDir(), to = GetMaterialUserFontsDir();
+	if(from.empty() || to.empty())
+		return;
+	std::vector<std::string> names;
+#ifdef _WIN32
+	WIN32_FIND_DATAA entry;
+	HANDLE handle = FindFirstFileA((from + "\\*.ttf").c_str(), &entry);
+	if(handle != INVALID_HANDLE_VALUE){
+		do names.push_back(entry.cFileName); while(FindNextFileA(handle, &entry));
+		FindClose(handle);
+	}
+#else
+	if(DIR *d = opendir(from.c_str())){
+		while(dirent *ent = readdir(d))
+			if(hasFontExtension(ent->d_name))
+				names.push_back(ent->d_name);
+		closedir(d);
+	}
+#endif
+	int installed = 0;
+	for(const std::string &name : names){
+		std::string src = from + "/" + name, dst = to + "/" + name;
+		// New, or changed by an update.
+		if(fileSize(dst) == fileSize(src))
+			continue;
+		EnsureParentDirectoriesForPath(dst.c_str());
+		FILE *in = fopen(src.c_str(), "rb");
+		FILE *out = in ? fopen(dst.c_str(), "wb") : nil;
+		char buffer[65536];
+		size_t n;
+		while(in && out && (n = fread(buffer, 1, sizeof(buffer), in)) > 0)
+			fwrite(buffer, 1, n, out);
+		if(in) fclose(in);
+		if(out){ fclose(out); installed++; }
+	}
+	if(installed > 0){
+		log("Material text: installed %d bundled font(s) into %s\n", installed, to.c_str());
+		gFontIndexBuilt = false;
+	}
+}
+
 static void
 addEnvironmentPath(std::vector<std::string> &dirs, const char *variable, const char *suffix)
 {
@@ -303,6 +442,11 @@ collectFontDirectories(std::vector<std::string> &dirs)
 		}
 	}
 
+	// The user's own fonts first: SA-MP's (installed from the bundle) and any
+	// they added; then Haumea's older data folder.
+	std::string user = GetMaterialUserFontsDir();
+	if(!user.empty())
+		dirs.push_back(user);
 	char path[1024];
 	if(GetHaumeaDataPath(path, sizeof(path), "fonts"))
 		dirs.push_back(path);
@@ -365,6 +509,13 @@ buildFontIndex(void)
 		scanned.push_back(dirs[i]);
 		scanFontDirectory(dirs[i], 0, &budget);
 	}
+	// SA-MP's fonts in the GTA folder itself (only its top level), and the
+	// bundled ones last: they stand in where nothing else has the font.
+	if(GetGameDir()[0])
+		scanFontFilesIn(GetGameDir(), &budget);
+	std::string bundled = bundledFontsDir();
+	if(!bundled.empty() && std::find(scanned.begin(), scanned.end(), bundled) == scanned.end())
+		scanFontFilesIn(bundled, &budget);
 
 	std::vector<std::string> seen;
 	for(size_t i = 0; i < gFontFaces.size(); i++){
