@@ -1708,8 +1708,8 @@ handleBrushTool(void)
 	if(io.WantCaptureMouse || gGizmoHovered || gGizmoUsing)
 		return;
 
-	// Cancel: MMB-click (legacy place-mode convention) or the cancel shortcut (Esc).
-	if(CPad::IsMButtonClicked(2) || ShortcutPressed(SC_CANCEL)){
+	// Cancel: a right or middle click (not a camera drag) or the cancel shortcut (Esc).
+	if(CPad::IsMButtonClicked(3) || CPad::IsMButtonClicked(2) || ShortcutPressed(SC_CANCEL)){
 		ExitBrushMode();
 		return;
 	}
@@ -1962,7 +1962,7 @@ handleTool(void)
 				ExitPrefabPlaceMode();
 			return;
 		}
-		if(CPad::IsMButtonClicked(2) || ShortcutPressed(SC_CANCEL)){
+		if(CPad::IsMButtonClicked(3) || CPad::IsMButtonClicked(2) || ShortcutPressed(SC_CANCEL)){
 			ExitPrefabPlaceMode();
 			return;
 		}
@@ -1979,7 +1979,7 @@ handleTool(void)
 				gPlaceMode = false;
 			return;
 		}
-		if(CPad::IsMButtonClicked(2) || ShortcutPressed(SC_CANCEL)){
+		if(CPad::IsMButtonClicked(3) || CPad::IsMButtonClicked(2) || ShortcutPressed(SC_CANCEL)){
 			SpawnExitPlaceMode();
 			return;
 		}
@@ -2064,6 +2064,13 @@ handleTool(void)
 			}
 		}
 	}else if(CPad::IsMButtonClicked(3)){
+		// A right-click (not a camera drag) on what Map Objects lists opens
+		// its menu; anywhere else it clears the selection.
+		if(!IsIplMapDocumentOpen()){
+			int32 code = pick();
+			if(code >= 0 && OpenViewportObjectMenu(GetInstanceByID(code)))
+				return;
+		}
 		ClearSelection();
 		Path::selectedNode = nil;
 		SAPaths::selectedNode = nil;

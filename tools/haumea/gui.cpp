@@ -2658,6 +2658,7 @@ uiWorkspaceWindow(void)
 }
 
 static void uiMaterialTexturePopup(void);
+static void uiViewportObjectMenu(void);
 
 static void
 uiMainmenu(void)
@@ -2865,6 +2866,7 @@ uiMainmenu(void)
 	uiSavePawnAsPopup();
 	// Object Info's "Browse textures", whichever panels are open.
 	uiMaterialTexturePopup();
+	uiViewportObjectMenu();
 	uiExportPawnPopup();
 	uiImportPawnPopup();
 	uiOpenReportWindow();
@@ -10639,6 +10641,7 @@ static void uiRequestGroupSelection(void) { showMapObjectsWindow = true; gOutlin
 static void
 uiOutlinerStartRename(ObjectInst *inst)
 {
+	showMapObjectsWindow = true;	// from the 3D view's menu it may be closed
 	gOutliner.renaming = inst->m_id;
 	snprintf(gOutliner.renameBuffer, sizeof(gOutliner.renameBuffer), "%s", GetObjectPawnProperties(inst)->name);
 	gOutliner.renameFocus = true;
@@ -10958,6 +10961,41 @@ uiOutlinerObjectMenu(ObjectInst *inst)
 	if(ImGui::MenuItem("Group selected...", ShortcutLabel(SC_GROUP_SELECTION))) uiRequestGroupSelection();
 	if(ImGui::MenuItem("Duplicate", ShortcutLabel(SC_DUPLICATE))) uiRunShortcut(SC_DUPLICATE);
 	if(ImGui::MenuItem(ICON_FA_TRASH " Delete", ShortcutLabel(SC_DELETE))) uiRunShortcut(SC_DELETE);
+}
+
+// The same menu on a right-click in the 3D view (handleTool opens it).
+static int gViewportMenuInstance = -1;
+static bool gOpenViewportMenu;
+
+bool
+OpenViewportObjectMenu(ObjectInst *inst)
+{
+	if(inst == nil || inst->m_isDeleted || !PawnObjectNeedsExport(inst))
+		return false;
+	if(!inst->m_selected){
+		ClearSelection();
+		inst->Select();
+	}
+	gViewportMenuInstance = inst->m_id;
+	gOpenViewportMenu = true;
+	return true;
+}
+
+static void
+uiViewportObjectMenu(void)
+{
+	if(gOpenViewportMenu){
+		ImGui::OpenPopup("##viewport_object");
+		gOpenViewportMenu = false;
+	}
+	if(!ImGui::BeginPopup("##viewport_object"))
+		return;
+	ObjectInst *inst = GetInstanceByID(gViewportMenuInstance);
+	if(inst && !inst->m_isDeleted)
+		uiOutlinerObjectMenu(inst);
+	else
+		ImGui::CloseCurrentPopup();
+	ImGui::EndPopup();
 }
 
 static void

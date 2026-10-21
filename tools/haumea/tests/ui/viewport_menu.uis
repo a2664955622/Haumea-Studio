@@ -1,0 +1,15 @@
+# Right-click on an object in the 3D view: Map Objects' menu, for it alone
+# when it wasn't selected. A right-click on nothing clears the selection.
+open "$UI_FIXTURES/ui_map.pwn"
+wait 5
+click_object model=1634
+wait 5
+assert selected == 1
+click_object model=19353 right
+wait 5
+assert selected == 1
+assert selected.texture 0 "white"
+assert item '*' 'Isolate'
+click_item '*' 'Hide'
+wait 5
+assert hidden == 1

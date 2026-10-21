@@ -682,7 +682,7 @@ MapToolsHandleViewportClick(void)
 		gPickedLine.push_back(hit);
 		return true;
 	}
-	if(CPad::IsMButtonClicked(2) || ShortcutPressed(SC_CANCEL)){
+	if(CPad::IsMButtonClicked(3) || CPad::IsMButtonClicked(2) || ShortcutPressed(SC_CANCEL)){
 		gPicking = false;
 		return true;
 	}

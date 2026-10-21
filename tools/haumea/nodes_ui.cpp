@@ -100,7 +100,7 @@ HandleNodesViewportClick(void)
 {
 	if(gMode == NODES_SELECT)
 		return false;
-	if(CPad::IsMButtonClicked(2) || ShortcutPressed(SC_CANCEL)){
+	if(CPad::IsMButtonClicked(3) || CPad::IsMButtonClicked(2) || ShortcutPressed(SC_CANCEL)){
 		gMode = NODES_SELECT;
 		return true;
 	}
