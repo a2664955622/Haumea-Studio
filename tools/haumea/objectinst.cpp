@@ -4474,6 +4474,7 @@ struct ThumbnailObject
 	int objectId;
 	float relX, relY, relZ;
 	float rotX, rotY, rotZ, rotW;
+	int elementKind;	// labels, sounds... are drawn as editor icons
 };
 static const int MAX_THUMBNAIL_OBJECTS = 256;
 static bool readMapThumbnailObjects(const char *path, std::vector<ThumbnailObject> &out);
@@ -4496,7 +4497,7 @@ renderPrefabToRaster(const char *path, rw::Raster *colorRaster, rw::Raster *dept
 			return false;
 		for(int i = 0; i < numPrefab; i++)
 			objects.push_back({ prefab[i].objectId, prefab[i].relX, prefab[i].relY, prefab[i].relZ,
-				prefab[i].rotX, prefab[i].rotY, prefab[i].rotZ, prefab[i].rotW });
+				prefab[i].rotX, prefab[i].rotY, prefab[i].rotZ, prefab[i].rotW, prefab[i].properties.elementKind });
 	}else if(!readMapThumbnailObjects(path, objects))
 		return false;
 	const ThumbnailObject *entries = objects.data();
@@ -4551,7 +4552,7 @@ renderPrefabToRaster(const char *path, rw::Raster *colorRaster, rw::Raster *dept
 	int numModels = 0, numIcons = 0;
 	for(int i = 0; i < numEntries; i++){
 		// Labels, sounds and the like are drawn as editor icons, not models.
-		if(ElementKindUsesIcon(entries[i].properties.elementKind)){
+		if(ElementKindUsesIcon(entries[i].elementKind)){
 			numIcons++;
 			continue;
 		}
@@ -4616,9 +4617,9 @@ renderPrefabToRaster(const char *path, rw::Raster *colorRaster, rw::Raster *dept
 	pDirect->setColor(0.52f, 0.52f, 0.52f);
 
 	for(int i = 0; i < numEntries; i++){
-		if(ElementKindUsesIcon(entries[i].properties.elementKind)){
+		if(ElementKindUsesIcon(entries[i].elementKind)){
 			rw::V3d at = { entries[i].relX, entries[i].relY, entries[i].relZ };
-			RenderElementIconBillboard(entries[i].properties.elementKind, at, dir, max(0.6f, radius*0.18f));
+			RenderElementIconBillboard(entries[i].elementKind, at, dir, max(0.6f, radius*0.18f));
 			continue;
 		}
 		PrefabPreviewModel *model = nil;
@@ -9648,7 +9649,7 @@ readMapThumbnailObjects(const char *path, std::vector<ThumbnailObject> &out)
 			continue;
 		rw::Quat q = pawnMakeStoredQuaternion(e.rx, e.ry, e.rz);
 		float radius = obj->m_colModel ? obj->m_colModel->boundingSphere.radius : 1.0f;
-		found.push_back({ radius, { e.objectId, e.x, e.y, e.z, q.x, q.y, q.z, q.w } });
+		found.push_back({ radius, { e.objectId, e.x, e.y, e.z, q.x, q.y, q.z, q.w, SAMP_ELEMENT_OBJECT } });
 	}
 	std::sort(found.begin(), found.end(), [](const Sized &a, const Sized &b){ return a.radius > b.radius; });
 	if(found.size() > (size_t)MAX_THUMBNAIL_OBJECTS)
