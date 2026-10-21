@@ -181,7 +181,7 @@ def run_script(name):
         env.pop('HAUMEA_GAME_DIR', None)	# no game folder known
     else:
         args[1:1] = ['--game', game, '--workspace', str(server)]
-    if name == 'startscreen_launch.uis':
+    if name in ('startscreen_launch.uis', 'rc_smoke.uis'):
         # Scripts skip it otherwise. It only shows the screen; settings still go to
         # editor_env's private config, like every script's.
         env['HAUMEA_START_SCREEN'] = '1'

@@ -1,0 +1,47 @@
+# Release-candidate smoke test from a fresh config (the runner sets
+# HAUMEA_START_SCREEN=1): the start screen makes a new workspace and opens it,
+# an object is placed and the map saved into the workspace, then reopened.
+wait 30
+assert window "Welcome to Haumea Studio"
+assert objects == 0
+click_item 'Welcome to Haumea Studio' 'New workspace...'
+wait 3
+set_item 'Welcome to Haumea Studio' '##parent' "."
+wait 3
+set_item 'Welcome to Haumea Studio' '##name' "rcsmoke"
+wait 3
+click_item 'Welcome to Haumea Studio' 'Create workspace'
+wait 5
+click_item 'Welcome to Haumea Studio' 'Open workspace'
+wait 10
+assert no_window "Welcome to Haumea Studio"
+assert objects == 0
+# Place a crate from the Object Browser
+shortcut window_browser
+wait 5
+click_item 'Object Browser' 'Objects'
+wait 3
+click_item 'Object Browser' '##search_objects'
+type "1271"
+wait 5
+click_item 'Object Browser' '##tile'
+wait 3
+click_item 'Object Browser' 'Place'
+wait 3
+click_world 2000 -3000 4
+wait 5
+key Esc
+assert objects == 1
+# Save: a new map asks for its file
+key Ctrl+S
+wait 5
+assert window "Save Pawn Map As"
+set_item 'Save Pawn Map As' 'Path' "rcsmoke/gamemodes/rc_smoke.pwn"
+close_popup
+click_item 'Save Pawn Map As' 'Save'
+wait 5
+assert file_contains "rcsmoke/gamemodes/rc_smoke.pwn" "CreateObject(1271, "
+reopen
+wait 10
+assert objects == 1
+assert pawn_contains "CreateObject(1271, "

@@ -12,3 +12,5 @@ CLAUDE.md
 build/windows-mingw/
 *.egg-info/
 tools/haumea/haumea_buildinfo.h
+build/.rc-asan.make
+rc_check_logs/
