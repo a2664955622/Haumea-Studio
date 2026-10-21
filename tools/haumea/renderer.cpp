@@ -121,6 +121,28 @@ AddToLodRenderList(ObjectInst *inst, float dist)
 		AddToRenderList(inst, dist);
 }
 
+// Past its draw distance. Player view keeps the game's: the model's (for the
+// map's elements Player view decides). The editor's view shows the game's
+// buildings to the World draw distance and the map's own objects to the Map
+// draw distance whatever their model's, while at least a pixel or so tall.
+static bool
+beyondDrawDistance(ObjectInst *inst, ObjectDef *obj, float camdist)
+{
+	float model = obj->GetLargestDrawDist()*TheCamera.m_LODmult;
+	if(gPlayerView)
+		return camdist >= model;
+	if(!IsUserMapObject(inst))
+		return camdist >= model || camdist >= gWorldDrawDistance;
+	if(camdist >= GetMapDrawDistance())
+		return true;
+	if(camdist < model || obj->m_colModel == nil)
+		return false;
+	// Projected radius in pixels.
+	float pixels = obj->m_colModel->boundingSphere.radius/camdist *
+		sk::globals.height*0.5f/TheCamera.m_rwcam->viewWindow.y;
+	return pixels < 1.5f;
+}
+
 // Don't assume there are LODs, just draw if below draw distance
 static int
 SetupVisibilitySimple(ObjectInst *inst, float *distout)
@@ -144,7 +166,7 @@ SetupVisibilitySimple(ObjectInst *inst, float *distout)
 			return VIS_INVISIBLE;
 
 		camdist = TheCamera.distanceTo(inst->m_translation);
-		if(camdist >= obj->GetLargestDrawDist()*TheCamera.m_LODmult)
+		if(beyondDrawDistance(inst, obj, camdist))
 			return VIS_INVISIBLE;
 
 		if(!gNoTimeCull && obj->m_isTimed && !IsHourInRange(obj->m_timeOn, obj->m_timeOff))
@@ -198,7 +220,7 @@ SetupVisibilityIII(ObjectInst *inst, float *distout)
 			return VIS_INVISIBLE;
 
 		camdist = TheCamera.distanceTo(inst->m_translation);
-		if(camdist >= obj->GetLargestDrawDist()*TheCamera.m_LODmult)
+		if(beyondDrawDistance(inst, obj, camdist))
 			return VIS_INVISIBLE;
 		if(camdist < obj->m_minDrawDist*TheCamera.m_LODmult)
 			if(hdobj == nil || hdobj->IsLoaded())
@@ -254,7 +276,7 @@ SetupVisibilitySA(ObjectInst *inst, float camdist)
 		if(obj->m_isHidden)
 			return VIS_INVISIBLE;
 
-		if(camdist >= obj->GetLargestDrawDist()*TheCamera.m_LODmult)
+		if(beyondDrawDistance(inst, obj, camdist))
 			return VIS_INVISIBLE;
 
 		if(!gNoTimeCull && obj->m_isTimed && !IsHourInRange(obj->m_timeOn, obj->m_timeOff))
@@ -563,6 +585,34 @@ myRenderCB(rw::Atomic *atomic)
 		atomic->getPipeline()->render(atomic);
 }
 
+// An object whose material colour took its prelighting away, as the
+// SA-MP client does: the game lights it like any dynamic object, with the
+// object ambient and the directional light, not like a building.
+void
+LitObjectRenderCB(rw::Atomic *atomic)
+{
+	if(gta::renderColourCoded){
+		myRenderCB(atomic);
+		return;
+	}
+	// As SA lights an object (gta-reversed CEntity::SetupLighting and
+	// SetLightColoursForPedsCarsAndObjects): the objects' ambient and the
+	// directional light (illumination * 0.99609375, SetLightsWithTimeOfDayColour), both
+	// times GenerateLightsAffectingObject's 1 in the open * 0.5.
+	const float lighting = 0.5f;
+	rw::RGBAf ambient = pAmbient->color, direct = pDirect->color;
+	uint32 directFlags = pDirect->getFlags();
+	rw::RGBAf object = Timecycle::GetObjectAmbient();
+	pAmbient->setColor(object.red * lighting, object.green * lighting, object.blue * lighting);
+	const float sun = lighting * 0.99609375f;
+	pDirect->setColor(direct.red * sun, direct.green * sun, direct.blue * sun);
+	pDirect->setFlags(rw::Light::LIGHTATOMICS);
+	myRenderCB(atomic);
+	pDirect->setFlags(directFlags);
+	pDirect->setColor(direct.red, direct.green, direct.blue);
+	pAmbient->setColor(ambient.red, ambient.green, ambient.blue);
+}
+
 static void
 RenderInst(ObjectInst *inst)
 {
@@ -601,6 +651,12 @@ RenderInst(ObjectInst *inst)
 	highlightColor = highlightCols[inst->m_highlight];
 	highlightAlpha = inst->m_highlight == HIGHLIGHT_SELECTION ?
 		(uint8)(gSelectionHighlightOpacity * 255 / 100) : 128;
+	// Focus my map: a grey veil over the game's buildings.
+	static rw::RGBA veil = { 120, 122, 128, 255 };
+	if(gFocusMyMap && inst->m_highlight == HIGHLIGHT_NONE && !gPlayerView && !IsUserMapObject(inst)){
+		highlightColor = veil;
+		highlightAlpha = 170;
+	}
 
 	if(obj->m_type == ObjectDef::ATOMIC)
 		((rw::Atomic*)inst->m_rwObject)->render();

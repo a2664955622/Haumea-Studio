@@ -17,6 +17,29 @@ ClampCameraFov(float fov)
 
 CCamera TheCamera;
 
+// librw's Camera::setFOV widens the view with the window's shape faster than
+// the window widens: at 32:9 it is some 160 degrees across, and at 90 degrees
+// FOV, or past about 4:1, over 180, which turns the picture and the sky inside
+// out. Up to 16:9 keep its view; wider, keep the 16:9 view's height and only
+// widen it, as the game's widescreen fixes do.
+void
+SetCameraFov(rw::Camera *cam, float fov, float aspect)
+{
+	const float wide = 16.0f/9.0f;
+	if(!(aspect > wide)){
+		cam->setFOV(fov, aspect);
+		return;
+	}
+	// librw's view window at 16:9: tan of the half width, over 16:9.
+	float half = 2.0f*atanf(tanf(fov*PI/720.0f) * wide*0.75f);
+	float height = tanf(half)/wide;
+	rw::V2d v;
+	v.set(height*aspect, height);
+	cam->setViewWindow(&v);
+	v.set(0.0f, 0.0f);
+	cam->setViewOffset(&v);
+}
+
 using rw::Quat;
 using rw::V3d;
 
@@ -70,6 +93,7 @@ CCamera::Process(void)
 			turn(DEGTORAD(dx)/2.0f*scl, DEGTORAD(dy)/2.0f*scl);
 		}
 	}
+	SetLookCursorLocked(looking);
 	// roughly 3ds max controls
 	if(!blockMouse && lookButton != 2 && CPad::IsMButtonDown(2)){
 		if(CPad::IsAltDown() && CPad::IsCtrlDown()){
@@ -182,8 +206,8 @@ CCamera::update(void)
 {
 	m_fov = ClampCameraFov(m_fov);
 	if(m_rwcam){
-		m_rwcam->setFOV(m_fov, m_aspectRatio);
-		m_rwcam_viewer->setFOV(m_fov, m_aspectRatio);
+		SetCameraFov(m_rwcam, m_fov, m_aspectRatio);
+		SetCameraFov(m_rwcam_viewer, m_fov, m_aspectRatio);
 
 		rw::Frame *f = m_rwcam->getFrame();
 		if(f){

@@ -181,7 +181,16 @@ extern bool gRenderOnlyHD;
 extern bool gRenderBackground;
 extern bool gRenderWater;
 extern bool gRenderPostFX;
-extern bool gEnableFog;
+extern bool gEnableFog;	// follows gFogMode
+// View settings: how far the editor's view reaches outside Player view (which
+// keeps the game's distances), and its fog.
+enum { FOG_GAME, FOG_LIGHT, FOG_OFF };
+extern int gFogMode;
+extern float gWorldDrawDistance;	// the game's buildings, 50-3000 m
+extern float gMapDrawDistance;	// the map's own objects, never short of the world
+extern bool gFocusMyMap;	// dims the game's buildings
+float GetMapDrawDistance(void);
+bool IsUserMapObject(ObjectInst *inst);
 extern bool gEnableTimecycleBoxes;
 extern bool gUseBlurAmb;
 extern bool gOverrideBlurAmb;
@@ -203,6 +212,7 @@ extern float gFovWheelStep;
 // 2=MMB, 3=RMB. RMB is the default; stationary clicks keep their tool actions.
 extern int gCameraLookButton;
 extern bool gCameraLooking;	// the look button is held after a press in the view
+void SetLookCursorLocked(bool locked);	// hide and hold the cursor while looking
 void SetInstIplFilterKey(ObjectInst *inst, const char *sceneName);
 
 // non-rendering things
@@ -571,6 +581,7 @@ struct GameFile
 {
 	char *name;
 	char *sourcePath;  // physical disk path for I/O, or nil for base game files
+	int8 custom;	// a map's file (pawnPathLooksCustom), -1 until asked
 	// types of files we want to have eventually:
 	//	IDE Definition
 	//	IPL Scene
@@ -1289,6 +1300,7 @@ struct ObjectInst
 	void PreRender(void);
 	void SetBaseGeometry(rw::Geometry *geometry);
 	void RefreshMaterialOverrides(void);
+	void refreshMaterialGeometry(void);
 	void RefreshVehicleColors(void);
 	void RefreshVehicleUpgrades(void);
 
@@ -1672,6 +1684,8 @@ extern CCamera TheCamera;
 bool32 instWhite(int type, uint8 *dst, uint32 numVertices, uint32 stride);
 
 void myRenderCB(rw::Atomic *atomic);
+// Atomics whose prelighting a material colour removed (renderer.cpp).
+void LitObjectRenderCB(rw::Atomic *atomic);
 
 // Neo World pipeline
 extern rw::ObjPipeline *neoWorldPipe;

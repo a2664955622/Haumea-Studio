@@ -927,11 +927,23 @@ InitRW(void)
 //	pAmbient->setColor(1.0f, 1.0f, 1.0f);
 	Scene.world->addLight(pAmbient);
 
-	rw::V3d xaxis = { 1.0f, 0.0f, 0.0f };
 	pDirect = rw::Light::create(rw::Light::DIRECTIONAL);
 	pDirect->setColor(0.8f, 0.8f, 0.8f);
 	pDirect->setFrame(rw::Frame::create());
-	pDirect->getFrame()->rotate(&xaxis, 180.0f, rw::COMBINEREPLACE);
+	{
+		// SA's light direction (CTimeCycle::m_vecDirnLightToSun, fixed): the
+		// light shines along -dir, as SetLightsWithTimeOfDayColour sets it.
+		rw::V3d dir = normalize(rw::V3d{ -0.5f, -0.5f, 0.70710678f });
+		rw::V3d right = normalize(cross(rw::V3d{ 0.0f, 0.0f, 1.0f }, dir));
+		rw::V3d up = cross(right, dir);
+		rw::Matrix m;
+		m.setIdentity();
+		m.right = up;
+		m.up = right;
+		m.at = scale(dir, -1.0f);
+		m.optimize();
+		pDirect->getFrame()->transform(&m, rw::COMBINEREPLACE);
+	}
 	Scene.world->addLight(pDirect);
 
 	TheCamera.m_rwcam = sk::CameraCreate(sk::globals.width, sk::globals.height, 1);
@@ -999,6 +1011,64 @@ SyncEditorWindowSize(void)
 	sk::Rect r = { 0, 0, width, height };
 	AppEventHandler(sk::RESIZE, &r);
 #endif
+}
+
+// While the look button is held the cursor hides and stays where it was
+// pressed: the view turns by the mouse's motion (raw where the system offers
+// it), never stopped by the screen's edge, and the cursor is back on release.
+void
+SetLookCursorLocked(bool locked)
+{
+	static bool isLocked;
+	static int savedX, savedY;
+	if(locked == isLocked){
+#if defined(_WIN32) && defined(RW_D3D9)
+		// No disabled cursor mode here: put it back after every frame's turn.
+		if(locked){
+			sk::SetMousePosition(savedX, savedY);
+			CPad::tempMouseState.x = CPad::newMouseState.x = savedX;
+			CPad::tempMouseState.y = CPad::newMouseState.y = savedY;
+		}
+#endif
+		return;
+	}
+	isLocked = locked;
+	if(locked){
+		savedX = CPad::newMouseState.x;
+		savedY = CPad::newMouseState.y;
+	}
+#ifdef LIBRW_GLFW
+	GLFWwindow *window = engineOpenParams.window ? *engineOpenParams.window : nil;
+	if(window){
+		// GLFW reports the motion as an unbounded virtual position and puts
+		// the cursor back itself when it is enabled again.
+		glfwSetInputMode(window, GLFW_CURSOR, locked ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+#ifdef GLFW_RAW_MOUSE_MOTION
+		if(glfwRawMouseMotionSupported())
+			glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, locked ? GLFW_TRUE : GLFW_FALSE);
+#endif
+	}
+#elif defined(_WIN32) && defined(RW_D3D9)
+	HWND hwnd = (HWND)engineOpenParams.window;
+	if(locked){
+		RECT r;
+		GetClientRect(hwnd, &r);
+		MapWindowPoints(hwnd, nil, (POINT*)&r, 2);
+		ClipCursor(&r);
+		while(ShowCursor(FALSE) >= 0);
+	}else{
+		ClipCursor(nil);
+		sk::SetMousePosition(savedX, savedY);
+		while(ShowCursor(TRUE) < 0);
+	}
+#endif
+	if(!locked){
+		// Where it was pressed, also for ImGui and a script's mouse.
+		sk::MouseState ms = {};
+		ms.posx = savedX;
+		ms.posy = savedY;
+		AppEventHandler(sk::MOUSEMOVE, &ms);
+	}
 }
 
 sk::EventStatus

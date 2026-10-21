@@ -825,6 +825,9 @@ normalizePersistentSettings(void)
 	Weather::interpolation = clamp(Weather::interpolation, 0.0f, 1.0f);
 	TheCamera.m_fov = ClampCameraFov(TheCamera.m_fov);
 	TheCamera.m_LODmult = clamp(TheCamera.m_LODmult, 0.5f, 3.0f);
+	gFogMode = clamp(gFogMode, (int)FOG_GAME, (int)FOG_OFF);
+	gWorldDrawDistance = clamp(gWorldDrawDistance, 50.0f, 3000.0f);
+	gMapDrawDistance = clamp(gMapDrawDistance, 50.0f, 5000.0f);
 	gFlySpeed = clamp(gFlySpeed, 0.1f, 70.0f);
 	gFlyFastMul = clamp(gFlyFastMul, 1.0f, 10.0f);
 	gFlySlowMul = clamp(gFlySlowMul, 0.05f, 1.0f);
@@ -4788,6 +4791,24 @@ uiView(void)
 	ImGui::SetItemTooltip("Off draws only the interior set on the menu bar, like the client.");
 	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10.0f);
 	ImGui::SliderFloat("Draw distance", &TheCamera.m_LODmult, 0.5f, 3.0f, "%.2fx");
+	ImGui::SetItemTooltip("How far each model shows before its low-detail version, as a\n"
+		"multiple of the game's distance.");
+	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10.0f);
+	ImGui::SliderFloat("World draw distance", &gWorldDrawDistance, 50.0f, 3000.0f, "%.0f m");
+	ImGui::SetItemTooltip("How far the game's buildings show. Player view keeps the game's.");
+	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10.0f);
+	ImGui::SliderFloat("Map draw distance", &gMapDrawDistance, 50.0f, 5000.0f, "%.0f m");
+	ImGui::SetItemTooltip("How far your map's objects show, whatever their model's draw distance,\n"
+		"and never less far than the world. Player view keeps the game's.");
+	static const char *fogModes[] = { "Game", "Light", "Off" };
+	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10.0f);
+	ImGui::Combo("Fog", &gFogMode, fogModes, IM_ARRAYSIZE(fogModes));
+	ImGui::SetItemTooltip("Game: as thick as in game, which on a clear day starts 10 m out.\n"
+		"Light: only towards the end of the world draw distance.");
+	ImGui::Checkbox("Focus my map", &gFocusMyMap);
+	ImGui::SetItemTooltip("Dims the game's buildings so your map's objects stand out.");
+	gWorldDrawDistance = clamp(gWorldDrawDistance, 50.0f, 3000.0f);
+	gMapDrawDistance = clamp(gMapDrawDistance, 50.0f, 5000.0f);
 
 	if(isSA()){
 		ImGui::SeparatorText("Player view");
@@ -4865,8 +4886,6 @@ uiView(void)
 			gColourFilter = colourFilter ? PLATFORM_PC : 0;
 		ImGui::SetItemTooltip("The PC game's time-of-day colour grading.");
 	}
-	ImGui::Checkbox("Fog", &gEnableFog);
-	ImGui::SameLine();
 	ImGui::Checkbox("Sky", &gRenderBackground);
 	ImGui::SameLine();
 	ImGui::Checkbox("Backface culling", &gDoBackfaceCulling);
@@ -6425,7 +6444,16 @@ loadSaveSettings(void)
 		}else if(strcmp(key, "render_background") == 0){
 			if(parseBoolSetting(value, &boolValue)) gRenderBackground = boolValue;
 		}else if(strcmp(key, "enable_fog") == 0){
-			if(parseBoolSetting(value, &boolValue)) gEnableFog = boolValue;
+			// Before the fog modes: off stays off.
+			if(parseBoolSetting(value, &boolValue) && !boolValue) gFogMode = FOG_OFF;
+		}else if(strcmp(key, "fog_mode") == 0){
+			parseIntSetting(value, &gFogMode);
+		}else if(strcmp(key, "world_draw_distance") == 0){
+			parseFloatSetting(value, &gWorldDrawDistance);
+		}else if(strcmp(key, "map_draw_distance") == 0){
+			parseFloatSetting(value, &gMapDrawDistance);
+		}else if(strcmp(key, "focus_my_map") == 0){
+			if(parseBoolSetting(value, &boolValue)) gFocusMyMap = boolValue;
 		}else if(strcmp(key, "enable_timecycle_boxes") == 0){
 			if(parseBoolSetting(value, &boolValue)) gEnableTimecycleBoxes = boolValue;
 		}else if(strcmp(key, "gizmo_enabled") == 0){
@@ -6707,7 +6735,10 @@ saveSaveSettings(void)
 	fprintf(f, "ps2_alpha_test %d\n", params.ps2AlphaTest ? 1 : 0);
 	fprintf(f, "alpha_ref %d\n", params.alphaRef);
 	fprintf(f, "render_background %d\n", gRenderBackground ? 1 : 0);
-	fprintf(f, "enable_fog %d\n", gEnableFog ? 1 : 0);
+	fprintf(f, "fog_mode %d\n", gFogMode);
+	fprintf(f, "world_draw_distance %.9g\n", gWorldDrawDistance);
+	fprintf(f, "map_draw_distance %.9g\n", gMapDrawDistance);
+	fprintf(f, "focus_my_map %d\n", gFocusMyMap ? 1 : 0);
 	fprintf(f, "enable_timecycle_boxes %d\n", gEnableTimecycleBoxes ? 1 : 0);
 	fprintf(f, "gizmo_enabled %d\n", gGizmoEnabled ? 1 : 0);
 	fprintf(f, "gizmo_mode %d\n", gGizmoMode);

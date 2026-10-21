@@ -2,6 +2,7 @@
 constexpr float CAMERA_FOV_MIN = 1.0f;
 constexpr float CAMERA_FOV_MAX = 90.0f;
 constexpr float CAMERA_FOV_DEFAULT = 70.0f;
+void SetCameraFov(rw::Camera *cam, float fov, float aspect);
 float ClampCameraFov(float fov);
 
 class CCamera

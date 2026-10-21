@@ -43,5 +43,7 @@ namespace Timecycle
 	void AddBox(CBox box, int farClp, int extraCol, float extraStrength, float falloff, float lodDist);
 	void Update(void);
 	void SetLights(void);
+	// The ambient the game lights objects, peds and cars with (not buildings).
+	rw::RGBAf GetObjectAmbient(void);
 	void RenderBoxes(void);
 }

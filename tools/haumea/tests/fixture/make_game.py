@@ -17,6 +17,8 @@ RW_VERSION = 0x1803FFFF	# GTA San Andreas (RW 3.6.0.3)
 # Models the tests and the test maps use, and the stand-ins Haumea draws
 # elements with: id -> (name, txd, draw distance, flags).
 OBJECTS = {
+	728: ('tree_hipoly06', 'gtatreeshi', 299, 2105348),
+	754: ('sm_des_cactiigrp', 'gta_deserttrees', 75, 2097284),
 	1215: ('bollardlight', 'metal', 40, 2097156),
 	1225: ('barrel4', 'dynbarrels', 40, 2162816),
 	1226: ('lamppost3', 'dynsigns', 62, 32896),
@@ -89,6 +91,13 @@ WORLD = [
 	(1, 3555, 'compmedhos2_LAe', 2063.132813, -1731.78125, 15.2734375, 0),
 	(2, 4206, 'PershingPool_LAn', 1479.554688, -1639.609375, 13.648438, -1),
 ]
+# Models with prelit (vertex) colours, as the game's are.
+# sm_des_cactiigrp's warm prelight: a material colour ignored, or blended
+# with the prelight, shows orange instead of the colour.
+PRELIT = {'sm_des_cactiigrp': (230, 120, 40, 255)}
+# More textures in a model's TXD, with their colours: gtatreeshi's
+# berrybush1, a dull green-brown, which maps take for SetObjectMaterial.
+EXTRA_TEXTURES = {'gtatreeshi': [('berrybush1', (110, 120, 70, 255))]}
 PARTICLE_TEXTURES = ['waterclear256', 'cloud1', 'cloud2', 'cloud3', 'cloudhilit', 'sunrays', 'coronastar',
 	'coronamoon', 'coronaringa', 'coronaheadlightline', 'coronaringb', 'lensflare1', 'lensflare2',
 	'shad_exp', 'shad_ped', 'shad_car', 'shad_bike', 'shad_heli', 'shad_rcbaron', 'waterwake',
@@ -131,8 +140,9 @@ def texture_dictionary(textures):
 	return chunk(0x16, rw_struct(struct.pack('<HH', len(textures), 2)) + natives + extension())
 
 
-def box_geometry(size, texture, centre=(0, 0, 0)):
-	"""A box with normals, UVs and one textured material, around centre."""
+def box_geometry(size, texture, centre=(0, 0, 0), prelit=None):
+	"""A box with normals, UVs and one textured material, around centre;
+	prelit: one vertex colour for every vertex."""
 	sx, sy, sz = (s / 2 for s in size)
 	cx, cy, cz = centre
 	faces = [((1, 0, 0), [(sx, -sy, -sz), (sx, sy, -sz), (sx, sy, sz), (sx, -sy, sz)]),
@@ -149,7 +159,11 @@ def box_geometry(size, texture, centre=(0, 0, 0)):
 		uvs += [(0, 0), (1, 0), (1, 1), (0, 1)]
 		tris += [(base, base + 1, base + 2), (base, base + 2, base + 3)]
 	flags = 0x02 | 0x04 | 0x10 | 0x20 | 0x40	# positions, textured, normals, light, modulate
+	if prelit:
+		flags |= 0x08
 	data = struct.pack('<IIII', flags | (1 << 16), len(tris), len(verts), 1)
+	if prelit:
+		data += bytes(prelit) * len(verts)
 	data += b''.join(struct.pack('<ff', u, v) for u, v in uvs)
 	# RW triangle order: v2, v1, material, v3
 	data += b''.join(struct.pack('<HHHH', b, a, 0, c) for a, b, c in tris)
@@ -178,9 +192,9 @@ def frame_list(names):
 	return chunk(0x0E, rw_struct(data) + exts)
 
 
-def clump(size, texture, frames=None, centre=(0, 0, 0)):
+def clump(size, texture, frames=None, centre=(0, 0, 0), prelit=None):
 	names = frames or ['root']
-	geometry = chunk(0x1A, rw_struct(struct.pack('<I', 1)) + box_geometry(size, texture, centre))
+	geometry = chunk(0x1A, rw_struct(struct.pack('<I', 1)) + box_geometry(size, texture, centre, prelit))
 	atomic = chunk(0x14, rw_struct(struct.pack('<IIII', 0, 0, 5, 0)) + extension())
 	return chunk(0x10, rw_struct(struct.pack('<III', 1, 0, 0)) + frame_list(names) + geometry + atomic + extension())
 
@@ -239,7 +253,7 @@ def main(target):
 	txds = {}
 	for model_id, (name, txd, dist, flags) in OBJECTS.items():
 		size, centre = shape_for(name)
-		img[name.lower() + '.dff'] = clump(size, name.lower(), centre=centre)
+		img[name.lower() + '.dff'] = clump(size, name.lower(), centre=centre, prelit=PRELIT.get(name.lower()))
 		txds.setdefault(txd.lower(), []).append(name.lower())
 	for model_id, (name, txd, dist, flags) in SAMP_OBJECTS.items():
 		samp_img[name.lower() + '.dff'] = clump((2, 0.2, 3), name.lower())
@@ -258,7 +272,7 @@ def main(target):
 		img[name.lower() + '.dff'] = clump((0.6, 0.4, 1.8), name.lower())
 		img[txd.lower() + '.txd'] = texture_dictionary([(name.lower(), colour_for(name))])
 	for txd, textures in txds.items():
-		img[txd + '.txd'] = texture_dictionary([(t, colour_for(t)) for t in textures])
+		img[txd + '.txd'] = texture_dictionary([(t, colour_for(t)) for t in textures] + EXTRA_TEXTURES.get(txd, []))
 	(root / 'models' / 'fixture.col').write_bytes(b''.join(collision(name, model_id, *shape_for(name))
 		for model_id, (name, txd, dist, flags) in sorted(OBJECTS.items())))
 	write_img(root / 'models' / 'gta3.img', img)
@@ -283,6 +297,13 @@ def main(target):
 	(root / 'data' / 'gta.dat').write_text('IDE DATA\\MAPS\\FIXTURE.IDE\nCOLFILE 0 MODELS\\FIXTURE.COL\n'
 	                                       'IPL DATA\\MAPS\\FIXTURE.IPL\n')
 	(root / 'data' / 'water.dat').write_text('processed\n')
+	# One clear midday for every weather and hour (8 x 23 lines), so objects
+	# the timecycle lights (material colours) aren't black: ambient, object
+	# ambient, sun, sky, ..., far clip 800, fog start 100, then 1.0 sun scale.
+	hour = ('80 80 80  120 120 120  255 255 255  90 140 200  180 200 220  255 255 255  255 200 100  '
+	        '1 1 1  100 100 100  800 100 1  200 200 200  200 200 200  90 120 130 200  '
+	        '0 0 0 0  0 0 0 0  0 0 0 1.0\n')
+	(root / 'data' / 'timecyc.dat').write_text(hour * (8 * 23))
 	# The open.mp NPC path nodes, written by the Nodes tool's own code.
 	sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 	from test_nodes_edit import write_synthetic_nodes

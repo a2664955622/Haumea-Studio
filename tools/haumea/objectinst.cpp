@@ -1238,6 +1238,19 @@ applyMaterialOverridesToGeometry(rw::Geometry *geometry, rw::Geometry *baseGeome
 {
 	if(geometry == nil)
 		return;
+	// The client sets rpGEOMETRYMODULATEMATERIALCOLOR whenever a slot has a
+	// colour, prelit or not; without it the colour is ignored and the texture
+	// shows unmultiplied (an orange leaf texture stays orange instead of the
+	// green the colour makes of it).
+	bool colourSet = false;
+	for(int i = 0; i < geometry->matList.numMaterials && i < MAX_PAWN_MATERIALS; i++)
+		if(overrides && materialSlotSetsColor(&overrides[i]))
+			colourSet = true;
+	if(colourSet)
+		geometry->flags |= rw::Geometry::MODULATE;
+	else if(baseGeometry)
+		geometry->flags = (geometry->flags & ~rw::Geometry::MODULATE) |
+			(baseGeometry->flags & rw::Geometry::MODULATE);
 	for(int i = 0; i < geometry->matList.numMaterials; i++){
 		rw::Material *dst = geometry->matList.materials[i];
 		rw::Material *base = baseGeometry && i < baseGeometry->matList.numMaterials
@@ -2192,8 +2205,47 @@ ObjectInst::SetBaseGeometry(rw::Geometry *geometry)
 		RefreshMaterialOverrides();
 }
 
+// A geometry whose prelighting a material colour removed can't go through
+// the building pipeline, which colours vertices only from prelighting and
+// would leave it lit by the ambient alone: the default pipeline lights it,
+// with the directional light, as the game lights objects. The switch only
+// happens with a fresh private copy (or the return to the base geometry), so
+// a geometry is never instanced by one pipeline and drawn by the other.
+static void
+setMaterialPipeline(rw::Atomic *atomic, bool privateCopy)
+{
+	if(atomic == nil || atomic->geometry == nil)
+		return;
+	// Only a private copy can lose its prelighting; the shared base geometry
+	// stays with the building pipeline that instanced it.
+	bool lit = privateCopy && !(atomic->geometry->flags & rw::Geometry::PRELIT);
+	if(lit && atomic->renderCB != LitObjectRenderCB){
+		atomic->pipeline = nil;
+		gta::setPipelineID(atomic, 0);
+		atomic->setRenderCB(LitObjectRenderCB);
+	}else if(!lit && atomic->renderCB == LitObjectRenderCB){
+		SetupBuildingPipe(atomic);
+		atomic->setRenderCB(myRenderCB);
+	}
+}
+
 void
 ObjectInst::RefreshMaterialOverrides(void)
+{
+	refreshMaterialGeometry();
+	ObjectDef *obj = GetObjectDef(m_objectId);
+	if(obj == nil || m_rwObject == nil)
+		return;
+	if(obj->m_type == ObjectDef::ATOMIC){
+		rw::Atomic *atomic = (rw::Atomic*)m_rwObject;
+		setMaterialPipeline(atomic, m_materialCustomGeometry && atomic->geometry == m_materialCustomGeometry);
+	}else
+		FORLIST(lnk, ((rw::Clump*)m_rwObject)->atomics)
+			setMaterialPipeline(rw::Atomic::fromClump(lnk), m_materialGeometryApplied);
+}
+
+void
+ObjectInst::refreshMaterialGeometry(void)
 {
 	ObjectDef *obj = GetObjectDef(m_objectId);
 	if(obj == nil || m_rwObject == nil)
@@ -6362,6 +6414,21 @@ IsPawnWorldObject(ObjectInst *inst)
 	if(inst->m_file == nil || inst->m_file->name == nil)
 		return true;
 	return !pawnPathLooksCustom(inst->m_file->name);
+}
+
+// The map's own objects, the opposite of IsPawnWorldObject, cheap enough
+// for every instance every frame: a file's answer is kept.
+bool
+IsUserMapObject(ObjectInst *inst)
+{
+	if(inst->m_isVehicle || inst->m_isAdded || !inst->m_savedStateValid)
+		return true;
+	GameFile *file = inst->m_file;
+	if(file == nil || file->name == nil)
+		return false;
+	if(file->custom < 0)
+		file->custom = pawnPathLooksCustom(file->name);
+	return file->custom != 0;
 }
 
 bool

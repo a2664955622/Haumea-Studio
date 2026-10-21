@@ -82,6 +82,16 @@ bool gRenderBackground = true;
 bool gRenderWater = true;
 bool gRenderPostFX = true;
 bool gEnableFog = true;
+int gFogMode = FOG_LIGHT;
+float gWorldDrawDistance = 1000.0f;
+float gMapDrawDistance = 2000.0f;
+bool gFocusMyMap;
+
+float
+GetMapDrawDistance(void)
+{
+	return max(gMapDrawDistance, gWorldDrawDistance);
+}
 bool gEnableTimecycleBoxes = true;
 bool gUseBlurAmb = gRenderPostFX;
 bool gOverrideBlurAmb = true;
@@ -3407,10 +3417,24 @@ Draw(void)
 
 	UpdateDayNightBalance();
 
-	TheCamera.m_rwcam->setFarPlane(max(Timecycle::currentColours.farClp, 500.0f));
-	TheCamera.m_rwcam->fogPlane = Timecycle::currentColours.fogSt;
+	// Player view keeps the game's far clip; the editor's view reaches the
+	// View settings' distances. Fog ends where the view does: Game fog starts
+	// where the game's does (10 m on a clear midday), Light only well out.
+	float farPlane = max(Timecycle::currentColours.farClp, 500.0f);
+	float world = Timecycle::currentColours.farClp;
+	if(!gPlayerView){
+		farPlane = GetMapDrawDistance();
+		world = gWorldDrawDistance;
+	}
+	float fogStart = Timecycle::currentColours.fogSt;
+	if(gFogMode == FOG_LIGHT)
+		fogStart = max(fogStart, world*0.6f);
+	fogStart = min(fogStart, farPlane*0.95f);
+	gEnableFog = gFogMode != FOG_OFF;
+	TheCamera.m_rwcam->setFarPlane(farPlane);
+	TheCamera.m_rwcam->fogPlane = fogStart;
 	TheCamera.m_rwcam_viewer->setFarPlane(5000.0f);
-	TheCamera.m_rwcam_viewer->fogPlane = Timecycle::currentColours.fogSt;
+	TheCamera.m_rwcam_viewer->fogPlane = fogStart;
 
 	CPad::UpdatePads();
 	// TextDraw mode: no world, no camera moves, no map editing.

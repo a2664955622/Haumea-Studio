@@ -48,8 +48,15 @@ the game folder without asking. For command-line options, see
 ## Moving around
 
 Hold the right mouse button in the 3D view to look around, and while it's held fly with
-`W`/`A`/`S`/`D` (`Shift` faster, `Alt` slower). Middle-drag pans and the wheel zooms. The
-look button can be changed in **Preferences → Camera**.
+`W`/`A`/`S`/`D` (`Shift` faster, `Alt` slower). The cursor hides while you look and comes
+back where it was. Middle-drag pans and the wheel zooms. The look button can be changed in
+**Preferences → Camera**.
+
+How far you see is set in the **View** window (**Windows → View**): **World draw distance**
+for the game's buildings, **Map draw distance** for your map's own objects (they show that
+far whatever their model's draw distance), and **Fog** (Game is as thick as in game, Light
+only far out). **Focus my map** dims the game's buildings. Player view (`P`) always uses the
+game's distances.
 
 ## Placing objects
 

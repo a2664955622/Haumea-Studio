@@ -120,7 +120,22 @@ run Map Check and Test in game, and grab frames with the panels.
   (slow). On their own the keys are shortcuts, so `W`, `E` and `D` never move
   the view. It works with the mouse on the gizmo too, and a hold spent flying
   doesn't open the right-click menu. (The button is the look button in
-  **Preferences → Camera**.)
+  **Preferences → Camera**.) While it's held the cursor hides and stays put,
+  so a turn never stops at the screen's edge, and it's back where it was on
+  release.
+- **See your whole map**: the **View** window has **World draw distance** (50
+  to 3000 m) and **Map draw distance** (your map's own objects, 2000 m by
+  default, whatever their model's draw distance, and never less far than the
+  world), with **Fog** Game, Light (the default) or Off. The game's fog starts
+  10 m out on a clear midday, which made everything past a few metres look
+  faded. **Focus my map** dims the game's buildings. Player view keeps the
+  game's distances. Remembered between sessions.
+- **Material colours look as in game**: an object retextured with a colour
+  (`SetObjectMaterial`, `SetDynamicObjectMaterial`) is tinted by it and lit as
+  the SA-MP client lights it, instead of keeping its prelighting (a green
+  tint came out orange) or turning black.
+- **Ultrawide screens** (21:9, 32:9) show the world and the sky as wide as
+  the screen, without stretching or gaps in the sky.
 - **Version numbers as open.mp has them**: 1.0.0 plus a build number, e.g.
   1.0.0.57 (the commit count), with the commit next to it in About, the title
   bar and `haumea --version`. Releases come in two channels, production and

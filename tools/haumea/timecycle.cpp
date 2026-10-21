@@ -1132,6 +1132,16 @@ Update(void)
 	gNeoLightMapStrength = currentColours.lightMapIntensity;
 }
 
+rw::RGBAf
+GetObjectAmbient(void)
+{
+	// SA and VC have an ambient of their own for objects; III uses the one.
+	const rw::RGBAf &obj = currentColours.amb_obj;
+	if(params.timecycle != GAME_III && (obj.red > 0.0f || obj.green > 0.0f || obj.blue > 0.0f))
+		return obj;
+	return currentColours.amb;
+}
+
 void
 SetLights(void)
 {

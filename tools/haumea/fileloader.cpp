@@ -26,6 +26,7 @@ NewGameFile(char *path)
 	f->name = strdup(path);
 	const char *src = ModloaderGetSourcePath(path);
 	f->sourcePath = src ? strdup(src) : nil;
+	f->custom = -1;
 	return f;
 }
 
