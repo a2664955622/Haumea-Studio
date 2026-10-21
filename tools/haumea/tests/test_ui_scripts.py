@@ -144,6 +144,9 @@ class UiScriptTests(unittest.TestCase):
             os.kill(pid, signal.SIGKILL)
         self.assertEqual(left, [], 'a test server was still running after the script')
         self.assertEqual(result.returncode, 0, log or result.stdout[-3000:] + result.stderr[-2000:])
+        if sys.platform.startswith('linux') and 'GLFW platform:' in result.stdout:
+            # The editor must have been in xvfb-run's X server, not on the desktop's Wayland.
+            self.assertIn('GLFW platform: X11', result.stdout)
 
 
 def add_script_test(path):
