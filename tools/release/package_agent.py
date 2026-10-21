@@ -58,6 +58,11 @@ if a.wheelhouse:
     shutil.copy2(root / 'tools/release/missing_wheels.py', stage / 'missing_wheels.py')
 # The editor's Windows > Namaka panel installs with this.
 shutil.copy2(root / 'tools/release/namaka_install.py', stage / 'namaka_install.py')
+# GPL-2.0-or-later: the licence and the third-party notices go in every bundle.
+for notice in ('LICENSE', 'THIRD_PARTY_NOTICES.md'):
+    if not (root / notice).is_file():
+        raise SystemExit(f'{notice} is missing: every bundle ships it')
+    shutil.copy2(root / notice, stage / notice)
 if a.glfw:
     lib = stage / 'lib'; lib.mkdir()
     bundled = lib / 'libglfw.3.dylib'

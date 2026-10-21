@@ -37,6 +37,11 @@ stage.mkdir()
 
 shutil.copy2(wheel, stage / wheel.name)
 shutil.copy2(root / 'tools/release/setup-agent.ps1', stage / 'setup-agent.ps1')
+# GPL-2.0-or-later: the licence and the third-party notices go in every bundle.
+for notice in ('LICENSE', 'THIRD_PARTY_NOTICES.md'):
+    if not (root / notice).is_file():
+        raise SystemExit(f'{notice} is missing: every bundle ships it')
+    shutil.copy2(root / notice, stage / notice)
 shutil.copy2(root / 'tools/release/NAMAKA_WINDOWS_README.md', stage / 'README.md')
 if args.engine:
     shutil.copy2(args.engine, stage / 'haumea.exe')

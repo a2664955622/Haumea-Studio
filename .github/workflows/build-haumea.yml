@@ -459,6 +459,8 @@ jobs:
           python3 haumea/tools/release/gen_buildinfo.py --python haumea/tools/agent/_version.py
           uv build --wheel -o dist/wheel haumea
           haumea/tools/release/fetch_wheelhouse.sh linux dist/wheelhouse
+          # Every bundled package is credited (GPL release; THIRD_PARTY_NOTICES.md).
+          python3 haumea/tools/release/check_notices.py dist/wheelhouse haumea/THIRD_PARTY_NOTICES.md
 
       # Artifacts lose the executable bit; package_agent.py keeps the mode.
       - name: Package the bundle
@@ -568,6 +570,8 @@ jobs:
           python3 haumea/tools/release/gen_buildinfo.py --python haumea/tools/agent/_version.py
           uv build --wheel -o dist/wheel haumea
           haumea/tools/release/fetch_wheelhouse.sh windows dist/wheelhouse
+          # Every bundled package is credited (GPL release; THIRD_PARTY_NOTICES.md).
+          python3 haumea/tools/release/check_notices.py dist/wheelhouse haumea/THIRD_PARTY_NOTICES.md
 
       # Python 3.14 installs from the wheelhouse alone; the others have their
       # pins there and download only their binary wheels.
@@ -673,6 +677,14 @@ jobs:
       - name: Make the update bundles and SHA256SUMS
         run: |
           mkdir -p dist/release dist/linux-bundle
+          # GPL-2.0-or-later: every bundle carries the licence and the notices
+          # for what it includes (in its MANIFEST like any shipped file).
+          for f in LICENSE THIRD_PARTY_NOTICES.md; do
+            if [ ! -s "haumea/$f" ]; then
+              echo "::error::$f is missing: every release bundle ships it"; exit 1
+            fi
+            cp "haumea/$f" dist/linux-bundle/ && cp "haumea/$f" dist/windows/
+          done
           install -m 755 dist/linux/haumea dist/linux-bundle/haumea
           cp -r haumea/fonts dist/linux-bundle/fonts
           cp -r haumea/tools/haumea/prefabs dist/linux-bundle/prefabs
@@ -689,6 +701,12 @@ jobs:
           }
           stage_namaka dist/namaka/haumea-namaka-linux-x86_64/Haumea-Namaka-linux-x86_64.zip dist/linux-bundle
           stage_namaka dist/namaka/haumea-namaka-windows-x86_64/Haumea-Namaka-windows-x86_64.zip dist/windows
+          for zip in dist/namaka/*/Haumea-Namaka-*.zip; do
+            for f in LICENSE THIRD_PARTY_NOTICES.md; do
+              python3 -c 'import sys, zipfile; sys.exit(not any(n.endswith("/" + sys.argv[2]) for n in zipfile.ZipFile(sys.argv[1]).namelist()))' "$zip" "$f" ||
+                { echo "::error::$zip has no $f"; exit 1; }
+            done
+          done
           cp dist/namaka/haumea-namaka-linux-x86_64/Haumea-Namaka-linux-x86_64.zip \
             dist/release/haumea-namaka-linux-x86_64.zip
           cp dist/namaka/haumea-namaka-windows-x86_64/Haumea-Namaka-windows-x86_64.zip \
@@ -711,6 +729,9 @@ jobs:
             echo "Haumea Studio $version, channel **${{ steps.plan.outputs.channel }}**"
             echo
             python3 haumea/tools/release/changelog_section.py "${version%.*}" haumea/CHANGELOG.md || true
+            echo
+            echo "Haumea Studio is free software under the GNU General Public License, version 2 or later."
+            echo "Source code: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/tree/${{ steps.plan.outputs.tag }}"
           } > dist/notes.md
           cat dist/notes.md
 
