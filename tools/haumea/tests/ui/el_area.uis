@@ -28,7 +28,10 @@ release Ctrl
 wait 3
 assert selected == 3
 shortcut window_object_info
-wait 10
+wait 20
+# Under World & streaming, closed until opened.
+click_item 'Object Info' 'World & streaming'
+wait 5
 click_item 'Object Info' 'Only inside area'
 wait 3
 click_item '*' 'area'
