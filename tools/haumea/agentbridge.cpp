@@ -2111,36 +2111,65 @@ handleRadarArt(const std::string &requestId, std::map<std::string, std::string> 
 {
 	RadarArtParams params;
 	RadarArtDefaults(&params);
-	auto text = [&](const char *key){ return f.count(key) ? lowercase(f[key].c_str()) : std::string(); };
+	// Every key is checked: a typo or a value that doesn't parse is an
+	// error, not a default the agent didn't ask for.
+	static const char *keys[] = { "ids", "group", "cell", "fit", "colours", "colour", "num_colours", "alpha",
+		"outline", "outline_colour", "height_shading", "height_levels", "zone_mode", "out_group", "replace", "apply" };
+	std::string error;
+	for(std::map<std::string, std::string>::iterator it = f.begin(); it != f.end() && error.empty(); ++it)
+		if(std::find(std::begin(keys), std::end(keys), it->first) == std::end(keys))
+			error = "radar_art: unknown key " + it->first;
+	auto bad = [&](const char *key, const char *expects){
+		if(error.empty())
+			error = std::string("radar_art: ") + key + " expects " + expects;
+	};
+	auto number = [&](const char *key, float *out, const char *expects){
+		float v;
+		if(f.count(key) && (parseFloat(f[key], &v) ? (*out = v, false) : true))
+			bad(key, expects);
+	};
+	auto integer = [&](const char *key, int *out, int lo, int hi, const char *expects){
+		int v;
+		if(f.count(key) && (parseInt(f[key], &v) && v >= lo && v <= hi ? (*out = v, false) : true))
+			bad(key, expects);
+	};
+	auto boolean = [&](const char *key, bool *out){
+		bool v;
+		if(f.count(key) && (parseBoolField(f[key], &v) ? (*out = v, false) : true))
+			bad(key, "true or false");
+	};
 	auto colour = [&](const char *key, uint32 *out){
 		uint32 c;
-		if(!f.count(key)) return true;
-		if(!parseRgbaField(f[key], &c)) return false;
-		*out = c & 0xFFFFFF00;	// 0xRRGGBBAA; the alpha is opacity
-		return true;
+		if(f.count(key) && (parseRgbaField(f[key], &c) ? (*out = c & 0xFFFFFF00, false) : true))
+			bad(key, "0xRRGGBBAA (the alpha is ignored; use alpha)");
 	};
-	float value;
-	bool b;
-	std::string error;
-	if(f.count("cell") && parseFloat(f["cell"], &value))
-		params.cellSize = value;
-	std::string colours = text("colours");
-	if(colours == "one") params.colourMode = RADAR_COLOUR_ONE;
-	else if(colours == "group") params.colourMode = RADAR_COLOUR_GROUP;
-	else if(colours == "texture" || colours.empty()) params.colourMode = RADAR_COLOUR_TEXTURE;
-	else error = "colours: one, group or texture";
-	if(!colour("colour", &params.colour) || !colour("outline_colour", &params.outlineColour))
-		error = "colour and outline_colour are 0xRRGGBBAA (the alpha is ignored; use alpha)";
-	if(f.count("num_colours") && parseFloat(f["num_colours"], &value)) params.numColours = clamp((int)value, 1, 64);
-	if(f.count("alpha") && parseFloat(f["alpha"], &value)) params.alpha = clamp((int)value, 0, 255);
-	if(f.count("outline") && parseBoolField(f["outline"], &b)) params.outline = b;
-	if(f.count("height_shading") && parseBoolField(f["height_shading"], &b)) params.heightShading = b;
-	if(f.count("height_levels") && parseFloat(f["height_levels"], &value)) params.heightLevels = clamp((int)value, 2, 16);
-	if(f.count("replace") && parseBoolField(f["replace"], &b)) params.replace = b;
-	std::string mode = text("zone_mode");
-	if(mode == "player") params.zoneMode = SAMP_ZONE_PLAYER;
-	else if(mode == "streamed") params.zoneMode = SAMP_ZONE_STREAMED;
-	else if(!mode.empty() && mode != "global") error = "zone_mode: global, player or streamed";
+	number("cell", &params.cellSize, "metres, 0.5 to 1000");
+	int fit = 0;
+	integer("fit", &fit, 1, 20000, "a zone count, 1 to 20000");
+	if(f.count("colours")){
+		std::string c = lowercase(f["colours"].c_str());
+		if(c == "one") params.colourMode = RADAR_COLOUR_ONE;
+		else if(c == "group") params.colourMode = RADAR_COLOUR_GROUP;
+		else if(c == "texture") params.colourMode = RADAR_COLOUR_TEXTURE;
+		else bad("colours", "one, group or texture");
+	}
+	colour("colour", &params.colour);
+	colour("outline_colour", &params.outlineColour);
+	integer("num_colours", &params.numColours, 1, 64, "1 to 64");
+	integer("alpha", &params.alpha, 0, 255, "0 to 255");
+	integer("height_levels", &params.heightLevels, 2, 16, "2 to 16");
+	boolean("outline", &params.outline);
+	boolean("height_shading", &params.heightShading);
+	boolean("replace", &params.replace);
+	bool apply = true;
+	boolean("apply", &apply);
+	if(f.count("zone_mode")){
+		std::string mode = lowercase(f["zone_mode"].c_str());
+		if(mode == "global") params.zoneMode = SAMP_ZONE_GLOBAL;
+		else if(mode == "player") params.zoneMode = SAMP_ZONE_PLAYER;
+		else if(mode == "streamed") params.zoneMode = SAMP_ZONE_STREAMED;
+		else bad("zone_mode", "global, player or streamed");
+	}
 	if(f.count("out_group"))
 		snprintf(params.outGroup, sizeof(params.outGroup), "%s", decodeAgentText(f["out_group"]).c_str());
 	if(f.count("group")){
@@ -2170,14 +2199,12 @@ handleRadarArt(const std::string &requestId, std::map<std::string, std::string> 
 		for(size_t i = 0; i < objs.size(); i++)
 			objs[i]->Select();
 	}
-	if(f.count("fit") && parseFloat(f["fit"], &value) &&
-	   !RadarArtFitCellSize(params, (int)value, &params.cellSize, &error)){
+	if(fit > 0 && !RadarArtFitCellSize(params, fit, &params.cellSize, &error)){
 		ClearSelection();
 		writeError(requestId, error.c_str());
 		return;
 	}
 	RadarArtResult result;
-	bool apply = !(f.count("apply") && parseBoolField(f["apply"], &b)) || b;
 	bool ok = RadarArtBuild(params, &result, &error);
 	int made = 0;
 	if(ok && apply){

@@ -410,10 +410,15 @@ class HaumeaService:
 		if op not in self.MAP_TOOL_OPS:
 			raise ValueError(f"op must be one of {', '.join(self.MAP_TOOL_OPS)}")
 		ids = [int(i) for i in (ids or [])]
-		radar = params.pop("radar_art", None) or {}
+		radar = params.pop("radar_art", None)
+		if radar is not None and op != "radar_art":
+			raise ValueError("radar_art is only for op='radar_art'")
 		if op == "radar_art":
-			params.update(radar)
-		elif op != "lay_along":
+			others = sorted(key for key, value in params.items() if value is not None)
+			if others:
+				raise ValueError(f"op='radar_art' takes its settings in radar_art, not {', '.join(others)}")
+			return self._radar_art(ids, radar or {})
+		if op != "lay_along":
 			if not ids:
 				raise ValueError("ids: the objects to work on; the first is the reference")
 			if op != "relative":
@@ -437,6 +442,51 @@ class HaumeaService:
 				raise ValueError(f"invalid {key}")
 			lines.append(f"{key}={text}")
 		return self.engine("maptool", [op, *lines])
+
+	# map_tool radar_art's settings: kind of value each takes.
+	RADAR_ART_KEYS = {"cell": "number", "fit": "count", "colours": ("one", "group", "texture"),
+	                  "colour": "colour", "num_colours": "count", "alpha": "count",
+	                  "outline": "bool", "outline_colour": "colour", "height_shading": "bool",
+	                  "height_levels": "count", "zone_mode": ("global", "player", "streamed"),
+	                  "group": "text", "out_group": "text", "replace": "bool", "apply": "bool"}
+
+	def _radar_art(self, ids: list[int], settings: dict) -> dict:
+		lines = [f"ids={','.join(map(str, ids))}"] if ids else []
+		for key, value in settings.items():
+			kind = self.RADAR_ART_KEYS.get(str(key))
+			if kind is None:
+				raise ValueError(f"radar_art: unknown key {key!r}; keys: {', '.join(self.RADAR_ART_KEYS)}")
+			if kind == "bool":
+				if not isinstance(value, bool):
+					raise ValueError(f"radar_art: {key} expects true or false")
+				text = "1" if value else "0"
+			elif kind in ("number", "count"):
+				if isinstance(value, bool) or not isinstance(value, (int, float)) or \
+				   (kind == "count" and float(value) != int(value)):
+					raise ValueError(f"radar_art: {key} expects {'a number' if kind == 'number' else 'a whole number'}")
+				text = f"{value:g}" if kind == "number" else str(int(value))
+			elif kind == "colour":
+				if isinstance(value, bool) or not isinstance(value, (int, str)):
+					raise ValueError(f"radar_art: {key} expects 0xRRGGBBAA")
+				text = f"0x{value:08X}" if isinstance(value, int) else value.strip()
+			elif kind == "text":
+				text = self._material_field(str(value), key)
+			else:
+				text = str(value).strip().lower()
+				if text not in kind:
+					raise ValueError(f"radar_art: {key} expects {', '.join(kind)}")
+			if "\n" in text:
+				raise ValueError(f"invalid {key}")
+			lines.append(f"{key}={text}")
+		# replace deletes the out group's zones: not when they are locked.
+		if settings.get("replace", True) and settings.get("apply", True):
+			out_group = str(settings.get("out_group", "radar art"))
+			old = [item["instance_id"] for item in self.enumerate_scene()
+			       if item.get("kind") == "gangzone" and (item.get("properties") or {}).get("group") == out_group]
+			if old:
+				state, _, _ = self._load_composition()
+				self.vibe.guard([{"action": "delete", "instance_id": i} for i in old], state)
+		return self.engine("maptool", ["radar_art", *lines])
 
 	def set_element_properties(self, instance_id: int, properties: dict) -> dict:
 		if not properties:

@@ -974,8 +974,9 @@ def map_tool(op: Literal["array", "mirror", "align", "distribute", "snap_rotatio
 	  outline [false], outline_colour [0x20202000], height_shading [true],
 	  height_levels [3], zone_mode [global (1024 on the server); player or streamed:
 	  per-player zones, open.mp only], out_group ["radar art"], replace [true: delete
-	  that group's zones first], apply [true; false only counts]. Returns zones,
-	  created, cell, objects and cells.
+	  that group's zones first; locked ones stop it], apply [true; false only counts].
+	  Unknown keys and values that don't fit are errors. Returns zones, created,
+	  cell, objects and cells.
 	model is a Pawn model id (custom models are negative). Returns the objects afterwards
 	(with copies or new objects) as ids, or the Pawn; the selection is left empty."""
 	return service.map_tool(op, ids, count=count, radial=radial, offset=offset, rotate=rotate,
