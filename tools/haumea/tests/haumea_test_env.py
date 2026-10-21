@@ -13,10 +13,11 @@ import tempfile
 
 
 def check_virtual_display():
-    """Raise unless an editor started now would open on a virtual display."""
+    """Raise unless an editor started now would open on a virtual display
+    (editor_env drops WAYLAND_DISPLAY, so DISPLAY decides)."""
     if not sys.platform.startswith('linux') or os.environ.get('HAUMEA_TEST_XVFB') == '1':
         return
-    if os.environ.get('DISPLAY') or os.environ.get('WAYLAND_DISPLAY'):
+    if os.environ.get('DISPLAY'):
         raise RuntimeError("refusing to open the editor on the real display: run the tests through "
                            "tools/haumea/tests/run_all.sh, which starts its own Xvfb, or under "
                            "xvfb-run with HAUMEA_TEST_XVFB=1")
@@ -29,6 +30,9 @@ def editor_env(scratch, virtual_display=False):
         check_virtual_display()
     config = tempfile.mkdtemp(prefix='haumea-config-', dir=scratch)
     env = dict(os.environ)
+    # GLFW prefers Wayland: with WAYLAND_DISPLAY set the editor opens on the
+    # user's desktop even inside xvfb-run, which only sets DISPLAY.
+    env.pop('WAYLAND_DISPLAY', None)
     env['XDG_CONFIG_HOME'] = config
     env['APPDATA'] = config
     # Start empty: never inherit the user's old <GTA>/haumea_data.

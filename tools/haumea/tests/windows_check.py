@@ -238,6 +238,8 @@ if __name__ == '__main__':
     parser.add_argument('--keep', action='store_true', help='keep the work folder')
     args = parser.parse_args()
     # The Linux editor and Wine both open windows: never on the user's display.
+    # Wine's winex11 needs DISPLAY; with WAYLAND_DISPLAY set, it could use the desktop's.
+    os.environ.pop('WAYLAND_DISPLAY', None)
     try:
         check_virtual_display()
     except RuntimeError as e:
