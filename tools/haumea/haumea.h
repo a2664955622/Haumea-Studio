@@ -876,6 +876,8 @@ void UiScriptTick(void);
 void UiScriptAfterRender(void);
 void UiScriptNoteToast(const char *text);
 bool UiScriptActive(void);
+// Real input events are dropped while a UI script drives the editor.
+bool UiScriptDropsEvent(sk::Event e);
 // Texture Browser (texbrowser.cpp)
 void DrawTextureBrowserWindow(bool *open);
 struct TextureSearchResult { int model; std::string txd, texture; bool samp, custom; int tstudioIndex; };

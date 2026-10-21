@@ -897,6 +897,8 @@ AppEventHandler(sk::Event e, void *param)
 	Rect *r;
 	MouseState *ms;
 
+	if(UiScriptDropsEvent(e))
+		return EVENTPROCESSED;	// a UI script is driving the input
 	ImGuiEventHandler(e, param);
 
 	ImGuiIO *input = ImGui::GetCurrentContext() ? &ImGui::GetIO() : nil;
@@ -1006,7 +1008,11 @@ AppEventHandler(sk::Event e, void *param)
 		UiScriptTick();	// --ui-script: this frame's scripted input
 		SyncEditorInputState();
 		UpdateEditorWindowState();
-		timeStep = *(float*)param;
+		// A UI script counts frames, so it gets the same time per frame
+		// whatever the load: ImGui's double-click (set_item), key repeat and
+		// hover timers, toasts and camera speed stop depending on how fast
+		// the machine is.
+		timeStep = UiScriptActive() ? 1.0f/60.0f : *(float*)param;
 		Idle();
 		return EVENTPROCESSED;
 	}

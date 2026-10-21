@@ -333,10 +333,32 @@ keyFromName(std::string name)
 	return -1;
 }
 
+// While a script runs, input comes only from it: the X server still sends
+// pointer events (a window mapping under the pointer, at times that vary
+// with load), and one landing between a hover and an assert moved the mouse
+// off the item. AppEventHandler drops those (UiScriptDropsEvent).
+static bool gSending;
+
+static void
+send(sk::Event e, void *param)
+{
+	gSending = true;
+	sk::EventHandler(e, param);
+	gSending = false;
+}
+
+bool
+UiScriptDropsEvent(sk::Event e)
+{
+	return gActive && !gSending &&
+		(e == sk::KEYDOWN || e == sk::KEYUP || e == sk::CHARINPUT ||
+		 e == sk::MOUSEMOVE || e == sk::MOUSEBTN || e == sk::MOUSEWHEEL);
+}
+
 static void
 sendKey(int key, bool down)
 {
-	sk::EventHandler(down ? sk::KEYDOWN : sk::KEYUP, &key);
+	send(down ? sk::KEYDOWN : sk::KEYUP, &key);
 }
 
 static int gMouseX, gMouseY, gButtons;
@@ -348,8 +370,8 @@ sendMouse(void)
 	ms.posx = gMouseX;
 	ms.posy = gMouseY;
 	ms.buttons = gButtons;
-	sk::EventHandler(sk::MOUSEMOVE, &ms);
-	sk::EventHandler(sk::MOUSEBTN, &ms);
+	send(sk::MOUSEMOVE, &ms);
+	send(sk::MOUSEBTN, &ms);
 }
 
 static int
@@ -690,11 +712,11 @@ runStep(const Step &s)
 	case Step::UP: gButtons &= ~s.value; sendMouse(); break;
 	case Step::KEYDOWN: sendKey(s.value, true); break;
 	case Step::KEYUP: sendKey(s.value, false); break;
-	case Step::CHAR: sk::EventHandler(sk::CHARINPUT, (void*)(uintptr)s.value); break;
+	case Step::CHAR: send(sk::CHARINPUT, (void*)(uintptr)s.value); break;
 	case Step::WHEEL: {
 		sk::MouseState ms = {};
 		ms.posx = gMouseX; ms.posy = gMouseY; ms.buttons = gButtons; ms.wheelDelta = (float)s.value;
-		sk::EventHandler(sk::MOUSEWHEEL, &ms);
+		send(sk::MOUSEWHEEL, &ms);
 		break;
 	}
 	case Step::ITEM: {
