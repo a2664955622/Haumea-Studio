@@ -374,9 +374,18 @@ jobs:
           CXX: x86_64-w64-mingw32-g++-posix
           TMPDIR: ${{ runner.temp }}/windows-check
           LIBGL_ALWAYS_SOFTWARE: "1"
+          # It already runs inside xvfb-run: without this, the guard against
+          # opening editors on a real display (haumea_test_env.py) refuses to
+          # start. And no Wayland or desktop runtime folder to find, as run_all.sh
+          # sets them.
+          HAUMEA_TEST_XVFB: "1"
+          WAYLAND_DISPLAY: /nonexistent/haumea-test
+          XDG_SESSION_TYPE: x11
+          XDG_RUNTIME_DIR: ${{ runner.temp }}/xdg-runtime
         run: |
           chmod +x "$HAUMEA_BINARY"
           mkdir -p "$TMPDIR"
+          mkdir -m 700 -p "$XDG_RUNTIME_DIR"
           xvfb-run -a -s "-screen 0 1600x1000x24" python3 tools/haumea/tests/windows_check.py
 
       - name: Upload the work folder on failure

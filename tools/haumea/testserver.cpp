@@ -27,6 +27,8 @@
 #ifdef __linux__
 #include <sys/prctl.h>
 #endif
+// POSIX doesn't declare it in any header (glibc's unistd.h does, macOS's not).
+extern char **environ;
 #endif
 
 // The test server lives in <config>/testserver/server. Its files come from a
