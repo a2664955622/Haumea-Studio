@@ -741,6 +741,12 @@ int PasteClipboard(void);
 int PasteClipboardInPlace(void);
 // A copy of the selection where it is, leaving the clipboard alone.
 int DuplicateSelected(void);
+// Object Info's "Edit all selected": edits go to every selected element that
+// has the field (materials: the same slot), as one undo step.
+bool GetBatchEditSelection(void);
+void SetBatchEditSelection(bool on);
+// Material slots of an instance's model (0 before it is loaded).
+int GetInstanceMaterialCount(ObjectInst *inst);
 // Hide and isolate, editor-only: hidden instances are not drawn or
 // clickable in the viewport and nothing about them is saved.
 bool IsInstanceHidden(ObjectInst *inst);

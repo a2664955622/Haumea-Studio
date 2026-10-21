@@ -293,17 +293,19 @@ struct Pick {
 };
 
 static int gSlot;
-static bool gAllSelected = true;
 
 static void
 selectedTargets(std::vector<ObjectInst*> &out)
 {
 	out.clear();
+	// Object Info's "Edit all selected": every selected object that has the
+	// slot, or only the one Object Info shows.
 	for(CPtrNode *p = selection.first; p; p = p->next){
 		ObjectInst *inst = (ObjectInst*)p->item;
-		if(inst && !inst->m_isVehicle && IsPawnObjectEditable(inst))
+		if(inst && !inst->m_isDeleted && !inst->m_isVehicle && IsPawnObjectEditable(inst) &&
+		   GetSampElementKind(inst) == SAMP_ELEMENT_OBJECT && gSlot < GetInstanceMaterialCount(inst))
 			out.push_back(inst);
-		if(!gAllSelected && !out.empty())
+		if(!GetBatchEditSelection() && !out.empty())
 			break;
 	}
 }
@@ -431,8 +433,16 @@ targetBar(void)
 	ImGui::SetItemTooltip("The material slot (SetObjectMaterial's index) the texture goes to.\n%s has %d.",
 		obj->m_name, count);
 	ImGui::SameLine();
-	ImGui::Checkbox("All selected", &gAllSelected);
-	ImGui::SetItemTooltip("Apply to every selected object, as one undo step.");
+	bool all = GetBatchEditSelection();
+	if(ImGui::Checkbox("Edit all selected", &all))
+		SetBatchEditSelection(all);
+	ImGui::SetItemTooltip("As in Object Info: every selected object that has this slot, as one undo step.");
+	std::vector<ObjectInst*> applied;
+	selectedTargets(applied);
+	if(applied.size() > 1){
+		ImGui::SameLine();
+		ImGui::TextDisabled("Applies to %d selected", (int)applied.size());
+	}
 }
 
 static void

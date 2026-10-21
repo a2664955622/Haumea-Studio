@@ -527,6 +527,7 @@ windowOpen(const std::string &title)
 // assert selected.model|selected.x|selected.y|selected.z <op> N
 // assert selected.texture <slot> "name"
 // assert pawn_contains "text" [streamer]   (and pawn_lacks)
+// assert pawn_count "text" <op> N             (occurrences in the native Pawn)
 // assert toast_contains "text"
 // assert window "Title"     / no_window "Title"
 // assert item 'Window' 'Label'   / no_item
@@ -606,6 +607,15 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		std::string tex = m && m->active ? m->textureName : "";
 		why = "slot texture is \"" + tex + "\"";
 		return tex == arg(2);
+	}
+	if(what == "pawn_count"){
+		std::string text = pawnText(false), needle = arg(1);
+		int count = 0;
+		for(size_t at = needle.empty() ? std::string::npos : text.find(needle); at != std::string::npos;
+		    at = text.find(needle, at + needle.size()))
+			count++;
+		why = "\"" + needle + "\" occurs " + std::to_string(count) + " time(s)";
+		return compare(count, arg(2), atof(arg(3).c_str()));
 	}
 	if(what == "pawn_contains" || what == "pawn_lacks"){
 		std::string text = pawnText(arg(2) == "streamer");

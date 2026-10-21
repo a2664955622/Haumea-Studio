@@ -2653,6 +2653,8 @@ uiWorkspaceWindow(void)
 	ImGui::End();
 }
 
+static void uiMaterialTexturePopup(void);
+
 static void
 uiMainmenu(void)
 {
@@ -2853,6 +2855,8 @@ uiMainmenu(void)
 	uiExportPrefabPopup();
 	uiImportPrefabPopup();
 	uiSavePawnAsPopup();
+	// Object Info's "Browse textures", whichever panels are open.
+	uiMaterialTexturePopup();
 	uiExportPawnPopup();
 	uiImportPawnPopup();
 	uiOpenReportWindow();
@@ -5131,6 +5135,45 @@ uiGetMaterialGeometry(ObjectInst *inst)
 	return nil;
 }
 
+// The objects a material edit of inst's slot goes to: inst, and with "Edit
+// all selected" every other selected object that has that slot.
+static void
+uiMaterialTargets(ObjectInst *inst, int slot, std::vector<ObjectInst*> &out)
+{
+	out.clear();
+	out.push_back(inst);
+	if(!gBatchEditSelection)
+		return;
+	for(CPtrNode *p = selection.first; p; p = p->next){
+		ObjectInst *other = (ObjectInst*)p->item;
+		if(other == inst || other->m_isDeleted || other->m_isVehicle || !IsPawnObjectEditable(other) ||
+		   GetSampElementKind(other) != SAMP_ELEMENT_OBJECT)
+			continue;
+		rw::Geometry *geometry = uiGetMaterialGeometry(other);
+		if(geometry && slot < geometry->matList.numMaterials)
+			out.push_back(other);
+	}
+}
+
+bool
+GetBatchEditSelection(void)
+{
+	return gBatchEditSelection;
+}
+
+void
+SetBatchEditSelection(bool on)
+{
+	gBatchEditSelection = on;
+}
+
+int
+GetInstanceMaterialCount(ObjectInst *inst)
+{
+	rw::Geometry *geometry = uiGetMaterialGeometry(inst);
+	return geometry ? geometry->matList.numMaterials : 0;
+}
+
 static bool
 uiTxdChainContains(int txdSlot, int wantedSlot)
 {
@@ -5266,24 +5309,33 @@ uiApplyMaterialTextureChoice(const MaterialTextureChoice &choice)
 {
 	if(gMaterialTextureBrowserInst == nil || gMaterialTextureBrowserSlot < 0)
 		return;
-	ObjectMaterialOverride edited;
-	const ObjectMaterialOverride *current = GetObjectMaterialOverride(
-		gMaterialTextureBrowserInst, gMaterialTextureBrowserSlot);
-	if(current && (current->active || current->textEnabled))
-		edited = *current;
-	else
-		edited = gMaterialTextureBrowserInitial;
-	edited.active = true;
-	edited.textEnabled = false;
-	edited.hasTexture = true;
-	edited.sourceModel = choice.sourceModel;
-	edited.txdSlot = choice.txdSlot;
-	strncpy(edited.txdName, choice.txdName, sizeof(edited.txdName)-1);
-	edited.txdName[sizeof(edited.txdName)-1] = '\0';
-	strncpy(edited.textureName, choice.textureName, sizeof(edited.textureName)-1);
-	edited.textureName[sizeof(edited.textureName)-1] = '\0';
-	SetObjectMaterialOverride(gMaterialTextureBrowserInst,
-		gMaterialTextureBrowserSlot, edited);
+	// The texture goes to the same slot of every selected object that has it,
+	// each keeping its own colour and other settings; one undo step.
+	std::vector<ObjectInst*> targets;
+	uiMaterialTargets(gMaterialTextureBrowserInst, gMaterialTextureBrowserSlot, targets);
+	UndoBeginGroup();
+	for(ObjectInst *target : targets){
+		ObjectMaterialOverride edited;
+		const ObjectMaterialOverride *current = GetObjectMaterialOverride(target, gMaterialTextureBrowserSlot);
+		if(current && (current->active || current->textEnabled))
+			edited = *current;
+		else if(target == gMaterialTextureBrowserInst)
+			edited = gMaterialTextureBrowserInitial;
+		else
+			uiInitMaterialOverrideFromBase(target, gMaterialTextureBrowserSlot,
+				uiGetMaterialGeometry(target), &edited);
+		edited.active = true;
+		edited.textEnabled = false;
+		edited.hasTexture = true;
+		edited.sourceModel = choice.sourceModel;
+		edited.txdSlot = choice.txdSlot;
+		strncpy(edited.txdName, choice.txdName, sizeof(edited.txdName)-1);
+		edited.txdName[sizeof(edited.txdName)-1] = '\0';
+		strncpy(edited.textureName, choice.textureName, sizeof(edited.textureName)-1);
+		edited.textureName[sizeof(edited.textureName)-1] = '\0';
+		SetObjectMaterialOverride(target, gMaterialTextureBrowserSlot, edited);
+	}
+	UndoEndGroup();
 }
 
 static void
@@ -5517,7 +5569,12 @@ uiMaterialInfo(ObjectInst *inst)
 	}
 	if(!canEdit)
 		ImGui::TextDisabled("Material controls are locked for this object.");
-	ImGui::TextDisabled("Edits apply to this instance and export as SetObjectMaterial / SetObjectMaterialText. The viewport follows SA-MP 0.3.7's renderer.");
+	{
+		std::vector<ObjectInst*> targets;
+		uiMaterialTargets(inst, 0, targets);
+		if(targets.size() > 1)
+			ImGui::TextDisabled("Applies to %d selected (each slot to those that have it).", (int)targets.size());
+	}
 
 	rw::Geometry *geometry = uiGetMaterialGeometry(inst);
 	int materialCount = geometry ? geometry->matList.numMaterials : 0;
@@ -5663,15 +5720,12 @@ uiMaterialInfo(ObjectInst *inst)
 			uiMaterialTextPreview(edited);
 		}
 		if(changed){
-			// Batch editing gives the same slot to selected copies of this model.
+			// The same slot of every selected object that has it, one undo step.
+			std::vector<ObjectInst*> targets;
+			uiMaterialTargets(inst, slot, targets);
 			UndoBeginGroup();
-			SetObjectMaterialOverride(inst, slot, edited);
-			if(gBatchEditSelection)
-				for(CPtrNode *p = selection.first; p; p = p->next){
-					ObjectInst *other = (ObjectInst*)p->item;
-					if(other != inst && !other->m_isDeleted && other->m_objectId == inst->m_objectId)
-						SetObjectMaterialOverride(other, slot, edited);
-				}
+			for(ObjectInst *target : targets)
+				SetObjectMaterialOverride(target, slot, edited);
 			UndoEndGroup();
 		}
 		ImGui::EndDisabled();
@@ -9011,7 +9065,6 @@ uiInstWindow(void)
 			uiObjectResults(recentIds, numShown, GetSpawnObjectId());
 		}
 	}
-		uiMaterialTexturePopup();
 		ImGui::End();
 }
 
