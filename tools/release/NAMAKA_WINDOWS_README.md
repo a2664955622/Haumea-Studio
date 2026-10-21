@@ -1,6 +1,6 @@
-# Haumea Studio Agent Alpha companion for Windows
+# Haumea Studio Namaka companion for Windows
 
-This Windows x64 package contains Agent Alpha's Python CLI and MCP server. The
+This Windows x64 package contains Namaka's Python CLI and MCP server. The
 CI build also includes the Haumea editor (`haumea.exe`, with its fonts and
 starter prefabs) and dependency wheels for an offline setup; `BUILD_INFO.json`
 says which (`editor_included`, `dependency_wheelhouse_included`). It does not
@@ -53,7 +53,7 @@ $env:HAUMEA_ENGINE_TOKEN = $Token
 
 Replace the example path with the editor's actual location (`.\haumea.exe` when this package includes it). Pass
 `--game 'C:\Games\GTA San Andreas'` to use another game folder for that run. The
-Windows editor must be built with Agent Alpha support. The TCP listener binds
+Windows editor must be built with Namaka support. The TCP listener binds
 to loopback and requires the shared token.
 
 Once the editor is open, check the connection from PowerShell:

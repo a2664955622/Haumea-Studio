@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Package the Windows Agent Alpha companion, optionally with the editor and dependency wheels."""
+"""Package the Windows Namaka companion, optionally with the editor and dependency wheels."""
 import argparse
 import hashlib
 import json
@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--wheel', required=True, type=Path,
                     help='built haumea_agent wheel')
 parser.add_argument('--output', required=True, type=Path)
-parser.add_argument('--name', default='Haumea-Agent-Alpha-windows-x86_64')
+parser.add_argument('--name', default='Haumea-Namaka-windows-x86_64')
 parser.add_argument('--engine', type=Path,
                     help='haumea.exe to include (e.g. from build-windows-mingw.sh)')
 parser.add_argument('--wheelhouse', type=Path,
@@ -22,7 +22,7 @@ args = parser.parse_args()
 
 root = Path(__file__).resolve().parents[2]
 wheel = args.wheel.resolve()
-if not wheel.is_file() or not wheel.name.startswith('haumea_agent-') or wheel.suffix != '.whl':
+if not wheel.is_file() or not wheel.name.startswith(('haumea_namaka-', 'haumea_agent-')) or wheel.suffix != '.whl':
     raise SystemExit('--wheel must name a built haumea_agent .whl file')
 
 args.output.mkdir(parents=True, exist_ok=True)
@@ -36,7 +36,7 @@ stage.mkdir()
 
 shutil.copy2(wheel, stage / wheel.name)
 shutil.copy2(root / 'tools/release/setup-agent.ps1', stage / 'setup-agent.ps1')
-shutil.copy2(root / 'tools/release/AGENT_ALPHA_WINDOWS_README.md', stage / 'README.md')
+shutil.copy2(root / 'tools/release/NAMAKA_WINDOWS_README.md', stage / 'README.md')
 if args.engine:
     shutil.copy2(args.engine, stage / 'haumea.exe')
     # What the editor finds next to itself, as in the plain Windows bundle.
@@ -50,7 +50,7 @@ if args.wheelhouse:
 commit = subprocess.check_output(
     ['git', '-C', str(root), 'rev-parse', 'HEAD'], text=True).strip()
 (stage / 'BUILD_INFO.json').write_text(json.dumps({
-    'project': 'Haumea Agent Alpha',
+    'project': 'Haumea Namaka',
     'source_commit': commit,
     'target': 'windows-x86_64',
     'editor_included': bool(args.engine),

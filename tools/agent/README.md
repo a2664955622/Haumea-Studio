@@ -1,4 +1,4 @@
-# Haumea Studio Agent Alpha
+# Haumea Studio Namaka
 
 The current creative workflow is documented in [VIBE_MAPPING.md](VIBE_MAPPING.md):
 camera/selection surveys, persistent briefs and locks, dimension-aware recipes,

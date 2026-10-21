@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check an installed Agent Alpha bundle: its MCP server starts and lists the expected tools.
+"""Check an installed Namaka bundle: its MCP server starts and lists the expected tools.
 
     .venv-agent/bin/python check_agent_bundle.py <haumea-mcp> --tools N
 

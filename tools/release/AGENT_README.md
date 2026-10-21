@@ -1,21 +1,21 @@
-# Haumea Studio with Agent Alpha
+# Haumea Studio with Namaka
 
 This Linux x86_64 bundle contains Haumea Studio (the all-in-one editor for SA-MP
-and open.mp), Agent Alpha's Python wheel,
+and open.mp), Namaka's Python wheel,
 fonts, and Python dependency wheels for offline setup. It does not include GTA
-files. Agent Alpha's MCP server runs as a separate process and connects to the
+files. Namaka's MCP server runs as a separate process and connects to the
 editor over a private local socket. The editor needs the same system libraries
 as the plain Linux release (GLFW, and `zenity` or `kdialog` for file dialogs):
 see Install in Haumea's README.
 
-## Install Agent Alpha
+## Install Namaka
 
 Unzip the bundle anywhere you like and run its setup script. It needs Python
 3.10 or newer with `venv`; on Debian or Ubuntu that is two packages:
 
 ```sh
 sudo apt install python3 python3-venv   # Debian/Ubuntu; Fedora and Arch include venv
-cd Haumea-Agent-Alpha-linux-x86_64
+cd Haumea-Namaka-linux-x86_64
 ./setup-agent.sh
 ```
 
@@ -24,7 +24,7 @@ adapter and CLI. With Python 3.14 (Ubuntu 26.04, Fedora, Arch) it installs
 fully offline from the wheelhouse; Python 3.10–3.13 (Ubuntu 24.04, Debian)
 downloads only the few compiled parts the wheelhouse has for 3.14 alone, so
 the first setup needs the internet, and says so if it can't reach it. The
-Agent Alpha CLI is `.venv-agent/bin/haumeactl`; the MCP server command is
+Namaka CLI is `.venv-agent/bin/haumeactl`; the MCP server command is
 `.venv-agent/bin/haumea-mcp`. If setup stops halfway, fix what it says and run
 it again.
 

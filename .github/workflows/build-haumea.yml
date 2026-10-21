@@ -383,7 +383,7 @@ jobs:
           name: windows-check
           path: ${{ runner.temp }}/windows-check
 
-  # The Agent Alpha bundle for Linux: build-linux's editor, the haumea_agent
+  # The Namaka bundle for Linux: build-linux's editor, the haumea_agent
   # wheel and a wheelhouse with every wheel for CPython 3.14 and the pure ones
   # for 3.10-3.13 (tools/release/fetch_wheelhouse.sh). The bundle's
   # setup-agent.sh runs on each of 3.10-3.14 (the others download only their
@@ -398,7 +398,7 @@ jobs:
     env:
       # Bump this when MCP tools are added or removed on purpose.
       AGENT_MCP_TOOLS: 80
-      BUNDLE: Haumea-Agent-Alpha-linux-x86_64
+      BUNDLE: Haumea-Namaka-linux-x86_64
 
     steps:
       - name: Checkout Haumea Studio
@@ -427,7 +427,7 @@ jobs:
         run: |
           chmod +x dist/engine/haumea
           python3 haumea/tools/release/package_agent.py --engine dist/engine/haumea \
-            --wheel dist/wheel/haumea_agent-*.whl --wheelhouse dist/wheelhouse \
+            --wheel dist/wheel/haumea_namaka-*.whl --wheelhouse dist/wheelhouse \
             --output dist/agent --name "$BUNDLE"
 
       # The bundle's own setup-agent.sh, with each Python as python3.
@@ -440,7 +440,7 @@ jobs:
             (cd "$RUNNER_TEMP/py$v" && unzip -q "$GITHUB_WORKSPACE/dist/agent/$BUNDLE.zip")
             (cd "$RUNNER_TEMP/py$v/$BUNDLE" && PATH="$RUNNER_TEMP/bin$v:$PATH" ./setup-agent.sh > setup.log 2>&1) ||
               { tail -30 "$RUNNER_TEMP/py$v/$BUNDLE/setup.log"; exit 1; }
-            grep -E '^(Python|Agent Alpha)' "$RUNNER_TEMP/py$v/$BUNDLE/setup.log"
+            grep -E '^(Python|Namaka)' "$RUNNER_TEMP/py$v/$BUNDLE/setup.log"
             mcp="$RUNNER_TEMP/py$v/$BUNDLE/.venv-agent/bin/haumea-mcp"
             "$(dirname "$mcp")/python" haumea/tools/release/check_agent_bundle.py "$mcp" \
               --tools "$AGENT_MCP_TOOLS" | cut -c1-80
@@ -485,13 +485,13 @@ jobs:
             docker rmi "agent-base-$tag:ci" || true
           done
 
-      - name: Upload the Linux Agent Alpha bundle
+      - name: Upload the Linux Namaka bundle
         uses: actions/upload-artifact@v4
         with:
-          name: haumea-agent-alpha-linux-x86_64
+          name: haumea-namaka-linux-x86_64
           path: dist/agent/${{ env.BUNDLE }}.zip
 
-  # The Agent Alpha companion for Windows, with the MinGW-w64 editor
+  # The Namaka companion for Windows, with the MinGW-w64 editor
   # (tools/release/build-windows-mingw.sh gl3; windows-wine checks that build
   # under Wine) and a Windows CPython 3.10-3.14 wheelhouse. setup-agent.ps1
   # can't run here, so this checks that every wheelhouse Python resolves the
@@ -499,7 +499,7 @@ jobs:
   agent-bundle-windows:
     runs-on: ubuntu-24.04
     env:
-      BUNDLE: Haumea-Agent-Alpha-windows-x86_64
+      BUNDLE: Haumea-Namaka-windows-x86_64
 
     steps:
       - name: Checkout Haumea Studio
@@ -535,20 +535,20 @@ jobs:
         run: |
           uv pip compile -q --no-index --find-links dist/wheelhouse --find-links dist/wheel \
             --only-binary :all: --python-version 3.14 --python-platform x86_64-pc-windows-msvc \
-            -o "$RUNNER_TEMP/resolved.txt" - <<< "haumea-agent[mcp]"
+            -o "$RUNNER_TEMP/resolved.txt" - <<< "haumea-namaka[mcp]"
           for v in 3.10 3.11 3.12 3.13 3.14; do test -s "dist/wheelhouse/constraints-$v.txt"; done
 
       - name: Package the companion
         run: |
           python3 haumea/tools/release/package_alpha_companion.py \
             --engine "$RUNNER_TEMP/mingw/win-amd64-gl3/haumea.exe" \
-            --wheel dist/wheel/haumea_agent-*.whl --wheelhouse dist/wheelhouse \
+            --wheel dist/wheel/haumea_namaka-*.whl --wheelhouse dist/wheelhouse \
             --output dist/agent --name "$BUNDLE"
 
-      - name: Upload the Windows Agent Alpha companion
+      - name: Upload the Windows Namaka companion
         uses: actions/upload-artifact@v4
         with:
-          name: haumea-agent-alpha-windows-x86_64
+          name: haumea-namaka-windows-x86_64
           path: dist/agent/${{ env.BUNDLE }}.zip
 
   release:

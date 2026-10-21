@@ -17,7 +17,7 @@ p.add_argument('--output', required=True, type=Path)
 p.add_argument('--name', required=True)
 p.add_argument('--glfw', type=Path, help='macOS GLFW shared library to bundle')
 p.add_argument('--wheelhouse', type=Path,
-    help='prebuilt Python dependency wheels for an offline Agent Alpha setup')
+    help='prebuilt Python dependency wheels for an offline Namaka setup')
 a = p.parse_args()
 root = Path(__file__).resolve().parents[2]
 a.output.mkdir(parents=True, exist_ok=True)
@@ -38,11 +38,11 @@ if engine.suffix.lower() != '.exe':
     shutil.copy2(root / 'tools/release/launch-haumea-agent.sh', stage / 'launch-haumea-agent.sh')
 shutil.copy2(root / 'tools/haumea/minilzo/COPYING', stage / 'COPYING-LZO')
 commit = subprocess.check_output(['git', '-C', str(root), 'rev-parse', 'HEAD'], text=True).strip()
-# The editor and Agent Alpha are built from the same commit and version.
+# The editor and Namaka are built from the same commit and version.
 version_h = (root / 'tools/haumea/version.h').read_text()
 version = re.search(r'#define\s+HAUMEA_VERSION\s+"([^"]+)"', version_h).group(1)
 (stage / 'BUILD_INFO.json').write_text(json.dumps({'source_commit': commit,
-    'project': 'Haumea', 'agent': 'Agent Alpha',
+    'project': 'Haumea', 'agent': 'Namaka',
     'haumea_version': version,
     'agent_alpha_release': f'v{version}-agent-alpha',
     'platform': platform.platform(), 'python_wheel': a.wheel.name}, indent=2) + '\n')
@@ -51,6 +51,8 @@ if a.wheelhouse:
         ignore=shutil.ignore_patterns('.DS_Store'))
     # setup-agent's helper: another Python downloads only its binary wheels.
     shutil.copy2(root / 'tools/release/missing_wheels.py', stage / 'missing_wheels.py')
+# The editor's Windows > Namaka panel installs with this.
+shutil.copy2(root / 'tools/release/namaka_install.py', stage / 'namaka_install.py')
 if a.glfw:
     lib = stage / 'lib'; lib.mkdir()
     bundled = lib / 'libglfw.3.dylib'

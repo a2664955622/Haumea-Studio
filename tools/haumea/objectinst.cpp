@@ -4252,7 +4252,7 @@ renderObjectToRaster(int objectId, rw::Raster *colorRaster, rw::Raster *depthRas
 
 	rw::V3d target = { 0.0f, 0.0f, 0.0f };
 	float radius = 5.0f;
-	// Agent Alpha's asset index was built from collision-framed PNG captures.
+	// Namaka's asset index was built from collision-framed PNG captures.
 	bool haveBounds = !pngOrientation && previewGeometryBounds(atm, clump, &target, &radius);
 	if(!haveBounds && obj->m_colModel){
 		target = obj->m_colModel->boundingSphere.center;
@@ -4296,7 +4296,7 @@ renderObjectToRaster(int objectId, rw::Raster *colorRaster, rw::Raster *depthRas
 	camFrame->updateObjects();
 
 	// Editor thumbnails use a mid tone so dark and light models both read;
-	// PNG captures keep the background Agent Alpha's previews were made with.
+	// PNG captures keep the background Namaka's previews were made with.
 	rw::RGBA clearCol = pngOrientation ? rw::RGBA{ 34, 34, 34, 255 } : kPreviewBackground;
 	cam->clear(&clearCol, rw::Camera::CLEARIMAGE|rw::Camera::CLEARZ);
 	cam->beginUpdate();

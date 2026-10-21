@@ -1,5 +1,5 @@
 #!/bin/sh
-# Downloads Agent Alpha's dependency wheels for setup-agent's offline install.
+# Downloads Namaka's dependency wheels for setup-agent's offline install.
 #
 #   tools/release/fetch_wheelhouse.sh linux|windows <dest>
 #

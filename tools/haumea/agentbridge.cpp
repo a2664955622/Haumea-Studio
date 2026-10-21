@@ -4501,3 +4501,9 @@ AgentBridgeCaptureAfterWorldRender(void)
 	gAgentCaptureLabel.clear();
 	gAgentPendingRequestId.clear();
 }
+
+const char*
+AgentBridgeSocketPath(void)
+{
+	return gAgentBridgeEnabled && !gAgentTcp ? gAgentSocketPath : "";
+}

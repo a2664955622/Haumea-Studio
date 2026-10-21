@@ -15,4 +15,4 @@
 
 // Display name for the channel (shown in title bar / update popup)
 #define HAUMEA_CHANNEL_DISPLAY (strcmp(HAUMEA_CHANNEL, "PE") == 0 ? "FLA" : \
-	(strcmp(HAUMEA_CHANNEL, "agent-alpha") == 0 ? "Agent Alpha" : HAUMEA_CHANNEL))
+	(strcmp(HAUMEA_CHANNEL, "agent-alpha") == 0 ? "Namaka" : HAUMEA_CHANNEL))

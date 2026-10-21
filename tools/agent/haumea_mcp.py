@@ -41,9 +41,11 @@ service = HaumeaService(
 	state_dir=Path(os.environ.get("HAUMEA_AGENT_STATE_DIR", DEFAULT_STATE_DIR)),
 )
 mcp = MCPServer(
-	"haumea",
-	description="Inspect GTA assets and safely edit an Haumea scratch layer.",
+	"haumea",	# the server id stays "haumea": tools are mcp__haumea__*
+	title="Namaka for Haumea Studio",
+	description="Namaka: look at and edit the map open in Haumea Studio, and find GTA assets.",
 	instructions=(
+		"This is Namaka, Haumea Studio's agent companion. "
 		"Haumea edits SA-MP/open.mp maps: the document is the user's Pawn map (.pwn), which holds "
 		"objects, vehicles, pickups, 3D text labels, actors, player classes, gang zones, map icons, "
 		"NPCs, NPC path points, sounds, checkpoints and textdraws, plus removed GTA buildings. "

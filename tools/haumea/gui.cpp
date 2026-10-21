@@ -1,5 +1,6 @@
 #include "haumea.h"
 #include "textdraws.h"
+#include "namaka.h"
 #include "samp_loader.h"
 #include "autocol.h"
 #include "modloader.h"
@@ -70,6 +71,7 @@ static bool showMapCheckWindow;
 static bool showNodesWindow;
 static bool showTestServerWindow;
 static bool showInteriorsWindow;
+static bool showNamakaWindow;
 static bool gPanelSnap = true;
 static bool gResetPanelLayout;
 static bool gSaNodeJustSelected;
@@ -2800,6 +2802,8 @@ uiMainmenu(void)
 			if(isSA() && ImGui::MenuItem(ICON_FA_LOCATION_DOT " Nodes (open.mp only)", ShortcutLabel(SC_WINDOW_NODES), showNodesWindow)) { showNodesWindow ^= 1; }
 			if(isSA() && ImGui::MenuItem(ICON_FA_GAMEPAD " Test server", nil, showTestServerWindow)) { showTestServerWindow ^= 1; }
 			if(isSA() && ImGui::MenuItem(ICON_FA_MAP_PIN " Interiors", nil, showInteriorsWindow)) { showInteriorsWindow ^= 1; }
+			if(ImGui::MenuItem(ICON_FA_BOLT " Namaka", nil, showNamakaWindow)) { showNamakaWindow ^= 1; }
+			ImGui::SetItemTooltip("Namaka lets an AI assistant work in Haumea: install it and connect Claude.");
 			if(isSA() && ImGui::MenuItem(ICON_FA_FONT " TextDraws", nil, InTextDrawMode())){
 				if(InTextDrawMode()) ExitTextDrawMode();
 				else EnterTextDrawMode();
@@ -12199,6 +12203,7 @@ gui(void)
 	DrawAddCustomModelDialog();
 	if(showTestServerWindow) TestServerWindow(&showTestServerWindow, gPawnSaveFormat);
 	if(showInteriorsWindow) InteriorsWindow(&showInteriorsWindow);
+	DrawNamakaWindow(&showNamakaWindow);	// also runs the updater's queued Namaka update
 
 
 

@@ -172,7 +172,7 @@ IPL files.
 
 ## The agent
 
-Agent Alpha lets an AI assistant (Claude Code or another MCP host) look at and edit the open map
+Namaka lets an AI assistant (Claude Code or another MCP host) look at and edit the open map
 through a local socket. See [the agent setup guide](../tools/release/AGENT_README.md).
 
 ## Shortcuts

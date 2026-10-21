@@ -79,7 +79,7 @@ game.
   numpad + / -), Ctrl+Shift+= / - for fly speed, Ctrl+wheel or
   Ctrl+Alt+= / - for the interface size, PgUp / PgDn to scroll a panel.
 
-**The agent** (Agent Alpha) can edit the open map and every element kind,
+**The agent** (Namaka) can edit the open map and every element kind,
 run Map Check and Test in game, and grab frames with the panels.
 
 ### Changed

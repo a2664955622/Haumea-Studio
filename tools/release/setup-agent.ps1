@@ -1,8 +1,8 @@
 $ErrorActionPreference = 'Stop'
 $Bundle = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $Bundle
-$Wheel = Get-ChildItem -File 'haumea_agent-*.whl' | Select-Object -First 1
-if (-not $Wheel) { throw 'Haumea Agent Alpha wheel is missing from this bundle.' }
+$Wheel = Get-ChildItem -File 'haumea_namaka-*.whl', 'haumea_agent-*.whl' | Select-Object -First 1
+if (-not $Wheel) { throw 'Haumea Namaka wheel is missing from this bundle.' }
 
 # Python 3.14 installs fully offline from the wheelhouse, so take it when the
 # py launcher has it; any other 3.10+ downloads only its binary wheels.
@@ -25,7 +25,7 @@ if (-not $Installed -and (Test-Path $Constraints)) {
     # Download only the pins no bundled wheel fits (the binary ones), then
     # install from the two folders with no index.
     $Missing = @(& $Python missing_wheels.py wheelhouse $Constraints | Where-Object { $_ })
-    Write-Host "Python ${PyVer}: downloading the $($Missing.Count) parts Agent Alpha bundles only for Python 3.14..."
+    Write-Host "Python ${PyVer}: downloading the $($Missing.Count) parts Namaka bundles only for Python 3.14..."
     if (Test-Path '.wheels-download') { Remove-Item -Recurse -Force '.wheels-download' }
     $ok = $true
     if ($Missing.Count -gt 0) {
@@ -37,12 +37,12 @@ if (-not $Installed -and (Test-Path $Constraints)) {
         $ok = $LASTEXITCODE -eq 0
     }
     if (Test-Path '.wheels-download') { Remove-Item -Recurse -Force '.wheels-download' }
-    if (-not $ok) { throw 'Agent Alpha needs Python 3.14 to install offline, or an internet connection.' }
+    if (-not $ok) { throw 'Namaka needs Python 3.14 to install offline, or an internet connection.' }
     $Installed = $true
 }
 if (-not $Installed) {
     # A Python the bundle has no pins for: everything from the package index.
     & $Python -m pip install --no-input "$($Wheel.FullName)[mcp]"
-    if ($LASTEXITCODE -ne 0) { throw 'Agent Alpha could not be installed; see the pip messages above.' }
+    if ($LASTEXITCODE -ne 0) { throw 'Namaka could not be installed; see the pip messages above.' }
 }
-Write-Host "Agent Alpha is installed. MCP command: $Bundle\.venv-agent\Scripts\haumea-mcp.exe"
+Write-Host "Namaka is installed. MCP command: $Bundle\.venv-agent\Scripts\haumea-mcp.exe"

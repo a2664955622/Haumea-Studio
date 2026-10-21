@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "haumea-agent"
+name = "haumea-namaka"
 version = "0.1.0a1"
-description = "Agent Alpha CLI and MCP companion for the Haumea GTA map editor"
+description = "Namaka: the CLI and MCP companion that lets AI assistants work in Haumea Studio"
 readme = "tools/agent/README.md"
 requires-python = ">=3.10"
 dependencies = ["Pillow>=11,<13"]

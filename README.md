@@ -58,7 +58,7 @@ New to Haumea? Read the **[user guide](docs/USER_GUIDE.md)**.
 - Generated Pawn compiles without warnings with both the open.mp and the SA-MP 0.3.7 includes. Calls only open.mp has are marked as such.
 - Keep the game and your server apart: Haumea runs from its own folder, reads GTA San Andreas from the game folder without ever writing to it, and takes defaults from the workspace, the server you map for (see [Run](#run)).
 - Rebind every keyboard shortcut in **Preferences → Shortcuts**.
-- View generated Pawn live, inspect scene changes, and control the editor with the Agent Alpha companion.
+- View generated Pawn live, inspect scene changes, and control the editor with the Namaka companion.
 - Dock panels around the 3D view, or float them and let them snap to the screen edges and to each other.
 - Use detachable panels on supported Windows builds.
 
@@ -105,9 +105,9 @@ sudo apt install libc6:i386 libatomic1:i386
 
 The first start asks for your game folder and workspace (see [Run](#run)).
 
-## Agent Alpha
+## Namaka
 
-Agent Alpha is bundled as a Python companion. Its CLI and MCP adapter connect to Haumea over a private local socket; the editor does not host MCP internally. See [the bundle setup guide](tools/release/AGENT_README.md) to install the companion, launch the editor with `--agent-socket`, and configure Claude Code or another MCP host. Its `save` command exports Pawn source through Haumea's native or streamer exporter.
+Namaka is bundled as a Python companion. Its CLI and MCP adapter connect to Haumea over a private local socket; the editor does not host MCP internally. See [the bundle setup guide](tools/release/AGENT_README.md) to install the companion, launch the editor with `--agent-socket`, and configure Claude Code or another MCP host. Its `save` command exports Pawn source through Haumea's native or streamer exporter.
 
 ## Build
 

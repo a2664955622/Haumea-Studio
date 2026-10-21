@@ -2,9 +2,9 @@
 set -eu
 
 cd "$(dirname "$0")"
-wheel=$(find . -maxdepth 1 -type f -name 'haumea_agent-*.whl' -print -quit)
+wheel=$(find . -maxdepth 1 -type f \( -name 'haumea_namaka-*.whl' -o -name 'haumea_agent-*.whl' \) -print -quit)
 if [ -z "$wheel" ]; then
-	printf '%s\n' 'Haumea Agent Alpha wheel is missing from this bundle.' >&2
+	printf '%s\n' 'Haumea Namaka wheel is missing from this bundle.' >&2
 	exit 1
 fi
 
@@ -39,7 +39,7 @@ elif [ -f "wheelhouse/constraints-$pyver.txt" ]; then
 	# Download only the pins no bundled wheel fits (the binary ones), then
 	# install from the two folders with no index.
 	missing=$(.venv-agent/bin/python missing_wheels.py wheelhouse "wheelhouse/constraints-$pyver.txt")
-	printf 'Python %s: downloading the %s parts Agent Alpha bundles only for Python 3.14...\n' \
+	printf 'Python %s: downloading the %s parts Namaka bundles only for Python 3.14...\n' \
 		"$pyver" "$(printf '%s\n' "$missing" | grep -c .)" >&2
 	rm -rf .wheels-download
 	# shellcheck disable=SC2086
@@ -48,7 +48,7 @@ elif [ -f "wheelhouse/constraints-$pyver.txt" ]; then
 	   ! .venv-agent/bin/python -m pip install --no-input --no-index --find-links wheelhouse \
 			--find-links .wheels-download -c "wheelhouse/constraints-$pyver.txt" "${wheel}[mcp]"; then
 		rm -rf .wheels-download
-		printf '%s\n' 'Agent Alpha needs Python 3.14 to install offline, or an internet connection.' >&2
+		printf '%s\n' 'Namaka needs Python 3.14 to install offline, or an internet connection.' >&2
 		exit 1
 	fi
 	rm -rf .wheels-download
@@ -57,4 +57,4 @@ else
 	.venv-agent/bin/python -m pip install --no-input "${wheel}[mcp]"
 fi
 
-printf '\nAgent Alpha is installed. MCP command: %s/.venv-agent/bin/haumea-mcp\n' "$PWD"
+printf '\nNamaka is installed. MCP command: %s/.venv-agent/bin/haumea-mcp\n' "$PWD"

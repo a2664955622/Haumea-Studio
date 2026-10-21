@@ -5,3 +5,5 @@
 void AgentBridgeUpdate(void);
 void AgentBridgeCaptureAfterWorldRender(void);
 void AgentBridgeCaptureAfterUiRender(void);	// capture_screen: with the panels
+// The socket this editor listens on for Namaka, or "" (not listening, or TCP).
+const char *AgentBridgeSocketPath(void);

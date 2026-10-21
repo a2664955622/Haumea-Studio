@@ -10,9 +10,12 @@ HAUMEA_ENGINE_SOCKET=${HAUMEA_ENGINE_SOCKET:-"$HOME/.cache/haumea-agent.sock"}
 mkdir -p "$(dirname "$HAUMEA_ENGINE_SOCKET")"
 export HAUMEA_EXECUTABLE HAUMEA_ENGINE_SOCKET
 
-if [ -x "$BUNDLE_DIR/haumea-agent-alpha/run-haumea-agent.sh" ]; then
-	exec "$BUNDLE_DIR/haumea-agent-alpha/run-haumea-agent.sh" "$@"
-fi
+# Namaka's folder, or the one it had as Agent Alpha.
+for companion in namaka haumea-agent-alpha; do
+	if [ -x "$BUNDLE_DIR/$companion/run-haumea-agent.sh" ]; then
+		exec "$BUNDLE_DIR/$companion/run-haumea-agent.sh" "$@"
+	fi
+done
 
 set -- --agent-socket "$HAUMEA_ENGINE_SOCKET" "$@"
 if [ -n "${HAUMEA_WORKSPACE:-}" ]; then

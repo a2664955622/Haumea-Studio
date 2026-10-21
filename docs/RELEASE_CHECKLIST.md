@@ -17,7 +17,7 @@ newer jobs. Nothing here is automatic: pushing and releasing are your call.
 - **Don't create tags by hand.** The updater looks for the newest release
   whose tag ends in its channel and compares `HAUMEA_VERSION` from
   `tools/haumea/version.h`; only a higher version is offered as an update.
-- Agent Alpha is packaged from the same commit and version by
+- Namaka is packaged from the same commit and version by
   `tools/release/package_agent.py` (release tag `v<version>-agent-alpha`).
 
 ## Before pushing
