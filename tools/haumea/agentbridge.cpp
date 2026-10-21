@@ -475,10 +475,24 @@ namakaConnectionPath(void)
 	return std::string(GetConfigDir()) + "/namaka/connection.json";
 }
 
+// At exit: only while the file is still ours. Had this Haumea hung, another
+// may have found it stale and written its own, which must stay.
 static void
 removeNamakaConnection(void)
 {
-	if(gAgentTcp && gAgentBridgeEnabled)
+	if(!gAgentTcp || !gAgentBridgeEnabled)
+		return;
+	int port = 0;
+	if(FILE *f = fopen(namakaConnectionPath().c_str(), "rb")){
+		char buffer[512];
+		size_t n = fread(buffer, 1, sizeof(buffer) - 1, f);
+		fclose(f);
+		buffer[n] = '\0';
+		const char *at = strstr(buffer, "\"port\":");
+		if(at)
+			sscanf(at + 7, "%d", &port);
+	}
+	if(port == gAgentTcpPort)
 		DeleteFileA(namakaConnectionPath().c_str());
 }
 
@@ -550,7 +564,10 @@ startNamakaTcp(void)
 	std::string token;
 	for(int i = 0; i < 48; i++){
 		unsigned int value = 0;
-		rand_s(&value);
+		if(rand_s(&value) != 0){
+			log("Agent: no random numbers for Namaka's key; not listening\n");
+			return false;
+		}
 		static const char hex[] = "0123456789abcdef";
 		token += hex[value & 15];
 	}
@@ -608,9 +625,12 @@ initializeBridge(void)
 	// A plain start listens for Namaka when it is installed (and allowed).
 	if(!gAgentSocketPath[0] && !gAgentBridgeDirectory[0] && NamakaShouldListen()){
 		std::string path = NamakaDefaultSocketPath();
-		snprintf(gAgentSocketPath, sizeof(gAgentSocketPath), "%s", path.c_str());
-		if(path.size() >= sizeof(gAgentSocketPath))
-			gAgentSocketPath[0] = '\0';
+		if(path.size() >= sizeof(sockaddr_un::sun_path))
+			log("$HOME is too long for the Namaka socket (%d bytes, max %d): set HAUMEA_NAMAKA_SOCKET "
+				"to a shorter path, such as $XDG_RUNTIME_DIR/haumea.sock, and HAUMEA_ENGINE_SOCKET to the same\n",
+				(int)path.size(), (int)sizeof(sockaddr_un::sun_path) - 1);
+		else
+			snprintf(gAgentSocketPath, sizeof(gAgentSocketPath), "%s", path.c_str());
 	}
 	if(gAgentSocketPath[0]){
 		gAgentBridgeEnabled = initializeAgentSocket();
