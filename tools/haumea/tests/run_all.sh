@@ -192,7 +192,9 @@ phase "unit tests"
 # Skips this mode expects: scripts that need the real game, the showcase's
 # real-game models, and the rotation test's own librw build. Anything else
 # (no display, no toolchain, no editor) means the run tested less than it says.
-KNOWN="set LIBRW to a built librw"	# only when no built librw is found
+# The MCP-level agent tests need the mcp package (the Namaka venv); without it
+# only those skip, and the same checks run through HaumeaService.
+KNOWN="set LIBRW to a built librw|needs the mcp package"	# librw: only when no built librw is found
 [ "$SYNTHETIC" = 1 ] && KNOWN="$KNOWN|needs the real game|synthetic fixture"
 SKIPPED=$(grep -c " skipped '" "$WORK/unit.log")
 echo "$SKIPPED test(s) skipped"
