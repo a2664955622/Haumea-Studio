@@ -1,6 +1,7 @@
 #define WITH_D3D
 #include "haumea.h"
 #include "editoricons.h"
+#include "trains.h"
 #include "playerview.h"
 #include "templates.h"
 #include <algorithm>
@@ -473,40 +474,50 @@ RenderPlacementGhost(int objectId, rw::V3d position, rw::Quat rotation, rw::RGBA
 		return;
 	}
 
-	static int ghostObjectId = -1;
-	static rw::Atomic *ghostAtomic = nil;
-	static rw::Clump *ghostClump = nil;
-
-	if(ghostObjectId != objectId){
-		if(ghostAtomic){
-			ghostAtomic->getFrame()->destroy();
-			ghostAtomic->destroy();
-			ghostAtomic = nil;
+	// A few models at once: a train's engine and carriages, a prefab's parts.
+	struct Ghost { int objectId; rw::Atomic *atomic; rw::Clump *clump; uint32 used; };
+	static Ghost ghosts[8];
+	static uint32 useCount;
+	Ghost *ghost = nil;
+	for(Ghost &g : ghosts)
+		if(g.objectId == objectId && (g.atomic || g.clump))
+			ghost = &g;
+	if(ghost == nil){
+		ghost = &ghosts[0];
+		for(Ghost &g : ghosts)
+			if(g.used < ghost->used)
+				ghost = &g;
+		if(ghost->atomic){
+			ghost->atomic->getFrame()->destroy();
+			ghost->atomic->destroy();
 		}
-		if(ghostClump){
-			ghostClump->destroy();
-			ghostClump = nil;
-		}
-		ghostObjectId = objectId;
+		if(ghost->clump)
+			ghost->clump->destroy();
+		ghost->atomic = nil;
+		ghost->clump = nil;
+		ghost->objectId = objectId;
 
 		if(obj->m_type == ObjectDef::ATOMIC && obj->m_atomics[0]){
-			ghostAtomic = obj->m_atomics[0]->clone();
-			if(ghostAtomic){
+			ghost->atomic = obj->m_atomics[0]->clone();
+			if(ghost->atomic){
 				rw::Frame *f = rw::Frame::create();
 				if(f)
-					ghostAtomic->setFrame(f);
+					ghost->atomic->setFrame(f);
 				else{
-					ghostAtomic->destroy();
-					ghostAtomic = nil;
+					ghost->atomic->destroy();
+					ghost->atomic = nil;
 				}
 			}
 		}else if(obj->m_type == ObjectDef::CLUMP && obj->m_clump){
-			ghostClump = obj->m_clump->clone();
-			SetClumpRenderCB(ghostClump, myRenderCB);
+			ghost->clump = obj->m_clump->clone();
+			SetClumpRenderCB(ghost->clump, myRenderCB);
 		}
-		if(ghostAtomic)
-			ghostAtomic->setRenderCB(myRenderCB);
+		if(ghost->atomic)
+			ghost->atomic->setRenderCB(myRenderCB);
 	}
+	ghost->used = ++useCount;
+	rw::Atomic *ghostAtomic = ghost->atomic;
+	rw::Clump *ghostClump = ghost->clump;
 
 	if(ghostAtomic == nil && ghostClump == nil)
 		return;
@@ -658,10 +669,18 @@ RenderInst(ObjectInst *inst)
 		highlightAlpha = 170;
 	}
 
+	// A train stands where the client puts it, its carriages behind.
+	ObjectInst *carriages[TRAIN_MAX_CARS];
+	int numCarriages = 0;
+	if(inst->m_isVehicle && IsTrainEngineModel(inst->m_objectId))
+		numCarriages = UpdateTrainVisual(inst, carriages);
+
 	if(obj->m_type == ObjectDef::ATOMIC)
 		((rw::Atomic*)inst->m_rwObject)->render();
 	else if(obj->m_type == ObjectDef::CLUMP)
 		((rw::Clump*)inst->m_rwObject)->render();
+	for(int i = 0; i < numCarriages; i++)
+		((rw::Clump*)carriages[i]->m_rwObject)->render();
 
 	highlightColor = black;
 	if(obj->m_noBackfaceCulling)

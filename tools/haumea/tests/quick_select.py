@@ -55,6 +55,7 @@ SOURCES = {
 	'checkpoints.h': ['checkpoint_types', 'el_checkpoint'],
 	'maptools.cpp': ['map_tools'],
 	'radarart.cpp': ['radar_art', 'roundtrip'],
+	'trains.cpp': ['trains', 'roundtrip'],
 	'mapcheck.cpp': ['map_check'],
 	'playerview.cpp': ['player_view'],
 	'interiors.cpp': ['interiors'],

@@ -1,5 +1,6 @@
 #include "haumea.h"
 #include "editoricons.h"
+#include "trains.h"
 #include "encoding.h"
 #include "imgui/imgui_internal.h"
 #include "workspace.h"
@@ -7003,6 +7004,9 @@ pawnWriteObjectCall(FILE *f, const ObjectInst *inst, PawnCodeFormat format,
 	const char *name = obj && obj->m_name[0] ? obj->m_name : "unknown";
 	const char *worldTag = pawnIsWorldObject(inst) ? " [world object replacement]" : "";
 	if(inst->m_isVehicle){
+		// A train's angle only says which way it runs (over 180 or not).
+		if(IsTrainEngineModel(inst->m_objectId))
+			e.z = TrainExportAngle(e.z);
 		if(handle && handle[0])
 			fprintf(f, "\tnew %s = ", handle);
 		else
@@ -9557,6 +9561,8 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 				if(numSkipped) (*numSkipped)++;
 				continue;
 			}
+			if(IsTrainEngineModel(entry.objectId))
+				entry.rz = TrainImportAngle(entry.rz);
 			entry.rx = entry.ry = 0.0f;
 			entry.world = -1;
 			pawnCaptureAssignment(source, found, entry.handle, sizeof(entry.handle));

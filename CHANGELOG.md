@@ -31,6 +31,8 @@ the Haumea map editor; what changed for its users is in
 **More map elements**
 - Vehicles get SA-MP's 256 colours, a number plate, a paintjob and one tuning
   part per slot (only parts that fit), shown on the model.
+- Trains stand on the track as SA-MP puts them, with the carriages the game adds
+  (three behind a Freight or a Brown Streak), and slide along it when dragged.
 - Sound places play an audio stream or a game sound to players nearby.
 - Checkpoints and race checkpoints (streamer maps), with race order.
 - **TextDraw designer**: draw global and per-player textdraws on the 640x448

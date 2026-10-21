@@ -128,6 +128,17 @@ Vehicles are in the browser like objects. In Object Info set static (`AddStaticV
 dynamic creation, the respawn delay, the two colours (-1 is random), a number plate, a
 paintjob and tuning parts. Only parts that fit the model are offered, one per slot.
 
+**Trains** (Freight 537, Brown Streak 538, Tram 449) go on the track as SA-MP puts them: placing
+one snaps it to the nearest track and dragging slides it along (hold `Alt` to move it freely),
+with the tracks drawn faintly while a train is selected or being placed. They come from your game's
+`data/Paths/tracks.dat` and `tracks3.dat` (SA-MP doesn't use `tracks2.dat` and `tracks4.dat`).
+The Freight pulls three flat freights and the Brown Streak three coaches, drawn behind it as in
+game; the Tram runs alone. Only the engine is written to the map, since the game adds the
+carriages, and each train takes four vehicle ids. Its angle only says which way it runs: over
+180 one way, up to 180 the other. Trains need **Static vehicle**, because open.mp's `CreateVehicle`
+refuses them, and Map check says so, and flags a train placed more than 3 m off a track or a
+carriage on its own.
+
 ## Materials
 
 Under **Materials** in Object Info, each material slot of an object can get another texture, a

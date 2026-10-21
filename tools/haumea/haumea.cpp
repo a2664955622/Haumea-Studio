@@ -1,5 +1,6 @@
 #include "haumea.h"
 #include "editoricons.h"
+#include "trains.h"
 #include "anim.h"
 #include "npcpreview.h"
 #include "testserver.h"
@@ -1482,6 +1483,11 @@ GetPlacementPosition(void)
 	rw::V3d hitPos, hitNormal;
 	GetPlacementSurfaceHit(&hitPos, &hitNormal);
 	hitPos.z += GetElementPlacementBaseOffset(GetSpawnElementKind(), GetSpawnObjectId());
+	// A train goes on the track, as the client will put it (Alt: anywhere).
+	rw::V3d onTrack;
+	if(IsTrainEngineModel(GetSpawnObjectId()) && !CPad::IsAltDown() &&
+	   SnapTrainToTrack(GetSpawnObjectId(), hitPos, 0.0f, &onTrack))
+		hitPos = onTrack;
 	return hitPos;
 }
 
@@ -2619,6 +2625,8 @@ LoadGame(void)
 	InitLodLookup();
 	InitObjectCategories();
 	SampLoader::ExtendCategories();
+	if(isSA())
+		LoadTrainTracks();
 	LoadFavourites();
 	LoadRecentObjects();
 	// InitPreviewRenderer called lazily on first use
@@ -3221,6 +3229,12 @@ dogizmo(void)
 					}
 				}
 
+				// Trains slide along the track (Alt: anywhere).
+				rw::V3d onTrack;
+				if(obj->m_isVehicle && IsTrainEngineModel(obj->m_objectId) && !CPad::IsAltDown() &&
+				   SnapTrainToTrack(obj->m_objectId, newPos, GetTrainInstAngle(obj), &onTrack))
+					newPos = onTrack;
+
 				obj->m_translation = newPos;
 				obj->m_isDirty = true;
 			}
@@ -3327,8 +3341,12 @@ renderWorld(void)
 				pos.z += GetElementPlacementBaseOffset(GetSpawnElementKind(), GetSpawnObjectId());
 				rw::Quat rot = { 0.0f, 0.0f, 0.0f, 1.0f };
 				rw::RGBA col = { 80, 220, 120, 110 };
+				TrainCar cars[TRAIN_MAX_CARS];
 				if(ElementKindUsesIcon(GetSpawnElementKind()))
 					RenderElementIconGhost(GetSpawnElementKind(), pos);
+				else if(IsTrainEngineModel(GetSpawnObjectId()) && !CPad::IsAltDown() &&
+				   ComputeTrainCars(GetSpawnObjectId(), pos, 0.0f, cars) > 0)
+					RenderTrainPlacementGhost(GetSpawnObjectId(), pos, 0.0f);
 				else
 					RenderPlacementGhost(GetSpawnObjectId(), pos, rot, col);
 			}
@@ -3362,6 +3380,7 @@ renderWorld(void)
 		Timecycle::RenderBoxes();
 	if(gRenderZones)
 		Zones::Render();
+	RenderTrainTracksOverlay();
 	if(gRenderCullZones)
 		Zones::RenderCullZones();
 	if(gRenderAttribZones)

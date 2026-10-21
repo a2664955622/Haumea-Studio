@@ -6,6 +6,7 @@
 #endif
 #include "haumea.h"
 #include "editoricons.h"
+#include "trains.h"
 #include "agentbridge.h"
 #include "materialtext.h"
 #include "mapcheck.h"
@@ -2134,6 +2135,32 @@ applyAgentProperties(ObjectInst *inst, const std::vector<std::string> &lines, si
 	return true;
 }
 
+// A train as the client makes it: the engine and its carriages on the
+// track, how far the engine moved to get there, and its vehicle ids.
+static std::string
+agentTrainJson(ObjectInst *inst)
+{
+	TrainCar cars[TRAIN_MAX_CARS];
+	float off = 0.0f;
+	int n = ComputeTrainCars(inst->m_objectId, inst->m_translation, GetTrainInstAngle(inst), cars, &off);
+	std::string json = "{\"vehicle_ids\":" + std::to_string(GetTrainVehicleIds(inst->m_objectId)) +
+		",\"clockwise\":" + (TrainAngleIsClockwise(GetTrainInstAngle(inst)) ? "true" : "false") +
+		",\"on_tracks\":" + (n > 0 ? "true" : "false");
+	char buffer[256];
+	if(n > 0){
+		snprintf(buffer, sizeof(buffer), ",\"off_track\":%.3f", off);
+		json += buffer;
+	}
+	json += ",\"cars\":[";
+	for(int i = 0; i < n; i++){
+		snprintf(buffer, sizeof(buffer), "%s{\"model\":%d,\"position\":[%.4f,%.4f,%.4f],\"forward\":[%.4f,%.4f,%.4f]}",
+			i ? "," : "", cars[i].model, cars[i].position.x, cars[i].position.y, cars[i].position.z,
+			cars[i].forward.x, cars[i].forward.y, cars[i].forward.z);
+		json += buffer;
+	}
+	return json + "]}";
+}
+
 static std::string
 agentInstanceJson(ObjectInst *inst, bool includeAgentFlag)
 {
@@ -2155,6 +2182,8 @@ agentInstanceJson(ObjectInst *inst, bool includeAgentFlag)
 		"\",\"properties\":" + agentPropertiesJson(inst);
 	if(HasObjectMaterialOverrides(inst))
 		json += ",\"materials\":[" + agentMaterialsJson(inst) + "]";
+	if(inst->m_isVehicle && IsTrainEngineModel(inst->m_objectId))
+		json += ",\"train\":" + agentTrainJson(inst);
 	return json + "}";
 }
 

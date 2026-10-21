@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
 #include "editoricons.h"
+#include "trains.h"
 #include "workspace.h"
 #include "shortcuts.h"
 #include "playerview.h"
@@ -635,6 +636,7 @@ windowOpen(const std::string &title)
 // assert item 'Window' 'Label'   / no_item
 // assert hidden|player_view_hidden|fov|ui_scale|camera_moved <op> N   (camera_moved: metres since mark_camera)
 // assert camera_target.x|y|z <op> N   (the point the camera looks at)
+// assert train.cars|train.off_track|train.N.x|y|z|model <op> N   (the selected engine's train in game)
 static bool
 uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 {
@@ -661,6 +663,28 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		snprintf(buf, sizeof(buf), "%s is %g", what.c_str(), v);
 		why = buf;
 		return compare(v, arg(1), want);
+	}
+	if(what == "train.cars" || what.compare(0, 6, "train.") == 0){
+		// train.cars (how many the selected engine makes), train.N.x|y|z
+		// (car N where the client puts it), train.off_track
+		if(sel == nil){ why = "nothing selected"; return false; }
+		TrainCar cars[TRAIN_MAX_CARS];
+		float off = 0.0f;
+		int n = ComputeTrainCars(sel->m_objectId, sel->m_translation, GetTrainInstAngle(sel), cars, &off);
+		double v = 0;
+		if(what == "train.cars") v = n;
+		else if(what == "train.off_track") v = off;
+		else{
+			int index = atoi(what.c_str() + 6);
+			size_t dot = what.find('.', 6);
+			std::string field = dot == std::string::npos ? "" : what.substr(dot + 1);
+			if(index < 0 || index >= n){ why = "no such train car"; return false; }
+			v = field == "x" ? cars[index].position.x : field == "y" ? cars[index].position.y :
+				field == "model" ? cars[index].model : cars[index].position.z;
+		}
+		snprintf(buf, sizeof(buf), "%s is %g", what.c_str(), v);
+		why = buf;
+		return compare(v, arg(1), atof(arg(2).c_str()));
 	}
 	if(what.compare(0, 9, "textdraw.") == 0){
 		// textdraw.N.x|y|letter_x|letter_y|size_x|size_y

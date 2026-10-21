@@ -1,5 +1,6 @@
 #include "haumea.h"
 #include "editoricons.h"
+#include "trains.h"
 #include "textdraws.h"
 #include "namaka.h"
 #include "samp_loader.h"
@@ -5970,6 +5971,18 @@ uiVehicleSettings(ObjectInst *inst, std::vector<ObjectInst*> &selected, bool bat
 	int color1 = inst->m_vehicleColor1, color2 = inst->m_vehicleColor2;
 	int respawn = inst->m_vehicleRespawnDelay;
 	bool staticChanged = ImGui::Checkbox("Static vehicle (AddStaticVehicleEx)", &isStatic);
+	if(IsTrainEngineModel(inst->m_objectId)){
+		int ids = GetTrainVehicleIds(inst->m_objectId);
+		if(ids > 1)
+			ImGui::TextWrapped("A train: the engine and 3 carriages behind it, %d vehicle ids. Only the engine is "
+				"written; the game adds the carriages.", ids);
+		else
+			ImGui::TextWrapped("A tram: no carriages.");
+		ImGui::TextDisabled("It runs one way with an angle over 180 and the other way up to 180. Dragging "
+			"slides it along the track (hold Alt to move it freely).");
+		if(!isStatic)
+			ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.3f, 1.0f), "Trains need Static vehicle: open.mp's CreateVehicle refuses them.");
+	}
 	bool color1Changed = uiVehicleColourPicker("Colour 1", &color1);
 	ImGui::SetItemTooltip("A vehicle colour, 0-255. -1 picks one at random when it spawns.");
 	bool color2Changed = uiVehicleColourPicker("Colour 2", &color2);

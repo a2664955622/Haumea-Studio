@@ -1,0 +1,30 @@
+# A Brown Streak placed from the Object Browser lands on the track (the
+# synthetic game's tracks.dat runs along y -3100) with its three coaches, and
+# only the engine is written.
+open "$UI_FIXTURES/ui_floor.pwn"
+camera 2000 -3060 40 2000 -3100 10
+shortcut window_browser
+wait 5
+click_item 'Object Browser' 'Objects'
+wait 3
+click_item 'Object Browser' '##search_objects'
+type "538"
+wait 5
+click_item 'Object Browser' '##tile'
+wait 3
+click_item 'Object Browser' 'Place'
+wait 3
+click_world 2000 -3097 10
+wait 5
+key Esc
+assert selected == 1
+assert selected.model == 538
+assert selected.y > -3100.05
+assert selected.y < -3099.95
+assert train.cars == 4
+assert train.0.model == 538
+assert train.1.model == 570
+assert train.3.model == 570
+assert train.off_track < 0.05
+assert pawn_count "AddStaticVehicleEx(538," == 1
+assert pawn_lacks "(570,"

@@ -200,6 +200,7 @@ GENERATED += $(OBJDIR)/interiors.o
 GENERATED += $(OBJDIR)/licenses.o
 GENERATED += $(OBJDIR)/maptools.o
 GENERATED += $(OBJDIR)/radarart.o
+GENERATED += $(OBJDIR)/trains.o
 GENERATED += $(OBJDIR)/encoding.o
 GENERATED += $(OBJDIR)/workspace.o
 GENERATED += $(OBJDIR)/zones.o
@@ -285,6 +286,7 @@ OBJECTS += $(OBJDIR)/interiors.o
 OBJECTS += $(OBJDIR)/licenses.o
 OBJECTS += $(OBJDIR)/maptools.o
 OBJECTS += $(OBJDIR)/radarart.o
+OBJECTS += $(OBJDIR)/trains.o
 OBJECTS += $(OBJDIR)/encoding.o
 OBJECTS += $(OBJDIR)/workspace.o
 OBJECTS += $(OBJDIR)/zones.o
@@ -413,6 +415,9 @@ $(OBJDIR)/maptools.o: ../tools/haumea/maptools.cpp
 	@echo "$(notdir $<)"
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/radarart.o: ../tools/haumea/radarart.cpp
+	@echo "$(notdir $<)"
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/trains.o: ../tools/haumea/trains.cpp
 	@echo "$(notdir $<)"
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/encoding.o: ../tools/haumea/encoding.cpp

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "trains.h"
 #include "rec.h"
 #include "mapcheck.h"
 #include "workspace.h"
@@ -334,8 +335,44 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 			c.add(MAPCHECK_ERROR, LIMITS, ids(byKind[pool.kind]), "%d %s, over the server's limit of %d; "
 				"the extra ones are not created.", n, pool.what, pool.limit);
 	}
-	if((int)vehicles.size() > VEHICLES)
-		c.add(MAPCHECK_ERROR, LIMITS, ids(vehicles), "%d vehicles, over the limit of %d.", (int)vehicles.size(), VEHICLES);
+	// A train takes a vehicle id for the engine and each carriage.
+	int vehicleIds = 0, trainIds = 0;
+	for(ObjectInst *inst : vehicles){
+		int n = IsTrainEngineModel(inst->m_objectId) ? GetTrainVehicleIds(inst->m_objectId) : 1;
+		vehicleIds += n;
+		if(n > 1)
+			trainIds += n;
+	}
+	if(vehicleIds > VEHICLES){
+		if(trainIds > 0)
+			c.add(MAPCHECK_ERROR, LIMITS, ids(vehicles), "%d vehicle ids (%d of them for trains, 4 each), over the "
+				"limit of %d.", vehicleIds, trainIds, VEHICLES);
+		else
+			c.add(MAPCHECK_ERROR, LIMITS, ids(vehicles), "%d vehicles, over the limit of %d.", vehicleIds, VEHICLES);
+	}
+
+	// --- Trains ---
+	const char *TRAINS = "Trains";
+	for(ObjectInst *inst : vehicles){
+		int model = inst->m_objectId;
+		if(IsTrainEngineModel(model)){
+			if(!inst->m_vehicleStatic)
+				c.add(MAPCHECK_ERROR, TRAINS, inst, "%s: trains are only made with AddStaticVehicle(Ex); open.mp's "
+					"CreateVehicle refuses them. Tick Static vehicle.", label(inst, name, sizeof(name)));
+			TrainCar cars[TRAIN_MAX_CARS];
+			float off = 0.0f;
+			if(ComputeTrainCars(model, inst->m_translation, GetTrainInstAngle(inst), cars, &off) > 0 && off > 3.0f)
+				c.add(MAPCHECK_WARNING, TRAINS, inst, "%s is %.0f m off the track: in game it stands on the nearest "
+					"track instead, at %.1f, %.1f, %.1f.", label(inst, name, sizeof(name)), off,
+					cars[0].position.x, cars[0].position.y, cars[0].position.z);
+		}else if(model == 569 || model == 570)
+			c.add(MAPCHECK_WARNING, TRAINS, inst, "%s: a carriage on its own isn't made in game (the client says \"bad "
+				"train carriages\"); place a %s, which brings three.", label(inst, name, sizeof(name)),
+				model == 570 ? "Brown Streak (538)" : "Freight (537)");
+		else if(model == 590)
+			c.add(MAPCHECK_WARNING, TRAINS, inst, "%s: no train in the game pulls the box freight, so it stands "
+				"alone, off any track.", label(inst, name, sizeof(name)));
+	}
 
 	// --- Removed buildings ---
 	// One RemoveBuildingForPlayer per removed or changed world building, and one

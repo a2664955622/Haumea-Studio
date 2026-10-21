@@ -69,10 +69,55 @@ VEHICLES = [
 	'411, infernus, infernus, car, INFERNUS, INFERNU, null, executive, 5, 0, 0, -1, 0.7, 0.7, 0',
 	'468, sanchez, sanchez, bike, DIRTBIKE, SANCHEZ, biked, motorbike, 5, 0, 0, 23, 0.68, 0.62, -1',
 	'522, nrg500, nrg500, bike, NRG500, NRG500, bikes, motorbike, 10, 0, 1f341210, 16, 0.68, 0.68, -1',
+	'449, tram, tram, train, TRAM, TRAM, null, ignore, 10, 0, 1012, -1, 0.78, 0.78, -1',
+	'537, freight, freight, train, FREIGHT, FREIGHT, null, ignore, 10, 0, 0, -1, 1.06, 1.06, -1',
 	'538, streak, streak, train, STREAK, STREAK, null, ignore, 10, 0, 0, -1, 1.0, 1.0, -1',
+	'569, freiflat, freiflat, train, FREIFLAT, FRFLAT, null, ignore, 10, 0, 0, -1, 1.06, 1.06, -1',
+	'570, streakc, streakc, train, CSTREAK, STREAKC, null, ignore, 10, 0, 0, -1, 1.06, 1.06, -1',
 	'560, sultan, sultan, car, SULTAN, SULTAN, null, richfamily, 7, 0, 0, -1, 0.7, 0.7, 1',
 	'562, elegy, elegy, car, ELEGY, ELEGY, null, richfamily, 7, 0, 0, -1, 0.68, 0.68, 1',
 ]
+# Train cars are long boxes (x, length, z), so their spacing along the track shows.
+TRAIN_SIZES = {'tram': (2.5, 14.0, 3.5), 'freight': (3.0, 18.0, 4.0), 'streak': (3.0, 18.0, 4.0),
+               'freiflat': (3.0, 16.0, 2.0), 'streakc': (3.0, 20.0, 4.0)}
+# handling.cfg lines for the trains (as the game's, with the suspension lower limit
+# (e) changed so it shows).
+HANDLING = [
+	'TRAM 1900.0 4795.9 1.0 0.0 -0.3 0.0 85 0.97 0.77 0.51 5 150.0 25.0 5.0 R P 8.5 0.45 0 30.0 1.3 0.08 0.0 0.0 -1.00 0.4 0.5 0.2 0.50 26000 1 400000 0 1 13',
+	'FREIGHT 5500.0 65000.0 3.0 0.0 0.0 0.0 90 0.58 0.8 0.5 4 110.0 20.0 20.0 R D 03.17 0.40 0 30.0 1.4 0.06 0.0 0.45 0.25 0.55 0.0 0.45 0.20 5000 8 200 0 1 2',
+	'STREAK 5500.0 65000.0 3.0 0.0 0.0 0.0 90 0.58 0.8 0.5 4 110.0 20.0 20.0 R D 03.17 0.40 0 30.0 1.4 0.06 0.0 0.45 -0.10 0.55 0.0 0.65 0.20 5000 8 200 0 1 2',
+	'FREIFLAT 5500.0 33187.9 1.0 0.0 0.0 0.0 90 0.58 0.8 0.5 4 110.0 20.0 20.0 R D 03.17 0.40 0 30.0 1.4 0.06 0.0 0.45 0.0 0.55 0.0 0.45 0.20 5000 8 200 0 1 0',
+	'CSTREAK 5500.0 33187.9 1.0 0.0 0.0 0.0 90 0.58 0.8 0.5 4 110.0 20.0 20.0 R D 03.17 0.40 0 30.0 1.4 0.06 0.0 0.45 -0.10 0.55 0.0 0.65 0.20 5000 8 200 0 1 21',
+]
+
+
+def track_loop(corners, step):
+	"""Nodes every step metres around a closed polygon, as tracks*.dat lists them."""
+	nodes = []
+	for (ax, ay, az), (bx, by, bz) in zip(corners, corners[1:] + corners[:1]):
+		length = ((bx - ax) ** 2 + (by - ay) ** 2) ** 0.5
+		count = max(1, int(length // step))
+		for i in range(count):
+			f = i / count
+			nodes.append((ax + (bx - ax) * f, ay + (by - ay) * f, az + (bz - az) * f))
+	return nodes
+
+
+# tracks.dat: a 400 x 300 m loop south of the fixture floor; tracks3.dat (the
+# trams'): a small square in SF. tracks2.dat runs through the middle of the
+# first: SA-MP leaves it out, so nothing may stick to it.
+TRACKS = {
+	'tracks.dat': track_loop([(1800, -3100, 10), (2200, -3100, 10), (2200, -2800, 12), (1800, -2800, 12)], 10),
+	'tracks3.dat': track_loop([(-2050, 50, 30), (-1950, 50, 30), (-1950, 150, 30), (-2050, 150, 30)], 10),
+	'tracks2.dat': track_loop([(1850, -2950, 11), (2150, -2950, 11), (2150, -2949, 11), (1850, -2949, 11)], 10),
+}
+
+
+def write_tracks(folder):
+	for name, nodes in TRACKS.items():
+		(folder / name).write_text(f'{len(nodes)}\n' + ''.join(f'{x:.4f} {y:.4f} {z:.4f} 0\n' for x, y, z in nodes))
+
+
 PEDS = [
 	'0, null, generic, PLAYER1, STAT_PLAYER, player, 0, 0, null, 9,9, PED_TYPE_PLAYER, VOICE_PLY_CR, VOICE_PLY_CR',
 	'7, male01, male01, CIVMALE, STAT_SENSIBLE_GUY, man, 0, 0, man, 1,4, PED_TYPE_GEN, VOICE_GEN_MALE01, VOICE_GEN_MALE01',
@@ -261,7 +306,7 @@ def main(target):
 	for line in VEHICLES:
 		fields = [f.strip() for f in line.split(',')]
 		name = fields[1]
-		img[name + '.dff'] = clump((2, 4.5, 1.4), name, ['root', 'chassis_dummy', 'wheel_lf_dummy',
+		img[name + '.dff'] = clump(TRAIN_SIZES.get(name, (2, 4.5, 1.4)), name, ['root', 'chassis_dummy', 'wheel_lf_dummy',
 			'wheel_rf_dummy', 'wheel_lb_dummy', 'wheel_rb_dummy', 'chassis'])
 		img[name + '.txd'] = texture_dictionary([(name, colour_for(name))])
 	for line in PEDS:
@@ -308,6 +353,8 @@ def main(target):
 	sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 	from test_nodes_edit import write_synthetic_nodes
 	write_synthetic_nodes(root / 'data' / 'Paths')
+	write_tracks(root / 'data' / 'Paths')
+	(root / 'data' / 'handling.cfg').write_text(''.join(line + '\n' for line in HANDLING))
 	print(root)
 
 
