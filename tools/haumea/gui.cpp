@@ -12055,16 +12055,21 @@ gui(void)
 			LoadCustomModelsForMap(nil, std::string());
 			gPawnSavePath[0] = '\0';
 			gPawnLastSavedChangeSeq = GetLatestChangeSeq();
-			// Developer check: --pawn-roundtrip <in.pwn> <out.pwn> opens a map,
-			// saves it to another file and quits.
+			// Developer check: --pawn-roundtrip <in.pwn> <out.pwn> [<in> <out>...]
+			// opens each map in turn, saves it to its other file and quits, so
+			// a test loads the game once for many maps. A later pair may read
+			// what an earlier one wrote.
 			// --open <map.pwn> opens that map instead of the last one.
-			const char *roundtripIn = nil, *roundtripOut = nil, *openPath = nil;
+			const char *roundtripIn = nil, *openPath = nil;
+			std::vector<std::pair<const char*, const char*>> roundtrips;
 			const char *selftestIn = nil, *selftestOut = nil, *profileIn = nil;
 			const char *textDrawsIn = nil, *textDrawsOut = nil;
 			for(int i = 1; i + 2 < sk::args.argc; i++)
 				if(strcmp(sk::args.argv[i], "--pawn-roundtrip") == 0){
 					roundtripIn = sk::args.argv[i+1];
-					roundtripOut = sk::args.argv[i+2];
+					for(int k = i + 1; k + 1 < sk::args.argc && strncmp(sk::args.argv[k], "--", 2) != 0 &&
+					    strncmp(sk::args.argv[k+1], "--", 2) != 0; k += 2)
+						roundtrips.push_back({ sk::args.argv[k], sk::args.argv[k+1] });
 				}else if(strcmp(sk::args.argv[i], "--textdraw-roundtrip") == 0){
 					// The same for a textdraw file (the textdraws of any Pawn file).
 					textDrawsIn = sk::args.argv[i+1];
@@ -12113,13 +12118,15 @@ gui(void)
 					OfferMoveMapTextDraws(openPath);
 			}
 			else if(roundtripIn){
-				bool opened = openPawnMap(roundtripIn);
-				int skipped = 0;
-				int saved = opened ? ExportPawnCode(roundtripOut,
-					(PawnCodeFormat)gPawnSaveFormat, false, &skipped) : -1;
-				printf("pawn-roundtrip: %s -> %s: %d operation(s), %d skipped on save\n",
-					roundtripIn, roundtripOut, saved, skipped);
-				fflush(stdout);
+				for(auto &roundtrip : roundtrips){
+					bool opened = openPawnMap(roundtrip.first);
+					int skipped = 0;
+					int saved = opened ? ExportPawnCode(roundtrip.second,
+						(PawnCodeFormat)gPawnSaveFormat, false, &skipped) : -1;
+					printf("pawn-roundtrip: %s -> %s: %d operation(s), %d skipped on save\n",
+						roundtrip.first, roundtrip.second, saved, skipped);
+					fflush(stdout);
+				}
 				sk::globals.quit = 1;
 			}else if(StartScreenWantedAtLaunch()){
 				ShowStartScreen();	// it opens the map the user picks
