@@ -7636,19 +7636,20 @@ uiPreferencesWindow(void)
 			TestServerPreferences();
 			ImGui::EndTabItem();
 		}
-		if(ImGui::BeginTabItem("Namaka")){
-			NamakaListenSwitch();
-			if(ImGui::Button("Open Namaka..."))
-				showNamakaWindow = true;
-			ImGui::SetItemTooltip("Install, repair or update Namaka, and connect Claude.");
-			ImGui::EndTabItem();
-		}
 		if(ImGui::BeginTabItem("Shortcuts")){
 			uiShortcutPreferences();
 			ImGui::EndTabItem();
 		}else{
 			gShortcutCaptureAction = -1;
 			ShortcutsSetCapturing(false);
+		}
+		// Last, so the tabs before it keep their places.
+		if(ImGui::BeginTabItem("Namaka###prefs_namaka")){
+			NamakaListenSwitch();
+			if(ImGui::Button("Open Namaka..."))
+				showNamakaWindow = true;
+			ImGui::SetItemTooltip("Install, repair or update Namaka, and connect Claude.");
+			ImGui::EndTabItem();
 		}
 		ImGui::EndTabBar();
 	}
