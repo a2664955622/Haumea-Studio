@@ -663,7 +663,7 @@ gameObjectBasis(float rx, float ry, float rz, rw::V3d *right, rw::V3d *up, rw::V
 // assert hidden|player_view_hidden|fov|ui_scale|camera_moved <op> N   (camera_moved: metres since mark_camera)
 // assert camera_target.x|y|z <op> N   (the point the camera looks at)
 // assert train.cars|train.off_track|train.N.x|y|z|model <op> N   (the selected engine's train in game)
-// assert drawn_rotation N RX RY RZ   (the map's Nth object, from 0, is drawn as the game rotates it)
+// assert drawn_rotation N|selected RX RY RZ   (the map's Nth object, from 0, is drawn as CreateObject rotates it)
 static bool
 uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 {
@@ -741,12 +741,16 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		return f && (what == "file_contains" ? found : !found);
 	}
 	if(what == "drawn_rotation"){
-		std::vector<ObjectInst*> objs = mapObjectsInOrder();
-		int index = atoi(arg(1).c_str());
-		if(index < 0 || index >= (int)objs.size()){ why = "no such object"; return false; }
+		ObjectInst *inst = sel;
+		if(arg(1) != "selected"){
+			std::vector<ObjectInst*> objs = mapObjectsInOrder();
+			int index = atoi(arg(1).c_str());
+			inst = index >= 0 && index < (int)objs.size() ? objs[index] : nil;
+		}
+		if(inst == nil){ why = "no such object"; return false; }
 		rw::V3d want[3];
 		gameObjectBasis(atof(arg(2).c_str()), atof(arg(3).c_str()), atof(arg(4).c_str()), &want[0], &want[1], &want[2]);
-		const rw::Matrix &m = objs[index]->m_matrix;
+		const rw::Matrix &m = inst->m_matrix;
 		const rw::V3d got[3] = { m.right, m.up, m.at };
 		float err = 0;
 		for(int i = 0; i < 3; i++)

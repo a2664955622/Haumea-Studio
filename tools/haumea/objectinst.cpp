@@ -855,7 +855,10 @@ BuildInstanceMatrix(rw::Matrix *matrix, const rw::Quat &rotation, const rw::V3d 
 void
 ObjectInst::UpdateMatrix(void)
 {
-	BuildInstanceMatrix(&m_matrix, m_rotation, m_translation, m_iplRotation);
+	// Outside an IPL document an edited world object is exported as
+	// RemoveBuildingForPlayer plus CreateObject, so it is drawn as one.
+	bool ipl = m_iplRotation && (IsIplMapDocumentOpen() || !PawnObjectNeedsExport(this));
+	BuildInstanceMatrix(&m_matrix, m_rotation, m_translation, ipl);
 }
 
 static bool
