@@ -1,0 +1,15 @@
+# Interiors: open from the Windows menu, search by key, click to go there.
+open "$UI_FIXTURES/ui_floor.pwn"
+click_item '*' 'Windows'
+wait 3
+click_item '*' 'Interiors'
+wait 10
+assert window "Interiors"
+click_item 'Interiors' '##interiorsearch'
+type "ammun1"
+wait 5
+mark_camera
+click_item 'Interiors' '1'
+wait 5
+# From the sea west of the map to the Ammu-Nation interior, high in the sky.
+assert camera_moved > 1000

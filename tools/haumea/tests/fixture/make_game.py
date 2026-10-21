@@ -274,7 +274,10 @@ def main(target):
 	(root / 'data' / 'peds.ide').write_text('peds\n' + ''.join(p + '\n' for p in PEDS) + 'end\n')
 	(root / 'data' / 'default.ide').write_text('')
 	(root / 'data' / 'maps' / 'fixture.ipl').write_text('inst\n' + ''.join(
-		f'{i[1]}, {i[2]}, 0, {i[3]}, {i[4]}, {i[5]}, 0, 0, 0, 1, {i[6]}\n' for i in WORLD) + 'end\n')
+		f'{i[1]}, {i[2]}, 0, {i[3]}, {i[4]}, {i[5]}, 0, 0, 0, 1, {i[6]}\n' for i in WORLD) + 'end\n'
+		# One interior entrance, as in the game's IPLs, for the Interiors window.
+		'enex\n286.149, -41.5444, 1000.57, 0, 1.5, 1, 8, 286.149, -40.6444, 1000.57, -0.100006, 1, 8, '
+		'"AMMUN1", 4, 2, 0, 24\nend\n')
 	(root / 'data' / 'default.dat').write_text('IDE DATA\\DEFAULT.IDE\nIDE DATA\\VEHICLES.IDE\nIDE DATA\\PEDS.IDE\n')
 	(root / 'data' / 'gta.dat').write_text('IDE DATA\\MAPS\\FIXTURE.IDE\nCOLFILE 0 MODELS\\FIXTURE.COL\n'
 	                                       'IPL DATA\\MAPS\\FIXTURE.IPL\n')
