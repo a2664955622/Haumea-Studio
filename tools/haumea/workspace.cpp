@@ -838,10 +838,13 @@ uiWorkspaceSettings(void)
 	bool serverOk = CheckWorkspaceDir(workspace, &warning);
 	if(!serverOk || workspace[0])
 		statusLine(serverOk, serverOk ? "Server folder found." : warning, true);
-	if(normalizeDir(workspace) != gWorkspaceDir && ImGui::Button("Use this workspace"))
+	bool edited = normalizeDir(workspace) != gWorkspaceDir;
+	if(edited && ImGui::Button("Use this workspace"))
 		SetWorkspaceDir(workspace);
 	if(!gWorkspaceDir.empty()){
-		ImGui::SameLine();
+		// Beside Use, not after the status line, where it ran off the window.
+		if(edited)
+			ImGui::SameLine();
 		if(ImGui::Button("No workspace"))
 			SetWorkspaceDir(nil);
 	}

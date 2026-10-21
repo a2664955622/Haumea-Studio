@@ -538,6 +538,7 @@ windowOpen(const std::string &title)
 // assert pawn_contains "text" [streamer]   (and pawn_lacks)
 // assert pawn_count "text" <op> N             (occurrences in the native Pawn)
 // assert toast_contains "text"
+// assert file_contains <path> "text"   (and file_lacks)
 // assert window "Title"     / no_window "Title"
 // assert item 'Window' 'Label'   / no_item
 // assert hidden|player_view_hidden|fov|ui_scale|camera_moved <op> N   (camera_moved: metres since mark_camera)
@@ -582,7 +583,7 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		why = buf;
 		return compare(v, arg(1), atof(arg(2).c_str()));
 	}
-	if(what == "file_contains"){
+	if(what == "file_contains" || what == "file_lacks"){
 		std::string text;
 		FILE *f = fopen(arg(1).c_str(), "rb");
 		if(f){
@@ -593,7 +594,7 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		}
 		bool found = text.find(arg(2)) != std::string::npos;
 		why = f ? (found ? "found" : "not in the file") : "can't read " + arg(1);
-		return found;
+		return f && (what == "file_contains" ? found : !found);
 	}
 	if(what == "gizmo"){
 		std::string mode = gGizmoMode == GIZMO_ROTATE ? "rotate" : "move";

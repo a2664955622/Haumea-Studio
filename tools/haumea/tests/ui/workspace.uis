@@ -1,0 +1,33 @@
+# Workspace: switch to another folder in Workspace Settings, back through File > Workspace's recent list, then none.
+open "$UI_FIXTURES/ui_floor.pwn"
+click_item '*' 'File'
+wait 3
+click_item '*' 'Workspace'
+wait 3
+click_item '*' 'Workspace Settings...'
+wait 5
+assert window "Workspace"
+set_item 'Workspace' 'workspace/##path' "$UI_FIXTURES"
+wait 3
+close_popup
+click_item 'Workspace' 'Use this workspace'
+wait 3
+assert file_contains "$XDG_CONFIG_HOME/haumea/workspace.cfg" "workspace $UI_FIXTURES"
+assert no_item 'Workspace' 'Use this workspace'
+# The first folder is in the recent list now.
+set_item 'Workspace' 'workspace/##path' "$SERVER"
+wait 3
+close_popup
+click_item 'Workspace' 'Use this workspace'
+wait 3
+click_item '*' 'File'
+wait 3
+click_item '*' 'Workspace'
+wait 3
+click_item '*' 'fixtures'
+wait 5
+assert file_contains "$XDG_CONFIG_HOME/haumea/workspace.cfg" "workspace $UI_FIXTURES"
+click_item 'Workspace' 'No workspace'
+wait 3
+assert no_item 'Workspace' 'No workspace'
+assert file_lacks "$XDG_CONFIG_HOME/haumea/workspace.cfg" "workspace "
