@@ -3,6 +3,7 @@
 #include "startscreen.h"
 #include "icons.h"
 #include "version.h"
+#include "versionutil.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -494,10 +495,10 @@ contents(bool gameLoaded)
 	gLoaded = gameLoaded;
 	if(gSelected.empty() && !GetRecentWorkspaceList().empty())
 		gSelected = GetWorkspaceDir()[0] ? GetWorkspaceDir() : GetRecentWorkspaceList()[0].path;
-	ImGui::TextUnformatted("Haumea Studio " HAUMEA_VERSION);
+	ImGui::Text("Haumea Studio %s", HaumeaVersionDisplay());
 	ImGui::SameLine();
 	ImGui::TextDisabled("the all-in-one editor for open.mp and SA-MP");
-	ImGui::TextDisabled("A workspace is the SA-MP or open.mp server you map for; its maps and models live there.");
+	ImGui::TextDisabled("A workspace is the open.mp or SA-MP server you map for; its maps and models live there.");
 	ImGui::Spacing();
 
 	// The game folder's heading, field and status line, then the buttons.
