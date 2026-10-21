@@ -27,9 +27,9 @@ stock Haumea_hv_areas_CreateObjects()
 	new const spare = CreateDynamicCircle(2500.000000, -1600.000000, 5.000000, -1, -1); // area [dynamic area]
 	#pragma unused spare
 
-	new Haumea_hv_areas_obj_0 = CreateDynamicObject(18990, 2488.229980, -1656.476929, -8.388013, 90.000000, 0.000000, -135.199707, -1, 0, -1, STREAMER_OBJECT_SD, 300.00, areaid); // Tube25m90Bend1
+	new Haumea_hv_areas_obj_0 = CreateDynamicObject(18990, 2488.229980, -1656.476929, -8.388013, 89.999992, -45.199764, -89.999961, -1, 0, -1, STREAMER_OBJECT_SD, 300.00, areaid); // Tube25m90Bend1
 	SetDynamicObjectMaterial(Haumea_hv_areas_obj_0, 1, 18065, "ab_sfammumain", "breezewall5", 0xFFFCFFE6);
-	CreateDynamicObject(18990, 2480.229980, -1650.476929, -8.388013, 90.000000, 0.000000, -135.199707, -1, 0, -1, STREAMER_OBJECT_SD, 300.00, areaid); // Tube25m90Bend1
+	CreateDynamicObject(18990, 2480.229980, -1650.476929, -8.388013, 89.999992, -45.199764, -89.999961, -1, 0, -1, STREAMER_OBJECT_SD, 300.00, areaid); // Tube25m90Bend1
 	CreateDynamicObject(19353, 2470.000000, -1640.000000, -8.000000, 0.000000, 0.000000, 90.000000, -1, 0, -1, STREAMER_OBJECT_SD, 300.00, areaid); // wall001
 	CreateDynamicObject(19353, 1920.000000, -1780.000000, -20.000000, 0.000000, 0.000000, 0.000000, -1, -1, -1, STREAMER_OBJECT_SD, STREAMER_OBJECT_DD, areaid_2); // wall001
 	CreateDynamicPickup(1240, 2, 2300.000000, -1600.000000, 13.500000, -1, -1, -1, STREAMER_PICKUP_SD, circle); // health [pickup]

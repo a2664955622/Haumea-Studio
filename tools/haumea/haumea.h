@@ -1260,8 +1260,9 @@ struct ObjectInst
 	rw::Quat m_rotation;
 	// The rx, ry, rz a map file gave, and the rotation they made: shown and
 	// saved as written while m_rotation is still that one (several triples
-	// give the same rotation, e.g. 180,90,0 and 0,-90,180).
-	rw::V3d m_sourceDegrees;
+	// give the same rotation, e.g. 180,90,0 and 0,-90,180). Doubles, so a
+	// written -89.999961 isn't read back as float32's -89.99996185.
+	double m_sourceDegrees[3];
 	rw::Quat m_sourceRotation;
 	bool m_hasSourceDegrees;
 	// cached form of the above

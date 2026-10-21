@@ -6527,7 +6527,7 @@ ExportSelectedTxds(const char *dir, int *numFailed)
 
 struct PawnEulerRotation
 {
-	float x, y, z;
+	double x, y, z;
 };
 
 bool
@@ -6542,14 +6542,16 @@ InstanceUsesSourceDegrees(const ObjectInst *inst)
 rw::V3d
 GetInstanceRotationDegrees(const ObjectInst *inst)
 {
-	return InstanceUsesSourceDegrees(inst) ? inst->m_sourceDegrees : GetObjectRotationDegrees(inst->m_rotation);
+	if(InstanceUsesSourceDegrees(inst))
+		return { (float)inst->m_sourceDegrees[0], (float)inst->m_sourceDegrees[1], (float)inst->m_sourceDegrees[2] };
+	return GetObjectRotationDegrees(inst->m_rotation);
 }
 
 static PawnEulerRotation
 pawnGetEulerRotation(const ObjectInst *inst)
 {
 	if(InstanceUsesSourceDegrees(inst)){
-		PawnEulerRotation e = { inst->m_sourceDegrees.x, inst->m_sourceDegrees.y, inst->m_sourceDegrees.z };
+		PawnEulerRotation e = { inst->m_sourceDegrees[0], inst->m_sourceDegrees[1], inst->m_sourceDegrees[2] };
 		return e;	// the file's numbers, unrounded: 89.999992 stays 89.999992
 	}
 	rw::V3d degrees = GetObjectRotationDegrees(inst->m_rotation);
@@ -8215,6 +8217,7 @@ struct PawnImportEntry
 	int objectId;
 	float x, y, z;
 	float rx, ry, rz;
+	double sourceDegrees[3];	// rx, ry, rz as written (objects only)
 	int interior;
 	bool isVehicle;
 	bool vehicleStatic;
@@ -8357,7 +8360,7 @@ pawnTrimString(const std::string &value)
 }
 
 static bool
-pawnParseFloat(const std::string &value, float *out)
+pawnParseDouble(const std::string &value, double *out)
 {
 	std::string token = pawnTrimString(value);
 	if(token.size() >= 5 &&
@@ -8384,13 +8387,23 @@ pawnParseFloat(const std::string &value, float *out)
 		return false;
 	char *end = nil;
 	const char *start = token.c_str();
-	float parsed = strtof(start, &end);
-	if(end == start || !std::isfinite(parsed))
+	double parsed = strtod(start, &end);
+	if(end == start || !std::isfinite((float)parsed))
 		return false;
 	while(*end && isspace((unsigned char)*end)) end++;
 	if(*end != '\0')
 		return false;
 	if(out) *out = parsed;
+	return true;
+}
+
+static bool
+pawnParseFloat(const std::string &value, float *out)
+{
+	double parsed;
+	if(!pawnParseDouble(value, &parsed))
+		return false;
+	if(out) *out = (float)parsed;
 	return true;
 }
 
@@ -10258,9 +10271,12 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 			pawnParseFloat(args[offset + 1], &entry.x) &&
 			pawnParseFloat(args[offset + 2], &entry.y) &&
 			pawnParseFloat(args[offset + 3], &entry.z) &&
-			pawnParseFloat(args[offset + 4], &entry.rx) &&
-			pawnParseFloat(args[offset + 5], &entry.ry) &&
-			pawnParseFloat(args[offset + 6], &entry.rz);
+			pawnParseDouble(args[offset + 4], &entry.sourceDegrees[0]) &&
+			pawnParseDouble(args[offset + 5], &entry.sourceDegrees[1]) &&
+			pawnParseDouble(args[offset + 6], &entry.sourceDegrees[2]);
+		entry.rx = (float)entry.sourceDegrees[0];
+		entry.ry = (float)entry.sourceDegrees[1];
+		entry.rz = (float)entry.sourceDegrees[2];
 		entry.objectId = EditorModelId(entry.objectId);	// 0.3.DL custom models
 		// Optional arguments are often script variables (Texture Studio writes
 		// "object_world, object_int"); those keep the defaults rather than
@@ -10604,9 +10620,12 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 			}
 			rw::Quat rotation = pawnMakeStoredQuaternion(e.rx, e.ry, e.rz);
 			ObjectInst *inst = createSpawnedInstance(e.objectId, position, file, ++maxIdx, &rotation);
-			if(keepRotationNumbers){
+			// Objects only: a class's, vehicle's or actor's heading is one
+			// number, written as the export always wrote it (270 as -90).
+			if(keepRotationNumbers && e.elementKind == SAMP_ELEMENT_OBJECT && !e.isVehicle){
 				// -0.0 reads back as 0.0: never write it as -0.000000.
-				inst->m_sourceDegrees = { e.rx + 0.0f, e.ry + 0.0f, e.rz + 0.0f };
+				for(int k = 0; k < 3; k++)
+					inst->m_sourceDegrees[k] = e.sourceDegrees[k] + 0.0;
 				inst->m_sourceRotation = inst->m_rotation;
 				inst->m_hasSourceDegrees = true;
 			}
