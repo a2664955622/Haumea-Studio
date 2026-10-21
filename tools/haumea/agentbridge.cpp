@@ -4689,3 +4689,9 @@ AgentBridgeSocketBusy(void)
 {
 	return gAgentSocketBusy;
 }
+
+bool
+AgentBridgeListening(void)
+{
+	return gAgentBridgeEnabled && (gAgentTcp || gAgentUnixBound);
+}

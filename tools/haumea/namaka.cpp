@@ -795,7 +795,7 @@ void
 NamakaListenSwitch(void)
 {
 	bool on = NamakaListenEnabled();
-	if(ImGui::Checkbox("Let Namaka connect", &on))
+	if(ImGui::Checkbox("Let Namaka connect###namaka_listen", &on))
 		SetNamakaListenEnabled(on);
 	ImGui::SetItemTooltip("When Namaka is installed, Haumea listens for it on its own socket\n"
 		"(only your user can use it). Changes apply from the next start.");
@@ -807,9 +807,11 @@ connectSection(void)
 	ImGui::SeparatorText("Connect an AI assistant");
 	NamakaListenSwitch();
 	ImGui::PushTextWrapPos(0.0f);
-	if(AgentBridgeSocketPath()[0] || getenv("HAUMEA_ENGINE_TCP_PORT"))
-		ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.5f, 1.0f), ICON_FA_CHECK " Listening for Namaka%s%s",
-			AgentBridgeSocketPath()[0] ? " on " : "", AgentBridgeSocketPath());
+	if(AgentBridgeSocketPath()[0])
+		ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.5f, 1.0f), ICON_FA_CHECK " Listening for Namaka on %s",
+			AgentBridgeSocketPath());
+	else if(AgentBridgeListening())	// loopback TCP (Windows)
+		ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.5f, 1.0f), ICON_FA_CHECK " Listening for Namaka");
 	else if(AgentBridgeSocketBusy())
 		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.35f, 1.0f),
 			"Another Haumea is using the Namaka socket, so this one isn't listening. "

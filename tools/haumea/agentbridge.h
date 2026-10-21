@@ -9,3 +9,5 @@ void AgentBridgeCaptureAfterUiRender(void);	// capture_screen: with the panels
 const char *AgentBridgeSocketPath(void);
 // Another process (another Haumea?) answered on the socket, so this one isn't listening.
 bool AgentBridgeSocketBusy(void);
+// Listening for an agent, on a socket or loopback TCP.
+bool AgentBridgeListening(void);
