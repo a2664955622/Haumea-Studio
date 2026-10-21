@@ -142,8 +142,10 @@ compile "$OUT/obj/haumea" "$COMMON -I$LIBRW -I$ROOT/src -I$LIBRW/skeleton -I$ROO
 # The manifest (UTF-8 code page) goes in as a resource, as MSVC embeds it
 # itself, and the version info (haumea.rc).
 WINDRES=${WINDRES:-x86_64-w64-mingw32-windres}
-# (Not named haumea.rc: its #include "haumea.rc" would find itself.)
-printf '1 24 "%s"\n#include "haumea.rc"\n' "$ROOT/tools/haumea/haumea.exe.manifest" > "$OUT/haumea_res.rc"
+# haumea.rc by its full path: a relative include would find a file of that
+# name in $OUT first (an older build wrote its own haumea.rc there).
+printf '1 24 "%s"\n#include "%s"\n' "$ROOT/tools/haumea/haumea.exe.manifest" "$ROOT/tools/haumea/haumea.rc" \
+	> "$OUT/haumea_res.rc"
 $WINDRES -I "$ROOT/tools/haumea" "$OUT/haumea_res.rc" -O coff -o "$OUT/haumea_res.o"
 $CXX -o "$OUT/haumea.exe" "$OUT"/obj/haumea/*.o "$OUT/haumea_res.o" "$OUT/librwgta.a" "$OUT/librw.a" \
 	$GFXLIBS -lwinhttp -lws2_32 -lgdi32 -lcomdlg32 -lshell32 -lole32 -luuid -lpsapi -ldwmapi -lshlwapi \
