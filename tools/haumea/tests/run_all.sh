@@ -47,8 +47,10 @@ if [ "$(uname -s)" = Linux ] && [ "${HAUMEA_TEST_XVFB:-}" != 1 ]; then
 		echo "FAIL: xvfb-run is needed: the tests never open the editor on the real display"
 		exit 1
 	fi
-	exec env -u WAYLAND_DISPLAY -u DISPLAY -u XAUTHORITY HAUMEA_TEST_XVFB=1 \
-		xvfb-run -a -s "-screen 0 1600x1000x24" sh "$0" "$@"
+	# Unsetting WAYLAND_DISPLAY isn't enough: libwayland then tries the
+	# session's default socket. Point it nowhere and say this is X11.
+	exec env -u DISPLAY -u XAUTHORITY -u WAYLAND_SOCKET WAYLAND_DISPLAY=/nonexistent/haumea-test \
+		XDG_SESSION_TYPE=x11 HAUMEA_TEST_XVFB=1 xvfb-run -a -s "-screen 0 1600x1000x24" sh "$0" "$@"
 fi
 status=0
 SYNTHETIC=0

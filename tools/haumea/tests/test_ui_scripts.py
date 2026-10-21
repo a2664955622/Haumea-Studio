@@ -110,7 +110,6 @@ class UiScriptTests(unittest.TestCase):
             self.skipTest('needs the Pawn toolchain\'s open.mp server (PAWN_TOOLCHAIN)')
         work = tempfile.mkdtemp(dir=self.tmp)
         env = editor_env(work, virtual_display=True)	# xvfb-run below
-        env.pop('WAYLAND_DISPLAY', None)
         # A copy, so scripts can save over the maps they open.
         shutil.copytree(UI / 'fixtures', Path(work, 'fixtures'))
         env['UI_FIXTURES'] = str(Path(work, 'fixtures'))

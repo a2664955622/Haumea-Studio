@@ -12,9 +12,13 @@ import sys
 import tempfile
 
 
+# For any editor a test starts on Linux: no Wayland compositor to find.
+NO_WAYLAND = {'WAYLAND_DISPLAY': '/nonexistent/haumea-test', 'XDG_SESSION_TYPE': 'x11'}
+
+
 def check_virtual_display():
     """Raise unless an editor started now would open on a virtual display
-    (editor_env drops WAYLAND_DISPLAY, so DISPLAY decides)."""
+    (editor_env points Wayland nowhere, so DISPLAY decides)."""
     if not sys.platform.startswith('linux') or os.environ.get('HAUMEA_TEST_XVFB') == '1':
         return
     if os.environ.get('DISPLAY'):
@@ -30,9 +34,11 @@ def editor_env(scratch, virtual_display=False):
         check_virtual_display()
     config = tempfile.mkdtemp(prefix='haumea-config-', dir=scratch)
     env = dict(os.environ)
-    # GLFW prefers Wayland: with WAYLAND_DISPLAY set the editor opens on the
-    # user's desktop even inside xvfb-run, which only sets DISPLAY.
-    env.pop('WAYLAND_DISPLAY', None)
+    # GLFW prefers Wayland and opens on the user's desktop even inside
+    # xvfb-run, which only sets DISPLAY: unsetting WAYLAND_DISPLAY isn't enough,
+    # libwayland then tries the session's default socket. Point it nowhere.
+    env.update(NO_WAYLAND)
+    env.pop('WAYLAND_SOCKET', None)
     env['XDG_CONFIG_HOME'] = config
     env['APPDATA'] = config
     # Start empty: never inherit the user's old <GTA>/haumea_data.

@@ -897,6 +897,12 @@ AppEventHandler(sk::Event e, void *param)
 
 	switch(e){
 	case INITIALIZE:
+#if defined(LIBRW_GLFW) && defined(__linux__) && defined(GLFW_PLATFORM_X11)
+		// Tests run in their own Xvfb: with Wayland available GLFW would
+		// prefer it and open on the user's desktop instead.
+		if(getenv("HAUMEA_TEST_XVFB") && strcmp(getenv("HAUMEA_TEST_XVFB"), "1") == 0)
+			glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+#endif
 /*
 		AllocConsole();
 		freopen("CONIN$", "r", stdin);
@@ -912,6 +918,10 @@ AppEventHandler(sk::Event e, void *param)
 	case RWINITIALIZE:
 		if(!::InitRW())
 			return EVENTERROR;
+#if defined(LIBRW_GLFW) && defined(__linux__) && defined(GLFW_PLATFORM_X11)
+		log("GLFW platform: %s\n", glfwGetPlatform() == GLFW_PLATFORM_X11 ? "X11" :
+			glfwGetPlatform() == GLFW_PLATFORM_WAYLAND ? "Wayland" : "other");
+#endif
 		if(!BeginSplashWindow(HAUMEA_SPLASH_WIDTH, HAUMEA_SPLASH_HEIGHT))
 			ApplyInitialEditorWindowState();
 		return EVENTPROCESSED;

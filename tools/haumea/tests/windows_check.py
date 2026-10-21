@@ -37,7 +37,7 @@ import zlib
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from haumea_test_env import check_virtual_display  # noqa: E402
+from haumea_test_env import NO_WAYLAND, check_virtual_display  # noqa: E402
 ROOT = HERE.parents[2]
 MAPS = sorted(HERE.glob('fixtures/*.pwn')) + sorted(HERE.glob('pawn/maps/*.pwn'))
 
@@ -238,8 +238,9 @@ if __name__ == '__main__':
     parser.add_argument('--keep', action='store_true', help='keep the work folder')
     args = parser.parse_args()
     # The Linux editor and Wine both open windows: never on the user's display.
-    # Wine's winex11 needs DISPLAY; with WAYLAND_DISPLAY set, it could use the desktop's.
-    os.environ.pop('WAYLAND_DISPLAY', None)
+    # Wine (and the Linux editor) must find no Wayland compositor, only Xvfb.
+    os.environ.update(NO_WAYLAND)
+    os.environ.pop('WAYLAND_SOCKET', None)
     try:
         check_virtual_display()
     except RuntimeError as e:
