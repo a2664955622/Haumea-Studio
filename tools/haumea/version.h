@@ -15,9 +15,6 @@
 #define HAUMEA_VERSION HAUMEA_VERSION_STR(HAUMEA_VERSION_MAJOR) "." \
 	HAUMEA_VERSION_STR(HAUMEA_VERSION_MINOR) "." HAUMEA_VERSION_STR(HAUMEA_VERSION_PATCH)
 
-// Human-facing release label.
-#define HAUMEA_RELEASE_NAME "Beta 1"
-
 // Update channel — set at build time via preprocessor define
 // Defaults to "master" if not set by the build system
 #ifndef HAUMEA_CHANNEL

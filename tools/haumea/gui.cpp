@@ -4497,7 +4497,7 @@ uiHelpWindow(void)
 	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 30.0f, 0.0f), ImGuiCond_FirstUseEver);
 	ImGui::Begin(ICON_FA_CIRCLE_QUESTION " Help", &showHelpWindow);
 	// About.
-	ImGui::Text("Haumea Studio %s, %s", HaumeaVersionDisplay(), HAUMEA_RELEASE_NAME);
+	ImGui::Text("Haumea Studio %s, %s channel", HaumeaVersionDisplay(), HAUMEA_CHANNEL_DISPLAY);
 	ImGui::TextDisabled("The all-in-one editor for open.mp and SA-MP, by itsneufox.");
 
 	ImGui::SeparatorText("How do I...");

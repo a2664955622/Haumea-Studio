@@ -22,7 +22,6 @@ newer jobs. Nothing here is automatic: pushing and releasing are your call.
   (0 and `unknown` without git). The full version, `1.41.0.<build>`, shows in
   About, the title bar, `haumea --version`, telemetry, the exe's version
   info, `BUILD_INFO.json` and the agent wheel (`1.41.0.<build>`, PEP 440).
-  `HAUMEA_RELEASE_NAME` ("Beta 1") is only a display name next to it.
 - The updater offers the newest release of its channel with a higher
   version, all four parts compared. Older tags (`v1.41.0-master-abc1234`)
   read as build 0 of their X.Y.Z.
@@ -47,8 +46,6 @@ newer jobs. Nothing here is automatic: pushing and releasing are your call.
 1. `tools/haumea/version.h`: `HAUMEA_VERSION_PATCH` (at least) is higher
    than the last release's (1.41.0 now; after 1.49 comes 1.50). Keep
    `tools/agent/_version.py`'s `1.41.0.0` in step (test_version checks it).
-   `HAUMEA_RELEASE_NAME` is the label people see ("Beta 1"); change it if
-   this release deserves a new one.
 2. `CHANGELOG.md` has a section for this version.
 3. The local test matrix is green (see "Local checks" below).
 

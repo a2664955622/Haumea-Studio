@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.41.0 (Beta 1): Haumea Studio
+## 1.41.0: Haumea Studio
 
 Everything since 1.40.11. Haumea is now **Haumea Studio, the all-in-one editor
 for open.mp and SA-MP**: it edits whole open.mp and SA-MP maps, not just

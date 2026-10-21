@@ -639,8 +639,8 @@ Init(void)
 	static char windowTitle[256];
 	static bool saveHookRegistered;
 	snprintf(windowTitle, sizeof(windowTitle),
-		"Haumea Studio %s %s [%s] - The all-in-one editor for open.mp and SA-MP",
-		HaumeaVersionDisplay(), HAUMEA_RELEASE_NAME, HAUMEA_CHANNEL_DISPLAY);
+		"Haumea Studio %s [%s] - The all-in-one editor for open.mp and SA-MP",
+		HaumeaVersionDisplay(), HAUMEA_CHANNEL_DISPLAY);
 	sk::globals.windowtitle = windowTitle;
 	sk::globals.width = 1280;
 	sk::globals.height = 800;
