@@ -9878,6 +9878,9 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 					*out = value;
 			};
 			bool valid = false;
+			// A call with variables for its place, like the editor's own sound
+			// helper's CreateDynamicSphere(x, y, z, radius...): code, not an element.
+			bool notAnElement = false;
 			switch(call->kind){
 			case PAWN_CALL_PICKUP:
 				// CreatePickup(model, type, x, y, z, virtualworld = 0)
@@ -10100,6 +10103,9 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 				entry.elementKind = SAMP_ELEMENT_AREA;
 				std::string shape = call->name + strlen("CreateDynamic");
 				float v[6] = {};
+				float first;
+				if(shape != "Polygon" && n > o && !pawnParseFloat(pawnStripTag(arg(0)), &first))
+					notAnElement = true;
 				auto floats = [&](int count){
 					if(n < o + count)
 						return false;
@@ -10170,7 +10176,7 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 				break;
 			}
 			if(!valid){
-				if(numSkipped) (*numSkipped)++;
+				if(numSkipped && !notAnElement) (*numSkipped)++;
 				continue;
 			}
 			// The item's areaid, by where it is in each streamer call.
