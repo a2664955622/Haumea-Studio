@@ -612,7 +612,8 @@ jobs:
     if: >-
       !cancelled() && !failure() && github.event_name != 'pull_request' &&
       (github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && inputs.release != 'build only'))
-    needs: [build-windows, build-linux, build-macos, test-linux, pawn, check-tag]
+    needs: [build-windows, build-linux, build-macos, test-linux, pawn, agent-bundle-linux, agent-bundle-windows,
+      check-tag]
     runs-on: ubuntu-latest
 
     steps:
@@ -660,6 +661,12 @@ jobs:
           name: haumea-macos-arm64-gl3
           path: dist/macos
 
+      - name: Download the Namaka bundles
+        uses: actions/download-artifact@v4
+        with:
+          pattern: haumea-namaka-*
+          path: dist/namaka
+
       # The updater (tools/haumea/updatecore.cpp) installs a platform's
       # bundle by its MANIFEST after checking it against SHA256SUMS. macOS
       # has no bundle: its users download haumea-macos.
@@ -669,6 +676,23 @@ jobs:
           install -m 755 dist/linux/haumea dist/linux-bundle/haumea
           cp -r haumea/fonts dist/linux-bundle/fonts
           cp -r haumea/tools/haumea/prefabs dist/linux-bundle/prefabs
+          # Namaka (the AI companion) ships in each editor bundle's namaka/: its
+          # wheel and wheelhouse from the Namaka bundle, and its installer.
+          stage_namaka() {
+            unpacked=$(mktemp -d)
+            python3 -m zipfile -e "$1" "$unpacked"
+            from=$(find "$unpacked" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+            mkdir -p "$2/namaka"
+            cp "$from"/haumea_namaka-*.whl "$2/namaka/"
+            cp -r "$from/wheelhouse" "$2/namaka/wheelhouse"
+            cp haumea/tools/release/namaka_install.py "$2/namaka/"
+          }
+          stage_namaka dist/namaka/haumea-namaka-linux-x86_64/Haumea-Namaka-linux-x86_64.zip dist/linux-bundle
+          stage_namaka dist/namaka/haumea-namaka-windows-x86_64/Haumea-Namaka-windows-x86_64.zip dist/windows
+          cp dist/namaka/haumea-namaka-linux-x86_64/Haumea-Namaka-linux-x86_64.zip \
+            dist/release/haumea-namaka-linux-x86_64.zip
+          cp dist/namaka/haumea-namaka-windows-x86_64/Haumea-Namaka-windows-x86_64.zip \
+            dist/release/haumea-namaka-windows-x86_64.zip
           python3 haumea/tools/release/make_update_bundle.py dist/linux-bundle dist/release/haumea-linux-amd64.tar.gz
           python3 haumea/tools/release/make_update_bundle.py dist/windows dist/release/haumea-windows-gl3.tar.gz
           install -m 755 dist/macos/haumea dist/release/haumea-macos

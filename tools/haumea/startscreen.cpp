@@ -5,6 +5,7 @@
 #include "icons.h"
 #include "version.h"
 #include "versionutil.h"
+#include "updater.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -500,6 +501,17 @@ contents(bool gameLoaded)
 	ImGui::SameLine();
 	ImGui::TextDisabled("the all-in-one editor for open.mp and SA-MP");
 	ImGui::TextDisabled("A workspace is the open.mp or SA-MP server you map for; its maps and models live there.");
+	// An update, or what the last one did: the updater's banner, in here
+	// rather than dimmed behind this window.
+	if(UpdaterHasNews()){
+		ImGui::Spacing();
+		UpdaterDrawInline();
+		if(UpdaterWhatsNewRequested()){
+			ImGui::BeginChild("whatsnew", ImVec2(0, ImGui::GetFontSize() * 8.0f), ImGuiChildFlags_Borders);
+			UpdaterDrawWhatsNewInline();
+			ImGui::EndChild();
+		}
+	}
 	ImGui::Spacing();
 
 	// The game folder's heading, field and status line, then the buttons.

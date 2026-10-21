@@ -49,7 +49,7 @@ version = f'{major}.{minor}.{patch}.{build}'
 (stage / 'BUILD_INFO.json').write_text(json.dumps({'source_commit': commit,
     'project': 'Haumea', 'agent': 'Namaka',
     'haumea_version': version, 'version': version, 'build': build, 'commit': short_commit,
-    'agent_alpha_release': f'v{version}-agent-alpha',
+    # The channel it ships on comes from the release tag, not from here.
     'platform': platform.platform(), 'python_wheel': a.wheel.name}, indent=2) + '\n')
 if a.wheelhouse:
     shutil.copytree(a.wheelhouse, stage / 'wheelhouse',

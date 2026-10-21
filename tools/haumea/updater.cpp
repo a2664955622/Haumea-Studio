@@ -9,6 +9,8 @@
 #include "agentbridge.h"
 #include "workspace.h"
 #include "icons.h"
+#include "startscreen.h"
+#include "namaka.h"
 
 #include <atomic>
 #include <string>
@@ -701,6 +703,10 @@ UpdaterCheckForUpdate(void)
 	if(!updatesAllowed())
 		return;
 	readNotice();
+	// The first start of a new version: bring Namaka's install up to the
+	// wheel this version ships (it runs in the background, offline when it can).
+	if(gNoticeKind == "updated" && NamakaInstalled() && NamakaUpdateAvailable())
+		NamakaUpdateAfterEditorUpdate();
 	if(gUpdateCheckAuto)
 		startCheck(false);
 }
@@ -918,8 +924,10 @@ UpdaterDrawGui(void)
 		gStatus = UPD_IDLE;
 		return;
 	}
-	// TODO(startscreen): skip the floating banner while StartScreenOpen(); the
-	// start screen draws UpdaterDrawInline() instead.
+	// The start screen is a modal that would dim the banner and take its
+	// clicks: it draws UpdaterDrawInline() itself.
+	if(StartScreenOpen())
+		return;
 	if(!gNoticeKind.empty()){
 		if(bannerBegin("##updater_notice"))
 			noticeContents();
