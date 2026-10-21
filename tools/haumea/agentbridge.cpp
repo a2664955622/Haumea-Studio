@@ -12,6 +12,7 @@
 #include "testserver.h"
 #include "encoding.h"
 #include "namaka.h"
+#include "workspace.h"
 #ifdef RW_GL3
 #include <GLFW/glfw3.h>
 #endif
