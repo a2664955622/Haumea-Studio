@@ -7624,7 +7624,7 @@ static const UiNamedValue uiPickupModels[] = {
 	{ 1275, "Clothes" }, { 1254, "Skull" }, { 1313, "Two skulls" },
 	{ 1252, "Bomb" }, { 1253, "Camera" }, { 1276, "Tiki" },
 	{ 1318, "Arrow" }, { 1559, "Diamond (entrance)" }, { 1248, "GTA III sign" },
-	{ 1314, "Two players" }, { 1310, "Parachute" }, { 1240, "Heart" },
+	{ 1314, "Two players" }, { 1310, "Parachute" },
 };
 
 static const UiNamedValue uiPickupTypes[] = {

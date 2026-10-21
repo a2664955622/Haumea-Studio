@@ -376,6 +376,25 @@ loadColFiles(void)
 	}
 }
 
+// Collision packed in SA-MP's IMGs (SAMPCOL.img holds AllSAMPCOLs.col) is
+// read with the game's, before these models exist, so none of it sticks:
+// read it again now that they do.
+static void
+loadImgCollisions(void)
+{
+	for(int i = 0; GetColDef(i); i++){
+		ColDef *col = GetColDef(i);
+		if(col->imageIndex < 0)
+			continue;
+		char norm[1024];
+		sampNormPath(GetCdImageLogicalName(col->imageIndex), norm, sizeof(norm));
+		if(!sampAlreadySeen(sLoadedImgFiles, norm))
+			continue;
+		log("SampLoader: loading COL from IMG: %s\n", col->name);
+		LoadCol(i);
+	}
+}
+
 static void
 loadIplFiles(void)
 {
@@ -432,6 +451,8 @@ LoadDefinitions(void)
 		RefreshCdImageMappings();
 
 	loadColFiles();
+	if(!sLoadedIdeFiles.empty())
+		loadImgCollisions();
 	loadIplFiles();
 
 	if(!sLoadedIdeFiles.empty())
