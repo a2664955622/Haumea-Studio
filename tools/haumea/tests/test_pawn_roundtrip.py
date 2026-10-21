@@ -37,6 +37,17 @@ class PawnRoundtripTests(unittest.TestCase):
         self.assertIn('pawn-roundtrip:', result.stdout, result.stdout[-2000:])
         return target.read_text()
 
+    def test_area_removal_is_kept_as_written(self):
+        # Model -1 removes every building in the sphere (the hospital and its
+        # LOD here) and is saved back as that one line, not one per building;
+        # a model removal still removes only that model.
+        with tempfile.TemporaryDirectory() as tmp:
+            out = self.roundtrip(Path(__file__).resolve().parent / 'pawn' / 'maps' / 'hv_removals.pwn', Path(tmp, 'hv_removals.pwn'))
+        self.assertIn('RemoveBuildingForPlayer(playerid, -1, 2063.000000, -1731.000000, 15.000000, 5.000000);', out)
+        self.assertIn('RemoveBuildingForPlayer(playerid, 4206, 1479.554688, -1639.609375, 13.648438, 0.25);', out)
+        self.assertNotIn('RemoveBuildingForPlayer(playerid, 3563,', out)
+        self.assertNotIn('RemoveBuildingForPlayer(playerid, 3555,', out)
+
     def test_open_save_is_faithful_and_stable(self):
         with tempfile.TemporaryDirectory() as tmp:
             first = self.roundtrip(FIXTURE, Path(tmp, 'map.pwn'))

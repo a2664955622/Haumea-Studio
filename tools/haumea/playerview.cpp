@@ -64,6 +64,13 @@ PlayerViewUpdate(void)
 	for(CPtrNode *p = instances.first; p; p = p->next){
 		ObjectInst *inst = (ObjectInst*)p->item;
 		inst->m_playerView = PV_UNTOUCHED;
+		// An unchanged world building inside a model -1 removal is gone for
+		// players (a changed one is recreated by the map, so it shows).
+		if(gPlayerView && !inst->m_isDeleted && IsPawnWorldObject(inst) && !PawnObjectNeedsExport(inst) &&
+		   InsidePawnAreaRemoval(inst)){
+			inst->m_playerView = PV_HIDDEN;
+			continue;
+		}
 		if(!gPlayerView || inst->m_isDeleted || !PawnObjectNeedsExport(inst))
 			continue;
 		const ObjectPawnProperties *props = GetObjectPawnProperties(inst);

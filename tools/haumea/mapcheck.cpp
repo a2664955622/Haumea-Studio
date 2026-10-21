@@ -336,6 +336,33 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 	}
 	if((int)vehicles.size() > VEHICLES)
 		c.add(MAPCHECK_ERROR, LIMITS, ids(vehicles), "%d vehicles, over the limit of %d.", (int)vehicles.size(), VEHICLES);
+
+	// --- Removed buildings ---
+	// One RemoveBuildingForPlayer per removed or changed world building, and one
+	// per -1 area removal (which covers every building inside it).
+	const int REMOVALS = 1000;	// SA-MP 0.3.7 removes at most this many per player
+	std::vector<ObjectInst*> removedOne, inArea;
+	for(CPtrNode *p = instances.first; p; p = p->next){
+		ObjectInst *inst = (ObjectInst*)p->item;
+		if(!IsPawnWorldObject(inst))
+			continue;
+		bool covered = InsidePawnAreaRemoval(inst);
+		if(!inst->m_isDeleted && covered)
+			inArea.push_back(inst);
+		else if(PawnObjectNeedsExport(inst) && !(inst->m_isDeleted && covered))
+			removedOne.push_back(inst);
+	}
+	int areas = (int)GetPawnAreaRemovals().size();
+	int lines = areas + (int)removedOne.size();
+	if(lines > REMOVALS)
+		c.add(MAPCHECK_ERROR, LIMITS, ids(removedOne), "%d RemoveBuildingForPlayer calls, over SA-MP's %d per player: "
+			"the rest stay in the world.", lines, REMOVALS);
+	else if(areas > 0)
+		c.add(MAPCHECK_INFO, LIMITS, ids(removedOne), "%d RemoveBuildingForPlayer calls: %d for whole areas (model -1) "
+			"and %d for single buildings.", lines, areas, (int)removedOne.size());
+	if(!inArea.empty())
+		c.add(MAPCHECK_WARNING, LIMITS, ids(inArea), "%d world building(s) shown here are inside a model -1 removal: "
+			"in game they stay removed.", (int)inArea.size());
 	int npcs = (int)byKind[SAMP_ELEMENT_NPC].size();
 	if(npcs > 0){
 		if(config.found && npcs > config.maxPlayers)

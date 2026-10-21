@@ -2585,6 +2585,32 @@ setDeletedWithoutCascade(ObjectInst *inst, bool deleted)
 // Back to the unmodified game world: placed objects and vehicles are
 // removed, world objects get their original transform, materials and
 // properties back. Used by File > New and before opening a map.
+static std::vector<PawnAreaRemoval> gAreaRemovals;
+
+const std::vector<PawnAreaRemoval>&
+GetPawnAreaRemovals(void)
+{
+	return gAreaRemovals;
+}
+
+static bool
+insideRemovalSphere(const ObjectInst *inst, float x, float y, float z, float radius)
+{
+	float dx = inst->m_origTranslation.x - x;
+	float dy = inst->m_origTranslation.y - y;
+	float dz = inst->m_origTranslation.z - z;
+	return dx*dx + dy*dy + dz*dz <= radius*radius;
+}
+
+bool
+InsidePawnAreaRemoval(const ObjectInst *inst)
+{
+	for(const PawnAreaRemoval &r : gAreaRemovals)
+		if(insideRemovalSphere(inst, r.x, r.y, r.z, r.radius))
+			return true;
+	return false;
+}
+
 int
 ResetPawnMap(void)
 {
@@ -2593,6 +2619,7 @@ ResetPawnMap(void)
 	// A new or reopened map has nothing left out yet.
 	ClearLastPawnImportReport();
 	ResetMapTextDraws();
+	gAreaRemovals.clear();
 	ClearSelection();
 	for(CPtrNode *p = instances.first; p; p = p->next){
 		ObjectInst *inst = (ObjectInst*)p->item;
@@ -7139,9 +7166,14 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 
 	char prefix[96];
 	pawnBuildFunctionPrefix(path, prefix, sizeof(prefix));
-	int numWorldObjects = 0;
+	// A deleted building inside a -1 removal is covered by that one line.
+	const std::vector<PawnAreaRemoval> &areaRemovals = selectedOnly ? std::vector<PawnAreaRemoval>() : gAreaRemovals;
+	auto coveredByArea = [&](ObjectInst *inst){
+		return inst->m_isDeleted && !selectedOnly && InsidePawnAreaRemoval(inst);
+	};
+	int numWorldObjects = (int)areaRemovals.size();
 	for(size_t i = 0; i < insts.size(); i++)
-		if(pawnIsWorldObject(insts[i]))
+		if(pawnIsWorldObject(insts[i]) && !coveredByArea(insts[i]))
 			numWorldObjects++;
 	// Gang zones shown per player (open.mp) or streamed, by mode.
 	std::vector<ObjectInst*> playerZones, streamedZones;
@@ -7285,9 +7317,12 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 
 	if(numWorldObjects > 0){
 		fprintf(f, "stock %s_RemoveWorldObjectsForPlayer(playerid)\n{\n", prefix);
+		for(const PawnAreaRemoval &r : areaRemovals)
+			fprintf(f, "\tRemoveBuildingForPlayer(playerid, -1, %.6f, %.6f, %.6f, %.6f); // everything in the area\n",
+				r.x, r.y, r.z, r.radius);
 		for(size_t i = 0; i < insts.size(); i++){
 			ObjectInst *inst = insts[i];
-			if(!pawnIsWorldObject(inst))
+			if(!pawnIsWorldObject(inst) || coveredByArea(inst))
 				continue;
 			ObjectDef *obj = GetObjectDef(inst->m_objectId);
 			const char *name = obj && obj->m_name[0] ? obj->m_name : "unknown";
@@ -9710,17 +9745,24 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 		std::vector<bool> removalMatched(removals.size(), false);
 		for(size_t i = 0; i < removals.size(); i++){
 			const PawnRemoveEntry &removal = removals[i];
-			float radius = removal.radius > 0.0f ? removal.radius : 0.01f;
-			float radiusSq = radius * radius;
+			// Model -1: every building in the sphere, HD and LOD; kept as one
+			// area removal, exported as written.
+			bool area = removal.objectId == -1;
+			if(area){
+				bool known = false;
+				for(const PawnAreaRemoval &r : gAreaRemovals)
+					known |= r.x == removal.x && r.y == removal.y && r.z == removal.z && r.radius == removal.radius;
+				if(!known)
+					gAreaRemovals.push_back({ removal.x, removal.y, removal.z, removal.radius });
+				removalMatched[i] = true;	// kept even with nothing inside it
+			}
 			for(CPtrNode *p = instances.first; p; p = p->next){
 				ObjectInst *inst = (ObjectInst*)p->item;
 				if(!IsPawnWorldObject(inst) || inst->m_isDeleted ||
-				   inst->m_objectId != removal.objectId)
+				   (!area && inst->m_objectId != removal.objectId))
 					continue;
-				float dx = inst->m_origTranslation.x - removal.x;
-				float dy = inst->m_origTranslation.y - removal.y;
-				float dz = inst->m_origTranslation.z - removal.z;
-				if(dx*dx + dy*dy + dz*dz > radiusSq)
+				// As the client does: the building's position within the radius.
+				if(!insideRemovalSphere(inst, removal.x, removal.y, removal.z, removal.radius))
 					continue;
 				bool alreadyMatched = false;
 				for(size_t j = 0; j < matches.size(); j++)

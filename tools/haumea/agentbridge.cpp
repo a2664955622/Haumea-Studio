@@ -2155,6 +2155,20 @@ agentImportReportJson(void)
 	return json + "]}";
 }
 
+// RemoveBuildingForPlayer(playerid, -1, ...) lines of the open map: every world
+// building inside each sphere is removed in game.
+static std::string
+agentAreaRemovalsJson(void)
+{
+	std::string json = "[";
+	for(const PawnAreaRemoval &r : GetPawnAreaRemovals()){
+		if(json.size() > 1) json += ",";
+		json += "{\"position\":[" + jsonFloat(r.x) + "," + jsonFloat(r.y) + "," + jsonFloat(r.z) +
+			"],\"radius\":" + jsonFloat(r.radius) + "}";
+	}
+	return json + "]";
+}
+
 static std::string
 agentMapStatusJson(void)
 {
@@ -2164,7 +2178,8 @@ agentMapStatusJson(void)
 		"\",\"text_encoding\":\"" + (GetPawnTextEncoding() == PAWN_TEXT_UTF8 ? "utf-8" : "windows-1252") +
 		"\",\"unsaved_changes\":" + (PawnMapHasUnsavedChanges() ? "true" : "false") +
 		",\"agent_scope\":\"" + (agentMapMode() ? "pawn_map" : "scratch_ipl") +
-		"\",\"elements\":" + std::to_string(countAgentInstances(false)) + "}";
+		"\",\"elements\":" + std::to_string(countAgentInstances(false)) +
+		",\"area_removals\":" + agentAreaRemovalsJson() + "}";
 }
 
 // Back to editing the Pawn map after a scratch IPL scene.

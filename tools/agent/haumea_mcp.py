@@ -164,8 +164,10 @@ class SemanticZone(BaseModel):
 
 @mcp.tool()
 def haumea_status() -> dict:
-	"""Start here: the open map (path, format, unsaved changes, element count), whether an
-	edit session is open, the map's extent and the live camera's target (a good spot to build)."""
+	"""Start here: the open map (path, format, unsaved changes, element count, and
+	area_removals: its RemoveBuildingForPlayer model -1 spheres, which remove every world
+	building inside them), whether an edit session is open, the map's extent and the live
+	camera's target (a good spot to build)."""
 	try:
 		bounds = service.engine("scene_bounds")
 	except HaumeaError:

@@ -1307,6 +1307,14 @@ void ClearSelection(void);
 void DeleteSelected(void);
 int DeleteAllInstances(void);
 int ResetPawnMap(void);
+// RemoveBuildingForPlayer(playerid, -1, x, y, z, radius) from an imported map:
+// every world building (HD and LOD) within radius of the point, as the SA-MP
+// client compares a building's position with the sphere. Kept as written and
+// exported the same way, not as one removal per building.
+struct PawnAreaRemoval { float x, y, z, radius; };
+const std::vector<PawnAreaRemoval> &GetPawnAreaRemovals(void);
+// Whether a world building's original position is inside one of them.
+bool InsidePawnAreaRemoval(const ObjectInst *inst);
 void RemoveInstFromSectors(ObjectInst *inst);
 
 // Optional single-IPL document focus. The whole GTA world remains loaded as
