@@ -1072,8 +1072,9 @@ def textdraw_file(action: Literal["new", "open", "save", "move_from_map"], path:
 	both refuse unsaved textdraw changes unless discard_changes, and like move_from_map
 	need no edit session open (save_map commits one). save writes the
 	file, to path when given (needed while untitled). move_from_map moves an old
-	map's read-only textdraws into the file and saves it (path, or <map>_textdraws.pwn,
-	when untitled); save the map afterwards to take them out of it."""
+	map's read-only textdraws into the file and saves it: into the open file when it
+	has one (another path is refused), else to path or <map>_textdraws.pwn. Save the
+	map afterwards to take them out of it."""
 	command = {"new": "textdraw_new", "open": "textdraw_open", "save": "textdraw_save",
 	           "move_from_map": "textdraw_move_from_map"}[action]
 	if action == "open" and not path:

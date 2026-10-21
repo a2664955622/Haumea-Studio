@@ -1054,7 +1054,7 @@ static void
 moveMapTextDraws(void)
 {
 	std::string error;
-	int moved = MoveMapTextDrawsToFile(gMovePath, &error);
+	int moved = MoveMapTextDrawsToFile(GetTextDrawFilePath()[0] ? nil : gMovePath, &error);
 	if(moved < 0){
 		ToastFor(TOAST_SAVE, 6.0f, "Could not move the textdraws: %s", error.c_str());
 		return;

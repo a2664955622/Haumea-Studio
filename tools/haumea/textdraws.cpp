@@ -61,6 +61,12 @@ TextDrawsChanged(void)
 	gChangeSeq++;
 }
 
+unsigned int
+TextDrawsChangeSeq(void)
+{
+	return gChangeSeq;
+}
+
 const char*
 GetTextDrawFilePath(void)
 {
@@ -215,7 +221,7 @@ SaveTextDrawFile(const char *path, std::string *error)
 		return false;
 	}
 	gFilePath = target;
-	gSavedSeq = gChangeSeq;
+	gSavedSeq = ++gChangeSeq;
 	log("TextDraws: wrote %d to %s\n", (int)gTextDraws.size(), target.c_str());
 	return true;
 }
@@ -300,15 +306,25 @@ MoveMapTextDrawsToFile(const char *path, std::string *error)
 {
 	if(gMapTextDraws.empty())
 		return 0;
-	if(gFilePath.empty() && (path == nil || path[0] == '\0')){
+	bool givenPath = path && path[0];
+	if(gFilePath.empty() && !givenPath){
 		*error = "no file to move them to";
 		return -1;
 	}
+	if(!gFilePath.empty() && givenPath && gFilePath != path){
+		*error = "the textdraw file is already " + gFilePath + ": they go there";
+		return -1;
+	}
 	std::vector<TextDraw> before = gTextDraws;
+	unsigned int seq = gChangeSeq;
+	bool pending = gEditPending;
 	gTextDraws.insert(gTextDraws.end(), gMapTextDraws.begin(), gMapTextDraws.end());
 	TextDrawsChanged();
 	if(!SaveTextDrawFile(gFilePath.empty() ? path : nil, error)){
+		// As it was, saved or not.
 		gTextDraws = before;
+		gChangeSeq = seq;
+		gEditPending = pending;
 		return -1;
 	}
 	int moved = (int)gMapTextDraws.size();

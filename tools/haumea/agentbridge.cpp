@@ -163,6 +163,7 @@ static bool gAgentSessionActive;
 static std::string gAgentSessionId;
 static std::vector<AgentSceneSnapshot> gAgentSessionSnapshot;
 static std::vector<TextDraw> gAgentTextDrawSnapshot;	// rollback restores the textdraws too
+static unsigned int gAgentTextDrawSeq;	// their change count then: untouched, rollback leaves them be
 // Native map instances temporarily suppressed inside a leased scratch session.
 // They are tracked separately so rollback never treats unrelated world objects
 // as agent-created scene content.
@@ -974,6 +975,7 @@ beginAgentSession(const std::string &sessionId)
 		gAgentSessionSnapshot.push_back(captureAgentSnapshot(inst));
 	}
 	gAgentTextDrawSnapshot = GetTextDraws();
+	gAgentTextDrawSeq = TextDrawsChangeSeq();
 	gAgentSessionId = sessionId;
 	gAgentSessionActive = true;
 }
@@ -1044,8 +1046,12 @@ rollbackAgentSession(void)
 		if(snapshot.deleted)
 			inst->Deselect();
 	}
-	GetTextDraws() = gAgentTextDrawSnapshot;
-	TextDrawsChanged();
+	// Edited or saved during the session: back to the snapshot, which then
+	// differs from what is on disk.
+	if(TextDrawsChangeSeq() != gAgentTextDrawSeq){
+		GetTextDraws() = gAgentTextDrawSnapshot;
+		TextDrawsChanged();
+	}
 	ClearSelection();
 	ResetUndoHistory();
 	clearAgentSession();
@@ -3064,12 +3070,12 @@ handleRequest(const std::vector<std::string> &lines)
 				AddRecentTextDrawFile(path.c_str());
 		}else if(command == "textdraw_save"){
 			if(!SaveTextDrawFile(path.c_str(), &error)){
-				writeError(requestId, (error + (path.empty() ? ": give a path" : "")).c_str());
+				writeError(requestId, (error + (path.empty() && !GetTextDrawFilePath()[0] ? ": give a path" : "")).c_str());
 				return;
 			}
 			AddRecentTextDrawFile(GetTextDrawFilePath());
 		}else{
-			if(path.empty())
+			if(path.empty() && !GetTextDrawFilePath()[0])
 				path = SuggestedTextDrawFilePath(GetPawnMapPath());
 			if(MoveMapTextDrawsToFile(path.c_str(), &error) < 0){
 				writeError(requestId, error.c_str());

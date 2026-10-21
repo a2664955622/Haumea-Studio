@@ -22,6 +22,14 @@ wait 5
 assert textdraw.0.letter_y ~ 1.12
 # Map editing is off: Ctrl+Z undid the textdraw, the map's objects stay.
 assert objects == 4
+# Delete is one step on the textdraw file's own undo.
+click_item 'TextDraws' 'Delete'
+wait 5
+assert textdraws == 0
+key Ctrl+Z
+wait 5
+assert textdraws == 1
+assert objects == 4
 # The map has no textdraws; Save As writes them beside it.
 assert pawn_lacks "TextDrawCreate("
 click_item 'TextDraws' 'Save As...'

@@ -41,6 +41,7 @@ void InitTextDraw(TextDraw *td);	// the client's defaults
 // The textdraw file: textdraws live in their own .pwn/.inc, apart from the map.
 std::vector<TextDraw> &GetTextDraws(void);
 void TextDrawsChanged(void);	// after an edit: marks the file unsaved; an undo step follows
+unsigned int TextDrawsChangeSeq(void);	// moves with every edit, undo and save
 const char *GetTextDrawFilePath(void);	// "" while untitled
 const char *GetTextDrawFileName(void);	// the file name, or "Untitled textdraws"
 bool TextDrawFileHasUnsavedChanges(void);
@@ -61,8 +62,9 @@ bool RedoTextDraws(void);
 std::vector<TextDraw> &GetMapTextDraws(void);
 void ResetMapTextDraws(void);
 std::string SuggestedTextDrawFilePath(const char *mapPath);
-// Appends them to the textdraw file and saves it (to path when it is untitled);
-// the map then saves without them. Returns how many moved, or -1.
+// Appends them to the textdraw file and saves it: to path when it is untitled,
+// else to its own file (a different path is refused). The map then saves
+// without them. Returns how many moved, or -1.
 int MoveMapTextDrawsToFile(const char *path, std::string *error);
 
 // Pawn for the map's own (read-only) textdraws: the header line, the globals, the two functions.

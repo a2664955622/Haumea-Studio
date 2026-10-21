@@ -20,7 +20,8 @@
 #endif
 
 
-#if !defined TEXT_DRAW_FONT_0
+#if !defined TEXT_DRAW_FONT_0 && !defined HAUMEA_TD_COMPAT
+	#define HAUMEA_TD_COMPAT
 	#define TEXT_DRAW_FONT: _:
 	#define TEXT_DRAW_ALIGN: _:
 	#define TextDrawColour TextDrawColor
