@@ -233,6 +233,10 @@ CI builds Linux, Windows and macOS for `main` and pull requests, and runs
 `run_all.sh --fixture` on Linux under Xvfb: every test, the editor's round
 trip of the test maps and the compile of its output.
 
+## Credits
+
+- [JustMichael (ADRFranklin)](https://github.com/ADRFranklin): SA-MP model support.
+
 ## Lineage and license
 
 Haumea is built on [librw](https://github.com/aap/librw) and [librwgta](https://github.com/aap/librwgta) by aap. The project depends on LZO, so consider the code in this repository dual-licensed as GPL.
