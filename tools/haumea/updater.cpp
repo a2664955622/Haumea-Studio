@@ -573,6 +573,8 @@ static std::string gError, gNotifyOnly;
 static bool gManualCheck;		// Help > Check for updates: also say "up to date"
 static bool gBannerHidden;		// Later
 static bool gShowWhatsNew;
+static bool gDrawingInline;			// inside UpdaterDrawInline
+static bool gWhatsNewInline;		// its What's new, for the caller to draw
 
 static void
 downloadWorker(void)
@@ -673,24 +675,43 @@ rollBack(void)
 // ---- GUI ----
 
 static void
+whatsNewBody(void)
+{
+	const std::string &version = gNoticeKind == "updated" ? gNoticeVersion : gRelease.version;
+	const std::string &notes = gNoticeKind == "updated" ? gNotes : gRelease.body;
+	if(notes.empty())
+		ImGui::TextDisabled("This release has no notes.");
+	else
+		ImGui::TextWrapped("%s", notes.c_str());
+	if(!gRelease.pageUrl.empty() && version == gRelease.version)
+		ImGui::TextLinkOpenURL("Release page", gRelease.pageUrl.c_str());
+}
+
+static void
 whatsNewWindow(void)
 {
 	if(!gShowWhatsNew)
 		return;
 	const std::string &version = gNoticeKind == "updated" ? gNoticeVersion : gRelease.version;
-	const std::string &notes = gNoticeKind == "updated" ? gNotes : gRelease.body;
 	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 30.0f, ImGui::GetFontSize() * 24.0f), ImGuiCond_FirstUseEver);
 	char title[96];
 	snprintf(title, sizeof(title), "What's new in %s###updater_whats_new", version.c_str());
-	if(ImGui::Begin(title, &gShowWhatsNew)){
-		if(notes.empty())
-			ImGui::TextDisabled("This release has no notes.");
-		else
-			ImGui::TextWrapped("%s", notes.c_str());
-		if(!gRelease.pageUrl.empty() && version == gRelease.version)
-			ImGui::TextLinkOpenURL("Release page", gRelease.pageUrl.c_str());
-	}
+	if(ImGui::Begin(title, &gShowWhatsNew))
+		whatsNewBody();
 	ImGui::End();
+}
+
+// What's new: its own window, or, in the start screen's inline block, a flag
+// the caller reads to draw UpdaterDrawWhatsNewInline under it.
+static void
+whatsNewButton(void)
+{
+	if(ImGui::Button("What's new")){
+		if(gDrawingInline)
+			gWhatsNewInline = !gWhatsNewInline;
+		else
+			gShowWhatsNew = true;
+	}
 }
 
 static bool
@@ -713,8 +734,7 @@ noticeContents(void)
 		ImGui::Text(ICON_FA_CHECK " Updated to Haumea Studio %s", gNoticeVersion.c_str());
 		for(const std::string &p : gNoticeLocal)
 			ImGui::TextWrapped("You had changed %s: your copy is %s.local.", p.c_str(), p.c_str());
-		if(ImGui::Button("What's new"))
-			gShowWhatsNew = true;
+		whatsNewButton();
 		ImGui::SameLine();
 	}else if(gNoticeKind == "rolledback"){
 		ImGui::Text(ICON_FA_ROTATE_LEFT " Back to Haumea Studio %s", gNoticeOther.c_str());
@@ -735,8 +755,7 @@ bannerContents(int status)
 	if(status == UPD_AVAILABLE){
 		if(!gNotifyOnly.empty())
 			ImGui::TextDisabled("%s", gNotifyOnly.c_str());
-		if(ImGui::Button("What's new"))
-			gShowWhatsNew = true;
+		whatsNewButton();
 		ImGui::SameLine();
 		if(gNotifyOnly.empty()){
 			if(ImGui::Button("Update now"))
@@ -804,11 +823,25 @@ void
 UpdaterDrawInline(void)
 {
 	ImGui::PushID("updater_inline");
+	gDrawingInline = true;
 	if(!gNoticeKind.empty())
 		noticeContents();
 	else if(releaseNews(gStatus))
 		bannerContents(gStatus);
+	gDrawingInline = false;
 	ImGui::PopID();
+}
+
+bool
+UpdaterWhatsNewRequested(void)
+{
+	return gWhatsNewInline && UpdaterHasNews();
+}
+
+void
+UpdaterDrawWhatsNewInline(void)
+{
+	whatsNewBody();
 }
 
 void

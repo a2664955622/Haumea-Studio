@@ -26,6 +26,10 @@ void UpdaterDrawGui(void);
 // text and buttons drawn in the caller's layout (the start screen).
 bool UpdaterHasNews(void);
 void UpdaterDrawInline(void);
+// Its What's new button was pressed (it toggles): draw the notes, body only,
+// in the caller's layout.
+bool UpdaterWhatsNewRequested(void);
+void UpdaterDrawWhatsNewInline(void);
 // Help menu: Check for updates, Roll back.
 void UpdaterHelpMenuItems(void);
 // Preferences > Updates.
