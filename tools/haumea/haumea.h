@@ -321,6 +321,14 @@ enum {
 	SAMP_CHECKPOINT_RACE,	// CreateDynamicRaceCP
 };
 
+// How a gang zone is shown (ObjectPawnProperties::zoneMode).
+enum {
+	SAMP_ZONE_GLOBAL,	// GangZoneCreate, shown in _ShowForPlayer (1024 in all)
+	SAMP_ZONE_PLAYER,	// CreatePlayerGangZone for every player (open.mp only, 1024 a player)
+	SAMP_ZONE_STREAMED,	// per-player zones near the player, by streamer areas (open.mp only)
+	NUM_SAMP_ZONE_MODES
+};
+
 // What a sound place plays.
 enum {
 	SAMP_SOUND_STREAM,	// PlayAudioStreamForPlayer, started in _ShowForPlayer
@@ -359,6 +367,7 @@ struct ObjectPawnProperties
 	int classAmmo[PAWN_CLASS_WEAPONS];
 	float zoneSizeX, zoneSizeY;	// gang zone extent around the position
 	uint32 zoneColor;	// 0xRRGGBBAA, used by GangZoneShowForPlayer
+	int zoneMode;	// SAMP_ZONE_GLOBAL .. SAMP_ZONE_STREAMED
 	int mapIconType;
 	uint32 mapIconColor;	// 0xRRGGBBAA
 	int mapIconStyle;	// MAPICON_LOCAL .. MAPICON_GLOBAL_CHECKPOINT

@@ -12,6 +12,7 @@
 #include "sapaths.h"
 #include "samp_loader.h"
 #include "materialtext.h"
+#include "radarart.h"
 #include <sys/stat.h>
 #include <cctype>
 #include <climits>
@@ -1722,6 +1723,8 @@ normalizeObjectPawnProperties(ObjectPawnProperties *properties)
 	properties->actorHealth = clamp(properties->actorHealth, 0.0f, 100000.0f);
 	properties->zoneSizeX = clamp(properties->zoneSizeX, 0.0f, 12000.0f);
 	properties->zoneSizeY = clamp(properties->zoneSizeY, 0.0f, 12000.0f);
+	if(properties->zoneMode < 0 || properties->zoneMode >= NUM_SAMP_ZONE_MODES)
+		properties->zoneMode = SAMP_ZONE_GLOBAL;
 	properties->mapIconType = clamp(properties->mapIconType, 0, 63);
 	properties->mapIconStyle = clamp(properties->mapIconStyle, 0, 3);
 	properties->npcName[sizeof(properties->npcName)-1] = '\0';
@@ -3729,6 +3732,14 @@ ReadPrefabEntries(const char *path, PrefabEntry *entries, int maxEntries, int *n
 				el.soundUsePos = usePos != 0;
 				el.soundStopOnLeave = stop != 0;
 				prefabNextToken(&cursor, el.soundUrl, sizeof(el.soundUrl));
+				continue;
+			}
+			if(strcmp(type, "zone") == 0){
+				char mode[64];
+				if(!prefabNextToken(&cursor, token, sizeof(token)) || !prefabParseIntToken(token, &objectIndex) ||
+				   objectIndex < 0 || objectIndex >= numEntries || !prefabNextToken(&cursor, mode, sizeof(mode)))
+					continue;
+				prefabParseIntToken(mode, &entries[objectIndex].properties.zoneMode);
 				continue;
 			}
 			if(strcmp(type, "checkpoint") == 0){
@@ -6087,6 +6098,9 @@ ExportPrefabEx(const char *path, int origin, const char *tags)
 			pawnWriteQuotedString(f, properties->soundUrl);
 			fputc('\n', f);
 		}
+		if(properties->elementKind == SAMP_ELEMENT_GANGZONE && properties->zoneMode != SAMP_ZONE_GLOBAL)
+			// zone <index> <mode>
+			fprintf(f, "zone %d %d\n", i, properties->zoneMode);
 		if(properties->elementKind == SAMP_ELEMENT_CHECKPOINT){
 			// checkpoint <index> <kind> <size> <race type> <order> "race"
 			fprintf(f, "checkpoint %d %d %.3f %d %d ", i, properties->cpKind, properties->cpSize,
@@ -6986,6 +7000,97 @@ pawnWriteNpcRepeatHelpers(FILE *f, const char *prefix, int count)
 	fputs("\t}\n\treturn false;\n}\n\n", f);
 }
 
+// Per-player gang zones (open.mp only): <prefix>_AddPlayerZone keeps them
+// and _ShowForPlayer makes them for each player. open.mp destroys a
+// player's zones when they leave.
+static void
+pawnWritePlayerZoneHelpers(FILE *f, const char *prefix, int count)
+{
+	const char *p = prefix;
+	fprintf(f, "static Float:%s_pzoneAt[%d][4], %s_pzoneColour[%d], %s_numPZones;\n\n", p, count, p, count, p);
+	fprintf(f, "stock %s_AddPlayerZone(Float:minx, Float:miny, Float:maxx, Float:maxy, colour)\n{\n", p);
+	fprintf(f, "\tif(%s_numPZones == sizeof %s_pzoneColour)\n\t\treturn;\n", p, p);
+	fprintf(f, "\tnew i = %s_numPZones++;\n", p);
+	fprintf(f, "\t%s_pzoneAt[i][0] = minx; %s_pzoneAt[i][1] = miny; %s_pzoneAt[i][2] = maxx; %s_pzoneAt[i][3] = maxy;\n",
+		p, p, p, p);
+	fprintf(f, "\t%s_pzoneColour[i] = colour;\n}\n\n", p);
+}
+
+// Streamed gang zones (open.mp only, with the streamer): a streamer
+// rectangle for each STREAMED_ZONE_CELL cell of the grid. When a player
+// walks into one, <prefix>_ZoneUpdate makes their zones in the cell they
+// are in and the eight around it and destroys the rest, as LongWayDrivers'
+// minimap does.
+static void
+pawnWriteStreamedZoneHelpers(FILE *f, const char *prefix, int count, const StreamedZoneGrid &grid)
+{
+	const char *p = prefix;
+	int cells = grid.cols * grid.rows;
+	int capacity = std::max(1, std::min(grid.capacity, 1024));
+	float cell = STREAMED_ZONE_CELL;
+	fprintf(f, "static Float:%s_szoneAt[%d][4], %s_szoneColour[%d], %s_szoneCell[%d], %s_szoneNext[%d], %s_numSZones;\n",
+		p, count, p, count, p, count, p, count, p);
+	// Untagged areas with _: casts, as for sounds: streamer.inc versions
+	// disagree on STREAMER_TAG_AREA.
+	fprintf(f, "static %s_cellFirst[%d] = { -1, ... }, %s_cellArea[%d], bool:%s_cellsMade;\n", p, cells, p, cells, p);
+	fprintf(f, "static bool:%s_cellLoaded[MAX_PLAYERS][%d];\n", p, cells);
+	fprintf(f, "static %s_liveZone[MAX_PLAYERS][%d], %s_liveIndex[MAX_PLAYERS][%d], %s_numLive[MAX_PLAYERS];\n\n",
+		p, capacity, p, capacity, p);
+	fprintf(f, "static stock %s_ZoneCellAt(Float:at, Float:origin, cells)\n{\n"
+		"\treturn clamp(floatround((at - origin) / %.1f, floatround_floor), 0, cells - 1);\n}\n\n", p, cell);
+	fprintf(f, "stock %s_AddStreamedZone(Float:minx, Float:miny, Float:maxx, Float:maxy, colour)\n{\n", p);
+	fprintf(f, "\tif(!%s_cellsMade){\n\t\t%s_cellsMade = true;\n", p, p);
+	fprintf(f, "\t\tfor(new c = 0; c < sizeof %s_cellArea; c++){\n", p);
+	fprintf(f, "\t\t\tnew Float:x = %.1f + float(c %% %d) * %.1f, Float:y = %.1f + float(c / %d) * %.1f;\n",
+		grid.x0, grid.cols, cell, grid.y0, grid.cols, cell);
+	fprintf(f, "\t\t\t%s_cellArea[c] = _:CreateDynamicRectangle(x, y, x + %.1f, y + %.1f);\n\t\t}\n\t}\n", p, cell, cell);
+	fprintf(f, "\tif(%s_numSZones == sizeof %s_szoneColour)\n\t\treturn;\n", p, p);
+	fprintf(f, "\tnew i = %s_numSZones++;\n", p);
+	fprintf(f, "\t%s_szoneAt[i][0] = minx; %s_szoneAt[i][1] = miny; %s_szoneAt[i][2] = maxx; %s_szoneAt[i][3] = maxy;\n",
+		p, p, p, p);
+	fprintf(f, "\t%s_szoneColour[i] = colour;\n", p);
+	fprintf(f, "\t%s_szoneCell[i] = %s_ZoneCellAt((miny + maxy) / 2.0, %.1f, %d) * %d +\n"
+		"\t\t%s_ZoneCellAt((minx + maxx) / 2.0, %.1f, %d);\n",
+		p, p, grid.y0, grid.rows, grid.cols, p, grid.x0, grid.cols);
+	fprintf(f, "\t%s_szoneNext[i] = %s_cellFirst[%s_szoneCell[i]];\n\t%s_cellFirst[%s_szoneCell[i]] = i;\n}\n\n",
+		p, p, p, p, p);
+	fprintf(f, "stock %s_ZoneReset(playerid)\n{\n", p);
+	fprintf(f, "\tfor(new c = 0; c < sizeof %s_cellArea; c++)\n\t\t%s_cellLoaded[playerid][c] = false;\n", p, p);
+	fprintf(f, "\t%s_numLive[playerid] = 0;\n}\n\n", p);
+	fprintf(f, "stock %s_ZoneUpdate(playerid)\n{\n", p);
+	fprintf(f, "\tnew Float:x, Float:y, Float:z;\n\tGetPlayerPos(playerid, x, y, z);\n");
+	fprintf(f, "\tnew col = floatround((x - %.1f) / %.1f, floatround_floor), row = floatround((y - %.1f) / %.1f, floatround_floor);\n",
+		grid.x0, cell, grid.y0, cell);
+	// Unload first, so the zones a player leaves make room for the new ones.
+	fprintf(f, "\tfor(new pass = 0; pass < 2; pass++){\n");
+	fprintf(f, "\t\tfor(new c = 0; c < sizeof %s_cellArea; c++){\n", p);
+	fprintf(f, "\t\t\tnew dx = c %% %d - col, dy = c / %d - row;\n", grid.cols, grid.cols);
+	fprintf(f, "\t\t\tnew bool:near = dx >= -1 && dx <= 1 && dy >= -1 && dy <= 1;\n");
+	fprintf(f, "\t\t\tif(pass == 0 && %s_cellLoaded[playerid][c] && !near){\n", p);
+	fprintf(f, "\t\t\t\tfor(new k = %s_numLive[playerid] - 1; k >= 0; k--){\n", p);
+	fprintf(f, "\t\t\t\t\tif(%s_szoneCell[%s_liveIndex[playerid][k]] != c)\n\t\t\t\t\t\tcontinue;\n", p, p);
+	fprintf(f, "\t\t\t\t\tPlayerGangZoneDestroy(playerid, %s_liveZone[playerid][k]);\n", p);
+	fprintf(f, "\t\t\t\t\tnew last = --%s_numLive[playerid];\n", p);
+	fprintf(f, "\t\t\t\t\t%s_liveZone[playerid][k] = %s_liveZone[playerid][last];\n", p, p);
+	fprintf(f, "\t\t\t\t\t%s_liveIndex[playerid][k] = %s_liveIndex[playerid][last];\n\t\t\t\t}\n", p, p);
+	fprintf(f, "\t\t\t\t%s_cellLoaded[playerid][c] = false;\n", p);
+	fprintf(f, "\t\t\t}else if(pass == 1 && !%s_cellLoaded[playerid][c] && near){\n", p);
+	fprintf(f, "\t\t\t\t%s_cellLoaded[playerid][c] = true;\n", p);
+	fprintf(f, "\t\t\t\tfor(new i = %s_cellFirst[c]; i != -1 && %s_numLive[playerid] < sizeof %s_liveZone[];"
+		" i = %s_szoneNext[i]){\n", p, p, p, p);
+	fprintf(f, "\t\t\t\t\tnew zone = CreatePlayerGangZone(playerid, %s_szoneAt[i][0], %s_szoneAt[i][1],"
+		" %s_szoneAt[i][2], %s_szoneAt[i][3]);\n", p, p, p, p);
+	fprintf(f, "\t\t\t\t\tif(zone == INVALID_GANG_ZONE)\n\t\t\t\t\t\tbreak;\n");
+	fprintf(f, "\t\t\t\t\tPlayerGangZoneShow(playerid, zone, %s_szoneColour[i]);\n", p);
+	fprintf(f, "\t\t\t\t\tnew k = %s_numLive[playerid]++;\n", p);
+	fprintf(f, "\t\t\t\t\t%s_liveZone[playerid][k] = zone;\n\t\t\t\t\t%s_liveIndex[playerid][k] = i;\n", p, p);
+	fputs("\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n}\n\n", f);
+	fprintf(f, "stock bool:%s_ZoneArea(playerid, {DynamicArea, _}:areaid)\n{\n", p);
+	fprintf(f, "\tfor(new c = 0; c < sizeof %s_cellArea; c++){\n", p);
+	fprintf(f, "\t\tif(%s_cellArea[c] == _:areaid){\n\t\t\t%s_ZoneUpdate(playerid);\n\t\t\treturn true;\n\t\t}\n", p, p);
+	fputs("\t}\n\treturn false;\n}\n\n", f);
+}
+
 static int
 pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnly,
 	int *numSkipped)
@@ -6999,6 +7104,27 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 	for(size_t i = 0; i < insts.size(); i++)
 		if(pawnIsWorldObject(insts[i]))
 			numWorldObjects++;
+	// Gang zones shown per player (open.mp) or streamed, by mode.
+	std::vector<ObjectInst*> playerZones, streamedZones;
+	for(size_t i = 0; i < insts.size(); i++){
+		if(insts[i]->m_isDeleted || GetSampElementKind(insts[i]) != SAMP_ELEMENT_GANGZONE)
+			continue;
+		int mode = GetObjectPawnProperties(insts[i])->zoneMode;
+		if(mode == SAMP_ZONE_PLAYER)
+			playerZones.push_back(insts[i]);
+		else if(mode == SAMP_ZONE_STREAMED)
+			streamedZones.push_back(insts[i]);
+	}
+	StreamedZoneGrid zoneGrid = {};
+	if(!streamedZones.empty()){
+		std::vector<float> bounds;
+		for(size_t i = 0; i < streamedZones.size(); i++){
+			float b[4];
+			pawnGangZoneBounds(streamedZones[i], GetObjectPawnProperties(streamedZones[i]), &b[0], &b[1], &b[2], &b[3]);
+			bounds.insert(bounds.end(), b, b + 4);
+		}
+		GetStreamedZoneGrid(bounds, &zoneGrid);
+	}
 
 	fprintf(f, "// Generated by Haumea Studio from GTA San Andreas map objects.\n");
 	fprintf(f, "// This file uses absolute world coordinates and XYZ rotation degrees.\n");
@@ -7041,6 +7167,12 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 	}
 	if(hasNpcs)
 		fprintf(f, "// The NPC_* calls need open.mp with its NPCs component; SA-MP 0.3.7 has no NPC natives.\n");
+	if(!playerZones.empty() || !streamedZones.empty())
+		fprintf(f, "// Per-player gang zones (CreatePlayerGangZone) need open.mp; SA-MP 0.3.7 has none.\n");
+	if(!streamedZones.empty())
+		fprintf(f, "// Streamed gang zones need the streamer: call %s_ZoneArea(playerid, areaid) from\n"
+			"// OnPlayerEnterDynamicArea and OnPlayerLeaveDynamicArea, and %s_ZoneUpdate(playerid)\n"
+			"// from OnPlayerSpawn.\n", prefix, prefix);
 	// NPCs that walk their path again need the end-of-path callback.
 	int numRepeating = 0;
 	for(size_t i = 0; i < insts.size(); i++){
@@ -7083,9 +7215,10 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 	// open.mp's own include declares the NPC natives. Without NPCs the map
 	// takes open.mp's include when there is one (its <a_samp> is a wrapper
 	// that warns) and SA-MP 0.3.7's a_samp otherwise.
-	fprintf(f, hasNpcs ? "\n#include <open.mp>\n" :
+	bool needsOpenMp = hasNpcs || !playerZones.empty() || !streamedZones.empty();
+	fprintf(f, needsOpenMp ? "\n#include <open.mp>\n" :
 		"\n#tryinclude <open.mp>\n#if !defined _INC_open_mp\n\t#include <a_samp>\n#endif\n");
-	if(format == PAWN_CODE_STREAMER)
+	if(format == PAWN_CODE_STREAMER || !streamedZones.empty())
 		fprintf(f, "#include <streamer>\n");
 	fprintf(f, "\n");
 	// Weapon names only open.mp defines, for player classes on SA-MP 0.3.7.
@@ -7188,6 +7321,7 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 			char handle[128];
 			handle[0] = '\0';
 			if(kind == SAMP_ELEMENT_CLASS || kind == SAMP_ELEMENT_PATHPOINT || kind == SAMP_ELEMENT_SOUND ||
+			   (kind == SAMP_ELEMENT_GANGZONE && properties->zoneMode != SAMP_ZONE_GLOBAL) ||
 			   (kind == SAMP_ELEMENT_CHECKPOINT &&
 			    (format != PAWN_CODE_STREAMER || properties->cpKind == SAMP_CHECKPOINT_RACE)) ||
 			   (kind == SAMP_ELEMENT_MAPICON && format != PAWN_CODE_STREAMER))
@@ -7220,7 +7354,7 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 		if(insts[i]->m_isDeleted)
 			continue;
 		int kind = GetSampElementKind(insts[i]);
-		if(kind == SAMP_ELEMENT_GANGZONE)
+		if(kind == SAMP_ELEMENT_GANGZONE && GetObjectPawnProperties(insts[i])->zoneMode == SAMP_ZONE_GLOBAL)
 			gangZones.push_back(insts[i]);
 		else if(kind == SAMP_ELEMENT_MAPICON && format != PAWN_CODE_STREAMER)
 			nativeMapIcons.push_back(insts[i]);
@@ -7264,6 +7398,10 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 		pawnWriteSoundHelpers(f, prefix, (int)gameSounds.size(), format);
 	if(numRepeating > 0)
 		pawnWriteNpcRepeatHelpers(f, prefix, numRepeating);
+	if(!playerZones.empty())
+		pawnWritePlayerZoneHelpers(f, prefix, (int)playerZones.size());
+	if(!streamedZones.empty())
+		pawnWriteStreamedZoneHelpers(f, prefix, (int)streamedZones.size(), zoneGrid);
 
 	fprintf(f, "stock %s_CreateObjects()\n{\n", prefix);
 	if(!pathNames.empty()){
@@ -7358,6 +7496,15 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 					pawnWriteTrailingTags(f, "sound", "", properties);
 				}
 				continue;	// streams are written to _ShowForPlayer
+			}
+			if(kind == SAMP_ELEMENT_GANGZONE && properties->zoneMode != SAMP_ZONE_GLOBAL){
+				float minX, minY, maxX, maxY;
+				pawnGangZoneBounds(inst, properties, &minX, &minY, &maxX, &maxY);
+				fprintf(f, "\t%s_%s(%.6f, %.6f, %.6f, %.6f, 0x%08X);", prefix,
+					properties->zoneMode == SAMP_ZONE_PLAYER ? "AddPlayerZone" : "AddStreamedZone",
+					minX, minY, maxX, maxY, properties->zoneColor);
+				pawnWriteTrailingTags(f, "gangzone", "", properties);
+				continue;
 			}
 			std::unordered_map<const ObjectInst*, std::string>::iterator it = handles.find(inst);
 			const char *handle = it != handles.end() ? it->second.c_str() : "";
@@ -7480,6 +7627,15 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 		if(nativeGameSounds)
 			fprintf(f, "\tfor(new i = 0; i < sizeof %s_soundIn[]; i++)\n"
 				"\t\t%s_soundIn[playerid][i] = false;\n", prefix, prefix);
+		if(!playerZones.empty()){
+			fprintf(f, "\tfor(new i = 0; i < %s_numPZones; i++){\n", prefix);
+			fprintf(f, "\t\tnew zone = CreatePlayerGangZone(playerid, %s_pzoneAt[i][0], %s_pzoneAt[i][1],"
+				" %s_pzoneAt[i][2], %s_pzoneAt[i][3]);\n", prefix, prefix, prefix, prefix);
+			fprintf(f, "\t\tif(zone != INVALID_GANG_ZONE)\n\t\t\tPlayerGangZoneShow(playerid, zone, %s_pzoneColour[i]);\n"
+				"\t}\n", prefix);
+		}
+		if(!streamedZones.empty())
+			fprintf(f, "\t%s_ZoneReset(playerid);\n", prefix);
 		for(size_t i = 0; i < gangZones.size(); i++){
 			const ObjectPawnProperties *properties = GetObjectPawnProperties(gangZones[i]);
 			fprintf(f, "\tGangZoneShowForPlayer(playerid, %s, 0x%08X);",
@@ -8324,6 +8480,8 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 		PAWN_CALL_ANIMATION,	// ApplyActorAnimation, ApplyDynamicActorAnimation, NPC_ApplyAnimation
 		PAWN_CALL_AUDIO_STREAM,
 		PAWN_CALL_ADD_SOUND,	// Haumea_<map>_AddSound, generated with the map
+		PAWN_CALL_ADD_PLAYER_ZONE,	// Haumea_<map>_AddPlayerZone, generated with the map
+		PAWN_CALL_ADD_STREAMED_ZONE,	// Haumea_<map>_AddStreamedZone, generated with the map
 		PAWN_CALL_NPC_MOVE_REPEAT,	// Haumea_<map>_MoveByPathRepeat, generated with the map
 	};
 	struct PawnCallName { const char *name; int offset; bool streamer; PawnCallKind kind; };
@@ -8397,6 +8555,8 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 		{ "NPC_SetInvulnerable", 0, false, PAWN_CALL_NPC_INVULNERABLE },
 		{ "PlayAudioStreamForPlayer", 1, false, PAWN_CALL_AUDIO_STREAM },	// playerid
 		{ "_AddSound", 0, false, PAWN_CALL_ADD_SOUND },
+		{ "_AddPlayerZone", 0, false, PAWN_CALL_ADD_PLAYER_ZONE },
+		{ "_AddStreamedZone", 0, false, PAWN_CALL_ADD_STREAMED_ZONE },
 		{ "_MoveByPathRepeat", 0, false, PAWN_CALL_NPC_MOVE_REPEAT },
 	};
 
@@ -8424,7 +8584,8 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 		pos = found + strlen(call->name);
 		if(strings.inStringAt(source, found))
 			continue;
-		if(call->kind == PAWN_CALL_ADD_SOUND || call->kind == PAWN_CALL_NPC_MOVE_REPEAT){
+		if(call->kind == PAWN_CALL_ADD_SOUND || call->kind == PAWN_CALL_NPC_MOVE_REPEAT ||
+		   call->kind == PAWN_CALL_ADD_PLAYER_ZONE || call->kind == PAWN_CALL_ADD_STREAMED_ZONE){
 			// The end of a Haumea_ name, and a call rather than the stock itself.
 			size_t start = found;
 			while(start > 0 && pawnCharIsIdentifier(source[start-1]))
@@ -8953,6 +9114,7 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 		   call->kind == PAWN_CALL_CLASS_EX || call->kind == PAWN_CALL_GANGZONE ||
 		   call->kind == PAWN_CALL_MAPICON || call->kind == PAWN_CALL_AUDIO_STREAM ||
 		   call->kind == PAWN_CALL_ADD_SOUND || call->kind == PAWN_CALL_CHECKPOINT ||
+		   call->kind == PAWN_CALL_ADD_PLAYER_ZONE || call->kind == PAWN_CALL_ADD_STREAMED_ZONE ||
 		   call->kind == PAWN_CALL_RACE_CHECKPOINT){
 			PawnImportEntry entry = {};
 			entry.interior = -1;
@@ -9080,8 +9242,11 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 				entry.world = -1;
 				break;
 			}
+			case PAWN_CALL_ADD_PLAYER_ZONE:
+			case PAWN_CALL_ADD_STREAMED_ZONE:
 			case PAWN_CALL_GANGZONE: {
-				// GangZoneCreate(minx, miny, maxx, maxy)
+				// GangZoneCreate(minx, miny, maxx, maxy), and
+				// <prefix>_AddPlayerZone/_AddStreamedZone(minx, miny, maxx, maxy, colour)
 				entry.elementKind = SAMP_ELEMENT_GANGZONE;
 				entry.objectId = GetSampElementProxyModel(SAMP_ELEMENT_GANGZONE);
 				float minX, minY, maxX, maxY;
@@ -9095,6 +9260,10 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 					el.zoneSizeX = fabsf(maxX - minX);
 					el.zoneSizeY = fabsf(maxY - minY);
 					el.zoneColor = 0xFF000088;
+				}
+				if(call->kind != PAWN_CALL_GANGZONE){
+					el.zoneMode = call->kind == PAWN_CALL_ADD_PLAYER_ZONE ? SAMP_ZONE_PLAYER : SAMP_ZONE_STREAMED;
+					valid = valid && n >= o + 5 && pawnParseMaterialColor(arg(4), &el.zoneColor);
 				}
 				break;
 			}
