@@ -400,8 +400,8 @@ class HaumeaService:
 			                     "save_map(format='streamer') keeps them")
 		return result
 
-	# Tools > Array, Mirror, Align & distribute, Move & rotate and Along a line.
-	MAP_TOOL_OPS = ("array", "mirror", "align", "distribute", "snap_rotations", "move", "rotate",
+	# Tools > Array, Mirror, Align & distribute, Drop & copy as Pawn and Along a line.
+	MAP_TOOL_OPS = ("array", "mirror", "align", "distribute", "snap_rotations",
 	                "drop", "relative", "lay_along")
 
 	def map_tool(self, op: str, ids: list[int] | None = None, **params) -> dict:

@@ -2191,10 +2191,6 @@ handleMapTool(const std::string &requestId, const std::vector<std::string> &line
 		result = axis < 0 ? (error = "axis is x, y or z", -1) : MapToolsDistribute(axis, &error);
 	}else if(op == "snap_rotations")
 		result = MapToolsSnapRotations(num("step", 90.0f), &error);
-	else if(op == "move")
-		result = MapToolsMove(vec("offset", { 0.0f, 0.0f, 0.0f }), &error);
-	else if(op == "rotate")
-		result = MapToolsRotate(vec("rotate", { 0.0f, 0.0f, 0.0f }), &error);
 	else if(op == "drop")
 		result = MapToolsDropToGround(&error);
 	else if(op == "relative"){

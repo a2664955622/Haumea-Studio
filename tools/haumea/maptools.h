@@ -42,9 +42,6 @@ int MapToolsAlign(int axis, int mode, std::string *error);
 int MapToolsDistribute(int axis, std::string *error);
 int MapToolsSnapRotations(float step, std::string *error);
 
-int MapToolsMove(const rw::V3d &offset, std::string *error);
-// World-axis degrees around the selection's centre.
-int MapToolsRotate(const rw::V3d &degrees, std::string *error);
 int MapToolsDropToGround(std::string *error);
 // The selection relative to the first selected object, as Pawn:
 // AttachObjectToObject calls (attach) or a table of offsets.

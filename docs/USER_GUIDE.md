@@ -106,8 +106,9 @@ keep them in the map, they show on the canvas but are read-only and are saved ba
 ## Map tools
 
 **Tools** also has tools for layouts: **Array** (copies in a line or a ring), **Mirror**,
-**Align & distribute**, **Move & rotate** by exact values, and **Along a line** (lay objects
-along a path you click).
+**Align & distribute**, **Drop & copy as Pawn** (drop to the ground, copy as attachments or
+offsets), and **Along a line** (lay objects along a path you click). Exact moves and turns
+are in Object Info's Delta mode.
 
 ## Checking the map
 

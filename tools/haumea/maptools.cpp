@@ -477,43 +477,7 @@ MapToolsSnapRotations(float step, std::string *error)
 	return changed;
 }
 
-// ---- move and rotate --------------------------------------------------------
-
-int
-MapToolsMove(const rw::V3d &offset, std::string *error)
-{
-	std::vector<ObjectInst*> objs = selectedObjects();
-	if(!needSelection(objs, 1, error))
-		return -1;
-	int changed = 0;
-	UndoBeginGroup();
-	for(size_t i = 0; i < objs.size(); i++)
-		if(placeObject(objs[i], add(objs[i]->m_translation, offset), objs[i]->m_rotation))
-			changed++;
-	UndoEndGroup();
-	return changed;
-}
-
-int
-MapToolsRotate(const rw::V3d &degrees, std::string *error)
-{
-	std::vector<ObjectInst*> objs = selectedObjects();
-	if(!needSelection(objs, 1, error))
-		return -1;
-	rw::V3d pivot = groupCentre(objs);
-	rw::Quat w = worldRotation(degrees);
-	int changed = 0;
-	UndoBeginGroup();
-	for(size_t i = 0; i < objs.size(); i++){
-		rw::V3d pos = objs[i]->m_translation;
-		rw::Quat rot = objs[i]->m_rotation;
-		turnAround(pivot, w, &pos, &rot);
-		if(placeObject(objs[i], pos, rot))
-			changed++;
-	}
-	UndoEndGroup();
-	return changed;
-}
+// ---- drop and copy -------------------------------------------------------
 
 int
 MapToolsDropToGround(std::string *error)
@@ -909,23 +873,9 @@ alignSection(const std::vector<ObjectInst*> &objs)
 }
 
 static void
-moveSection(const std::vector<ObjectInst*> &objs)
+dropSection(const std::vector<ObjectInst*> &objs)
 {
-	static rw::V3d offset = { 0.0f, 0.0f, 0.0f }, turn = { 0.0f, 0.0f, 90.0f };
 	ImGui::BeginDisabled(objs.empty());
-	ImGui::InputFloat3("Offset##move", &offset.x, "%.3f");
-	ImGui::SetItemTooltip("Metres along the world X, Y and Z axes.");
-	if(ImGui::Button("Move")){
-		std::string error;
-		reportResult(MapToolsMove(offset, &error), error, "Move");
-	}
-	ImGui::InputFloat3("Rotate##turn", &turn.x, "%.2f");
-	ImGui::SetItemTooltip("Degrees around the world X, Y and Z axes, about the\n"
-		"selection's centre.");
-	if(ImGui::Button("Rotate")){
-		std::string error;
-		reportResult(MapToolsRotate(turn, &error), error, "Rotate");
-	}
 	if(ImGui::Button("Drop to ground")){
 		std::string error;
 		reportResult(MapToolsDropToGround(&error), error, "Drop to ground");
@@ -1061,8 +1011,8 @@ MapToolsPanel(void)
 		mirrorSection(objs);
 	if(ImGui::CollapsingHeader("Align & distribute"))
 		alignSection(objs);
-	if(ImGui::CollapsingHeader("Move & rotate"))
-		moveSection(objs);
+	if(ImGui::CollapsingHeader("Drop & copy as Pawn"))
+		dropSection(objs);
 	if(ImGui::CollapsingHeader("Along a line", gPicking ? ImGuiTreeNodeFlags_DefaultOpen : 0)){
 		lineOpen = true;
 		lineSection();

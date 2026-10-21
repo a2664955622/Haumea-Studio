@@ -932,8 +932,8 @@ def set_element_properties(instance_id: int, properties: dict) -> dict:
 
 
 @mcp.tool()
-def map_tool(op: Literal["array", "mirror", "align", "distribute", "snap_rotations", "move",
-                         "rotate", "drop", "relative", "lay_along"],
+def map_tool(op: Literal["array", "mirror", "align", "distribute", "snap_rotations",
+                         "drop", "relative", "lay_along"],
              ids: list[int] | None = None, count: int | None = None, radial: bool | None = None,
              offset: list[float] | None = None, rotate: list[float] | None = None,
              centre: list[float] | None = None, angle: float | None = None,
@@ -957,7 +957,6 @@ def map_tool(op: Literal["array", "mirror", "align", "distribute", "snap_rotatio
 	align: axis x/y/z, mode min/centre/max of the bounding boxes, to the first id.
 	distribute: even spacing along axis between the two outermost objects.
 	snap_rotations: round every angle to step degrees.
-	move: offset [x,y,z]. rotate: rotate [x,y,z] degrees around the group centre.
 	drop: each onto the ground below it.
 	relative: Pawn for ids relative to the first (attach=true: AttachObjectToObject;
 	  false: CreateObject at x/y/z plus offsets); changes nothing.

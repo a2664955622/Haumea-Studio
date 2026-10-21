@@ -287,16 +287,6 @@ RunUndoSelfTest(FILE *out)
 		selectOnly({ objects[0], objects[1] });
 		return MapToolsAlign(1, 1, &error) > 0;
 	});
-	undoTest("map tool: move", [&]{
-		if(objects.size() < 2) return false;
-		selectOnly({ objects[0], objects[1] });
-		return MapToolsMove({ 1.0f, 2.0f, 0.5f }, &error) > 0;
-	});
-	undoTest("map tool: rotate", [&]{
-		if(objects.size() < 2) return false;
-		selectOnly({ objects[0], objects[1] });
-		return MapToolsRotate({ 0.0f, 0.0f, 30.0f }, &error) > 0;
-	});
 	undoTest("place object", [&]{
 		SetSpawnObjectId(1271);
 		SpawnPlaceObject({ 1700.0f, -1890.0f, 13.5f });
