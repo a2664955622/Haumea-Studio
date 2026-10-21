@@ -1,0 +1,46 @@
+# NPC with a path: place two path points and an NPC, name it, make it follow the path and loop; save, reopen.
+open "$UI_FIXTURES/ui_floor.pwn"
+shortcut window_browser
+wait 5
+click_item 'Object Browser' 'SA-MP'
+wait 5
+click_item 'Object Browser' 'Place' 4
+wait 3
+click_world 1997 -3000 4 shift
+wait 5
+click_world 2000 -3003 4
+wait 5
+key Esc
+click_item 'Object Browser' 'Place' 3
+wait 3
+click_world 2003 -3000 4
+wait 5
+key Esc
+assert objects == 4
+shortcut window_object_info
+wait 5
+set_item 'Object Info' 'Name' "guard" tab
+wait 3
+scroll_until 'Object Info' 'Does'
+click_item 'Object Info' 'Does'
+wait 3
+click_item '*' 'Follow a path'
+wait 3
+scroll_until 'Object Info' 'Repeat'
+click_item 'Object Info' 'Path'
+wait 3
+click_item '*' 'patrol  (2 points)'
+wait 3
+click_item 'Object Info' 'Repeat'
+wait 3
+click_item '*' 'Loop'
+wait 3
+key Ctrl+S
+wait 5
+reopen
+wait 10
+assert objects == 4
+assert pawn_contains "new patrol = NPC_CreatePath();"
+assert pawn_contains "NPC_AddPointToPath(patrol, 199"
+assert pawn_contains "= NPC_Create(\"guard\");"
+assert pawn_contains "MoveByPathRepeat(Haumea_ui_floor_npc_0, patrol, NPC_MOVE_TYPE_JOG, NPC_MOVE_SPEED_AUTO, false, NPC_PATH_LOOP);"
