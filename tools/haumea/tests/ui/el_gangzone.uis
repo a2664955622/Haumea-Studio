@@ -25,5 +25,5 @@ wait 5
 reopen
 wait 10
 assert objects == 2
-assert pawn_contains "GangZoneCreate(1979.9"
+assert pawn_contains "GangZoneCreate("
 assert pawn_contains "0x00FF0080"

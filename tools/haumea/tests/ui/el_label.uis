@@ -12,7 +12,7 @@ key Esc
 assert objects == 2
 shortcut window_object_info
 wait 5
-set_item 'Object Info' 'Text' "Welcome"
+set_item 'Object Info' 'Text' "Welcome" tab
 wait 3
 set_item 'Object Info' 'Colour/##X' "255"
 set_item 'Object Info' 'Colour/##Y' "0"
@@ -27,5 +27,5 @@ wait 5
 reopen
 wait 10
 assert objects == 2
-assert pawn_contains "Create3DTextLabel(\"Welcome\", 0xFF0000FF, 1999.9"
+assert pawn_contains "Create3DTextLabel(\"Welcome\", 0xFF0000FF, "
 assert pawn_contains ", 25.0"

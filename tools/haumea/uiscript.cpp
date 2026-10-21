@@ -45,9 +45,10 @@
 //   click_item 'Window' 'Label' [right]   '*' for any window
 //   hover_item 'Window' 'Label'
 //   set_item 'Window' 'Label' "text" [N] [tab] types into a field ('Colour/##X' = red)
+//   close_popup                         clicks the empty end of the menu bar
 //   reopen                              opens the map file again
 //   click_world X Y Z [shift|right]    looks at a world point and clicks it
-//   scroll_until 'Window' 'Label'      scrolls the window until the item shows
+//   scroll_until 'Window' 'Label'      scrolls the window until the item shows ('*': the open popup)
 //   dump_items [filter]                 lists what ImGui drew last frame
 //   drag_item 'Window' 'Label' DX DY [N]
 //   drag_item_to 'Window' 'Label' 'Window' 'Label'   drops one item on another
@@ -183,8 +184,11 @@ static const UiItem*
 findItem(const std::string &window, const std::string &label, int nth)
 {
 	size_t slash = label.rfind('/');
-	if(slash != std::string::npos && slash > 0 && slash + 1 < label.size() && label[slash+1] == '#')
-		return findPart(window, label.substr(0, slash), label.substr(slash + 1), nth);
+	if(slash != std::string::npos && slash > 0 && slash + 1 < label.size()){
+		const UiItem *part = findPart(window, label.substr(0, slash), label.substr(slash + 1), nth);
+		if(part || label[slash+1] == '#')
+			return part;
+	}
 	const UiItem *contains = nil;
 	// A label starting with "##" is an ID: matched against the raw label.
 	if(label.compare(0, 2, "##") == 0){
@@ -831,6 +835,15 @@ nextCommand(void)
 			addStep(Step::NOP);
 			addChord({ tab ? sk::KEY_TAB : sk::KEY_ENTER });
 			return;
+		}else if(cmd == "close_popup"){
+			// Click the empty end of the menu bar: closes an open combo or menu.
+			ImGuiIO &io = ImGui::GetIO();
+			addStep(Step::MOVE, (int)io.DisplaySize.x - 4, 6);
+			addStep(Step::NOP);
+			addStep(Step::DOWN, 0, 0, 1);
+			addStep(Step::UP, 0, 0, 1);
+			addStep(Step::NOP);
+			return;
 		}else if(cmd == "reopen"){
 			// Open the map file again, as saved.
 			std::string path = GetPawnMapPath();
@@ -1104,6 +1117,11 @@ UiScriptTick(void)
 			gScrollLabel.clear();
 		}else{
 			ImGuiContext &g = *GImGui;
+			// '*' scrolls the open popup (a combo's list).
+			if(gScrollWindow == "*" && g.OpenPopupStack.Size > 0 && g.OpenPopupStack.back().Window){
+				ImGuiWindow *w = g.OpenPopupStack.back().Window;
+				ImGui::SetScrollY(w, std::min(w->Scroll.y + 60.0f, w->ScrollMax.y));
+			}
 			for(int i = 0; i < g.Windows.Size; i++){
 				ImGuiWindow *w = g.Windows[i];
 				std::string title = plainLabel(visibleTitle(w->Name));
@@ -1125,6 +1143,16 @@ UiScriptTick(void)
 			return;
 	}
 	if(gStep < gSteps.size()){
+		// An item still being laid out (a tab just opened, a list filling)
+		// gets up to a second to show up before the lookup fails.
+		static int itemWait;
+		const Step &next = gSteps[gStep];
+		if(next.type == Step::ITEM && itemWait < 60 &&
+		   findItem(next.window, next.label, next.nth > 0 ? next.nth : 1) == nil){
+			itemWait++;
+			return;
+		}
+		itemWait = 0;
 		if(!runStep(gSteps[gStep])){
 			gSteps.clear();
 			gStep = 0;

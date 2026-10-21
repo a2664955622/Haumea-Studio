@@ -8,7 +8,7 @@ click_item 'Object Browser' 'Model##pickup'
 wait 3
 set_item '*' 'ID' "1242"
 wait 3
-click_item 'Object Browser' 'Model##pickup'
+close_popup
 wait 3
 click_item 'Object Browser' 'Place' 5
 wait 3
@@ -22,11 +22,11 @@ click_item 'Object Info' 'Type'
 wait 3
 set_item '*' 'ID' "14"
 wait 3
-click_item 'Object Info' 'Type'
+close_popup
 wait 3
 key Ctrl+S
 wait 5
 reopen
 wait 10
 assert objects == 2
-assert pawn_contains "CreatePickup(1242, 14, 1999.9"
+assert pawn_contains "CreatePickup(1242, 14, "

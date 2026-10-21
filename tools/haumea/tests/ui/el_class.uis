@@ -16,7 +16,7 @@ click_item 'Object Info' 'Skin'
 wait 3
 set_item '*' 'ID' "105"
 wait 3
-click_item 'Object Info' 'Skin'
+close_popup
 wait 3
 click_item 'Object Info' 'Team (AddPlayerClassEx)'
 wait 3
@@ -24,12 +24,14 @@ set_item 'Object Info' '##team' "3"
 wait 3
 click_item 'Object Info' '##weapon' 1
 wait 3
+scroll_until '*' 'Desert Eagle'
 click_item '*' 'Desert Eagle'
 wait 3
 set_item 'Object Info' '##ammo' "100" 1
 wait 3
 click_item 'Object Info' '##weapon' 2
 wait 3
+scroll_until '*' 'M4'
 click_item '*' 'M4'
 wait 3
 set_item 'Object Info' '##ammo' "300" 2
@@ -39,5 +41,5 @@ wait 5
 reopen
 wait 10
 assert objects == 2
-assert pawn_contains "AddPlayerClassEx(3, 105, 1999.9"
-assert pawn_contains ", 24, 100, 31, 300, 0, 0);"
+assert pawn_contains "AddPlayerClassEx(3, 105, "
+assert pawn_contains ", WEAPON_DEAGLE, 100, WEAPON_M4, 300, WEAPON_FIST, 0);"

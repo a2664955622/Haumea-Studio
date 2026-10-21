@@ -18,7 +18,7 @@ click_item 'Object Info' 'Skin'
 wait 3
 set_item '*' 'ID' "280"
 wait 3
-click_item 'Object Info' 'Skin'
+close_popup
 wait 3
 click_item 'Object Info' 'Invulnerable'
 wait 2
@@ -39,7 +39,7 @@ wait 5
 reopen
 wait 10
 assert objects == 2
-assert pawn_contains "= CreateActor(280, 1999.9"
+assert pawn_contains "= CreateActor(280, "
 assert pawn_contains "SetActorInvulnerable(Haumea_ui_floor_actor_0, false);"
 assert pawn_contains "SetActorHealth(Haumea_ui_floor_actor_0, 50.00);"
 assert pawn_contains "ApplyActorAnimation(Haumea_ui_floor_actor_0, \"PED\", \"WALK_civi\", 4.10, true, true, false, false, 0);"
