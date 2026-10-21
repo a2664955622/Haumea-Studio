@@ -14,7 +14,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from haumea_test_env import editor_env  # noqa: E402
+from haumea_test_env import editor_env, run_editor  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[3]
 GAME_DIR = os.environ.get('HAUMEA_GAME_DIR')
@@ -41,9 +41,9 @@ class GameDirWriteTests(unittest.TestCase):
                 'dotdot': Path(str(game.parent), '..', game.parent.name, game.name, name),
             }
             for how, target in targets.items():
-                result = subprocess.run([BINARY, '--game', str(game), '--pawn-roundtrip',
+                result = run_editor([BINARY, '--game', str(game), '--pawn-roundtrip',
                                          str(source), str(target)], cwd=tmp, env=editor_env(tmp),
-                                        capture_output=True, text=True, timeout=600)
+                                        capture_output=True, text=True)
                 written = (game / name).exists()
                 if written:
                     (game / name).unlink()

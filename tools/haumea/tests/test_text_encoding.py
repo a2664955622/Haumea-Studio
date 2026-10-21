@@ -18,7 +18,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from haumea_test_env import editor_env  # noqa: E402
+from haumea_test_env import editor_env, run_editor  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -37,8 +37,8 @@ class TextEncodingTests(unittest.TestCase):
     def test_windows_1252_text_reaches_the_amx(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp, 'hv_text.pwn')
-            subprocess.run([BINARY, '--game', GAME_DIR, '--pawn-roundtrip', str(MAP), str(out)],
-                           cwd=tmp, env=editor_env(tmp), capture_output=True, timeout=600)
+            run_editor([BINARY, '--game', GAME_DIR, '--pawn-roundtrip', str(MAP), str(out)],
+                           cwd=tmp, env=editor_env(tmp), capture_output=True)
             data = out.read_bytes()
             self.assertIn(b'// Text encoding: Windows-1252', data)
             # Three times: the label, the material text and the textdraw.

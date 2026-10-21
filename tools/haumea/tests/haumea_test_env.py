@@ -58,3 +58,93 @@ def editor_env(scratch, virtual_display=False):
     if sys.platform == 'darwin':
         env['HOME'] = config
     return env
+
+
+# ---- Running an editor: real-game slots and a hard timeout ----
+#
+# The real game takes minutes to load when many editors do it at once, the
+# synthetic fixture (fixture/make_game.py) seconds. So editors on the real
+# game take one of a few machine-wide slots (across every run and session),
+# and every editor gets a timeout that kills it and fails loudly.
+
+import contextlib
+import fcntl
+import signal
+import subprocess
+import time
+from pathlib import Path
+
+REAL_GAME_TIMEOUT = 300
+FIXTURE_TIMEOUT = 120
+
+
+def is_real_game(game_dir):
+    return bool(game_dir) and not Path(game_dir, 'data', 'maps', 'fixture.ide').is_file()
+
+
+def real_game_slots():
+    try:
+        return max(1, int(os.environ.get('HAUMEA_REALGAME_SLOTS', '4')))
+    except ValueError:
+        return 4
+
+
+@contextlib.contextmanager
+def game_slot(game_dir):
+    """Holds one of the machine-wide real-game slots (/tmp/ariane-realgame-N.lock)
+    while the block runs; nothing for the fixture."""
+    if not is_real_game(game_dir) or sys.platform == 'win32':
+        yield
+        return
+    while True:
+        for n in range(1, real_game_slots() + 1):
+            handle = open(f'/tmp/ariane-realgame-{n}.lock', 'a')
+            try:
+                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError:
+                handle.close()
+                continue
+            try:
+                yield
+            finally:
+                handle.close()
+            return
+        time.sleep(1)
+
+
+class EditorTimeout(AssertionError):
+    pass
+
+
+def run_editor(args, *, timeout=None, stdout=None, **kwargs):
+    """subprocess.run for an editor (its game is the folder after --game): in a
+    real-game slot when that is the real game, killed after timeout seconds
+    (300 real game, 120 fixture; the wait for a slot doesn't count). A timeout
+    raises EditorTimeout with the end of its output. stdout: a file to write
+    to, else stdout and stderr are captured together in .stdout."""
+    args = [str(a) for a in args]
+    env = kwargs.get('env') or os.environ
+    game_dir = args[args.index('--game') + 1] if '--game' in args else env.get('HAUMEA_GAME_DIR', '')
+    kwargs.pop('capture_output', None)
+    if timeout is None:
+        timeout = REAL_GAME_TIMEOUT if is_real_game(game_dir) else FIXTURE_TIMEOUT
+    capture = stdout is None
+    kwargs.setdefault('text', True)
+    with game_slot(game_dir):
+        process = subprocess.Popen(args, stdout=subprocess.PIPE if capture else stdout,
+                                   stderr=subprocess.STDOUT if capture or stdout else None,
+                                   start_new_session=True, **kwargs)
+        try:
+            out, _ = process.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            with contextlib.suppress(OSError):
+                os.killpg(process.pid, signal.SIGKILL)
+            out, _ = process.communicate()
+            if not capture:
+                with contextlib.suppress(OSError, AttributeError):
+                    stdout.flush()
+                    out = Path(stdout.name).read_text(errors='replace')
+            tail = '\n'.join((out or '').splitlines()[-15:])
+            raise EditorTimeout(f'editor killed after {timeout} s: {" ".join(map(str, args[:6]))}...\n'
+                                f'last output:\n{tail}') from None
+    return subprocess.CompletedProcess(args, process.returncode, out if capture else None, '' if capture else None)

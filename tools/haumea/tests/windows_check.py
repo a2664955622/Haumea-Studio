@@ -40,7 +40,7 @@ import zlib
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from haumea_test_env import NO_WAYLAND, check_virtual_display  # noqa: E402
+from haumea_test_env import NO_WAYLAND, check_virtual_display, game_slot, run_editor  # noqa: E402
 ROOT = HERE.parents[2]
 MAPS = sorted(HERE.glob('fixtures/*.pwn')) + sorted(HERE.glob('pawn/maps/*.pwn'))
 
@@ -149,11 +149,12 @@ class WindowsCheck:
             config = out / 'config'
             config.mkdir()
             linux_env = dict(os.environ, HAUMEA_CONFIG_DIR=str(config / 'linux'), HAUMEA_NO_MIGRATE='1')
-            run([self.linux, '--game', self.game, '--pawn-roundtrip', str(source),
-                 str(out / 'linux' / 'map.pwn')], env=linux_env)
+            run_editor([self.linux, '--game', self.game, '--pawn-roundtrip', str(source),
+                        str(out / 'linux' / 'map.pwn')], env=linux_env)
             wine_env = dict(self.wine_env, HAUMEA_CONFIG_DIR=winpath(config / 'windows'))
-            run(['wine', str(exe), '--game', winpath(self.game), '--pawn-roundtrip',
-                 winpath(source), winpath(out / 'windows' / 'map.pwn')], env=wine_env, timeout=300)
+            with game_slot(self.game):
+                run(['wine', str(exe), '--game', winpath(self.game), '--pawn-roundtrip',
+                     winpath(source), winpath(out / 'windows' / 'map.pwn')], env=wine_env, timeout=300)
             linux_file, windows_file = out / 'linux' / 'map.pwn', out / 'windows' / 'map.pwn'
             if not linux_file.is_file():
                 self.fail('%s %s: the Linux editor wrote nothing' % (gfx, name))

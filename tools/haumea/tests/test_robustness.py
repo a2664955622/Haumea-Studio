@@ -13,7 +13,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from haumea_test_env import editor_env  # noqa: E402
+from haumea_test_env import editor_env, run_editor  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[3]
 FIXTURE = Path(__file__).resolve().parent / 'fixtures' / 'every_element.pwn'
@@ -27,8 +27,8 @@ HAVE_DISPLAY = bool(os.environ.get('DISPLAY') or os.environ.get('WAYLAND_DISPLAY
                      'set HAUMEA_GAME_DIR and build the editor to run')
 class RobustnessTests(unittest.TestCase):
     def run_editor(self, tmp, *args):
-        return subprocess.run([BINARY, '--game', GAME_DIR, *args], cwd=tmp, env=editor_env(tmp),
-                              capture_output=True, text=True, timeout=600)
+        return run_editor([BINARY, '--game', GAME_DIR, *args], cwd=tmp, env=editor_env(tmp),
+                              capture_output=True, text=True)
 
     def test_every_edit_is_one_exact_undo_step(self):
         # Each kind of edit, then undo and redo, compared as exported Pawn.

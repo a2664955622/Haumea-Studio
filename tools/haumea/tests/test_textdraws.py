@@ -19,7 +19,7 @@ import sys
 
 # The helper sits next to the tests: found as a script and with python -m unittest.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from haumea_test_env import editor_env  # noqa: E402
+from haumea_test_env import editor_env, run_editor  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[3]
 GAME_DIR = os.environ.get('HAUMEA_GAME_DIR')
@@ -123,9 +123,9 @@ class TextDrawTests(unittest.TestCase):
             hud_source.write_text(MAP.replace('Title', 'HudTitle').replace('Box', 'HudBox')
                                   .replace('PlayerTD', 'HudTD'))
             env = editor_env(tmp)
-            result = subprocess.run([BINARY, '--game', GAME_DIR, '--textdraw-roundtrip', str(hud_source),
+            result = run_editor([BINARY, '--game', GAME_DIR, '--textdraw-roundtrip', str(hud_source),
                                      str(Path(tmp, 'hud.pwn'))],
-                                    cwd=tmp, env=env, capture_output=True, text=True, timeout=600)
+                                    cwd=tmp, env=env, capture_output=True, text=True)
             self.assertIn(': 4 textdraw(s)', result.stdout, result.stdout[-2000:])
             hud = Path(tmp, 'hud.pwn').read_text()
             self.assertIn('stock Haumea_hud_CreateTextDraws()', hud)
@@ -133,15 +133,15 @@ class TextDrawTests(unittest.TestCase):
             self.assertIn('HudTitle = TextDrawCreate(320.000, 10.000,', hud)
             self.assertNotIn('CreateObject', hud)
             # Opened again, the file gives the same file back.
-            result = subprocess.run([BINARY, '--game', GAME_DIR, '--textdraw-roundtrip', str(Path(tmp, 'hud.pwn')),
+            result = run_editor([BINARY, '--game', GAME_DIR, '--textdraw-roundtrip', str(Path(tmp, 'hud.pwn')),
                                      str(Path(tmp, 'hud2.pwn'))],
-                                    cwd=tmp, env=env, capture_output=True, text=True, timeout=600)
+                                    cwd=tmp, env=env, capture_output=True, text=True)
             self.assertIn(': 4 textdraw(s)', result.stdout, result.stdout[-2000:])
             self.assertEqual(Path(tmp, 'hud2.pwn').read_text().replace('hud2', 'hud'), hud)
 
-            result = subprocess.run([BINARY, '--game', GAME_DIR, '--pawn-roundtrip', str(source),
+            result = run_editor([BINARY, '--game', GAME_DIR, '--pawn-roundtrip', str(source),
                                      str(Path(tmp, 'map.pwn'))],
-                                    cwd=tmp, env=env, capture_output=True, text=True, timeout=600)
+                                    cwd=tmp, env=env, capture_output=True, text=True)
             self.assertIn('pawn-roundtrip:', result.stdout, result.stdout[-2000:])
             self.compile(tmp, GAMEMODE_WITH_FILE)
 
@@ -150,8 +150,8 @@ class TextDrawTests(unittest.TestCase):
             source = Path(tmp, 'in.pwn')
             source.write_text(MAP)
             target = Path(tmp, 'map.pwn')
-            result = subprocess.run([BINARY, '--game', GAME_DIR, '--pawn-roundtrip', str(source), str(target)],
-                                    cwd=tmp, env=editor_env(tmp), capture_output=True, text=True, timeout=600)
+            result = run_editor([BINARY, '--game', GAME_DIR, '--pawn-roundtrip', str(source), str(target)],
+                                    cwd=tmp, env=editor_env(tmp), capture_output=True, text=True)
             self.assertIn('pawn-roundtrip:', result.stdout, result.stdout[-2000:])
             out = target.read_text()
 

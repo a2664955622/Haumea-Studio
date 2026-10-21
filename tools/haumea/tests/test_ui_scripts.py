@@ -32,7 +32,7 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from haumea_test_env import editor_env
+from haumea_test_env import EditorTimeout, editor_env, is_real_game, run_editor
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -204,7 +204,11 @@ def run_script(name):
     xvfb, env['DISPLAY'] = start_xvfb()
     env.pop('XAUTHORITY', None)
     try:
-        result = subprocess.run(args, cwd=work, env=env, capture_output=True, text=True, timeout=600)
+        # Scripts play many frames: longer than a load, still a hard limit.
+        limit = 600 if '--game' in args and is_real_game(game) else 300
+        result = run_editor(args, cwd=work, env=env, timeout=limit)
+    except EditorTimeout as error:
+        result = subprocess.CompletedProcess(args, -9, str(error), '')
     finally:
         xvfb.terminate()	# so it removes its lock and socket
         try:

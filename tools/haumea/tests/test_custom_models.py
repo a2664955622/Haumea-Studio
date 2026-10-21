@@ -18,7 +18,7 @@ import sys
 
 # The helper sits next to the tests: found as a script and with python -m unittest.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from haumea_test_env import editor_env  # noqa: E402
+from haumea_test_env import editor_env, run_editor  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[3]
 GAME_DIR = os.environ.get('HAUMEA_GAME_DIR')
@@ -75,9 +75,9 @@ class CustomModelTests(unittest.TestCase):
             source = server / 'scriptfiles' / 'map.pwn'
             source.write_text(MAP)
             target = Path(tmp, 'out.pwn')
-            result = subprocess.run([BINARY, '--workspace', str(server), '--game', GAME_DIR,
+            result = run_editor([BINARY, '--workspace', str(server), '--game', GAME_DIR,
                                      '--pawn-roundtrip', str(source), str(target)],
-                                    cwd=tmp, env=editor_env(tmp), capture_output=True, text=True, timeout=600)
+                                    cwd=tmp, env=editor_env(tmp), capture_output=True, text=True)
             self.assertIn('0 skipped on save', result.stdout, result.stdout[-2000:])
             out = target.read_text()
 

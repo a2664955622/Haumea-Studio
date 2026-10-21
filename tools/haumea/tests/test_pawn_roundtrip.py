@@ -16,7 +16,7 @@ import sys
 
 # The helper sits next to the tests: found as a script and with python -m unittest.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from haumea_test_env import editor_env  # noqa: E402
+from haumea_test_env import editor_env, run_editor  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[3]
 FIXTURE = Path(__file__).resolve().parent / 'fixtures' / 'pawn_roundtrip.pwn'
@@ -31,9 +31,9 @@ HAVE_DISPLAY = bool(os.environ.get('DISPLAY') or os.environ.get('WAYLAND_DISPLAY
 class PawnRoundtripTests(unittest.TestCase):
     def roundtrip(self, source, target):
         # Haumea runs from anywhere: the game folder comes from --game.
-        result = subprocess.run([BINARY, '--game', GAME_DIR, '--pawn-roundtrip', str(source), str(target)],
+        result = run_editor([BINARY, '--game', GAME_DIR, '--pawn-roundtrip', str(source), str(target)],
                                 cwd=target.parent, env=editor_env(target.parent),
-                                capture_output=True, text=True, timeout=600)
+                                capture_output=True, text=True)
         self.assertIn('pawn-roundtrip:', result.stdout, result.stdout[-2000:])
         return target.read_text()
 

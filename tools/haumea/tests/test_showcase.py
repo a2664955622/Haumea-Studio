@@ -27,7 +27,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from haumea_test_env import editor_env  # noqa: E402
+from haumea_test_env import editor_env, run_editor  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -73,24 +73,24 @@ def make_server(tmp):
 @unittest.skipUnless(GAME_DIR and BINARY and HAVE_DISPLAY,
                      'set HAUMEA_GAME_DIR and build the editor to run')
 class ShowcaseTests(unittest.TestCase):
-    def roundtrip(self, tmp, server, source, folder):
-        target = Path(tmp, folder, 'showcase.pwn')	# the file name sets the prefix
-        target.parent.mkdir()
-        result = subprocess.run([BINARY, '--game', GAME_DIR, '--workspace', str(server),
-                                 '--pawn-roundtrip', str(source), str(target)],
-                                cwd=tmp, env=editor_env(tmp), capture_output=True, text=True,
-                                timeout=600)
-        self.assertIn('0 skipped on save', result.stdout, result.stdout[-2000:])
+    def roundtrip(self, tmp, server, source):
+        """Opens and saves the showcase, then saves that save again, in one editor."""
+        first, second = Path(tmp, 'first', 'showcase.pwn'), Path(tmp, 'second', 'showcase.pwn')	# the file name sets the prefix
+        first.parent.mkdir()
+        second.parent.mkdir()
+        result = run_editor([BINARY, '--game', GAME_DIR, '--workspace', str(server),
+                             '--pawn-roundtrip', str(source), str(first), str(first), str(second)],
+                            cwd=tmp, env=editor_env(tmp))
+        self.assertEqual(result.stdout.count('0 skipped on save'), 2, result.stdout[-2000:])
         self.assertIn('skipped 0 from', result.stdout, result.stdout[-2000:])
-        return target
+        return first, second
 
     def test_showcase_round_trip_and_compile(self):
         with tempfile.TemporaryDirectory() as tmp:
             server = make_server(tmp)
             if server is None:
                 self.skipTest('the game folder has no gta3.img with barrel4 (synthetic fixture)')
-            first = self.roundtrip(tmp, server, SHOWCASE / 'showcase.pwn', 'first')
-            second = self.roundtrip(tmp, server, first, 'second')
+            first, second = self.roundtrip(tmp, server, SHOWCASE / 'showcase.pwn')
             expected = (SHOWCASE / 'showcase.pwn').read_text()
             self.assertEqual(first.read_text(), expected,
                              'opening and saving the showcase changed it')
