@@ -26,7 +26,7 @@ click_world 2001 -3001 4
 wait 3
 # Sound, near the end of the list.
 scroll_until 'Object Browser' 'Race'
-click_item 'Object Browser' 'Place' -2
+click_item 'Object Browser' 'Place' -3
 wait 3
 click_world 2002 -3002 4
 wait 5

@@ -5,7 +5,7 @@ wait 5
 click_item 'Object Browser' 'SA-MP'
 wait 5
 scroll_until 'Object Browser' 'Race'
-click_item 'Object Browser' 'Place' -2
+click_item 'Object Browser' 'Place' -3
 wait 3
 click_world 2000 -3000 4
 wait 5
@@ -24,7 +24,7 @@ set_item 'Object Info' 'Radius' "15"
 wait 3
 click_item 'Object Info' 'Stop when the player leaves'
 wait 3
-click_item 'Object Browser' 'Place' -2
+click_item 'Object Browser' 'Place' -3
 wait 3
 click_world 2003 -3000 4
 wait 5

@@ -10,7 +10,7 @@
 
 namespace {
 
-enum IconKind { ICON_LABEL, ICON_SOUND, ICON_MAPICON, ICON_GANGZONE, ICON_PATHPOINT, ICON_CHECKPOINT, NUM_ICONS };
+enum IconKind { ICON_LABEL, ICON_SOUND, ICON_MAPICON, ICON_GANGZONE, ICON_PATHPOINT, ICON_CHECKPOINT, ICON_AREA, NUM_ICONS };
 
 struct IconStyle {
 	uint8 r, g, b;			// the disc
@@ -24,6 +24,7 @@ const IconStyle kStyles[NUM_ICONS] = {
 	{  52, 168,  83, 255, 255, 255 },	// gang zone: green
 	{ 240, 200,  40,  40,  40,  40 },	// path point: yellow, dark glyph
 	{ 220,  30,  30, 255, 255, 255 },	// checkpoint: red, as in game (its marker is drawn too)
+	{   0, 150, 160, 255, 255, 255 },	// dynamic area: teal
 };
 
 int
@@ -36,6 +37,7 @@ iconOf(int kind)
 	case SAMP_ELEMENT_GANGZONE: return ICON_GANGZONE;
 	case SAMP_ELEMENT_PATHPOINT: return ICON_PATHPOINT;
 	case SAMP_ELEMENT_CHECKPOINT: return ICON_CHECKPOINT;
+	case SAMP_ELEMENT_AREA: return ICON_AREA;
 	}
 	return -1;
 }
@@ -111,6 +113,11 @@ glyph(int icon, float x, float y)
 			return (cx + cy) % 2 == 0;
 		}
 		return false;
+	case ICON_AREA: {	// a region: a dashed ring around a dot
+		float r = sqrtf(x*x + y*y);
+		float dash = fmodf(atan2f(y, x) + pi*2.0f + pi/16.0f, pi/4.0f);
+		return r < 0.12f || (fabsf(r - 0.42f) < 0.07f && dash < pi/8.0f);
+	}
 	}
 	return false;
 }

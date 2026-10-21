@@ -2927,7 +2927,7 @@ GetSampElementProxyModel(int kind)
 	case SAMP_ELEMENT_PATHPOINT: return 1559;	// diamond_3, the yellow marker
 	case SAMP_ELEMENT_SOUND: return 2232;	// MED_SPEAKER_4
 	case SAMP_ELEMENT_CHECKPOINT: return 1317;	// Cylinder, the game's marker
-	case SAMP_ELEMENT_AREA: return 1313;	// drawn as its outline; the marker is where to grab it
+	case SAMP_ELEMENT_AREA: return 1313;	// never drawn: an editor icon and its outline
 	}
 	return -1;
 }
