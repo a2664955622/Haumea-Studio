@@ -428,14 +428,16 @@ hasArg(const char *arg)
 }
 
 // Only an interactive start looks for, downloads or installs updates: never
-// the tests, UI scripts, round trips or CI.
+// the tests, UI scripts, round trips or CI. The one exception is a UI script
+// run against a test release server (test_updater.py drives the banner).
 static bool
 updatesAllowed(void)
 {
 	const char *off = getenv("HAUMEA_NO_UPDATE");
 	if(off && off[0] && strcmp(off, "0") != 0)
 		return false;
-	return !SettingsAreReadOnly() && !UiScriptActive() && !hasArg("--ui-script") &&
+	bool script = UiScriptActive() || hasArg("--ui-script");
+	return !SettingsAreReadOnly() && (!script || testServer()) &&
 		!hasArg("--textdraw-roundtrip") && !hasArg("--pawn-roundtrip");
 }
 
@@ -579,8 +581,9 @@ downloadWorker(void)
 	bool badChecksum;
 	bool ok = downloadAndStage(updateDir(), gRelease, &error, &badChecksum);
 	gError = error;
-	gStatus = ok ? UPD_READY : UPD_FAILED;
+	// Free for the next job before the GUI can see this status and act on it.
 	gWorking = false;
+	gStatus = ok ? UPD_READY : UPD_FAILED;
 }
 
 static void
@@ -596,8 +599,8 @@ checkWorker(void)
 		gNotifyOnly = "This release has no download for this platform.";
 	// Already downloaded (the banner was put off with Later last time).
 	if(status == UPD_AVAILABLE && stagedVersion(updateDir() + "/staged") == rel.version){
-		gStatus = UPD_READY;
 		gWorking = false;
+		gStatus = UPD_READY;
 		return;
 	}
 	if(status == UPD_AVAILABLE && gNotifyOnly.empty() && gUpdateDownloadAuto && !gManualCheck){
@@ -605,8 +608,8 @@ checkWorker(void)
 		downloadWorker();
 		return;
 	}
-	gStatus = status;
 	gWorking = false;
+	gStatus = status;
 }
 
 static void
@@ -747,7 +750,8 @@ UpdaterDrawGui(void)
 	   (status == UPD_FAILED && !gRelease.version.empty())))
 		return;
 	if(bannerBegin("##updater")){
-		ImGui::Text(ICON_FA_BELL " Haumea Studio %s is available", gRelease.version.c_str());
+		ImGui::Text(ICON_FA_BELL " Haumea Studio %s %s", gRelease.version.c_str(),
+			status == UPD_DOWNLOADING ? "is downloading" : status == UPD_READY ? "is ready to install" : "is available");
 		if(status == UPD_AVAILABLE){
 			if(!gNotifyOnly.empty())
 				ImGui::TextDisabled("%s", gNotifyOnly.c_str());

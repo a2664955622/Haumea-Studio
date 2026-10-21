@@ -1,0 +1,14 @@
+# The update banner against test_updater.py's fake release server (not in ui/:
+# it needs that server). A newer release shows Update now; it downloads,
+# verifies and stages it, then offers Restart now.
+wait_until item '*' 'Update now'
+assert item '*' 'Skip this version'
+click_item '*' 'Update now'
+# Two downloads and the unpack: more than wait_until's 600 frames when idle
+# frames are fast or the machine is busy.
+wait 1500
+wait_until item '*' 'Restart now'
+assert item '*' 'Restart now'
+# The banner's items in the log, if it failed.
+dump_items
+grab $UPDATE_SHOT

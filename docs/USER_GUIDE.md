@@ -258,6 +258,17 @@ time can be reached: if another one already is, the panel says so. Starting Haum
 An Agent Alpha install keeps working; once Namaka is set up, point your MCP client at it and
 delete the old folder. More in [the setup guide](../tools/release/AGENT_README.md).
 
+## Updates
+
+When a new version is out, a banner in the top right says so: **What's new** shows its
+notes, **Update now** downloads it in the background, and it installs the next time Haumea
+starts (or right away with **Restart now**, once your changes are saved). Haumea checks the
+download against the release's checksums and replaces only its own files; your maps,
+settings and anything else in its folder are left alone, and a Haumea file you changed is
+kept as `<file>.local`. **Help → Roll back** puts the previous version back.
+**Preferences → Updates** turns the check or automatic downloads on or off and picks the
+channel; **Help → Check for updates** checks right away.
+
 ## Shortcuts
 
 **Help → Keyboard Shortcuts** (`F1`) lists every command with its key, and

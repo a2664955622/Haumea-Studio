@@ -65,8 +65,10 @@ git push origin <the tag it printed>             # this releases it
 `tag_release.sh` only makes the tag locally; it refuses a dirty tree, a
 channel other than production or beta, and a version that isn't newer than
 that channel's newest tag. Pushing the tag is the release. Check the release
-page has the builds and `SHA256SUMS`, then start a build of the channel and
-confirm it offers the update.
+page has the update bundles (`haumea-windows-gl3.tar.gz`,
+`haumea-linux-amd64.tar.gz`, `haumea-macos`) and `SHA256SUMS`, and that the
+release notes are this version's CHANGELOG section. Then start a build of the
+channel and confirm it offers the update.
 
 ## What to watch in the first CI run
 

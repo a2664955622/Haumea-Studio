@@ -593,6 +593,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout Haumea Studio
+        uses: actions/checkout@v4
+        with:
+          path: haumea
+
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
@@ -611,8 +616,32 @@ jobs:
           name: haumea-macos-arm64-gl3
           path: dist/macos
 
-      - name: Name the macOS binary
-        run: mv dist/macos/haumea dist/macos/haumea-macos
+      # The updater (tools/haumea/updatecore.cpp) installs a platform's
+      # bundle by its MANIFEST after checking it against SHA256SUMS. The
+      # plain haumea.exe stays for older installs, whose updater replaces
+      # only the exe; haumea and haumea-macos keep their old names.
+      - name: Make the update bundles and SHA256SUMS
+        run: |
+          mkdir -p dist/release dist/linux-bundle
+          install -m 755 dist/linux/haumea dist/linux-bundle/haumea
+          cp -r haumea/fonts dist/linux-bundle/fonts
+          cp -r haumea/tools/haumea/prefabs dist/linux-bundle/prefabs
+          python3 haumea/tools/release/make_update_bundle.py dist/linux-bundle dist/release/haumea-linux-amd64.tar.gz
+          python3 haumea/tools/release/make_update_bundle.py dist/windows dist/release/haumea-windows-gl3.tar.gz
+          cp dist/windows/haumea.exe dist/release/haumea.exe
+          install -m 755 dist/linux/haumea dist/release/haumea
+          install -m 755 dist/macos/haumea dist/release/haumea-macos
+          (cd dist/release && sha256sum * > SHA256SUMS && cat SHA256SUMS)
+
+      # What's new in the editor's update banner: this version's CHANGELOG section.
+      - name: Write the release notes
+        run: |
+          version='${{ needs.build-windows.outputs.version }}'
+          {
+            echo "Haumea Studio $version, channel **${{ needs.build-windows.outputs.channel }}**"
+            echo
+            python3 haumea/tools/release/changelog_section.py "${version%.*}" haumea/CHANGELOG.md || true
+          } > dist/notes.md
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -620,12 +649,8 @@ jobs:
           tag_name: ${{ needs.build-windows.outputs.tag }}
           target_commitish: ${{ github.sha }}
           name: Haumea Studio ${{ needs.build-windows.outputs.version }} (${{ needs.build-windows.outputs.channel }})
-          body: |
-            Haumea Studio ${{ needs.build-windows.outputs.version }} — channel: **${{ needs.build-windows.outputs.channel }}**
-          files: |
-            dist/windows/**
-            dist/linux/haumea
-            dist/macos/haumea-macos
+          body_path: dist/notes.md
+          files: dist/release/*
           draft: false
           prerelease: ${{ needs.build-windows.outputs.channel == 'PE' }}
         env:

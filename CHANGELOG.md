@@ -80,6 +80,18 @@ the Haumea map editor; what changed for its users is in
   numpad + / -), Ctrl+Shift+= / - for fly speed, Ctrl+wheel or
   Ctrl+Alt+= / - for the interface size, PgUp / PgDn to scroll a panel.
 
+**Updates**
+- Haumea updates itself on Windows and Linux: a small banner says when a new
+  version is out (What's new, Update now, Later, Skip this version), the
+  download is checked against the release's SHA256SUMS, and it installs the
+  next time Haumea starts, never while you work. Only Haumea's own files are
+  replaced: your maps, settings and anything else in its folder (the GTA
+  folder too) stay as they are, and a Haumea file you edited is kept as
+  `<file>.local`. **Help → Roll back** returns to the previous version.
+  **Preferences → Updates** turns checking or automatic downloads on and off
+  and picks the channel. On macOS, or a package-manager install, the banner
+  links to the release instead.
+
 **Namaka** (formerly Agent Alpha), the AI assistant companion, installs from
 **Windows → Namaka**: offline with Python 3.14, or downloading only a few
 parts on 3.10-3.13. It has Repair, Update, Uninstall, a log, and copies the

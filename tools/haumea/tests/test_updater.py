@@ -260,6 +260,33 @@ class UpdaterTests(unittest.TestCase):
         self.assertEqual(report['result'], 'error', report)
         self.assertEqual(self.snapshot(install), {'haumea': b'old editor'})
 
+    # ---- The banner ----
+
+    @unittest.skipUnless(shutil.which('xvfb-run'), 'needs xvfb-run')
+    def test_banner_downloads_and_offers_restart(self):
+        # The editor's own channel and a version far above it.
+        channel = subprocess.run([BINARY, '--version'], capture_output=True, text=True).stdout.split()[-1]
+        self.github.publish([self.github.release(f'v99.0.0.1-{channel}', NEW)])
+        game = self.tmp / 'game'
+        subprocess.run([sys.executable, str(Path(__file__).parent / 'fixture' / 'make_game.py'), str(game)],
+                       check=True, capture_output=True)
+        server = self.tmp / 'server'
+        (server / 'gamemodes').mkdir(parents=True)
+        env = editor_env(str(self.tmp))
+        env.pop('HAUMEA_NO_UPDATE', None)
+        env.pop('WAYLAND_DISPLAY', None)
+        env['HAUMEA_UPDATE_URL'] = self.github.url
+        env['UPDATE_SHOT'] = str(self.tmp / 'banner.png')
+        result = subprocess.run(['xvfb-run', '-a', '-s', '-screen 0 1600x1000x24', BINARY, '--game', str(game),
+                                 '--workspace', str(server), '--ui-script',
+                                 str(Path(__file__).parent / 'updater_banner.uis')],
+                                cwd=self.tmp, env=env, capture_output=True, text=True, timeout=600)
+        log = '\n'.join(l for l in result.stdout.splitlines() if l.startswith('[ui-script]'))
+        self.assertEqual(result.returncode, 0, log or result.stderr[-2000:])
+        staged = next(Path(env['XDG_CONFIG_HOME']).rglob('update/staged'), None)
+        self.assertIsNotNone(staged, 'nothing was staged')
+        self.assertEqual((staged / '.haumea-release').read_text().split()[0], '99.0.0.1')
+
 
 if __name__ == '__main__':
     unittest.main()
