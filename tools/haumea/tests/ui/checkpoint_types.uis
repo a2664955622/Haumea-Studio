@@ -1,0 +1,113 @@
+# Checkpoints drawn as in game: a race of nine, one of each type 0-8, picked by
+# clicking its marker; saved and read back with every type.
+open "$UI_FIXTURES/ui_floor_streamer.pwn"
+shortcut window_browser
+wait 5
+click_item 'Object Browser' 'SA-MP'
+wait 5
+scroll_until 'Object Browser' 'Race'
+set_item 'Object Browser' 'Race' "types" tab
+wait 3
+scroll_until 'Object Browser' 'Race'
+click_item 'Object Browser' 'Place' -1
+wait 3
+click_world 1992 -3000 4 shift
+wait 5
+click_world 1994 -3000 4 shift
+wait 5
+click_world 1996 -3000 4 shift
+wait 5
+click_world 1998 -3000 4 shift
+wait 5
+click_world 2000 -3000 4 shift
+wait 5
+click_world 2002 -3000 4 shift
+wait 5
+click_world 2004 -3000 4 shift
+wait 5
+click_world 2006 -3000 4 shift
+wait 5
+click_world 2008 -3000 4
+wait 5
+key Esc
+assert objects == 10
+shortcut window_object_info
+wait 5
+click_world 1994 -3000 4.6
+wait 5
+assert selected == 1
+click_item 'Object Info' 'Type'
+wait 3
+scroll_until '*' '1  Finish'
+click_item '*' '1  Finish'
+wait 3
+click_world 1996 -3000 4.6
+wait 5
+assert selected == 1
+click_item 'Object Info' 'Type'
+wait 3
+scroll_until '*' '2  Nothing'
+click_item '*' '2  Nothing'
+wait 3
+click_world 1998 -3000 4.6
+wait 5
+assert selected == 1
+click_item 'Object Info' 'Type'
+wait 3
+scroll_until '*' '3  Air normal'
+click_item '*' '3  Air normal'
+wait 3
+click_world 2000 -3000 4.6
+wait 5
+assert selected == 1
+click_item 'Object Info' 'Type'
+wait 3
+scroll_until '*' '4  Air finish'
+click_item '*' '4  Air finish'
+wait 3
+click_world 2002 -3000 4.6
+wait 5
+assert selected == 1
+click_item 'Object Info' 'Type'
+wait 3
+scroll_until '*' '5  Air (rotates and stops)'
+click_item '*' '5  Air (rotates and stops)'
+wait 3
+click_world 2004 -3000 4.6
+wait 5
+assert selected == 1
+click_item 'Object Info' 'Type'
+wait 3
+scroll_until '*' '6  Air (grows, shrinks, disappears)'
+click_item '*' '6  Air (grows, shrinks, disappears)'
+wait 3
+click_world 2006 -3000 4.6
+wait 5
+assert selected == 1
+click_item 'Object Info' 'Type'
+wait 3
+scroll_until '*' '7  Air (swings down and up)'
+click_item '*' '7  Air (swings down and up)'
+wait 3
+click_world 2008 -3000 4.6
+wait 5
+assert selected == 1
+click_item 'Object Info' 'Type'
+wait 3
+scroll_until '*' '8  Air (swings up and down)'
+click_item '*' '8  Air (swings up and down)'
+wait 3
+key Ctrl+S
+wait 5
+reopen
+wait 10
+assert objects == 10
+assert pawn_contains "CreateDynamicRaceCP(0, " streamer
+assert pawn_contains "CreateDynamicRaceCP(1, " streamer
+assert pawn_contains "CreateDynamicRaceCP(2, " streamer
+assert pawn_contains "CreateDynamicRaceCP(3, " streamer
+assert pawn_contains "CreateDynamicRaceCP(4, " streamer
+assert pawn_contains "CreateDynamicRaceCP(5, " streamer
+assert pawn_contains "CreateDynamicRaceCP(6, " streamer
+assert pawn_contains "CreateDynamicRaceCP(7, " streamer
+assert pawn_contains "CreateDynamicRaceCP(8, " streamer
