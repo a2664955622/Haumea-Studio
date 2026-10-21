@@ -23,6 +23,11 @@
 #include <string>
 #include <algorithm>
 #include <map>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <dirent.h>
+#endif
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -8170,6 +8175,202 @@ pawnParseMaterialColor(const std::string &value, uint32 *out)
 	return pawnParseUInt32(pawnStripTag(value), out);
 }
 
+// String #defines the importer resolves: the map's own, then the workspace's
+// sources and includes, where a gamemode keeps its colour macros
+// (#define LIGHTRED "{FF6347}"). Names it can't find are listed.
+static std::map<std::string, std::string> gPawnStringDefines;
+static std::vector<std::string> gPawnUnresolvedMacros;
+
+static bool
+pawnIsIdentifierStart(char c)
+{
+	return isalpha((unsigned char)c) || c == '_' || c == '@';
+}
+
+static bool
+pawnIsIdentifierChar(char c)
+{
+	return isalnum((unsigned char)c) || c == '_' || c == '@';
+}
+
+// "#define NAME value" lines whose value is a string expression (quotes or
+// names); a name already known is kept, so the map's own wins.
+static void
+pawnCollectStringDefines(const std::string &source, std::map<std::string, std::string> &out)
+{
+	size_t start = 0;
+	while(start < source.size()){
+		size_t end = source.find('\n', start);
+		if(end == std::string::npos)
+			end = source.size();
+		std::string line = pawnTrimString(source.substr(start, end - start));
+		start = end + 1;
+		if(line.compare(0, 7, "#define") != 0 || line.size() < 9 || !isspace((unsigned char)line[7]))
+			continue;
+		size_t i = 7;
+		while(i < line.size() && isspace((unsigned char)line[i])) i++;
+		size_t nameStart = i;
+		if(i >= line.size() || !pawnIsIdentifierStart(line[i]))
+			continue;
+		while(i < line.size() && pawnIsIdentifierChar(line[i])) i++;
+		std::string name = line.substr(nameStart, i - nameStart);
+		std::string value = line.substr(i);
+		size_t comment = value.find("//");
+		if(comment != std::string::npos && value.find('"') > comment)
+			value.resize(comment);
+		value = pawnTrimString(value);
+		if(!value.empty() && (value[0] == '"' || pawnIsIdentifierStart(value[0])) && !out.count(name))
+			out[name] = value;
+	}
+}
+
+static void
+pawnCollectFileDefines(const std::string &path, std::map<std::string, std::string> &out)
+{
+	FILE *f = fopen(path.c_str(), "rb");
+	if(f == nil)
+		return;
+	std::string text;
+	char buffer[65536];
+	size_t n;
+	while((n = fread(buffer, 1, sizeof(buffer), f)) > 0 && text.size() < 4u * 1024 * 1024)
+		text.append(buffer, n);
+	fclose(f);
+	pawnCollectStringDefines(text, out);
+}
+
+static bool
+pawnIsSourceFile(const std::string &name)
+{
+	if(name.size() < 5)
+		return false;
+	std::string ext = name.substr(name.size() - 4);
+	for(char &c : ext)
+		c = (char)tolower((unsigned char)c);
+	return ext == ".pwn" || ext == ".inc";
+}
+
+// The workspace's gamemodes, filterscripts and include folders, read once
+// per workspace.
+static const std::map<std::string, std::string>&
+pawnWorkspaceDefines(void)
+{
+	static std::string forWorkspace;
+	static std::map<std::string, std::string> defines;
+	std::string workspace = GetWorkspaceDir();
+	if(workspace == forWorkspace)
+		return defines;
+	forWorkspace = workspace;
+	defines.clear();
+	if(workspace.empty())
+		return defines;
+	static const char *folders[] = { "gamemodes", "filterscripts", "include", "pawno/include", "qawno/include" };
+	int budget = 400;
+	for(const char *folder : folders){
+		std::string dir = workspace + "/" + folder;
+#ifdef _WIN32
+		WIN32_FIND_DATAA entry;
+		HANDLE handle = FindFirstFileA((dir + "\\*").c_str(), &entry);
+		if(handle == INVALID_HANDLE_VALUE)
+			continue;
+		do{
+			std::string name = entry.cFileName;
+			if(budget > 0 && name.size() > 4 && pawnIsSourceFile(name)){
+				budget--;
+				pawnCollectFileDefines(dir + "/" + name, defines);
+			}
+		}while(FindNextFileA(handle, &entry));
+		FindClose(handle);
+#else
+		DIR *d = opendir(dir.c_str());
+		if(d == nil)
+			continue;
+		while(dirent *ent = readdir(d)){
+			std::string name = ent->d_name;
+			if(budget > 0 && name.size() > 4 && pawnIsSourceFile(name)){
+				budget--;
+				pawnCollectFileDefines(dir + "/" + name, defines);
+			}
+		}
+		closedir(d);
+#endif
+	}
+	return defines;
+}
+
+// A string expression: literals side by side (Pawn joins them) and names
+// that expand to more of the same. Unknown names are left out and listed;
+// at least one literal is needed, so a plain variable still isn't text.
+static bool
+pawnExpandStringExpression(const std::string &expr, std::string &out, int depth, bool *sawLiteral)
+{
+	size_t i = 0, n = expr.size();
+	bool any = false;
+	while(i < n){
+		char c = expr[i];
+		if(isspace((unsigned char)c)){
+			i++;
+			continue;
+		}
+		if(c == '"'){
+			bool closed = false;
+			for(i++; i < n; i++){
+				char d = expr[i];
+				if(d == '"'){
+					closed = true;
+					i++;
+					break;
+				}
+				if(d == '\\' && i + 1 < n){
+					char escaped = expr[++i];
+					d = escaped == 'n' ? '\n' : escaped == 'r' ? '\r' : escaped == 't' ? '\t' : escaped;
+				}
+				out += d;
+			}
+			if(!closed)
+				return false;
+			*sawLiteral = true;
+			any = true;
+			continue;
+		}
+		if(!pawnIsIdentifierStart(c))
+			return false;
+		size_t start = i;
+		while(i < n && pawnIsIdentifierChar(expr[i])) i++;
+		std::string name = expr.substr(start, i - start);
+		std::map<std::string, std::string>::const_iterator it = gPawnStringDefines.find(name);
+		if(it == gPawnStringDefines.end()){
+			const std::map<std::string, std::string> &workspace = pawnWorkspaceDefines();
+			it = workspace.find(name);
+			if(it == workspace.end()){
+				if(std::find(gPawnUnresolvedMacros.begin(), gPawnUnresolvedMacros.end(), name) == gPawnUnresolvedMacros.end())
+					gPawnUnresolvedMacros.push_back(name);
+				any = true;
+				continue;
+			}
+		}
+		if(depth > 8 || !pawnExpandStringExpression(it->second, out, depth + 1, sawLiteral))
+			return false;
+		any = true;
+	}
+	return any;
+}
+
+static bool
+pawnParseStringExpression(const std::string &token, char *out, size_t outSize)
+{
+	std::string text;
+	bool sawLiteral = false;
+	size_t unresolvedBefore = gPawnUnresolvedMacros.size();
+	if(!pawnExpandStringExpression(token, text, 0, &sawLiteral) || !sawLiteral){
+		gPawnUnresolvedMacros.resize(unresolvedBefore);	// not text after all
+		return false;
+	}
+	if(out && outSize > 0)
+		snprintf(out, outSize, "%s", text.c_str());
+	return true;
+}
+
 static bool
 pawnParseString(const std::string &value, char *out, size_t outSize)
 {
@@ -8181,8 +8382,9 @@ pawnParseString(const std::string &value, char *out, size_t outSize)
 	for(size_t i = 1; i < token.size(); i++){
 		char c = token[i];
 		if(c == '"'){
+			// More after the closing quote: a joined or macro string.
 			if(i + 1 < token.size() && !pawnTrimString(token.substr(i+1)).empty())
-				return false;
+				return pawnParseStringExpression(token, out, outSize);
 			closed = true;
 			break;
 		}
@@ -8201,7 +8403,7 @@ pawnParseString(const std::string &value, char *out, size_t outSize)
 			out[write++] = c;
 	}
 	if(!closed)
-		return false;
+		return pawnParseStringExpression(token, out, outSize);
 	if(out && outSize > 0)
 		out[write < outSize ? write : outSize-1] = '\0';
 	return true;
@@ -9804,6 +10006,9 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 	std::string source = DecodePawnFileText(rawSource, &gLastImportTextEncoding);
 	PawnImportReport &report = gLastPawnImportReport;
 	report = PawnImportReport();
+	gPawnStringDefines.clear();
+	gPawnUnresolvedMacros.clear();
+	pawnCollectStringDefines(source, gPawnStringDefines);
 	if(numSkipped)
 		*numSkipped = 0;
 	if(!isSA()){
@@ -9821,6 +10026,16 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 		setters, &skipped);
 	pawnLinkRaceCheckpoints(entries);
 	report.unreadableCalls = skipped;
+	if(!gPawnUnresolvedMacros.empty()){
+		std::string names;
+		for(size_t i = 0; i < gPawnUnresolvedMacros.size() && i < 8; i++)
+			names += (i ? ", " : "") + gPawnUnresolvedMacros[i];
+		if(gPawnUnresolvedMacros.size() > 8)
+			names += ", ...";
+		report.notes.push_back("Text uses " + names + ", defined neither in this map nor in the workspace's "
+			"gamemodes or includes, so it shows without them (often a colour such as {FF6347}). "
+			"Saving writes the text without them too.");
+	}
 	// Textdraws now have their own file; a map's stay read-only until moved there.
 	int numTextDraws = ImportTextDrawsFromSource(source, GetMapTextDraws());
 	if(numTextDraws > 0)

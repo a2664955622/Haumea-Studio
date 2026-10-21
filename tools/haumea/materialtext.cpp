@@ -707,6 +707,11 @@ loadFont(const MaterialFontFace *face)
 	   readBE16(data + os2 + 74) + readBE16(data + os2 + 76) > 0){
 		font->ascent = readBE16(data + os2 + 74);
 		font->descent = readBE16(data + os2 + 76);
+		// Some fonts store these signed: SA-MP's gtaweap3.ttf has usWinDescent
+		// 65507, i.e. -29, which taken as unsigned shrinks every glyph to a
+		// speck. Read such a value as the signed one it is.
+		if(font->ascent > 0x7FFF) font->ascent = 0x10000 - font->ascent;
+		if(font->descent > 0x7FFF) font->descent = 0x10000 - font->descent;
 	}else{
 		int ascent, descent, gap;
 		stbtt_GetFontVMetrics(&font->info, &ascent, &descent, &gap);
