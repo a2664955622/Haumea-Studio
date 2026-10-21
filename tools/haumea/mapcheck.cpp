@@ -317,9 +317,8 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 				"one spot, plus %d shown to everyone: a player can have %d, so some near there are left out. "
 				"Use bigger cells or fewer colours in the radar art.", grid.capacity, playerZones, GANG_ZONES);
 	}
-	if(!zonesBy[SAMP_ZONE_PLAYER].empty() || !zonesBy[SAMP_ZONE_STREAMED].empty())
-		c.add(MAPCHECK_INFO, LIMITS, std::vector<int>(), "Per-player and streamed gang zones need open.mp: "
-			"SA-MP 0.3.7 has no CreatePlayerGangZone.");
+	std::vector<ObjectInst*> ompZones = zonesBy[SAMP_ZONE_PLAYER];
+	ompZones.insert(ompZones.end(), zonesBy[SAMP_ZONE_STREAMED].begin(), zonesBy[SAMP_ZONE_STREAMED].end());
 	struct { int kind; int limit; bool streamerFree; const char *what; } pools[] = {
 		{ SAMP_ELEMENT_PICKUP, PICKUPS, true, "pickups" },
 		{ SAMP_ELEMENT_LABEL, LABELS, true, "3D text labels" },
@@ -690,6 +689,10 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 	if(ompOnly > 0)
 		c.add(MAPCHECK_WARNING, SERVER, ids(byKind[SAMP_ELEMENT_NPC]), "The map has NPCs or NPC paths: their NPC_* "
 			"calls only compile and run on open.mp (with its NPCs component), not on a SA-MP 0.3.7 server.");
+	if(!ompZones.empty())
+		c.add(MAPCHECK_WARNING, SERVER, ids(ompZones), "%d per-player or streamed gang zone(s): "
+			"CreatePlayerGangZone only compiles and runs on open.mp, not on a SA-MP 0.3.7 server. For 0.3.7, "
+			"set them to Global (Object Info > Shown as, or radar art's Shown as).", (int)ompZones.size());
 	if(!customModels.empty()){
 		bool ready = config.found && config.artwork;
 		c.add(ready ? MAPCHECK_INFO : MAPCHECK_WARNING, SERVER, ids(customModels), "%d element(s) use custom models: "
