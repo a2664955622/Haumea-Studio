@@ -1,0 +1,39 @@
+# Nodes (open.mp): add two linked vehicle nodes, unlink and relink them, delete one, save to a folder and load it back.
+open "$UI_FIXTURES/ui_floor_inland.pwn"
+shortcut window_nodes
+wait 10
+assert window "Nodes"
+click_item 'Nodes' 'Vehicle nodes'
+click_item 'Nodes' 'Vehicle'
+wait 3
+assert item 'Nodes' 'Link each new node to the previous one'
+click_world 1997 -2000 200
+wait 5
+click_world 2003 -2000 200
+wait 5
+key Esc
+wait 3
+assert item 'Nodes' 'Unlink'
+click_item 'Nodes' 'Unlink'
+wait 3
+assert no_item 'Nodes' 'Unlink'
+click_item 'Nodes' 'Link'
+wait 3
+click_world 1997 -2000 200
+wait 5
+key Esc
+wait 3
+assert item 'Nodes' 'Unlink'
+click_item 'Nodes' 'Delete node'
+wait 3
+assert no_item 'Nodes' 'Unlink'
+set_item 'Nodes' '##nodesfolder' "$SERVER/npcmodes/nodes"
+wait 3
+close_popup
+scroll_until 'Nodes' 'Game nodes'
+click_item 'Nodes' 'Save'
+wait 5
+assert toast_contains "Saved 64 node files"
+click_item 'Nodes' 'Load'
+wait 5
+assert toast_contains "Loaded 64 node files"

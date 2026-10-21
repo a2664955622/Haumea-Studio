@@ -71,7 +71,7 @@ struct UiItem {
 	// seed: the ID stack top, to match items ImGui gives no label (closed combos);
 	// parent and grand: the two below it, for parts of a widget ('Colour/##X', 'Size/#1')
 	ImGuiID id, seed, parent, grand;
-	ImRect bb;
+	ImRect bb, clip;	// clip: the visible part of its window when it was drawn
 	std::string window, rootWindow, label, rawLabel;
 };
 static std::vector<UiItem> gItems, gPrevItems;
@@ -97,7 +97,9 @@ ImGuiTestEngineHook_ItemAdd(ImGuiContext *ctx, ImGuiID id, const ImRect &bb, con
 	item.id = id;
 	item.seed = item.parent = item.grand = 0;
 	item.bb = bb;
+	item.clip = bb;
 	if(w){
+		item.clip = w->ClipRect;
 		int n = w->IDStack.Size;
 		item.seed = n > 0 ? w->IDStack[n-1] : 0;
 		item.parent = n > 1 ? w->IDStack[n-2] : 0;
@@ -1123,8 +1125,10 @@ UiScriptTick(void)
 		return;
 	}
 	if(!gScrollLabel.empty()){
-		// scroll_until: down a step a frame until the item is drawn.
-		if(findItem(gScrollWindow, gScrollLabel)){
+		// scroll_until: down a step a frame until the item is drawn whole,
+		// not cut off by the window's edge where a click would miss it.
+		const UiItem *target = findItem(gScrollWindow, gScrollLabel);
+		if(target && target->clip.Contains(target->bb)){
 			gScrollLabel.clear();
 		}else if(--gScrollFrames <= 0){
 			say("line %d: FAIL never found '%s' in '%s'", (int)gLine, gScrollLabel.c_str(), gScrollWindow.c_str());

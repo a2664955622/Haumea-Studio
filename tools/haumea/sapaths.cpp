@@ -1,6 +1,7 @@
 #include "haumea.h"
 #include "modloader.h"
 #include "sapaths.h"
+#include "workspace.h"
 #include <cctype>
 #include <cfloat>
 #include <cstdlib>
@@ -2553,8 +2554,9 @@ loadAreaLooseData(int areaId, std::vector<uint8> &data, char *outSourcePath, siz
 		}
 	}
 
+	// In the game folder, which needn't be the current directory (--game).
 	snprintf(stockPath, sizeof(stockPath), "data/Paths/NODES%d.DAT", areaId);
-	uint8 *buf = ReadLooseFile(stockPath, &size);
+	uint8 *buf = ReadLooseFile(GamePath(stockPath).c_str(), &size);
 	if(buf){
 		data.assign(buf, buf + size);
 		free(buf);
@@ -2566,7 +2568,7 @@ loadAreaLooseData(int areaId, std::vector<uint8> &data, char *outSourcePath, siz
 	}
 
 	snprintf(stockPath, sizeof(stockPath), "data/paths/nodes%d.dat", areaId);
-	buf = ReadLooseFile(stockPath, &size);
+	buf = ReadLooseFile(GamePath(stockPath).c_str(), &size);
 	if(buf){
 		data.assign(buf, buf + size);
 		free(buf);
