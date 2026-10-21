@@ -172,7 +172,8 @@ def gamemode(map_path, source):
 	return f'''#include <open.mp>
 {'#include <streamer>' if streamer else ''}
 {HOOKS}
-new HC_probe = INVALID_PLAYER_ID, HC_failures, HC_baseZones;
+new HC_probe = INVALID_PLAYER_ID, HC_failures;
+stock HC_baseZones;	// streamed zones only
 
 main() {{}}
 
