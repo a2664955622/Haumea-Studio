@@ -870,7 +870,10 @@ int ExportPawnCode(const char *path, PawnCodeFormat format, bool selectedOnly,
 int BuildPawnCode(const char *pathHint, PawnCodeFormat format, bool selectedOnly,
 	std::string &code, int *numSkipped = nil);
 int ImportPawnCode(const char *path, int *numSkipped = nil);
-int ImportPawnSource(const std::string &source, const char *path, int *numSkipped = nil);
+// keepRotationNumbers: the source is a map's own Pawn, whose rx, ry, rz are
+// written back as they are while unchanged (not for converted maps).
+int ImportPawnSource(const std::string &source, const char *path, int *numSkipped = nil,
+	bool keepRotationNumbers = false);
 // Texture Studio maps (SavedMaps/*.db), converted to Pawn calls and imported.
 bool BuildTextureStudioPawn(const char *path, std::string &source, std::string &error);
 int ImportTextureStudioMap(const char *path, int *numSkipped = nil);

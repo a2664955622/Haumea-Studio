@@ -10411,7 +10411,7 @@ ImportPawnCode(const char *path, int *numSkipped)
 		log("ImportPawnCode: failed to read %s\n", path);
 		return -1;
 	}
-	return ImportPawnSource(source, path, numSkipped);
+	return ImportPawnSource(source, path, numSkipped, true);
 }
 
 // A map's objects for its start-screen thumbnail: its largest ones, as
@@ -10463,7 +10463,7 @@ GetLastImportTextEncoding(void)
 // Pawn source from anywhere (a file, a converted Texture Studio map);
 // path only names it in the log.
 int
-ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped)
+ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped, bool keepRotationNumbers)
 {
 	// pawno and Texture Studio maps are Windows-1252; the editor works in UTF-8.
 	std::string source = DecodePawnFileText(rawSource, &gLastImportTextEncoding);
@@ -10591,9 +10591,12 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 			}
 			rw::Quat rotation = pawnMakeStoredQuaternion(e.rx, e.ry, e.rz);
 			ObjectInst *inst = createSpawnedInstance(e.objectId, position, file, ++maxIdx, &rotation);
-			inst->m_sourceDegrees = { e.rx, e.ry, e.rz };
-			inst->m_sourceRotation = inst->m_rotation;
-			inst->m_hasSourceDegrees = true;
+			if(keepRotationNumbers){
+				// -0.0 reads back as 0.0: never write it as -0.000000.
+				inst->m_sourceDegrees = { e.rx + 0.0f, e.ry + 0.0f, e.rz + 0.0f };
+				inst->m_sourceRotation = inst->m_rotation;
+				inst->m_hasSourceDegrees = true;
+			}
 			inst->m_area = e.interior >= 0 ? e.interior : 0;
 			if(e.isVehicle){
 				inst->m_vehicleStatic = e.vehicleStatic;
