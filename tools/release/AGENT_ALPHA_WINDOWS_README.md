@@ -1,8 +1,11 @@
 # Haumea Studio Agent Alpha companion for Windows
 
-This is a separate Windows x64 companion package. It contains Agent Alpha's
-Python CLI and MCP server; it does not contain the Haumea editor or GTA files.
-Use it with a Windows Haumea build that includes the authenticated agent bridge.
+This Windows x64 package contains Agent Alpha's Python CLI and MCP server. The
+CI build also includes the Haumea editor (`haumea.exe`, with its fonts and
+starter prefabs) and dependency wheels for an offline setup; `BUILD_INFO.json`
+says which (`editor_included`, `dependency_wheelhouse_included`). It does not
+contain GTA files. Without `haumea.exe`, use it with a Windows Haumea build that
+includes the authenticated agent bridge.
 
 ## Install
 
@@ -14,8 +17,9 @@ open PowerShell in the extracted folder, then run:
 ```
 
 The setup creates `.venv-agent` and installs the package and its MCP
-dependencies. This package does not include a Windows dependency wheelhouse, so
-the first setup needs access to the configured Python package index.
+dependencies. With a `wheelhouse` folder (CPython 3.10–3.14) it installs
+offline; otherwise, or on another Python version, the first setup needs access
+to the configured Python package index.
 
 ## Connect the Windows editor
 
@@ -45,7 +49,7 @@ $env:HAUMEA_ENGINE_TOKEN = $Token
 & 'C:\Tools\Haumea\haumea.exe'
 ```
 
-Replace the example path with the editor's actual location. Pass
+Replace the example path with the editor's actual location (`.\haumea.exe` when this package includes it). Pass
 `--game 'C:\Games\GTA San Andreas'` to use another game folder for that run. The
 Windows editor must be built with Agent Alpha support. The TCP listener binds
 to loopback and requires the shared token.

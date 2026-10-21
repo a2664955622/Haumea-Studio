@@ -383,6 +383,154 @@ jobs:
           name: windows-check
           path: ${{ runner.temp }}/windows-check
 
+  # The Agent Alpha bundle for Linux: build-linux's editor, the haumea_agent
+  # wheel and a CPython 3.10-3.14 wheelhouse (tools/release/fetch_wheelhouse.sh).
+  # Every wheelhouse Python installs it offline here, and a clean ubuntu:24.04
+  # container with no network runs the bundle's setup-agent.sh as a user would,
+  # then checks the editor's libraries and the MCP tool count. Not in the
+  # release job's needs until it has been green for a while.
+  agent-bundle-linux:
+    needs: build-linux
+    runs-on: ubuntu-24.04
+    env:
+      # Bump this when MCP tools are added or removed on purpose.
+      AGENT_MCP_TOOLS: 79
+      BUNDLE: Haumea-Agent-Alpha-linux-x86_64
+
+    steps:
+      - name: Checkout Haumea Studio
+        uses: actions/checkout@v4
+        with:
+          path: haumea
+
+      - name: Download the Linux editor
+        uses: actions/download-artifact@v4
+        with:
+          name: haumea-linux-gl3
+          path: dist/engine
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.7"
+
+      - name: Build the wheel and the wheelhouse
+        run: |
+          uv build --wheel -o dist/wheel haumea
+          haumea/tools/release/fetch_wheelhouse.sh linux dist/wheelhouse
+
+      # Artifacts lose the executable bit; package_agent.py keeps the mode.
+      - name: Package the bundle
+        run: |
+          chmod +x dist/engine/haumea
+          python3 haumea/tools/release/package_agent.py --engine dist/engine/haumea \
+            --wheel dist/wheel/haumea_agent-*.whl --wheelhouse dist/wheelhouse \
+            --output dist/agent --name "$BUNDLE"
+
+      - name: Install offline on CPython 3.10-3.14
+        run: |
+          for v in 3.10 3.11 3.12 3.13 3.14; do
+            uv venv -q --seed -p "$v" "$RUNNER_TEMP/py$v"
+            "$RUNNER_TEMP/py$v/bin/python" -m pip install -q --no-index \
+              --find-links dist/wheelhouse "$(ls dist/wheel/haumea_agent-*.whl)[mcp]"
+            "$RUNNER_TEMP/py$v/bin/python" haumea/tools/release/check_agent_bundle.py \
+              "$RUNNER_TEMP/py$v/bin/haumea-mcp" --tools "$AGENT_MCP_TOOLS" | cut -c1-80
+          done
+
+      # docker cp rather than bind mounts, so this also runs under act.
+      - name: Set up the bundle offline in a clean ubuntu:24.04
+        run: |
+          base=agent-base-$GITHUB_RUN_ID
+          docker run --name "$base" ubuntu:24.04 sh -c '
+            apt-get update -q && apt-get install -yq --no-install-recommends \
+              python3 python3-venv libglfw3 unzip >/dev/null'
+          docker commit "$base" "$base:ci" >/dev/null
+          docker create --name "agent-test-$GITHUB_RUN_ID" --network none -w /root \
+            "$base:ci" sleep infinity
+          docker cp "dist/agent/$BUNDLE.zip" "agent-test-$GITHUB_RUN_ID:/root/"
+          docker cp haumea/tools/release/check_agent_bundle.py "agent-test-$GITHUB_RUN_ID:/root/"
+          docker start "agent-test-$GITHUB_RUN_ID"
+          docker exec -e BUNDLE -e AGENT_MCP_TOOLS "agent-test-$GITHUB_RUN_ID" sh -ec '
+            unzip -q "$BUNDLE.zip" && cd "$BUNDLE"
+            sha256sum -c --quiet SHA256SUMS
+            test -x haumea && test -x setup-agent.sh
+            if ldd ./haumea | grep "not found"; then exit 1; fi
+            ./setup-agent.sh
+            .venv-agent/bin/python /root/check_agent_bundle.py .venv-agent/bin/haumea-mcp \
+              --tools "$AGENT_MCP_TOOLS"
+            .venv-agent/bin/haumeactl --help >/dev/null'
+
+      - name: Remove the test containers
+        if: always()
+        run: |
+          docker rm -f "agent-base-$GITHUB_RUN_ID" "agent-test-$GITHUB_RUN_ID" || true
+          docker rmi "agent-base-$GITHUB_RUN_ID:ci" || true
+
+      - name: Upload the Linux Agent Alpha bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: haumea-agent-alpha-linux-x86_64
+          path: dist/agent/${{ env.BUNDLE }}.zip
+
+  # The Agent Alpha companion for Windows, with the MinGW-w64 editor
+  # (tools/release/build-windows-mingw.sh gl3; windows-wine checks that build
+  # under Wine) and a Windows CPython 3.10-3.14 wheelhouse. setup-agent.ps1
+  # can't run here, so this checks that every wheelhouse Python resolves the
+  # wheel from the wheelhouse alone.
+  agent-bundle-windows:
+    runs-on: ubuntu-24.04
+    env:
+      BUNDLE: Haumea-Agent-Alpha-windows-x86_64
+
+    steps:
+      - name: Checkout Haumea Studio
+        uses: actions/checkout@v4
+        with:
+          path: haumea
+
+      - name: Install MinGW-w64
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends mingw-w64
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.7"
+
+      - name: Build the editor with MinGW-w64
+        env:
+          CC: x86_64-w64-mingw32-gcc-posix
+          CXX: x86_64-w64-mingw32-g++-posix
+          WORK: ${{ runner.temp }}/mingw
+        run: haumea/tools/release/build-windows-mingw.sh gl3
+
+      - name: Build the wheel and the wheelhouse
+        run: |
+          uv build --wheel -o dist/wheel haumea
+          haumea/tools/release/fetch_wheelhouse.sh windows dist/wheelhouse
+
+      - name: Check the wheelhouse resolves offline
+        run: |
+          for v in 3.10 3.11 3.12 3.13 3.14; do
+            uv pip compile -q --no-index --find-links dist/wheelhouse --find-links dist/wheel \
+              --only-binary :all: --python-version "$v" --python-platform x86_64-pc-windows-msvc \
+              -o "$RUNNER_TEMP/resolved.txt" - <<< "haumea-agent[mcp]"
+          done
+
+      - name: Package the companion
+        run: |
+          python3 haumea/tools/release/package_alpha_companion.py \
+            --engine "$RUNNER_TEMP/mingw/win-amd64-gl3/haumea.exe" \
+            --wheel dist/wheel/haumea_agent-*.whl --wheelhouse dist/wheelhouse \
+            --output dist/agent --name "$BUNDLE"
+
+      - name: Upload the Windows Agent Alpha companion
+        uses: actions/upload-artifact@v4
+        with:
+          name: haumea-agent-alpha-windows-x86_64
+          path: dist/agent/${{ env.BUNDLE }}.zip
+
   release:
     # Releases come only from the release channels.
     if: github.event_name == 'push' && (github.ref_name == 'master' || github.ref_name == 'PE')
