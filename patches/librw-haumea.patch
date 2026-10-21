@@ -87,7 +87,7 @@ index 4ad4b06..041ecfa 100644
  		float timeDelta = (currTime - lastTime)*0.001f;
  		glfwPollEvents();
 diff --git a/skeleton/imgui/imgui_impl_rw.cpp b/skeleton/imgui/imgui_impl_rw.cpp
-index 1081716..a25c887 100644
+index 1081716..b6fdfc6 100644
 --- a/skeleton/imgui/imgui_impl_rw.cpp
 +++ b/skeleton/imgui/imgui_impl_rw.cpp
 @@ -20,7 +20,10 @@ SetClip(const ImVec4 &clip)
@@ -187,7 +187,15 @@ index 1081716..a25c887 100644
  
  	if(io.WantSetMousePos)
  		sk::SetMousePosition(io.MousePos.x, io.MousePos.y);
-@@ -300,6 +333,24 @@ static ImGuiKey SkKeyToImGuiKey(int keycode)
+@@ -216,6 +249,7 @@ static ImGuiKey SkKeyToImGuiKey(int keycode)
+     switch (keycode) {
+         case ' ': return ImGuiKey_Space;
+         case '\'': return ImGuiKey_Apostrophe;
++        case ',': return ImGuiKey_Comma;
+         case '-': return ImGuiKey_Minus;
+         case '.': return ImGuiKey_Period;
+         case '/': return ImGuiKey_Slash;
+@@ -300,6 +334,24 @@ static ImGuiKey SkKeyToImGuiKey(int keycode)
          case sk::KEY_RCTRL: return ImGuiKey_RightCtrl;
          case sk::KEY_RALT: return ImGuiKey_RightAlt;
  
@@ -212,7 +220,7 @@ index 1081716..a25c887 100644
          case sk::KEY_NULL: return ImGuiKey_None;
      }
      return ImGuiKey_None;
-@@ -316,11 +367,26 @@ ImGuiEventHandler(sk::Event e, void *param)
+@@ -316,11 +368,26 @@ ImGuiEventHandler(sk::Event e, void *param)
  
  	switch(e){
  	case KEYDOWN:
@@ -373,6 +381,18 @@ index b51eb9f..0217ba3 100644
  };
  
  struct Globals
+diff --git a/skeleton/win.cpp b/skeleton/win.cpp
+index a2b50ed..686f565 100644
+--- a/skeleton/win.cpp
++++ b/skeleton/win.cpp
+@@ -29,6 +29,7 @@ initkeymap(void)
+ 		keymap[i] = i;
+ 	keymap[VK_OEM_1] = ';';
+ 	keymap[VK_OEM_NEC_EQUAL] = '=';
++	keymap[VK_OEM_PLUS] = '=';	// the =/+ key; VK_OEM_NEC_EQUAL is only NEC's keypad =
+ 	for(i = 'A'; i <= 'Z'; i++)
+ 		keymap[i] = i;
+ 	keymap[VK_OEM_4] = '[';
 diff --git a/src/d3d/d3ddevice.cpp b/src/d3d/d3ddevice.cpp
 index 62c46b8..34dac66 100644
 --- a/src/d3d/d3ddevice.cpp
