@@ -1,0 +1,34 @@
+# Materials: Browse textures applies to the slot of every selected object, one undo step.
+# Object Info shows wall_c (the last selected), so the popup lists its TXD, all_walls.
+open "$UI_FIXTURES/ui_materials.pwn"
+wait 5
+shortcut window_map_objects
+wait 10
+click_item 'Map Objects' 'crate_a (gunbox)'
+wait 3
+hold Ctrl
+click_item 'Map Objects' 'crate_b (gunbox)'
+click_item 'Map Objects' 'wall_c (wall001)'
+release Ctrl
+wait 3
+assert selected == 3
+# Map Objects docks under Object Info and would cover the Materials section.
+shortcut window_map_objects
+shortcut window_object_info
+wait 20
+assert pawn_count "\"white\"" == 3
+assert pawn_count "\"all_walls\"" == 0
+click_item 'Object Info' 'Browse textures...'
+wait 10
+assert window "Choose Material Texture"
+click_item 'Choose Material Texture' '##texture'
+wait 5
+assert no_window "Choose Material Texture"
+assert pawn_count "\"all_walls\"" == 3
+assert pawn_count "\"white\"" == 0
+move 900 400
+wait 2
+key Ctrl+Z
+wait 5
+assert pawn_count "\"white\"" == 3
+assert pawn_count "\"all_walls\"" == 0
