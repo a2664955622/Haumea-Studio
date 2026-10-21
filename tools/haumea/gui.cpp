@@ -7648,16 +7648,16 @@ uiPreferencesWindow(void)
 			TestServerPreferences();
 			ImGui::EndTabItem();
 		}
-		if(ImGui::BeginTabItem("Updates")){
-			UpdaterPreferences();
-			ImGui::EndTabItem();
-		}
 		if(ImGui::BeginTabItem("Shortcuts")){
 			uiShortcutPreferences();
 			ImGui::EndTabItem();
 		}else{
 			gShortcutCaptureAction = -1;
 			ShortcutsSetCapturing(false);
+		}
+		if(ImGui::BeginTabItem("Updates")){
+			UpdaterPreferences();
+			ImGui::EndTabItem();
 		}
 		// Last, so the tabs before it keep their places.
 		if(ImGui::BeginTabItem("Namaka###prefs_namaka")){
