@@ -477,9 +477,100 @@ static bool gPreviewTrafficLastFreezeRoutes;
 static float gPreviewTrafficLightTimeMs;
 static uint32 gPreviewParkedLastSeenChangeSeq;
 
-#include "sa_zone_population_init.inc"
-
 static bool loadLogicalPathData(const char *logicalPath, std::vector<uint8> &data);
+static PreviewZoneState *findPreviewZoneState(const char *label);
+
+// The zones' population types, races, gang and dealer strengths and no-cops
+// flags, as the game sets them when it starts: the INITIAL mission of the
+// user's data/script/main.scm (mission 1). Its SET_ZONE_* commands are an
+// opcode, a short-string zone label (type 9, 8 bytes) and small integer
+// arguments, read in file order so later ones win, as in the game. A missing
+// or unreadable script leaves the zones' defaults, and the log says so.
+static void
+applyPreviewZoneSettingsFromScm(void)
+{
+	std::vector<uint8> scm;
+	if(!loadLogicalPathData("data/script/main.scm", scm) || scm.size() < 64){
+		log("Traffic preview: no data/script/main.scm; zones keep their default population\n");
+		return;
+	}
+	const uint8 *b = scm.data();
+	size_t size = scm.size();
+	// Segments: each starts with a jump (02 00 01 <int32 next>).
+	auto next = [&](size_t at, size_t *out){
+		if(at + 7 > size || b[at] != 0x02 || b[at+1] != 0x00 || b[at+2] != 0x01)
+			return false;
+		int32 to;
+		memcpy(&to, b + at + 3, 4);
+		if(to <= (int32)at || (size_t)to >= size)
+			return false;
+		*out = (size_t)to;
+		return true;
+	};
+	size_t models, missions;
+	uint16 numMissions = 0;
+	int32 firstMission = 0, secondMission = 0;	// INITIAL: mission 1
+	if(next(0, &models) && next(models, &missions) && missions + 20 + 8 <= size){
+		memcpy(&numMissions, b + missions + 16, 2);
+		if(numMissions >= 2 && missions + 20 + 4*2 <= size){
+			memcpy(&firstMission, b + missions + 20 + 4, 4);
+			// INITIAL ends where the next mission starts, or at the end.
+			if(numMissions >= 3 && missions + 20 + 4*3 <= size)
+				memcpy(&secondMission, b + missions + 20 + 8, 4);
+			else
+				secondMission = (int32)size;
+		}
+	}
+	if(firstMission <= 0 || secondMission <= firstMission || (size_t)secondMission > size){
+		log("Traffic preview: data/script/main.scm has no INITIAL mission where expected (modded?); "
+			"zones keep their default population\n");
+		return;
+	}
+
+	auto readInt = [&](size_t &at, int *out){
+		if(at + 2 > size) return false;
+		switch(b[at]){
+		case 0x04: *out = (int8)b[at+1]; at += 2; return true;
+		case 0x05: { int16 v; if(at + 3 > size) return false; memcpy(&v, b+at+1, 2); *out = v; at += 3; return true; }
+		case 0x01: { int32 v; if(at + 5 > size) return false; memcpy(&v, b+at+1, 4); *out = v; at += 5; return true; }
+		}
+		return false;	// a variable or anything else: not a start-up constant
+	};
+	int applied = 0;
+	for(size_t at = (size_t)firstMission; at + 11 < (size_t)secondMission; at++){
+		uint16 op = b[at] | b[at+1] << 8;
+		if((op != 0x0767 && op != 0x076A && op != 0x076C && op != 0x0874 && op != 0x09B7) || b[at+2] != 0x09)
+			continue;
+		char label[9];
+		memcpy(label, b + at + 3, 8);
+		label[8] = '\0';
+		PreviewZoneState *state = findPreviewZoneState(label);
+		size_t args = at + 11;
+		int a = 0, c = 0;
+		if(state == nil || !readInt(args, &a) || (op == 0x076C && !readInt(args, &c)))
+			continue;
+		switch(op){
+		case 0x0767:	// SET_ZONE_POPULATION_TYPE
+			if(a >= 0 && a <= PREVIEW_ZONE_AIRPORT_RUNWAY) state->popType = a;
+			break;
+		case 0x076A:	// SET_ZONE_DEALER_STRENGTH
+			state->dealerStrength = (uint8)clamp(a, 0, 255);
+			break;
+		case 0x076C:	// SET_ZONE_GANG_STRENGTH
+			if(a >= 0 && a < 10) state->gangStrength[a] = (uint8)clamp(c, 0, 255);
+			break;
+		case 0x0874:	// SET_ZONE_POPULATION_RACE: a mask, black 1, white 2, oriental 4, hispanic 8
+			state->raceMask = (uint8)(a & 0x0F ? a & 0x0F : 0x0F);
+			break;
+		case 0x09B7:	// SET_ZONE_NO_COPS
+			state->noCops = a != 0;
+			break;
+		}
+		applied++;
+		at = args - 1;
+	}
+	log("Traffic preview: %d zone settings from main.scm's INITIAL mission\n", applied);
+}
 static float previewSeedFloat01(uint32 &seed);
 static void clearPreviewTrafficCars(void);
 static void clearPreviewParkedCars(void);
@@ -696,48 +787,8 @@ parsePreviewZonePopulationTypeName(const std::string &value)
 	return -1;
 }
 
-static int
-parsePreviewScmZonePopulationType(const std::string &value)
-{
-	std::string key = lowerPreviewString(value);
-	if(key.find("popcycle_zone_") == 0)
-		key.erase(0, strlen("popcycle_zone_"));
-	return parsePreviewZonePopulationTypeName(key);
-}
 
-static uint8
-parsePreviewScmRaceMask(const std::string &value)
-{
-	std::string key = lowerPreviewString(value);
-	if(key.find("poprace_") == 0)
-		key.erase(0, strlen("poprace_"));
-	uint8 mask = 0;
-	for(size_t i = 0; i < key.size(); i++){
-		switch(std::toupper((unsigned char)key[i])){
-		case 'B': mask |= 1u << (PREVIEW_RACE_BLACK - 1); break;
-		case 'W': mask |= 1u << (PREVIEW_RACE_WHITE - 1); break;
-		case 'O':
-		case 'I': mask |= 1u << (PREVIEW_RACE_ORIENTAL - 1); break;
-		case 'H': mask |= 1u << (PREVIEW_RACE_HISPANIC - 1); break;
-		}
-	}
-	return mask ? mask : 0x0Fu;
-}
 
-static int
-parsePreviewScmGangId(const std::string &value)
-{
-	std::string key = lowerPreviewString(value);
-	if(key == "gang_flat") return 0;
-	if(key == "gang_grove") return 1;
-	if(key == "gang_nmex") return 2;
-	if(key == "gang_sfmex") return 3;
-	if(key == "gang_viet") return 4;
-	if(key == "gang_mafia") return 5;
-	if(key == "gang_triad") return 6;
-	if(key == "gang_smex") return 7;
-	return -1;
-}
 
 static void
 appendPreviewFallbackData(void)
@@ -1301,43 +1352,7 @@ loadPreviewPopulationData(void)
 		}
 	}
 
-	{
-		std::string script(gPreviewZonePopulationInitScript ? gPreviewZonePopulationInitScript : "");
-		for(size_t start = 0; start <= script.size(); ){
-			size_t end = script.find('\n', start);
-			if(end == std::string::npos)
-				end = script.size();
-			std::string rawLine = script.substr(start, end - start);
-			start = end + 1;
-
-			std::string line = trimPreviewString(stripPreviewLineComment(rawLine));
-			if(line.empty())
-				continue;
-			std::vector<std::string> parts = splitPreviewWhitespace(line);
-			if(parts.size() < 3)
-				continue;
-
-			PreviewZoneState *state = findPreviewZoneState(parts[1].c_str());
-			if(state == nil)
-				continue;
-
-			if(parts[0] == "SET_ZONE_POPULATION_TYPE"){
-				int popType = parsePreviewScmZonePopulationType(parts[2]);
-				if(popType >= 0)
-					state->popType = popType;
-			}else if(parts[0] == "SET_ZONE_POPULATION_RACE"){
-				state->raceMask = parsePreviewScmRaceMask(parts[2]);
-			}else if(parts[0] == "SET_ZONE_GANG_STRENGTH" && parts.size() >= 4){
-				int gang = parsePreviewScmGangId(parts[2]);
-				if(gang >= 0 && gang < 10)
-					state->gangStrength[gang] = (uint8)clamp(std::atoi(parts[3].c_str()), 0, 255);
-			}else if(parts[0] == "SET_ZONE_DEALER_STRENGTH" && parts.size() >= 3){
-				state->dealerStrength = (uint8)clamp(std::atoi(parts[2].c_str()), 0, 255);
-			}else if(parts[0] == "SET_ZONE_NO_COPS" && parts.size() >= 3){
-				state->noCops = rw::strcmp_ci(parts[2].c_str(), "TRUE") == 0;
-			}
-		}
-	}
+	applyPreviewZoneSettingsFromScm();
 
 	gPreviewPopulationLoaded =
 		!gPreviewPedGroups.empty() &&

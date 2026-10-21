@@ -149,6 +149,33 @@ PARTICLE_TEXTURES = ['waterclear256', 'cloud1', 'cloud2', 'cloud3', 'cloudhilit'
 	'seabd32', 'collisionsmoke']
 
 
+def main_scm():
+	"""A tiny main.scm: segment jumps, the mission table and an INITIAL mission."""
+	def jump(target):
+		return struct.pack('<HBi', 0x0002, 0x01, target)
+	def label(text):
+		return b'\x09' + text.encode().ljust(8, b'\0')[:8]
+	def int8(value):
+		return b'\x04' + struct.pack('<b', value)
+	initial = (struct.pack('<H', 0x03A4) + label('INITIAL')
+		+ struct.pack('<H', 0x0767) + label('GAN1') + int8(7)	# SET_ZONE_POPULATION_TYPE GAN1 GANGLAND
+		+ struct.pack('<H', 0x076C) + label('GAN1') + int8(1) + int8(40)	# SET_ZONE_GANG_STRENGTH GAN1 GROVE 40
+		+ struct.pack('<H', 0x0874) + label('GAN1') + int8(1)	# SET_ZONE_POPULATION_RACE GAN1 black
+		+ struct.pack('<H', 0x004E))	# TERMINATE_THIS_SCRIPT
+	main = struct.pack('<H', 0x004E)
+	seg1 = jump(0) + b's' + bytes(8)	# variables
+	seg2 = jump(0) + b'\0' + struct.pack('<i', 0)	# no models
+	missions_header = 4 + 4 + 2 + 2 + 4 * 2	# main size, largest mission, counts, two offsets
+	seg3_size = 7 + 1 + missions_header
+	main_at = len(seg1) + len(seg2) + seg3_size
+	mission0 = main_at + len(main)
+	mission1 = mission0 + 2
+	seg1 = jump(len(seg1)) + seg1[7:]
+	seg2 = jump(len(seg1) + len(seg2)) + seg2[7:]
+	seg3 = (jump(main_at) + b'\0' + struct.pack('<iiHH', mission0, len(initial), 2, 0)
+		+ struct.pack('<ii', mission0, mission1))
+	return seg1 + seg2 + seg3 + main + struct.pack('<H', 0x004E) + initial
+
 # ---- RenderWare streams ----
 
 def chunk(kind, payload):
@@ -349,6 +376,11 @@ def main(target):
 	        '1 1 1  100 100 100  800 100 1  200 200 200  200 200 200  90 120 130 200  '
 	        '0 0 0 0  0 0 0 0  0 0 0 1.0\n')
 	(root / 'data' / 'timecyc.dat').write_text(hour * (8 * 23))
+	# A main.scm laid out like the game's (three header segments, then MAIN and
+	# the missions), with zone population commands in mission 1, INITIAL, where
+	# the editor reads them (sapaths.cpp applyPreviewZoneSettingsFromScm).
+	(root / 'data' / 'script').mkdir(parents=True, exist_ok=True)
+	(root / 'data' / 'script' / 'main.scm').write_bytes(main_scm())
 	# The open.mp NPC path nodes, written by the Nodes tool's own code.
 	sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 	from test_nodes_edit import write_synthetic_nodes
