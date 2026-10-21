@@ -272,10 +272,15 @@ readToken(const std::string &s, size_t i, size_t *next)
 	return code;
 }
 
+// SA-MP sets CFont::SetScale(letterX, letterY * 0.5) in 640x448 units
+// (DrawTextDrawRuntimeText, 0x100B31A0): glyphs are 32 * x by 20 * y * 0.5
+// (CFont::PrintChar) and lines 18 * y * 0.5 apart (ProcessCurrentString).
+static const float TD_GLYPH_HEIGHT = 10.0f, TD_LINE_HEIGHT = 9.0f;	// per unit of letterY
+
 static float
 lineHeight(const TextDraw &td)
 {
-	return 16.0f * td.letterY + 2.0f * td.outline;
+	return TD_LINE_HEIGHT * td.letterY;
 }
 
 // Glyphs in canvas units, and the text's bounds. Like CFont::ProcessCurrentString
@@ -626,7 +631,7 @@ drawGlyphs(ImDrawList *dl, const Canvas &cv, const TextDraw &td, const std::vect
 	rw::Texture *tex = gFontTex[fontTexture(td.font)];
 	if(tex == nil)
 		return;
-	float w = 32.0f * td.letterX, h = 20.0f * td.letterY;
+	float w = 32.0f * td.letterX, h = TD_GLYPH_HEIGHT * td.letterY;
 	for(size_t i = 0; i < glyphs.size(); i++){
 		const Glyph &g = glyphs[i];
 		if(g.index == 0)
@@ -792,11 +797,11 @@ DrawTextDrawsOverlay(void)
 					if(td.alignment == 2) td.sizeY = std::max(1.0f, td.sizeY + dx * 2.0f);
 					else td.sizeX += dx;
 					int lines = std::max(1, (int)((y1 - y0) / std::max(0.01f, lineHeight(td))));
-					td.letterY = std::max(0.05f, td.letterY + dy / (16.0f * lines));
+					td.letterY = std::max(0.05f, td.letterY + dy / (TD_LINE_HEIGHT * lines));
 				}else{
 					float width = std::max(1.0f, x1 - x0);
 					td.letterX = std::max(0.05f, td.letterX * (width + dx) / width);
-					td.letterY = std::max(0.05f, td.letterY + dy / 20.0f);
+					td.letterY = std::max(0.05f, td.letterY + dy / TD_GLYPH_HEIGHT);
 				}
 				TextDrawsChanged();
 			}
