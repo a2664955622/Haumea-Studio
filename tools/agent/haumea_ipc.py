@@ -25,6 +25,29 @@ SUN_PATH_MAX = 104 if sys.platform == "darwin" else 108
 MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 
 
+def haumea_config_dir() -> Path:
+	"""Haumea's config folder, found as the editor finds it (workspace.cpp)."""
+	custom = os.environ.get("HAUMEA_CONFIG_DIR")
+	if custom:
+		return Path(custom)
+	if os.name == "nt":
+		return Path(os.environ.get("APPDATA", str(Path.home()))) / "Haumea"
+	if sys.platform == "darwin":
+		return Path.home() / "Library" / "Application Support" / "Haumea"
+	return Path(os.environ.get("XDG_CONFIG_HOME") or (Path.home() / ".config")) / "haumea"
+
+
+def namaka_connection() -> tuple[str, str] | None:
+	"""The port and token a Haumea listening for Namaka on loopback TCP wrote
+	(Windows: <config>/namaka/connection.json), or None. Read on every request:
+	the port changes each time Haumea starts."""
+	try:
+		data = json.loads((haumea_config_dir() / "namaka" / "connection.json").read_text(encoding="utf-8"))
+		return str(int(data["port"])), str(data["token"])
+	except (OSError, ValueError, KeyError, TypeError):
+		return None
+
+
 class HaumeaError(RuntimeError):
 	"""A typed engine error that preserves revision and structured context."""
 
@@ -41,6 +64,10 @@ class HaumeaClient:
 		self.timeout = timeout
 		self.tcp_port = os.environ.get("HAUMEA_ENGINE_TCP_PORT")
 		self.token = os.environ.get("HAUMEA_ENGINE_TOKEN", "")
+		# Nothing set: a Haumea listening for Namaka on its own (connection.json
+		# on Windows, the default socket elsewhere).
+		self.automatic = (self.tcp_port is None and "HAUMEA_ENGINE_SOCKET" not in os.environ and
+			self.engine_socket == DEFAULT_ENGINE_SOCKET)
 
 	def _check_config(self) -> None:
 		# Validated per request rather than at construction, so an MCP server
@@ -70,6 +97,13 @@ class HaumeaClient:
 			f"--agent-socket {self.engine_socket} (launch-haumea-agent.sh does this).")
 
 	def command(self, command: str, *fields: object) -> dict:
+		if self.automatic:
+			connection = namaka_connection()
+			self.tcp_port, self.token = connection if connection else (None, "")
+			if connection is None and os.name == "nt":
+				raise HaumeaError(
+					"Haumea isn't listening for Namaka. Start Haumea with Namaka installed and "
+					"\"Let Namaka connect\" on (Preferences > Namaka).")
 		self._check_config()
 		request_id = uuid.uuid4().hex
 		encoded_fields = [str(field) for field in fields]

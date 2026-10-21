@@ -1,4 +1,5 @@
 #ifdef _WIN32
+#define _CRT_RAND_S	// rand_s: Namaka's per-start token
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #endif
@@ -111,6 +112,7 @@ static std::string gAgentToken;
 static bool gAgentTcp;
 static bool gAgentUnixBound;
 static bool gAgentSocketBusy;	// another process answers on the socket: left to it
+static int gAgentTcpPort;
 
 static void closeAgentSocket(AgentSocket &socket)
 {
@@ -353,6 +355,8 @@ shutdownAgentSocket(void)
 #endif
 }
 
+static bool listenAgentTcp(long port, const char *token);
+
 static bool initializeAgentTcp(const char *portText)
 {
 	const char *token = getenv("HAUMEA_ENGINE_TOKEN");
@@ -363,6 +367,12 @@ static bool initializeAgentTcp(const char *portText)
 		log("Agent TCP requires a valid port and HAUMEA_ENGINE_TOKEN (32-256 characters, no newlines)\n");
 		return false;
 	}
+	return listenAgentTcp(port, token);
+}
+
+// Loopback only; port 0 lets the system pick one (gAgentTcpPort says which).
+static bool listenAgentTcp(long port, const char *token)
+{
 #ifdef _WIN32
 	WSADATA data;
 	if(WSAStartup(MAKEWORD(2, 2), &data) != 0) return false;
@@ -387,6 +397,9 @@ static bool initializeAgentTcp(const char *portText)
 		shutdownAgentSocket();
 		return false;
 	}
+	socklen_t length = sizeof(address);
+	if(getsockname(gAgentSocket, (sockaddr*)&address, &length) == 0)
+		gAgentTcpPort = ntohs(address.sin_port);
 	gAgentToken = token;
 	gAgentTcp = true;
 	atexit(shutdownAgentSocket);
@@ -454,6 +467,111 @@ writeError(const std::string &requestId, const char *message)
 		std::string("\"error\":\"") + jsonEscape(message) + "\"");
 }
 
+#ifdef _WIN32
+static std::string
+namakaConnectionPath(void)
+{
+	return std::string(GetConfigDir()) + "/namaka/connection.json";
+}
+
+static void
+removeNamakaConnection(void)
+{
+	if(gAgentTcp && gAgentBridgeEnabled)
+		DeleteFileA(namakaConnectionPath().c_str());
+}
+
+// Whether another Haumea answers on the port and token the file names: an
+// authenticated ping with a short timeout. Anything else means it's stale.
+static bool
+namakaConnectionAnswers(int port, const std::string &token)
+{
+	SOCKET probe = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if(probe == INVALID_SOCKET)
+		return false;
+	DWORD timeout = 1500;
+	setsockopt(probe, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
+	setsockopt(probe, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof(timeout));
+	sockaddr_in address = {};
+	address.sin_family = AF_INET;
+	address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	address.sin_port = htons((unsigned short)port);
+	bool answered = false;
+	if(connect(probe, (sockaddr*)&address, sizeof(address)) == 0){
+		std::string request = "HAUMEA_AUTH/1 " + token + "\nHAUMEA_IPC/1\nprobe\nping";
+		uint32 size = htonl((uint32)request.size());
+		char reply[512];
+		if(send(probe, (const char*)&size, 4, 0) == 4 &&
+		   send(probe, request.data(), (int)request.size(), 0) == (int)request.size()){
+			// A framed reply: its size, then the JSON.
+			uint32 replySize = 0;
+			if(recv(probe, (char*)&replySize, 4, MSG_WAITALL) == 4){
+				replySize = ntohl(replySize);
+				int want = (int)std::min<uint32>(replySize, sizeof(reply) - 1);
+				int n = want > 0 ? recv(probe, reply, want, MSG_WAITALL) : 0;
+				if(n > 0){
+					reply[n] = '\0';
+					answered = strstr(reply, "\"ok\":true") != nil;
+				}
+			}
+		}
+	}
+	closesocket(probe);
+	return answered;
+}
+
+static bool
+startNamakaTcp(void)
+{
+	WSADATA data;
+	if(WSAStartup(MAKEWORD(2, 2), &data) != 0)
+		return false;
+	std::string path = namakaConnectionPath();
+	// Another Haumea's file is left alone; a stale one is replaced.
+	std::string old;
+	if(FILE *f = fopen(path.c_str(), "rb")){
+		char buffer[1024];
+		size_t n = fread(buffer, 1, sizeof(buffer) - 1, f);
+		fclose(f);
+		old.assign(buffer, n);
+	}
+	int oldPort = 0;
+	char oldToken[300] = "";
+	const char *portAt = strstr(old.c_str(), "\"port\":");
+	const char *tokenAt = strstr(old.c_str(), "\"token\":\"");
+	if(portAt && tokenAt && sscanf(portAt + 7, "%d", &oldPort) == 1 &&
+	   sscanf(tokenAt + 9, "%299[^\"]", oldToken) == 1 && namakaConnectionAnswers(oldPort, oldToken)){
+		gAgentSocketBusy = true;
+		log("Agent: another Haumea is listening for Namaka (127.0.0.1:%d); not listening\n", oldPort);
+		return false;
+	}
+	std::string token;
+	for(int i = 0; i < 48; i++){
+		unsigned int value = 0;
+		rand_s(&value);
+		static const char hex[] = "0123456789abcdef";
+		token += hex[value & 15];
+	}
+	if(!listenAgentTcp(0, token.c_str()))
+		return false;
+	// Written beside it and moved over it, so a reader never sees half a file.
+	EnsureParentDirectoriesForPath(path.c_str());
+	std::string temp = path + ".tmp";
+	FILE *f = fopen(temp.c_str(), "wb");
+	bool written = f && fprintf(f, "{\"port\": %d, \"token\": \"%s\"}\n", gAgentTcpPort, token.c_str()) > 0;
+	if(f)
+		written = fclose(f) == 0 && written;
+	if(!written || !MoveFileExA(temp.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING)){
+		DeleteFileA(temp.c_str());
+		shutdownAgentSocket();
+		log("Agent: could not write %s\n", path.c_str());
+		return false;
+	}
+	atexit(removeNamakaConnection);
+	return true;
+}
+#endif
+
 static void
 initializeBridge(void)
 {
@@ -474,6 +592,16 @@ initializeBridge(void)
 			"Agent TCP initialization failed\n");
 		return; // Explicit TCP configuration must never fall back to an unauthenticated bridge.
 	}
+#ifdef _WIN32
+	// Windows has no Unix sockets here: a plain start listens for Namaka on
+	// loopback TCP with a fresh token, written where haumea_ipc reads it.
+	if(!gAgentSocketPath[0] && !gAgentBridgeDirectory[0] && NamakaShouldListen()){
+		gAgentBridgeEnabled = startNamakaTcp();
+		if(gAgentBridgeEnabled)
+			log("Agent IPC v%d listening for Namaka on 127.0.0.1:%d\n", AGENT_PROTOCOL_VERSION, gAgentTcpPort);
+		return;
+	}
+#endif
 #ifndef _WIN32
 	// A plain start listens for Namaka when it is installed (and allowed).
 	if(!gAgentSocketPath[0] && !gAgentBridgeDirectory[0] && NamakaShouldListen()){

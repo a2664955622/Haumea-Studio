@@ -9,7 +9,9 @@ haumea.exe, then every map in fixtures/ and pawn/maps/ is opened and saved
 (--pawn-roundtrip) by the Linux editor and by the exe under Wine, and the
 two outputs must be identical byte for byte. A capture_screen smoke check
 then opens a map in the exe and grabs a frame with the editor's panels over
-the agent's TCP bridge; it must be a real image, not a blank one.
+the agent's TCP bridge; it must be a real image, not a blank one. Last, a
+plain start with Namaka installed must listen on loopback TCP through
+connection.json, and a second start must leave it alone.
 
 Wine runs in a fresh prefix of its own, with HAUMEA_CONFIG_DIR pointing at
 a private config folder (Wine sets APPDATA itself), so nothing of the
@@ -211,6 +213,52 @@ class WindowsCheck:
             run(['wineserver', '-k'], env=self.wine_env, timeout=60)
             editor.wait(timeout=60)
 
+    def namaka_listen(self, gfx, exe):
+        # With Namaka installed, a plain start listens on loopback TCP and writes
+        # <config>/namaka/connection.json for haumea_ipc; a second start finds it
+        # answering and leaves it alone. Namaka is faked: a venv with its marker.
+        config = self.work / gfx / 'namaka-config'
+        venv = self.work / gfx / 'namaka-venv'
+        (venv / 'Scripts').mkdir(parents=True, exist_ok=True)
+        (venv / 'Scripts' / 'python.exe').write_bytes(b'')
+        (venv / 'namaka-complete').write_text('haumea_namaka-0.1.0-py3-none-any.whl\n')
+        config.mkdir(parents=True, exist_ok=True)
+        connection = config / 'namaka' / 'connection.json'
+        env = dict(self.wine_env, HAUMEA_CONFIG_DIR=winpath(config), HAUMEA_NAMAKA_VENV=winpath(venv),
+                   HAUMEA_NAMAKA_LISTEN='1')
+        sys.path.insert(0, str(ROOT / 'tools'))
+        from agent.haumea_ipc import HaumeaClient  # noqa: E402
+        editors = []
+        os.environ['HAUMEA_CONFIG_DIR'] = str(config)	# where the client reads connection.json
+        try:
+            editors.append(subprocess.Popen(['wine', str(exe), '--game', winpath(self.game)], env=env,
+                                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+            deadline = time.time() + 180
+            while not connection.is_file():
+                if time.time() > deadline or editors[0].poll() is not None:
+                    self.fail('%s namaka: no connection.json from a plain start' % gfx)
+                    return
+                time.sleep(2)
+            written = connection.read_text()
+            client = HaumeaClient(timeout=30.0)
+            if not client.automatic or not client.command('ping').get('ok'):
+                self.fail('%s namaka: the client could not reach it through connection.json' % gfx)
+                return
+            editors.append(subprocess.Popen(['wine', str(exe), '--game', winpath(self.game)], env=env,
+                                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+            time.sleep(60)	# up and past its own probe
+            if connection.read_text() != written:
+                self.fail('%s namaka: a second start replaced a running Haumea\'s connection.json' % gfx)
+            elif not client.command('ping').get('ok'):
+                self.fail('%s namaka: the first editor stopped answering' % gfx)
+            else:
+                print('ok   %s namaka: listens on loopback TCP, a second start leaves it alone' % gfx)
+        finally:
+            os.environ.pop('HAUMEA_CONFIG_DIR', None)
+            run(['wineserver', '-k'], env=self.wine_env, timeout=60)
+            for editor in editors:
+                editor.wait(timeout=60)
+
     def main(self):
         try:
             self.setup()
@@ -224,6 +272,7 @@ class WindowsCheck:
                 self.roundtrips(gfx, exe)
                 if not self.args.no_capture:
                     self.capture(gfx, exe)
+                    self.namaka_listen(gfx, exe)
         finally:
             run(['wineserver', '-k'], env=getattr(self, 'wine_env', None), timeout=60) \
                 if hasattr(self, 'wine_env') else None
