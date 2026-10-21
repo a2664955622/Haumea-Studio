@@ -1945,8 +1945,20 @@ handleTool(void)
 		if(CPad::IsMButtonClicked(1)){
 			rw::V3d hitPos, hitNormal;
 			GetPlacementSurfaceHit(&hitPos, &hitNormal);
-			ImportPrefabAt(GetPrefabPlacePath(), hitPos);
-			if(!CPad::IsKeyDown(KEY_LSHIFT) && !CPad::IsKeyDown(KEY_RSHIFT))
+			// Optionally a group named after the file, without folder or .haumea.
+			std::string group;
+			if(gPrefabPlaceAsGroup){
+				const char *path = GetPrefabPlacePath();
+				const char *slash = strrchr(path, '/');
+				const char *backslash = strrchr(path, '\\');
+				const char *base = slash > backslash ? slash + 1 : backslash ? backslash + 1 : path;
+				group = base;
+				if(group.size() > 7 && group.compare(group.size() - 7, 7, ".haumea") == 0)
+					group.resize(group.size() - 7);
+			}
+			ImportPrefabAtEx(GetPrefabPlacePath(), hitPos, gPrefabPlaceHeading,
+				gPrefabPlaceAsGroup ? group.c_str() : nil);
+			if(!gPrefabPlaceRepeat && !CPad::IsKeyDown(KEY_LSHIFT) && !CPad::IsKeyDown(KEY_RSHIFT))
 				ExitPrefabPlaceMode();
 			return;
 		}
@@ -3230,8 +3242,19 @@ Draw(void)
 	// io.MouseWheel is populated by NewFrame and cleared by EndFrame.
 	{
 		ImGuiIO &io = ImGui::GetIO();
+		// Placing a prefab: Q/E (or , and .) and the wheel turn it, 15 degrees
+		// a step, 5 with Shift.
+		if(gPrefabPlaceMode && !io.WantTextInput){
+			float step = io.KeyShift ? 5.0f : 15.0f;
+			if(ImGui::IsKeyPressed(ImGuiKey_Q) || ImGui::IsKeyPressed(ImGuiKey_Comma))
+				gPrefabPlaceHeading += step;
+			if(ImGui::IsKeyPressed(ImGuiKey_E) || ImGui::IsKeyPressed(ImGuiKey_Period))
+				gPrefabPlaceHeading -= step;
+		}
 		if(io.MouseWheel != 0.0f && io.KeyMods == ImGuiMod_Ctrl)
 			StepUiScale(io.MouseWheel > 0.0f ? 1.0f : -1.0f);
+		else if(gPrefabPlaceMode && !io.WantCaptureMouse && io.MouseWheel != 0.0f)
+			gPrefabPlaceHeading += (io.MouseWheel > 0.0f ? 1.0f : -1.0f) * (io.KeyShift ? 5.0f : 15.0f);
 		else if(!io.WantCaptureMouse && io.MouseWheel != 0.0f){
 			TheCamera.m_fov = ClampCameraFov(TheCamera.m_fov - io.MouseWheel * gFovWheelStep);
 		}
@@ -3307,7 +3330,7 @@ Draw(void)
 		if(!io.WantCaptureMouse){
 			rw::V3d hitPos, hitNormal;
 			if(GetPlacementSurfaceHit(&hitPos, &hitNormal))
-				RenderPrefabPlacementGhost(GetPrefabPlacePath(), hitPos);
+				RenderPrefabPlacementGhost(GetPrefabPlacePath(), hitPos, gPrefabPlaceHeading);
 		}
 	}
 	// DEBUG render object picking

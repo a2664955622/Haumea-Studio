@@ -394,9 +394,7 @@ static bool
 initializeAgentSocket(void)
 {
 	if(strlen(gAgentSocketPath) >= sizeof(sockaddr_un::sun_path)){
-		log("Agent socket path is too long (%d bytes; AF_UNIX allows %d): %s\n"
-			"Use a shorter --agent-socket, such as $XDG_RUNTIME_DIR/haumea.sock.\n",
-			(int)strlen(gAgentSocketPath), (int)sizeof(sockaddr_un::sun_path) - 1, gAgentSocketPath);
+		log("Agent socket path is too long: %s\n", gAgentSocketPath);
 		return false;
 	}
 	gAgentSocket = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -2873,6 +2871,115 @@ handleRequest(const std::vector<std::string> &lines)
 		gAgentSceneRevision++;
 		writeResponse(requestId, true, std::string("\"instance_id\":") + std::to_string(hd->m_id) +
 			",\"created_count\":" + std::to_string(count) + ",\"object\":" + agentInstanceJson(hd, false));
+		return;
+	}
+	if(command == "prefab_list"){
+		std::vector<PrefabListing> prefabs;
+		ListPrefabs(prefabs);
+		std::string json = "\"result\":\"prefabs\",\"prefabs\":[";
+		for(size_t i = 0; i < prefabs.size(); i++){
+			const PrefabListing &p = prefabs[i];
+			json += std::string(i ? "," : "") + "{\"name\":\"" + jsonEscapeBytes(p.name.c_str()) +
+				"\",\"folder\":\"" + jsonEscapeBytes(p.folder.c_str()) + "\",\"path\":\"" +
+				jsonEscapeBytes(p.path.c_str()) + "\",\"instances\":" + std::to_string(p.info.instances) +
+				",\"elements\":" + std::to_string(p.info.elements) + ",\"vehicles\":" +
+				std::to_string(p.info.vehicles) + ",\"tags\":\"" + jsonEscapeBytes(p.info.tags.c_str()) + "\"}";
+		}
+		writeResponse(requestId, true, json + "]");
+		return;
+	}
+	if(command == "prefab_place"){
+		// prefab_place <name, folder/name or path> x y z heading snap [group]
+		if(!requireAgentSession(requestId)) return;
+		float x, y, z, heading;
+		int snap;
+		if(lines.size() < 8 || !parseFloat(lines[3], &x) || !parseFloat(lines[4], &y) || !parseFloat(lines[5], &z) ||
+		   !parseFloat(lines[6], &heading) || !parseInt(lines[7], &snap)){
+			writeError(requestId, "prefab_place requires a prefab, x, y, z, heading and snap");
+			return;
+		}
+		std::string want = decodeAgentText(lines[2]), path;
+		if(doesFileExist(want.c_str()))
+			path = want;
+		else{
+			std::vector<PrefabListing> prefabs;
+			ListPrefabs(prefabs);
+			// The name, or any end of "folder/name": "Road works", "Street/Road works",
+			// "Starter/Street/Road works".
+			std::string lower = lowercase(want.c_str());
+			for(const PrefabListing &p : prefabs){
+				std::string full = lowercase((p.folder + "/" + p.name).c_str());
+				if(full == lower || (full.size() > lower.size() &&
+				   full.compare(full.size() - lower.size(), lower.size(), lower) == 0 &&
+				   full[full.size() - lower.size() - 1] == '/')){
+					path = p.path;
+					break;
+				}
+			}
+		}
+		if(path.empty()){
+			writeError(requestId, ("no prefab called " + want + "; prefab_list shows them").c_str());
+			return;
+		}
+		rw::V3d position = { x, y, z };
+		if(snap){
+			rw::V3d ground;
+			if(!getAgentGroundPlacementSurface(position, &ground, nil, true)){
+				writeError(requestId, "no ground surface at placement");
+				return;
+			}
+			position.z = ground.z;
+		}
+		std::string group = lines.size() > 8 ? decodeAgentText(lines[8]) : "";
+		int count = ImportPrefabAtEx(path.c_str(), position, heading, group.empty() ? nil : group.c_str());
+		if(count <= 0){
+			writeError(requestId, "Haumea could not place the prefab");
+			return;
+		}
+		std::string ids;
+		for(CPtrNode *p = selection.first; p; p = p->next)
+			ids += (ids.empty() ? "" : ",") + std::to_string(((ObjectInst*)p->item)->m_id);
+		ClearSelection();
+		gAgentSceneRevision++;
+		writeResponse(requestId, true, std::string("\"created_count\":") + std::to_string(count) +
+			",\"instance_ids\":[" + ids + "],\"path\":\"" + jsonEscapeBytes(path.c_str()) + "\"");
+		return;
+	}
+	if(command == "prefab_save"){
+		// prefab_save <name> <folder> <tags> <origin lowest|centre|first> <mine|workspace> <id> [<id> ...]
+		if(lines.size() < 8){
+			writeError(requestId, "prefab_save requires name, folder, tags, origin, where and instance ids");
+			return;
+		}
+		std::string name = decodeAgentText(lines[2]), folder = decodeAgentText(lines[3]);
+		std::string tags = decodeAgentText(lines[4]), originName = lowercase(lines[5].c_str());
+		if(name.empty() || name.find_first_of("/\\:*?\"<>|") != std::string::npos || folder.find("..") != std::string::npos){
+			writeError(requestId, "prefab_save needs a plain name (and a folder without ..)");
+			return;
+		}
+		int origin = originName == "first" ? PREFAB_ORIGIN_FIRST :
+			originName == "centre" || originName == "center" ? PREFAB_ORIGIN_CENTRE : PREFAB_ORIGIN_LOWEST;
+		std::string dir = PrefabSaveDir(lowercase(lines[6].c_str()) == "workspace", folder.c_str());
+		if(dir.empty()){
+			writeError(requestId, "no workspace is set to save in");
+			return;
+		}
+		ClearSelection();
+		for(size_t i = 7; i < lines.size(); i++){
+			int id;
+			ObjectInst *inst = parseInt(lines[i], &id) ? GetInstanceByID(id) : nil;
+			if(inst && !inst->m_isDeleted)
+				inst->Select();
+		}
+		std::string path = dir + "/" + name + ".haumea";
+		int count = selection.first ? ExportPrefabEx(path.c_str(), origin, tags.c_str()) : 0;
+		ClearSelection();
+		if(count <= 0){
+			writeError(requestId, "nothing to save: no live instance ids");
+			return;
+		}
+		writeResponse(requestId, true, std::string("\"saved_count\":") + std::to_string(count) +
+			",\"path\":\"" + jsonEscapeBytes(path.c_str()) + "\"");
 		return;
 	}
 	if(command == "texture_search"){

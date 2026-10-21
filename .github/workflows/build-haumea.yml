@@ -103,6 +103,9 @@ jobs:
           $fonts = Join-Path $bundle "fonts"
           New-Item -ItemType Directory -Force -Path $fonts | Out-Null
           Copy-Item "haumea\fonts\*" $fonts -Recurse
+          $prefabs = Join-Path $bundle "prefabs"
+          New-Item -ItemType Directory -Force -Path $prefabs | Out-Null
+          Copy-Item "haumea\tools\haumea\prefabs\*" $prefabs -Recurse
           $glfwDll = "glfw-3.3.4.bin.WIN64\lib-vc2015\glfw3.dll"
           if (Test-Path $glfwDll) { Copy-Item $glfwDll $bundle }
 

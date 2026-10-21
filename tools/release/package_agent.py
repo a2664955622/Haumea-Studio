@@ -28,6 +28,8 @@ engine = stage / ('haumea.exe' if a.engine.suffix.lower() == '.exe' else 'haumea
 shutil.copy2(a.engine, engine)
 shutil.copy2(a.wheel, stage / a.wheel.name)
 shutil.copytree(root / 'fonts', stage / 'fonts', ignore=shutil.ignore_patterns('.DS_Store'))
+# The starter prefabs, which the editor finds next to itself.
+shutil.copytree(root / 'tools/haumea/prefabs', stage / 'prefabs', ignore=shutil.ignore_patterns('.DS_Store'))
 shutil.copy2(root / 'tools/release/AGENT_README.md', stage / 'README.md')
 setup_name = 'setup-agent.ps1' if engine.suffix.lower() == '.exe' else 'setup-agent.sh'
 shutil.copy2(root / 'tools/release' / setup_name, stage / setup_name)

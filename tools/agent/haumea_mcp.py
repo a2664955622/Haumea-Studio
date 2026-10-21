@@ -894,6 +894,33 @@ def place_elements(elements: list[dict]) -> dict:
 	return service.place_elements(elements)
 
 
+@mcp.tool()
+def list_prefabs() -> dict:
+	"""List the prefab library: Mine (Haumea's config folder), Workspace (the server's prefabs/),
+	Starter (shipped with the editor) and their subfolders, with instance, element and vehicle
+	counts and tags."""
+	return service.list_prefabs()
+
+
+@mcp.tool()
+def place_prefab(prefab: str, x: float, y: float, z: float = 0.0, heading: float = 0.0,
+                 snap: bool = True, group: str | None = None) -> dict:
+	"""Place a prefab in the edit session by name, folder/name or path; returns the new instance ids.
+
+	heading turns it in degrees about Z. snap puts it on the ground below (x, y). group, when set,
+	puts everything placed in that group."""
+	return service.place_prefab(prefab, x, y, z, heading=heading, snap=snap, group=group)
+
+
+@mcp.tool()
+def save_prefab(name: str, instance_ids: list[int], folder: str = "", tags: str = "",
+                origin: str = "lowest", where: str = "mine") -> dict:
+	"""Save instances as a prefab file (.haumea) in Mine or the workspace's prefabs/, optionally in a
+	subfolder, with comma-separated tags. origin is what is held when it is placed: lowest (the middle,
+	at the bottom), centre or first (the first id). TextDraws are not kept in prefabs."""
+	return service.save_prefab(name, instance_ids, folder=folder, tags=tags, origin=origin, where=where)
+
+
 @mcp.tool(description=inspect.cleandoc("""Change settings of one element in the edit session; all or nothing, with undo.
 
 	Names are checked (Pawn identifiers, unique NPC names) and keys must fit the

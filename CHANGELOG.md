@@ -119,14 +119,6 @@ run Map Check and Test in game, and grab frames with the panels.
 - Big maps are fast: a 20000-object map opens in about 0.1 s (it took 37 s).
 - The interface is trimmed to what SA-MP and open.mp use: Time & Weather
   takes a weather ID, and the GTA III / VC / LCS switches are gone.
-- **Accents and symbols show correctly in game.** SA-MP and open.mp clients
-  draw text as Windows-1252, as pawno and Texture Studio write it, so maps are
-  now saved that way: "Ação", "Coração", "€" and "ñ" in labels, material text,
-  textdraws and notes look the same in game as in the editor. Maps saved as
-  Windows-1252 also open correctly. Each map remembers its text encoding (a
-  `// Text encoding:` line in the file); older Haumea maps saved as UTF-8 stay
-  UTF-8 until you pick Windows-1252 in **Save As**. Map Check names any
-  character Windows-1252 can't hold (it's saved as `?`).
 - Windows: paths with any characters (João, Жора) work on Windows 10 1903
   and later.
 

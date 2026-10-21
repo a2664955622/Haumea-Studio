@@ -499,6 +499,27 @@ class HaumeaService:
 				return item
 		raise ValueError(f"instance {instance_id} is not in the map; list_scene_objects lists its elements")
 
+	# Prefabs: the library the browser's Prefabs tab shows.
+	def list_prefabs(self) -> dict:
+		return self.engine("prefab_list")
+
+	def place_prefab(self, prefab: str, x: float, y: float, z: float = 0.0, *, heading: float = 0.0,
+	                 snap: bool = True, group: str | None = None) -> dict:
+		fields = [prefab, x, y, z, heading, int(bool(snap))]
+		if group:
+			fields.append(group)
+		return self.engine("prefab_place", fields)
+
+	def save_prefab(self, name: str, instance_ids: list[int], *, folder: str = "", tags: str = "",
+	                origin: str = "lowest", where: str = "mine") -> dict:
+		if origin not in ("lowest", "centre", "center", "first"):
+			raise ValueError("origin must be lowest, centre or first")
+		if where not in ("mine", "workspace"):
+			raise ValueError("where must be mine or workspace")
+		if not instance_ids:
+			raise ValueError("instance_ids must name at least one instance")
+		return self.engine("prefab_save", [name, folder, tags, origin, where, *[int(i) for i in instance_ids]])
+
 	def place_elements(self, elements: list[dict]) -> dict:
 		"""Place several elements; on a failure the ones already placed are deleted again."""
 		if not elements:

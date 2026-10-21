@@ -12,6 +12,7 @@
 #include "sapaths.h"
 #include "samp_loader.h"
 #include "materialtext.h"
+#include <sys/stat.h>
 #include <cctype>
 #include <climits>
 #include <cmath>
@@ -2696,6 +2697,9 @@ DeleteAllInstances(void)
 // Object Spawner state
 bool gPlaceMode;
 bool gPrefabPlaceMode;
+float gPrefabPlaceHeading;
+bool gPrefabPlaceRepeat;	// stay in placement after a click, as Shift does
+bool gPrefabPlaceAsGroup;	// put what is placed in a group named after the prefab
 static int spawnObjectId = -1;
 static char prefabPlacePath[1024];
 static GameFile *customIplFile = nil;
@@ -3968,6 +3972,8 @@ static bool objectThumbnailInitFailed;
 struct PrefabThumbnailSlot
 {
 	char path[512];
+	time_t mtime;	// of the file when it was rendered; a newer file renders again
+	int checkedFrame;
 	bool ready;
 	bool failed;
 	uint32 lastUsed;
@@ -4730,6 +4736,15 @@ GetPrefabThumbnailTexture(const char *path)
 		if(slot->path[0] != '\0' && strcmp(slot->path, path) == 0){
 			slot->lastUsed = ++prefabThumbnailUseSeq;
 			slot->lastRequestedFrame = requestFrame;
+			// Saved over since it was drawn: draw it again (checked once a second).
+			if(requestFrame - slot->checkedFrame > 60){
+				slot->checkedFrame = requestFrame;
+				struct stat st;
+				if(stat(path, &st) == 0 && st.st_mtime != slot->mtime && (slot->ready || slot->failed)){
+					slot->ready = false;
+					slot->failed = false;
+				}
+			}
 			return slot->ready ? slot->texture : nil;
 		}
 	}
@@ -4779,6 +4794,9 @@ RenderRequestedPrefabThumbnails(void)
 			return;
 		strncpy(slot->path, path, sizeof(slot->path));
 		slot->path[sizeof(slot->path)-1] = '\0';
+		struct stat st;
+		slot->mtime = stat(path, &st) == 0 ? st.st_mtime : 0;
+		slot->checkedFrame = ImGui::GetFrameCount();
 		if(renderPrefabToRaster(path, slot->colorRaster, slot->depthRaster, PREFAB_THUMBNAIL_SIZE))
 			slot->ready = true;
 		else if(!doesFileExist(path))
@@ -5888,6 +5906,12 @@ static uint32 pawnColorToInt(const rw::RGBA &color);
 int
 ExportPrefab(const char *path)
 {
+	return ExportPrefabEx(path, PREFAB_ORIGIN_CENTRE, nil);
+}
+
+int
+ExportPrefabEx(const char *path, int origin, const char *tags)
+{
 	// Collect selected non-deleted instances + their LODs
 	ObjectInst *insts[256];
 	int numInsts = 0;
@@ -5934,6 +5958,18 @@ ExportPrefab(const char *path)
 	centroid.x *= invCount;
 	centroid.y *= invCount;
 	centroid.z *= invCount;
+	// Where the prefab is held when placed: the middle, the first object, or
+	// the middle at the lowest object, so it stands on the ground.
+	// The selection list keeps the newest first, so the first selected is last.
+	if(origin == PREFAB_ORIGIN_FIRST)
+		centroid = insts[numExplicit - 1]->m_translation;
+	else if(origin == PREFAB_ORIGIN_LOWEST)
+		// The bottom of the lowest model, not its origin: each model's origin
+		// sits its ground offset above where it touches the ground.
+		for(int i = 0; i < numInsts; i++){
+			float bottom = insts[i]->m_translation.z - GetPlacementBaseOffset(insts[i]->m_objectId);
+			centroid.z = i == 0 ? bottom : min(centroid.z, bottom);
+		}
 
 	// Build local index map for LOD references within the prefab
 	// insts[i] -> local index i, so we can resolve m_lod pointers
@@ -5950,6 +5986,13 @@ ExportPrefab(const char *path)
 
 	fprintf(f, "HAUMEA_PREFAB 3\n");
 	fprintf(f, "game %d\n", (int)params.map);
+	// Before count, where older readers skip what they don't know.
+	if(tags && tags[0]){
+		fputs("tags ", f);
+		for(const char *t = tags; *t; t++)
+			fputc(*t == '\n' || *t == '\r' ? ' ' : *t, f);
+		fputc('\n', f);
+	}
 	fprintf(f, "count %d\n", numInsts);
 
 	for(int i = 0; i < numInsts; i++){
@@ -9745,6 +9788,24 @@ prefabParseColorToken(const char *token, rw::RGBA *out)
 int
 ImportPrefabAt(const char *path, rw::V3d spawnPos)
 {
+	return ImportPrefabAtEx(path, spawnPos, 0.0f, nil);
+}
+
+// A prefab entry turned by heading degrees about Z around the spawn point.
+static void
+prefabEntryPlace(const PrefabEntry *e, const rw::V3d &spawnPos, float heading, rw::V3d *pos, rw::Quat *rot)
+{
+	float r = heading * (float)M_PI / 180.0f, c = cosf(r), s = sinf(r);
+	pos->x = spawnPos.x + e->relX * c - e->relY * s;
+	pos->y = spawnPos.y + e->relX * s + e->relY * c;
+	pos->z = spawnPos.z + e->relZ;
+	rw::Quat own = { e->rotX, e->rotY, e->rotZ, e->rotW };
+	*rot = heading == 0.0f ? own : ApplyObjectRotationDelta(own, { 0.0f, 0.0f, heading }, true);
+}
+
+int
+ImportPrefabAtEx(const char *path, rw::V3d spawnPos, float heading, const char *group)
+{
 	PrefabEntry entries[256];
 	int numEntries = 0;
 	if(!ReadPrefabEntries(path, entries, 256, &numEntries, true))
@@ -9800,13 +9861,7 @@ ImportPrefabAt(const char *path, rw::V3d spawnPos)
 			if(e->area & 0x800) inst->m_isTunnel = true;
 			if(e->area & 0x1000) inst->m_isTunnelTransition = true;
 		}
-		inst->m_rotation.x = e->rotX;
-		inst->m_rotation.y = e->rotY;
-		inst->m_rotation.z = e->rotZ;
-		inst->m_rotation.w = e->rotW;
-		inst->m_translation.x = spawnPos.x + e->relX;
-		inst->m_translation.y = spawnPos.y + e->relY;
-		inst->m_translation.z = spawnPos.z + e->relZ;
+		prefabEntryPlace(e, spawnPos, heading, &inst->m_translation, &inst->m_rotation);
 		inst->m_lodId = -1;
 		inst->m_lod = nil;
 		inst->m_numChildren = 0;
@@ -9882,8 +9937,17 @@ ImportPrefabAt(const char *path, rw::V3d spawnPos)
 			properties.npcVehicle = created[vehicleIndex]->m_id;
 		else
 			properties.npcVehicle = -1;
+		if(group)
+			snprintf(properties.group, sizeof(properties.group), "%s", group);
 		SetObjectPawnProperties(created[i], properties, false);
 	}
+	// Vehicles keep their own settings; only the group is shared.
+	for(int i = 0; group && i < numEntries; i++)
+		if(created[i] && created[i]->m_isVehicle){
+			ObjectPawnProperties properties = *GetObjectPawnProperties(created[i]);
+			snprintf(properties.group, sizeof(properties.group), "%s", group);
+			SetObjectPawnProperties(created[i], properties, false);
+		}
 	UpdateObjectAttachments();
 
 	// Pass 2: link LODs
@@ -9919,26 +9983,80 @@ ImportPrefab(const char *path)
 	return ImportPrefabAt(path, spawnPos);
 }
 
-void
-RenderPrefabPlacementGhost(const char *path, rw::V3d spawnPos)
+// The entries of the prefab being placed, read once per file version.
+static bool
+cachedPrefabEntries(const char *path, PrefabEntry **entries, int *numEntries)
 {
-	PrefabEntry entries[256];
-	int numEntries = 0;
-	if(path == nil || path[0] == '\0')
-		return;
-	if(!ReadPrefabEntries(path, entries, 256, &numEntries, false))
-		return;
+	static std::string cachedPath;
+	static time_t cachedTime;
+	static std::vector<PrefabEntry> cached;
+	static int checkedFrame;
+	int frame = ImGui::GetFrameCount();
+	if(cachedPath != path || frame - checkedFrame > 30){
+		checkedFrame = frame;
+		struct stat st;
+		time_t mtime = stat(path, &st) == 0 ? st.st_mtime : 0;
+		if(cachedPath != path || mtime != cachedTime){
+			cachedPath = path;
+			cachedTime = mtime;
+			cached.assign(256, PrefabEntry());
+			int n = 0;
+			if(!ReadPrefabEntries(path, cached.data(), 256, &n, false))
+				n = 0;
+			cached.resize(n);
+		}
+	}
+	*entries = cached.data();
+	*numEntries = (int)cached.size();
+	return *numEntries > 0;
+}
 
+void
+RenderPrefabPlacementGhost(const char *path, rw::V3d spawnPos, float heading)
+{
+	PrefabEntry *entries;
+	int numEntries = 0;
+	if(path == nil || path[0] == '\0' || !cachedPrefabEntries(path, &entries, &numEntries))
+		return;
 	rw::RGBA col = { 80, 180, 255, 95 };
 	for(int i = 0; i < numEntries; i++){
-		PrefabEntry *e = &entries[i];
 		rw::V3d pos;
-		pos.x = spawnPos.x + e->relX;
-		pos.y = spawnPos.y + e->relY;
-		pos.z = spawnPos.z + e->relZ;
-		rw::Quat rot = { e->rotX, e->rotY, e->rotZ, e->rotW };
-		RenderPlacementGhost(e->objectId, pos, rot, col);
+		rw::Quat rot;
+		prefabEntryPlace(&entries[i], spawnPos, heading, &pos, &rot);
+		RenderPlacementGhost(entries[i].objectId, pos, rot, col);
 	}
+}
+
+// What the library shows about a prefab file: its tags and how many
+// instances and SA-MP elements it holds, from the header and element lines.
+bool
+ReadPrefabInfo(const char *path, PrefabInfo *info)
+{
+	*info = PrefabInfo();
+	FILE *f = fopen(path, "r");
+	if(f == nil)
+		return false;
+	char line[4096];
+	bool header = false;
+	while(fgets(line, sizeof(line), f)){
+		if(strncmp(line, "HAUMEA_PREFAB", 13) == 0)
+			header = true;
+		else if(strncmp(line, "tags ", 5) == 0){
+			std::string tags = line + 5;
+			while(!tags.empty() && (tags.back() == '\n' || tags.back() == '\r'))
+				tags.pop_back();
+			info->tags = tags;
+		}else if(strncmp(line, "count ", 6) == 0)
+			sscanf(line, "count %d", &info->instances);
+		else if(strncmp(line, "element ", 8) == 0)
+			info->elements++;
+		else if(strncmp(line, "vehicle ", 8) == 0)
+			info->vehicles++;
+	}
+	fclose(f);
+	struct stat st;
+	info->mtime = stat(path, &st) == 0 ? st.st_mtime : 0;
+	return header;
 }
 
 int numSectorsX, numSectorsY;

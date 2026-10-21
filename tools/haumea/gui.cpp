@@ -116,11 +116,11 @@ static bool gBrowserThumbnailView = true;
 static float gBrowserTileSize = 6.0f;	// minimum tile width in font heights
 static bool gBrowserTabRestorePending;
 static bool gBrowserPrefabListDirty = true;
-static const int MAX_BROWSER_PREFABS = 128;
-static char gBrowserPrefabFiles[MAX_BROWSER_PREFABS][256];
-static char gBrowserPrefabPaths[MAX_BROWSER_PREFABS][512];
-static int gBrowserNumPrefabs;
-static int gBrowserSelectedPrefab = -1;
+static int gBrowserSelectedPrefab = -1;	// in gBrowserPrefabs
+// The prefab library (see refreshBrowserPrefabList).
+static std::vector<PrefabListing> gBrowserPrefabs;
+static std::string gBrowserPrefabFolder;	// shown folder and its subfolders; "" all
+static void refreshBrowserPrefabList(void);
 static int gDiffFilter;
 static int gRenderMode;
 static char gPawnSavePath[1024];	// the open map; empty while untitled
@@ -2860,10 +2860,16 @@ uiMainmenu(void)
 	uiReloadGamePopup();
 }
 
+// Save selection as prefab: a name, where (Mine or the workspace, and a
+// subfolder), tags, and the point it is held by when placed.
 static void
 uiExportPrefabPopup(void)
 {
 	static char prefabName[128] = "";
+	static char folder[128] = "";
+	static char tags[160] = "";
+	static int origin = PREFAB_ORIGIN_LOWEST;
+	static int where = 0;	// 0 Mine, 1 the workspace
 
 	if(gOpenExportPrefab){
 		gShowExportPrefab = true;
@@ -2871,36 +2877,77 @@ uiExportPrefabPopup(void)
 		prefabName[0] = '\0';
 		ImGui::SetNextWindowFocus();
 	}
-
-	if(BeginEditorDialog("Export Prefab", &gShowExportPrefab)){
-		ImGui::Text("Save selection as prefab");
-		ImGui::InputText("Name", prefabName, sizeof(prefabName));
-
-		bool validName = prefabName[0] != '\0';
-		if(ImGui::Button("Export", ImVec2(120, 0)) && validName){
-			char path[512];
-			char prefabDir[512];
-		if(!GetHaumeaDataPath(prefabDir, sizeof(prefabDir), "prefabs") ||
-			   snprintf(path, sizeof(path), "%s/%s.haumea", prefabDir, prefabName) >= (int)sizeof(path)){
-				Toast(TOAST_SAVE, "Failed to resolve prefab path");
-				gShowExportPrefab = false;
-				EndEditorDialog();
-				return;
-			}
-			int exported = ExportPrefab(path);
-			if(exported > 0){
-				Toast(TOAST_SAVE, "Exported %d instance(s) to %s", exported, path);
-				gBrowserPrefabListDirty = true;
-			}else
-				Toast(TOAST_SAVE, "Failed to export prefab");
-			gShowExportPrefab = false;
-		}
-		ImGui::SameLine();
-		if(ImGui::Button("Cancel", ImVec2(120, 0)))
-			gShowExportPrefab = false;
-
-		EndEditorDialog();
+	if(!BeginEditorDialog("Save Prefab", &gShowExportPrefab))
+		return;
+	int selected = uiSelectionCount();
+	ImGui::Text("Save %d selected as a prefab", selected);
+	if(ImGui::IsWindowAppearing())
+		ImGui::SetKeyboardFocusHere();
+	ImGui::InputTextWithHint("Name", "e.g. bus stop", prefabName, sizeof(prefabName));
+	bool workspace = GetWorkspaceDir()[0] != '\0';
+	if(!workspace)
+		where = 0;
+	ImGui::BeginDisabled(!workspace);
+	ImGui::Combo("Save in", &where, "Mine (Haumea's config folder)\0The workspace's prefabs folder\0");
+	ImGui::EndDisabled();
+	ImGui::SetItemTooltip(workspace ? "The workspace's prefabs are shared with everyone who maps for that server." :
+		"Set a workspace (File > Workspace) to save prefabs with the server.");
+	// The subfolders already there, or a new one.
+	const char *root = where == 1 ? "Workspace" : "Mine";
+	ImGui::InputTextWithHint("##folder", "no folder", folder, sizeof(folder));
+	ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+	if(ImGui::BeginCombo("##folders", "", ImGuiComboFlags_NoPreview)){
+		if(ImGui::Selectable("(no folder)", folder[0] == '\0'))
+			folder[0] = '\0';
+		std::set<std::string> folders;
+		for(const PrefabListing &prefab : gBrowserPrefabs)
+			if(prefab.folder.compare(0, strlen(root) + 1, std::string(root) + "/") == 0)
+				folders.insert(prefab.folder.substr(strlen(root) + 1));
+		for(const std::string &f : folders)
+			if(ImGui::Selectable(f.c_str(), f == folder))
+				snprintf(folder, sizeof(folder), "%s", f.c_str());
+		ImGui::EndCombo();
 	}
+	ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+	ImGui::TextUnformatted("Folder");
+	ImGui::InputTextWithHint("Tags", "e.g. street, LS", tags, sizeof(tags));
+	ImGui::SetItemTooltip("Comma-separated words the prefab search finds it by.");
+	ImGui::TextUnformatted("Held by");
+	ImGui::SameLine();
+	ImGui::RadioButton("Lowest point", &origin, PREFAB_ORIGIN_LOWEST);
+	ImGui::SetItemTooltip("The middle, at the bottom: it stands on the ground where you click.");
+	ImGui::SameLine();
+	ImGui::RadioButton("Centre", &origin, PREFAB_ORIGIN_CENTRE);
+	ImGui::SameLine();
+	ImGui::RadioButton("First object", &origin, PREFAB_ORIGIN_FIRST);
+	ImGui::SetItemTooltip("The first selected object goes where you click.");
+	if(selected > 256)
+		ImGui::TextColored(ImVec4(1.0f, 0.78f, 0.25f, 1.0f), "Only the first 256 are saved.");
+	if(!GetTextDraws().empty()){
+		ImGui::TextDisabled("TextDraws are not saved in prefabs.");
+		ImGui::SetItemTooltip("They are on the screen, not in the world, so a selection can't hold them.");
+	}
+
+	bool validName = prefabName[0] != '\0' && strpbrk(prefabName, "/\\:*?\"<>|") == nil &&
+		strstr(folder, "..") == nil && selected > 0;
+	ImGui::BeginDisabled(!validName);
+	bool save = ImGui::Button("Save", ImVec2(120, 0));
+	ImGui::EndDisabled();
+	if(save){
+		std::string dir = PrefabSaveDir(where == 1, folder);
+		std::string path = dir + "/" + prefabName + ".haumea";
+		int exported = dir.empty() ? 0 : ExportPrefabEx(path.c_str(), origin, tags);
+		if(exported > 0){
+			Toast(TOAST_SAVE, "Saved %d instance(s) as %s", exported, prefabName);
+			refreshBrowserPrefabList();
+		}else
+			Toast(TOAST_SAVE, "Couldn't save the prefab");
+		gShowExportPrefab = false;
+	}
+	ImGui::SameLine();
+	if(ImGui::Button("Cancel", ImVec2(120, 0)))
+		gShowExportPrefab = false;
+	EndEditorDialog();
 }
 
 static void
@@ -9219,20 +9266,6 @@ uiObjectResults(int *filtered, int numFiltered, int selId)
 }
 
 static void
-refreshBrowserPrefabList(void)
-{
-	char prefabDir[512];
-
-	gBrowserNumPrefabs = 0;
-	if(GetHaumeaDataPath(prefabDir, sizeof(prefabDir), "prefabs"))
-		scanPrefabDir(prefabDir, gBrowserPrefabFiles, gBrowserPrefabPaths, &gBrowserNumPrefabs, MAX_BROWSER_PREFABS);
-	scanPrefabDir(GamePath("prefabs").c_str(), gBrowserPrefabFiles, gBrowserPrefabPaths, &gBrowserNumPrefabs, MAX_BROWSER_PREFABS);
-	if(gBrowserSelectedPrefab >= gBrowserNumPrefabs)
-		gBrowserSelectedPrefab = -1;
-	gBrowserPrefabListDirty = false;
-}
-
-static void
 getPrefabDisplayName(const char *file, char *buf, size_t bufSize)
 {
 	snprintf(buf, bufSize, "%s", file ? file : "");
@@ -9242,34 +9275,171 @@ getPrefabDisplayName(const char *file, char *buf, size_t bufSize)
 }
 
 static void
+uiCenteredSquarePreview(rw::Texture *texture, float maxFontHeights)
+{
+	if(texture == nil || texture->raster == nil)
+		return;
+
+	float availableWidth = ImGui::GetContentRegionAvail().x;
+	float previewSize = min(availableWidth, ImGui::GetFontSize() * maxFontHeights);
+	if(previewSize <= 0.0f)
+		return;
+
+	float cursorX = ImGui::GetCursorPosX();
+	if(availableWidth > previewSize)
+		ImGui::SetCursorPosX(cursorX + (availableWidth - previewSize) * 0.5f);
+	ImGui::Image((void*)(intptr_t)texture, ImVec2(previewSize, previewSize),
+		ImVec2(0, 1), ImVec2(1, 0));
+}
+
+// ---- The prefab library ----
+// Prefabs from Haumea's config folder (Mine), the workspace server's
+// prefabs/ (Workspace), the starter set shipped with the editor (Starter) and
+// the old game-folder location, with their subfolders.
+
+
+static bool
+uiIsDirectory(const std::string &path)
+{
+	struct stat st;
+	return stat(path.c_str(), &st) == 0 && (st.st_mode & S_IFMT) == S_IFDIR;
+}
+
+static void
+uiScanPrefabFolder(const std::string &dir, const std::string &folder, int depth)
+{
+	std::vector<std::string> names;
+#ifdef _WIN32
+	WIN32_FIND_DATAA fd;
+	HANDLE h = FindFirstFileA((dir + "\\*").c_str(), &fd);
+	if(h != INVALID_HANDLE_VALUE){
+		do names.push_back(fd.cFileName); while(FindNextFileA(h, &fd));
+		FindClose(h);
+	}
+#else
+	DIR *d = opendir(dir.c_str());
+	if(d){
+		while(struct dirent *e = readdir(d))
+			names.push_back(e->d_name);
+		closedir(d);
+	}
+#endif
+	std::sort(names.begin(), names.end());
+	for(const std::string &name : names){
+		if(name.empty() || name[0] == '.')
+			continue;
+		std::string path = dir + "/" + name;
+		if(uiIsDirectory(path)){
+			if(depth < 4)
+				uiScanPrefabFolder(path, folder + "/" + name, depth + 1);
+		}else if(name.size() > 7 && name.compare(name.size() - 7, 7, ".haumea") == 0){
+			PrefabListing prefab;
+			prefab.path = path;
+			prefab.name = name.substr(0, name.size() - 7);
+			prefab.folder = folder;
+			if(ReadPrefabInfo(path.c_str(), &prefab.info))
+				gBrowserPrefabs.push_back(prefab);
+		}
+	}
+}
+
+// The starter prefabs: next to the editor in a release, in the source tree
+// (tools/haumea/prefabs) when it runs from bin/<platform>/Release.
+static std::string
+uiStarterPrefabDir(void)
+{
+	char root[1024];
+	if(!GetEditorRootDirectory(root, sizeof(root)))
+		return "";
+	std::string bundled = std::string(root) + "/prefabs";
+	if(uiIsDirectory(bundled))
+		return bundled;
+	std::string source = std::string(root) + "/../../../tools/haumea/prefabs";
+	return uiIsDirectory(source) ? source : "";
+}
+
+static void
+refreshBrowserPrefabList(void)
+{
+	std::string selected = gBrowserSelectedPrefab >= 0 && gBrowserSelectedPrefab < (int)gBrowserPrefabs.size() ?
+		gBrowserPrefabs[gBrowserSelectedPrefab].path : "";
+	gBrowserPrefabs.clear();
+	char prefabDir[512];
+	if(GetHaumeaDataPath(prefabDir, sizeof(prefabDir), "prefabs"))
+		uiScanPrefabFolder(prefabDir, "Mine", 0);
+	if(GetWorkspaceDir()[0])
+		uiScanPrefabFolder(WorkspacePath("prefabs"), "Workspace", 0);
+	std::string starter = uiStarterPrefabDir();
+	if(!starter.empty())
+		uiScanPrefabFolder(starter, "Starter", 0);
+	// Where prefabs used to live, before the config folder.
+	if(GetGameDir()[0] && uiIsDirectory(GamePath("prefabs")))
+		uiScanPrefabFolder(GamePath("prefabs"), "Game folder", 0);
+	gBrowserSelectedPrefab = -1;
+	for(size_t i = 0; i < gBrowserPrefabs.size(); i++)
+		if(gBrowserPrefabs[i].path == selected)
+			gBrowserSelectedPrefab = (int)i;
+	gBrowserPrefabListDirty = false;
+}
+
+void
+ListPrefabs(std::vector<PrefabListing> &out)
+{
+	refreshBrowserPrefabList();
+	out = gBrowserPrefabs;
+}
+
+std::string
+PrefabSaveDir(bool workspace, const char *folder)
+{
+	std::string dir;
+	char base[512];
+	if(workspace)
+		dir = GetWorkspaceDir()[0] ? WorkspacePath("prefabs") : "";
+	else if(GetHaumeaDataPath(base, sizeof(base), "prefabs"))
+		dir = base;
+	if(!dir.empty() && folder && folder[0])
+		dir += std::string("/") + folder;
+	return dir;
+}
+
+static void
 importBrowserPrefab(int prefabIndex)
 {
-	if(prefabIndex < 0 || prefabIndex >= gBrowserNumPrefabs)
+	if(prefabIndex < 0 || prefabIndex >= (int)gBrowserPrefabs.size())
 		return;
 	if(gPlaceMode) SpawnExitPlaceMode();
 	if(gBrushMode) ExitBrushMode();
-	EnterPrefabPlaceMode(gBrowserPrefabPaths[prefabIndex]);
-	Toast(TOAST_SPAWN, "Prefab placement mode");
+	EnterPrefabPlaceMode(gBrowserPrefabs[prefabIndex].path.c_str());
+	Toast(TOAST_SPAWN, "Click to place. Q/E or the wheel turn it, Esc stops.");
+}
+
+static void
+uiPrefabTooltip(const PrefabListing &prefab)
+{
+	ImGui::SetItemTooltip("%s\n%d instance(s), %d SA-MP element(s), %d vehicle(s)%s%s\n%s\nDouble-click to place",
+		prefab.name.c_str(), prefab.info.instances, prefab.info.elements, prefab.info.vehicles,
+		prefab.info.tags.empty() ? "" : "\nTags: ", prefab.info.tags.c_str(), prefab.path.c_str());
 }
 
 static void
 uiPrefabList(int *filtered, int numFiltered)
 {
 	ImGui::BeginChild("##PrefabList", ImVec2(0, 0), true);
-
 	ImGuiListClipper clipper;
 	clipper.Begin(numFiltered);
-	char label[256];
 	while(clipper.Step()){
 		for(int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++){
 			int i = filtered[row];
-			getPrefabDisplayName(gBrowserPrefabFiles[i], label, sizeof(label));
+			const PrefabListing &prefab = gBrowserPrefabs[i];
 			ImGui::PushID(i);
+			char label[320];
+			snprintf(label, sizeof(label), "%s  (%d)", prefab.name.c_str(), prefab.info.instances);
 			if(ImGui::Selectable(label, gBrowserSelectedPrefab == i))
 				gBrowserSelectedPrefab = i;
 			if(ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 				importBrowserPrefab(i);
-			ImGui::SetItemTooltip("%s", gBrowserPrefabPaths[i]);
+			uiPrefabTooltip(prefab);
 			ImGui::PopID();
 		}
 	}
@@ -9292,18 +9462,18 @@ uiPrefabGrid(int *filtered, int numFiltered)
 				if(filteredRow >= numFiltered)
 					break;
 				int i = filtered[filteredRow];
+				const PrefabListing &prefab = gBrowserPrefabs[i];
 				if(col > 0)
 					ImGui::SameLine();
 				ImGui::PushID(i);
-				char name[256];
-				getPrefabDisplayName(gBrowserPrefabFiles[i], name, sizeof(name));
-				if(uiAssetTile(layout, GetPrefabThumbnailTexture(gBrowserPrefabPaths[i]), nil, name,
+				char badge[16];
+				snprintf(badge, sizeof(badge), "%d", prefab.info.instances);
+				if(uiAssetTile(layout, GetPrefabThumbnailTexture(prefab.path.c_str()), badge, prefab.name.c_str(),
 					i == gBrowserSelectedPrefab))
 					gBrowserSelectedPrefab = i;
 				if(ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 					importBrowserPrefab(i);
-				if(ImGui::IsItemHovered())
-					ImGui::SetItemTooltip("%s\nDouble-click to place", name);
+				uiPrefabTooltip(prefab);
 				ImGui::PopID();
 			}
 		}
@@ -9320,22 +9490,113 @@ uiPrefabResults(int *filtered, int numFiltered)
 		uiPrefabList(filtered, numFiltered);
 }
 
+// The folders as a small tree, each with how many prefabs it holds.
 static void
-uiCenteredSquarePreview(rw::Texture *texture, float maxFontHeights)
+uiPrefabFolders(void)
 {
-	if(texture == nil || texture->raster == nil)
-		return;
+	std::map<std::string, int> counts;	// a folder counts its subfolders' prefabs too
+	for(const PrefabListing &prefab : gBrowserPrefabs){
+		std::string folder = prefab.folder;
+		while(true){
+			counts[folder]++;
+			size_t slash = folder.rfind('/');
+			if(slash == std::string::npos)
+				break;
+			folder.resize(slash);
+		}
+	}
+	char label[320];
+	snprintf(label, sizeof(label), "All (%d)", (int)gBrowserPrefabs.size());
+	if(ImGui::Selectable(label, gBrowserPrefabFolder.empty()))
+		gBrowserPrefabFolder.clear();
+	for(auto &c : counts){
+		int depth = (int)std::count(c.first.begin(), c.first.end(), '/');
+		size_t slash = c.first.rfind('/');
+		std::string name = slash == std::string::npos ? c.first : c.first.substr(slash + 1);
+		ImGui::Indent(ImGui::GetFontSize() * (depth + 1));
+		snprintf(label, sizeof(label), "%s %s (%d)##%s", ICON_FA_FOLDER_OPEN, name.c_str(), c.second, c.first.c_str());
+		if(ImGui::Selectable(label, gBrowserPrefabFolder == c.first))
+			gBrowserPrefabFolder = c.first;
+		ImGui::Unindent(ImGui::GetFontSize() * (depth + 1));
+	}
+}
 
-	float availableWidth = ImGui::GetContentRegionAvail().x;
-	float previewSize = min(availableWidth, ImGui::GetFontSize() * maxFontHeights);
-	if(previewSize <= 0.0f)
-		return;
+static void
+uiBrowserPrefabsTab(void)
+{
+	if(gBrowserPrefabListDirty)
+		refreshBrowserPrefabList();
 
-	float cursorX = ImGui::GetCursorPosX();
-	if(availableWidth > previewSize)
-		ImGui::SetCursorPosX(cursorX + (availableWidth - previewSize) * 0.5f);
-	ImGui::Image((void*)(intptr_t)texture, ImVec2(previewSize, previewSize),
-		ImVec2(0, 1), ImVec2(1, 0));
+	float refreshWidth = ImGui::CalcTextSize(ICON_FA_ROTATE).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+	ImGui::SetNextItemWidth(-(refreshWidth + ImGui::GetStyle().ItemSpacing.x));
+	if(ImGui::InputTextWithHint("##search_prefabs", ICON_FA_MAGNIFYING_GLASS " Search names, tags and folders",
+	   gBrowserPrefabFilter.InputBuf, IM_ARRAYSIZE(gBrowserPrefabFilter.InputBuf)))
+		gBrowserPrefabFilter.Build();
+	ImGui::SameLine();
+	if(ImGui::Button(ICON_FA_ROTATE "##refresh_prefabs"))
+		refreshBrowserPrefabList();
+	ImGui::SetItemTooltip("Read the prefab folders again.");
+
+	char foldersHeader[160];
+	snprintf(foldersHeader, sizeof(foldersHeader), "Folder: %s###prefabfolders",
+		gBrowserPrefabFolder.empty() ? "all" : gBrowserPrefabFolder.c_str());
+	if(ImGui::CollapsingHeader(foldersHeader))
+		uiPrefabFolders();
+
+	if(gBrowserSelectedPrefab >= 0 && gBrowserSelectedPrefab < (int)gBrowserPrefabs.size()){
+		const PrefabListing &prefab = gBrowserPrefabs[gBrowserSelectedPrefab];
+		// A small picture with the details and buttons beside it.
+		rw::Texture *thumb = GetPrefabThumbnailTexture(prefab.path.c_str());
+		float side = ImGui::GetFontSize() * 6.0f;
+		if(thumb && thumb->raster)
+			ImGui::Image((void*)(intptr_t)thumb, ImVec2(side, side), ImVec2(0, 1), ImVec2(1, 0));
+		else
+			ImGui::Dummy(ImVec2(side, side));
+		ImGui::SameLine();
+		ImGui::BeginGroup();
+		ImGui::TextUnformatted(prefab.name.c_str());
+		ImGui::TextDisabled("%s, %d instance(s)", prefab.folder.c_str(), prefab.info.instances);
+		ImGui::SetItemTooltip("%d SA-MP element(s), %d vehicle(s)\n%s", prefab.info.elements,
+			prefab.info.vehicles, prefab.path.c_str());
+		if(!prefab.info.tags.empty())
+			ImGui::TextDisabled("Tags: %s", prefab.info.tags.c_str());
+		bool placing = gPrefabPlaceMode && prefab.path == GetPrefabPlacePath();
+		if(ImGui::Button(placing ? "Stop placing" : ICON_FA_PLUS " Place")){
+			if(gPrefabPlaceMode)
+				ExitPrefabPlaceMode();
+			if(!placing)
+				importBrowserPrefab(gBrowserSelectedPrefab);
+		}
+		ImGui::SetItemTooltip("Click in the world to place it. Q/E (or , and .) and the wheel turn it, Shift\n"
+			"in smaller steps; Shift+click keeps placing; Esc stops.");
+		ImGui::SameLine();
+		ImGui::TextDisabled("%.0f\xC2\xB0", fmodf(fmodf(gPrefabPlaceHeading, 360.0f) + 360.0f, 360.0f));
+		ImGui::SetItemTooltip("The heading it is placed at.");
+		ImGui::Checkbox("Keep placing", &gPrefabPlaceRepeat);
+		ImGui::SetItemTooltip("Stay in placement after each click, as Shift+click does.");
+		ImGui::SameLine();
+		ImGui::Checkbox("As a group", &gPrefabPlaceAsGroup);
+		ImGui::SetItemTooltip("Put what is placed in a group named after the prefab.");
+		ImGui::EndGroup();
+		ImGui::Separator();
+	}
+
+	std::vector<int> filtered;
+	for(int i = 0; i < (int)gBrowserPrefabs.size(); i++){
+		const PrefabListing &prefab = gBrowserPrefabs[i];
+		if(!gBrowserPrefabFolder.empty() && prefab.folder != gBrowserPrefabFolder &&
+		   prefab.folder.compare(0, gBrowserPrefabFolder.size() + 1, gBrowserPrefabFolder + "/") != 0)
+			continue;
+		if(!gBrowserPrefabFilter.PassFilter(prefab.name.c_str()) && !gBrowserPrefabFilter.PassFilter(prefab.info.tags.c_str()) &&
+		   !gBrowserPrefabFilter.PassFilter(prefab.folder.c_str()))
+			continue;
+		filtered.push_back(i);
+	}
+	ImGui::TextDisabled("%d prefab%s", (int)filtered.size(), filtered.size() == 1 ? "" : "s");
+	if(gBrowserPrefabs.empty())
+		ImGui::TextDisabled("No prefabs yet: select objects and use File > Export > Selection as Prefab.");
+	else if(!filtered.empty())
+		uiPrefabResults(filtered.data(), (int)filtered.size());
 }
 
 static void
@@ -9773,51 +10034,7 @@ uiBrowserWindow(void)
 		   restoreTab == BROWSER_TAB_PREFABS ?
 		   ImGuiTabItemFlags_SetSelected : 0)){
 			gBrowserActiveTab = BROWSER_TAB_PREFABS;
-			if(gBrowserPrefabListDirty)
-				refreshBrowserPrefabList();
-
-			float refreshWidth = ImGui::CalcTextSize(ICON_FA_ROTATE).x + ImGui::GetStyle().FramePadding.x * 2.0f;
-			ImGui::SetNextItemWidth(-(refreshWidth + ImGui::GetStyle().ItemSpacing.x));
-			if(ImGui::InputTextWithHint("##search_prefabs", ICON_FA_MAGNIFYING_GLASS " Search prefabs",
-			   gBrowserPrefabFilter.InputBuf, IM_ARRAYSIZE(gBrowserPrefabFilter.InputBuf)))
-				gBrowserPrefabFilter.Build();
-			ImGui::SameLine();
-			if(ImGui::Button(ICON_FA_ROTATE "##refresh_prefabs")){
-				gBrowserPrefabListDirty = true;
-				refreshBrowserPrefabList();
-			}
-
-			if(gBrowserSelectedPrefab >= 0 && gBrowserSelectedPrefab < gBrowserNumPrefabs){
-				rw::Texture *thumb = GetPrefabThumbnailTexture(gBrowserPrefabPaths[gBrowserSelectedPrefab]);
-				uiCenteredSquarePreview(thumb, 12.0f);
-				char name[256];
-				getPrefabDisplayName(gBrowserPrefabFiles[gBrowserSelectedPrefab], name, sizeof(name));
-				ImGui::Text("%s", name);
-				ImGui::SameLine();
-				if(ImGui::Button(gPrefabPlaceMode ? "Exit Placement" : "Place Selected")){
-					if(gPrefabPlaceMode)
-						ExitPrefabPlaceMode();
-					else
-						importBrowserPrefab(gBrowserSelectedPrefab);
-				}
-				ImGui::Separator();
-			}
-
-			numFiltered = 0;
-			for(int i = 0; i < gBrowserNumPrefabs; i++){
-				char name[256];
-				getPrefabDisplayName(gBrowserPrefabFiles[i], name, sizeof(name));
-				if(!gBrowserPrefabFilter.PassFilter(name) &&
-				   !gBrowserPrefabFilter.PassFilter(gBrowserPrefabFiles[i]))
-					continue;
-				filtered[numFiltered++] = i;
-			}
-			ImGui::TextDisabled("%d prefabs", numFiltered);
-			if(gBrowserNumPrefabs == 0)
-				ImGui::TextDisabled("No .haumea files found in the config folder's prefabs/");
-			else
-				uiPrefabResults(filtered, numFiltered);
-
+			uiBrowserPrefabsTab();
 			ImGui::EndTabItem();
 		}
 
@@ -11486,6 +11703,8 @@ uiRunShortcut(int action)
 		gGizmoMode = GIZMO_TRANSLATE;
 		break;
 	case SC_GIZMO_ROTATE:
+		if(gPrefabPlaceMode)
+			break;	// Q/E turn the prefab being placed instead
 		gGizmoEnabled = true;
 		gGizmoMode = GIZMO_ROTATE;
 		break;

@@ -758,13 +758,38 @@ void StepUiScale(float steps);
 
 // Prefabs
 int ExportPrefab(const char *path);
+// Where a saved prefab is held when placed.
+enum { PREFAB_ORIGIN_CENTRE, PREFAB_ORIGIN_FIRST, PREFAB_ORIGIN_LOWEST };
+int ExportPrefabEx(const char *path, int origin, const char *tags);	// tags: comma-separated, or nil
 int ImportPrefab(const char *path);
 int ImportPrefabAt(const char *path, rw::V3d spawnPos);
+// Turned heading degrees about Z; group (or nil) is set on everything placed.
+int ImportPrefabAtEx(const char *path, rw::V3d spawnPos, float heading, const char *group);
+struct PrefabInfo
+{
+	std::string tags;
+	int instances = 0, elements = 0, vehicles = 0;
+	long long mtime = 0;
+};
+bool ReadPrefabInfo(const char *path, PrefabInfo *info);
+// The prefab library: Mine (the config folder), Workspace, Starter (shipped
+// with the editor) and the old game-folder location, with subfolders.
+struct PrefabListing
+{
+	std::string path, name;
+	std::string folder;	// "Mine", "Mine/Roads", "Starter", ...
+	PrefabInfo info;
+};
+void ListPrefabs(std::vector<PrefabListing> &out);
+// Where Save Prefab writes: Mine or the workspace's prefabs/, plus a subfolder.
+std::string PrefabSaveDir(bool workspace, const char *folder);
+extern float gPrefabPlaceHeading;	// degrees, turned with Q/E or the wheel while placing
+extern bool gPrefabPlaceRepeat, gPrefabPlaceAsGroup;
 extern bool gPrefabPlaceMode;
 void EnterPrefabPlaceMode(const char *path);
 void ExitPrefabPlaceMode(void);
 const char *GetPrefabPlacePath(void);
-void RenderPrefabPlacementGhost(const char *path, rw::V3d spawnPos);
+void RenderPrefabPlacementGhost(const char *path, rw::V3d spawnPos, float heading);
 int ExportSelectedDffs(const char *dir, int *numFailed);
 int ExportSelectedTxds(const char *dir, int *numFailed);
 

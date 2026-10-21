@@ -93,20 +93,16 @@ After pulling a commit that changes `build/haumea.make`'s defines, delete
 `build/obj/*/Release/haumea/imgui*.o` before building: make doesn't rebuild
 on flag changes.
 
-## Last local matrix (2026-10-21, 1.41.0, main f07bff3)
+## Last local matrix (2026-10-21, 1.41.0 on main after a373b43)
 
 | Check | Result |
 |---|---|
 | `run_all.sh` with the real game | green: 26 unit tests (1 skipped), round trips, Pawn compile, server check |
 | `run_all.sh --fixture` (as CI) | green: 26 unit tests (3 skipped), round trips, Pawn compile, server check incl. showcase |
 | UI scripts (in the unit tests) | green in both modes |
-| `windows_check.py` (gl3 and d3d9, Wine 11.20, xvfb) | green: 7/7 maps identical to Linux for each (hv_text included), captures real |
-| ASan build: `--pawn-roundtrip` on all 7 test maps | no reports; hv_text's Windows-1252 text unchanged |
+| `windows_check.py` (gl3 and d3d9, Wine 11.20, xvfb) | green: 6/6 maps identical to Linux for each, captures real |
+| ASan build: `--pawn-roundtrip` on all 6 test maps | no reports |
 | ASan build: `--undo-selftest` on every_element.pwn | 30/30, no reports |
 
-The two `run_all.sh` rows were run on the commits just before the squash
-into f07bff3 (the same tree apart from the text-encoding change and four
-small edits); the Windows and ASan rows ran on f07bff3 itself, and the unit
-tests passed there too (27, 3 skipped). One failure on the way,
-`test_outliner` in `--fixture` mode (models missing from the synthetic
-game), was fixed by its owner before these runs.
+One failure on the way, `test_outliner` in `--fixture` mode (models missing
+from the synthetic game), was fixed by its owner in a373b43 before this run.

@@ -1,0 +1,54 @@
+# The prefab library: the starter set in the Prefabs tab, search by tag, place
+# one turned and as a group, then save the selection as a new prefab.
+open "$UI_FIXTURES/ui_map.pwn"
+wait 5
+assert objects == 4
+shortcut window_browser
+wait 5
+assert window "Object Browser"
+click_item 'Object Browser' 'Prefabs'
+wait 5
+click_item 'Object Browser' 'List'
+wait 3
+assert item 'Object Browser' 'Bus stop  (3)'
+
+# Search finds a prefab by its tags too
+click_item 'Object Browser' '##search_prefabs'
+type "lamp"
+wait 5
+assert item 'Object Browser' 'Street lights  (3)'
+assert no_item 'Object Browser' 'Bus stop  (3)'
+key Ctrl+A
+key Backspace
+wait 5
+
+# Place the bus stop, turned, as a group named after it
+click_item 'Object Browser' 'Bus stop  (3)'
+wait 3
+click_item 'Object Browser' 'As a group'
+scroll_until 'Object Browser' 'Place'
+click_item 'Object Browser' 'Place'
+wait 3
+move 50% 55%
+key E
+key E
+wait 3
+click 50% 55%
+wait 10
+assert objects == 7
+assert selected == 3
+assert pawn_contains '@group("Bus stop")'
+assert pawn_contains "bustopm"
+
+# Save the selection as a prefab of its own
+click_item '*' 'File'
+wait 3
+hover_item '*' 'Export'
+wait 3
+click_item '*' 'Selection as Prefab...'
+wait 5
+type "my stop"
+click_item '*' 'Save'
+wait 10
+assert toast_contains "Saved 3 instance(s) as my stop"
+assert item 'Object Browser' 'my stop  (3)'
