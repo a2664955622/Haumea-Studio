@@ -16,7 +16,7 @@ import sys
 
 # The helper sits next to the tests: found as a script and with python -m unittest.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from haumea_test_env import editor_env, run_editor  # noqa: E402
+from haumea_test_env import editor_env, game_slot, is_real_game, run_editor  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[3]
 FIXTURE = Path(__file__).resolve().parent / 'fixtures' / 'pawn_roundtrip.pwn'
@@ -47,6 +47,55 @@ class PawnRoundtripTests(unittest.TestCase):
         self.assertIn('RemoveBuildingForPlayer(playerid, 4206, 1479.554688, -1639.609375, 13.648438, 0.25);', out)
         self.assertNotIn('RemoveBuildingForPlayer(playerid, 3563,', out)
         self.assertNotIn('RemoveBuildingForPlayer(playerid, 3555,', out)
+
+    @unittest.skipUnless(is_real_game(GAME_DIR), 'needs the real game (the skatepark in lae_stream0.ipl)')
+    def test_area_removals_clear_the_skatepark(self):
+        # A beta tester's map: two model -1 spheres over the Glen Park skatepark
+        # must remove its ground 5390 (and that one's LOD 5575) and the ramp 5415.
+        # Removed buildings drop out of the agent's zone listing.
+        import shutil
+        import signal
+        import time
+        sys.path.insert(0, str(ROOT / 'tools' / 'agent'))
+        from haumea_ipc import HaumeaClient
+        skatepark = {5390, 5575, 5415}
+        tmp = Path(tempfile.mkdtemp(prefix='hsk-', dir='/tmp'))	# short: AF_UNIX paths
+        self.addCleanup(shutil.rmtree, tmp, True)
+        (tmp / 'skatepark.pwn').write_text(
+            'public OnPlayerConnect(playerid)\n{\n'
+            '\tRemoveBuildingForPlayer(playerid, -1, 1952.531, -1394.023, 13.789, 26.292);\n'
+            '\tRemoveBuildingForPlayer(playerid, -1, 1916.328, -1385.699, 16.973, 15.558);\n'
+            '\treturn 1;\n}\n')
+        socket_path = tmp / 'a.sock'
+        with game_slot(GAME_DIR), open(tmp / 'out.txt', 'w') as log:
+            editor = subprocess.Popen([BINARY, '--game', GAME_DIR, '--agent-socket', str(socket_path)],
+                                      cwd=tmp, env=editor_env(str(tmp)), stdout=log, stderr=subprocess.STDOUT,
+                                      start_new_session=True)
+            try:
+                client = HaumeaClient(str(socket_path))
+                end = time.time() + 300
+                while time.time() < end and editor.poll() is None:
+                    try:
+                        if client.command('ping').get('result') == 'pong':
+                            break
+                    except Exception:
+                        time.sleep(1)
+                else:
+                    self.fail('the editor did not answer: ' + (tmp / 'out.txt').read_text()[-2000:])
+
+                def models():
+                    found, offset = set(), 0
+                    while offset is not None:
+                        page = client.command('inspect_zone_page', 1935, -1390, 45, offset, 256)
+                        found |= {item['model_id'] for item in page['items']}
+                        offset = page['page']['next_offset']
+                    return found
+                self.assertLessEqual(skatepark, models(), 'the skatepark is not where the test expects it')
+                client.command('map_open', str(tmp / 'skatepark.pwn'), 'discard')
+                self.assertFalse(skatepark & models(), 'still there: %s' % sorted(skatepark & models()))
+            finally:
+                os.killpg(editor.pid, signal.SIGKILL)
+                editor.wait()
 
     def test_open_save_is_faithful_and_stable(self):
         with tempfile.TemporaryDirectory() as tmp:

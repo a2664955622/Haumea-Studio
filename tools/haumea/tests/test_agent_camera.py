@@ -27,7 +27,8 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ROOT / 'tools' / 'agent'))
-from haumea_test_env import editor_env  # noqa: E402
+import contextlib  # noqa: E402
+from haumea_test_env import editor_env, game_slot  # noqa: E402
 
 BINARY = os.environ.get('HAUMEA_BINARY') or next(iter(sorted(
     glob.glob(str(ROOT / 'bin' / '*' / 'Release' / 'haumea')))), None)
@@ -70,10 +71,15 @@ class AgentCameraTests(unittest.TestCase):
         shutil.copy(HERE / 'ui' / 'fixtures' / 'ui_map.pwn', self.tmp / 'map.pwn')
         env['CAMERA_MAP'] = str(self.tmp / 'map.pwn')
         self.log = open(self.tmp / 'out.txt', 'w')
+        # On the real game, one of the machine-wide real-game slots for as long as it runs.
+        slot = contextlib.ExitStack()
+        slot.enter_context(game_slot(game))
+        self.addCleanup(slot.close)	# after tearDown, also when setUp fails
         self.editor = subprocess.Popen(
             [XVFB, '-a', '-s', '-screen 0 1600x1000x24', BINARY, '--game', game,
              '--agent-socket', str(self.socket), '--ui-script', str(script)],
             cwd=self.tmp, env=env, stdout=self.log, stderr=subprocess.STDOUT, start_new_session=True)
+        self.addCleanup(self.stop)	# before the slot is let go, also when setUp fails
         from service import HaumeaService
         self.service = HaumeaService(self.socket, self.tmp / 'assets.sqlite3',
                                      discovery_dir=self.tmp / 'discoveries', state_dir=self.tmp / 'state')
@@ -91,7 +97,7 @@ class AgentCameraTests(unittest.TestCase):
             self.fail('the editor did not answer on ' + str(self.socket))
         self.assertIsNone(self.editor.poll(), self.output())
 
-    def tearDown(self):
+    def stop(self):
         self.trigger.write_text('quit')
         try:
             os.killpg(self.editor.pid, signal.SIGKILL)
