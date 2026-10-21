@@ -1,3 +1,5 @@
+English | [Português (Brasil)](USER_GUIDE.pt-BR.md)
+
 # Haumea Studio user guide
 
 Haumea Studio is the all-in-one editor for open.mp and SA-MP, built on GTA San Andreas.
@@ -14,7 +16,7 @@ and **Help → Keyboard Shortcuts** (`F1`) lists them all.
 
 Haumea needs two folders:
 
-- **Game folder**: your GTA San Andreas install. Haumea only reads it and never writes to it.
+- **Game folder**: your GTA San Andreas install. Haumea reads the game's files and never changes them.
 - **Workspace**: the SA-MP or open.mp server you map for. Haumea takes maps, custom models,
   NPC files and the test server from it.
 
@@ -33,9 +35,15 @@ To install Haumea, see [Install](../README.md#install). Haumea opens on the **st
 The first start asks for the game folder here before anything loads. Type each path or use
 **Browse...** (on Linux that needs `zenity` or `kdialog`). Tick **Open the last workspace
 automatically** to skip the screen; **File → Switch Workspace** shows it again. Both folders can
-also be changed in **File → Workspace** or **Preferences → Workspace**. Haumea keeps its own
-settings, autosaves and prefabs in its config folder (`~/.config/haumea` on Linux,
-`%APPDATA%\Haumea` on Windows).
+also be changed in **File → Workspace** or **Preferences → Workspace**. The window title shows
+the workspace.
+
+Haumea keeps its own settings, autosaves, recent maps, favourites and prefabs in its config
+folder: `~/.config/haumea` on Linux, `%APPDATA%\Haumea` on Windows, `~/Library/Application
+Support/Haumea` on macOS. The first start copies an older install's `<GTA>/haumea_data` there
+and leaves the old folder as it was. A Haumea inside the GTA folder, or started from it, finds
+the game folder without asking. For command-line options, see
+[Building and testing](BUILDING.md#command-line).
 
 ## Moving around
 
@@ -46,7 +54,9 @@ look button can be changed in **Preferences → Camera**.
 ## Placing objects
 
 1. Open the **Object Browser** (`Ctrl+1`) and pick an object. Search by name, ID, a list or
-   a range (`1337, 19000-19100`). SA-MP objects are filed in categories.
+   a range (`1337, 19000-19100`). SA-MP objects are filed in the categories of
+   [Prineside's model list](https://dev.prineside.com/en/gtasa_samp_model_id/), and
+   **Favourites** keeps the ones you use often.
 2. Click **Place**, then click in the world. `Esc` stops placing.
 3. Click an object to select it. Drag the gizmo to move it (`W`) or rotate it (`E`), or type
    exact values in **Object Info** (`Ctrl+2`). `G` drops it to the ground, `F` focuses the
@@ -71,7 +81,11 @@ The browser's **SA-MP** tab places everything else a server map needs:
 
 Each row shows how many the map has; click the count to select them all. Elements are saved
 as native or streamer calls (`CreateActor`, `CreateDynamicPickup`, ...) and read back from
-existing scripts.
+existing scripts. Gang zones and native map icons are shown to a player by the map's
+`_ShowForPlayer(playerid)` function.
+
+A **sound place** plays an audio stream (a URL) or a game sound (picked from a list) to players
+who come within its radius.
 
 <img src="images/samp-elements.png" alt="The SA-MP tab" width="360">
 
@@ -98,6 +112,16 @@ Vehicles are in the browser like objects. In Object Info set static (`AddStaticV
 dynamic creation, the respawn delay, the two colours (-1 is random), a number plate, a
 paintjob and tuning parts. Only parts that fit the model are offered, one per slot.
 
+## Materials
+
+Under **Materials** in Object Info, each material slot of an object can get another texture, a
+colour or text. **Browse textures...** shows the textures to choose from, and **Windows →
+Texture Browser** has every texture, Texture Studio's texture list too. The 3D view
+shows them as the SA-MP 0.3.7 client does: text uses the real font files, including
+`{RRGGBB}` colours, and recoloured materials lose their shading as they do in game. Fonts are
+found in the config folder's `fonts`, the Wine prefix's `windows/Fonts` and the system font
+folders.
+
 ## Custom models (SA-MP 0.3.DL and open.mp)
 
 **File → Import → Custom Model** puts a DFF and TXD in the workspace's `models` folder and
@@ -123,6 +147,17 @@ keep them in the map, they show on the canvas but are read-only and are saved ba
 
 ![The TextDraw designer](images/textdraws.png)
 
+## Prefabs
+
+A prefab is a group of objects saved to place again. Select the objects and use **File → Export
+→ Selection as Prefab** (`Ctrl+Shift+E`). Give it a name and tags, and save it to **Mine** (your
+config folder) or to the workspace.
+
+The Object Browser's **Prefabs** tab lists yours, the workspace's and a **Starter** set. Search
+by name or tag, pick one and click **Place**; `Q`, `E` or the mouse wheel turn it before you
+click. **As a group**
+puts its objects in a group named after the prefab.
+
 ## Map tools
 
 **Tools** also has tools for layouts: **Array** (copies in a line or a ring), **Mirror**,
@@ -130,15 +165,24 @@ keep them in the map, they show on the canvas but are read-only and are saved ba
 offsets), and **Along a line** (lay objects along a path you click). Exact moves and turns
 are in Object Info's Delta mode.
 
-**Radar art from objects** (in Tools) draws your objects on the radar as gang zones. It takes
-every object, the selection or one group, rasterises their footprints from above into cells,
-and merges cells of one colour into rectangles, one gang zone each, in the group "radar art".
-Colour them with one colour, by group or from their textures, with an outline and lighter
-higher surfaces. The counter shows how many zones it takes; **Fit to this many zones** picks
-the cell size. **Shown as** decides how they reach players: **global zones** (at most 1024 on
-the server), **per-player zones** (1024 for each player), or **streamed per-player zones**,
-made only around each player as they move (streamer areas), for larger maps. The last two are
-open.mp only. **Apply** makes them in one undo step.
+**Radar art from objects** (in Tools) draws your objects on the radar with gang zones. It uses
+every object, the selection or one group, seen from above, and puts the zones in the group
+"radar art".
+
+- **Colour**: one colour, by group, or from the objects' textures. An outline and lighter high
+  parts are optional.
+- **Detail**: the counter shows how many zones it needs. **Fit to this many zones** sets the
+  detail to match a number you choose.
+- **Shown as**: **global zones** (at most 1024 on the server), **per-player zones** (1024 for
+  each player), or **streamed per-player zones** (made near each player as they move, for big
+  maps). The last two are open.mp only.
+
+**Apply** makes the zones, and one undo removes them all.
+
+## Interiors
+
+**Windows → Interiors** lists GTA's interiors. Click one to go there and show it. Right-click one
+to copy the Pawn code that takes a player there (`SetPlayerInterior` and `SetPlayerPos`).
 
 ## Checking the map
 
@@ -165,10 +209,21 @@ the code style:
 - **Native**: `CreateObject`, `CreateActor`, ... for any server.
 - **Streamer**: `CreateDynamicObject`, ... with the streamer plugin, for big maps.
 
-Moved or deleted GTA buildings become `RemoveBuildingForPlayer` calls. The first lines of the
-saved file say which functions to call from your gamemode. **File → Open** reads `.pwn` maps
-and Texture Studio `.db` maps; **File → Import → Merge Pawn File** also takes MTA:SA `.map` and
-IPL files.
+A map that uses the streamer stays in streamer code when you open and save it. Moved or deleted
+GTA buildings become `RemoveBuildingForPlayer` calls. The first lines of the saved file say which
+functions to call from your gamemode. The code compiles without warnings with both the open.mp
+and the SA-MP 0.3.7 includes.
+
+- **Open**: **File → Open Map** (`Ctrl+O`, or drop a `.pwn` on the window) reads `.pwn` maps and
+  Texture Studio `.db` maps (from `scriptfiles/tstudio/SavedMaps`). Saving a Texture Studio map
+  writes a new `.pwn` and never changes the `.db`.
+- **Merge**: **File → Import → Merge Pawn File** adds another `.pwn`, `.db`, MTA:SA `.map` or IPL
+  map to yours.
+- **Groups and notes** are saved after each object as `// model @group("...") @note("...")`.
+  Keep these comments when you edit the file by hand.
+- **Autosave**: while a map has unsaved changes, Haumea saves copies in its config folder.
+  **File → Recover Autosave** opens them.
+- **Live Pawn Code** (in Windows) shows the code as you edit.
 
 ## Namaka (AI assistant)
 
@@ -201,3 +256,8 @@ delete the old folder. More in [the setup guide](../tools/release/AGENT_README.m
 
 **Help → Keyboard Shortcuts** (`F1`) lists every command with its key, and
 **Preferences → Shortcuts** rebinds them.
+
+## Panels
+
+Panels dock around the 3D view. You can also float them, and they snap to the screen edges and
+to each other. **Windows → Reset Panel Layout** puts them back.
