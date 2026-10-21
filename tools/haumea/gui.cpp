@@ -4759,7 +4759,6 @@ struct TransformPanelState
 {
 	ObjectInst *leader;
 	bool relative;
-	bool applyToSelection = true;
 	bool invalidWarningShown;
 	int editKind;
 	float position[3];
@@ -4854,7 +4853,7 @@ beginTransformPanelEdit(ObjectInst *inst, int editKind)
 	if(gTransformPanel.editKind != TRANSFORM_PANEL_NONE)
 		finishTransformPanelEdit();
 	bool capped = false;
-	if(!CaptureObjectTransformTargets(inst, gTransformPanel.applyToSelection,
+	if(!CaptureObjectTransformTargets(inst, gBatchEditSelection,
 	   gTransformPanel.transforms, &capped))
 		return false;
 	if(capped)
@@ -5005,10 +5004,6 @@ uiTransformPanel(ObjectInst *inst)
 	}else if(gTransformPanel.editKind == TRANSFORM_PANEL_NONE)
 		refreshTransformPanel(inst);
 
-	int selectedCount = 0;
-	for(CPtrNode *p = selection.first; p; p = p->next)
-		if(!((ObjectInst*)p->item)->m_isDeleted)
-			selectedCount++;
 	bool absolute = !gTransformPanel.relative;
 	if(rotationMode == UI_ROTATION_FULL){
 		if(ImGui::RadioButton("Absolute", absolute)){
@@ -5025,12 +5020,6 @@ uiTransformPanel(ObjectInst *inst)
 		ImGui::SetItemTooltip("Delta values are offsets from the current transform and reset to zero after each edit.");
 	}
 
-	if(selectedCount > 1){
-		if(rotationMode == UI_ROTATION_FULL)
-			ImGui::SameLine();
-		ImGui::Checkbox("Apply to selection", &gTransformPanel.applyToSelection);
-		ImGui::SetItemTooltip("Move and rotate the whole selection while preserving its layout. The first selected object is the pivot.");
-	}
 
 	bool positionDeactivated = false;
 	bool positionCopyClicked = false;
@@ -8756,8 +8745,10 @@ uiBatchEditHeader(ObjectInst *inst)
 		if(uiSameElementKind(inst, selected[i]))
 			same++;
 	ImGui::Checkbox("Edit all selected", &gBatchEditSelection);
-	ImGui::SetItemTooltip("A field you change here is set on every selected instance that has it.\n"
-		"Other fields keep their own values. %s undoes the whole change.", uiKey(SC_UNDO));
+	ImGui::SetItemTooltip("A field you change here is set on every selected instance that has it,\n"
+		"and Position & Rotation move and turn the whole selection, keeping its layout\n"
+		"(the first selected is the pivot). Other fields keep their own values.\n"
+		"%s undoes the whole change.", uiKey(SC_UNDO));
 	ImGui::SameLine();
 	if(gBatchEditSelection)
 		ImGui::TextDisabled("%d selected, %d of this kind", (int)selected.size(), same);
