@@ -1,0 +1,28 @@
+# File > Test in game on a private open.mp server (the Pawn toolchain's, on a
+# free port; nothing announced), then Stop. Doesn't start the game.
+# needs: server
+open "$UI_FIXTURES/ui_map.pwn"
+wait 5
+# Preferences > Test server: the package and the port
+click_item '*' 'Windows'
+wait 3
+click_item '*' 'Preferences...'
+wait 5
+click_item 'Preferences' 'Test server'
+wait 3
+set_item 'Preferences' 'Server package' "$PAWN_TOOLCHAIN/omp/Server"
+close_popup
+set_item 'Preferences' 'Port' "$UI_SERVER_PORT"
+close_popup
+wait 3
+click_item '' 'File'
+wait 3
+click_item '*' 'Test in game'
+wait 10
+assert window "Test server"
+wait_until item 'Test server' 'Reload map'
+wait_until item 'Test server' 'Reload map'
+assert item 'Test server' 'Reload map'
+click_item 'Test server' 'Stop'
+wait 30
+assert item 'Test server' 'Test in game'
