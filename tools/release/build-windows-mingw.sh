@@ -99,7 +99,9 @@ make_sources() {
 	python3 -I -c '
 import re, sys
 s = open(sys.argv[1]).read()
-for src in re.findall(r"^\$\(OBJDIR\)/\S+\.o: (\S+)", s, re.M):
+# Object rules name their C/C++ source; other prerequisites (a generated
+# header) are not sources.
+for src in re.findall(r"^\$\(OBJDIR\)/\S+\.o: (\S+\.(?:c|cc|cpp))$", s, re.M):
     src = src.replace("/opt/librw", sys.argv[2])
     print(src if src.startswith("/") else sys.argv[3] + "/build/" + src)
 ' "$1" "$LIBRW" "$ROOT"
@@ -140,8 +142,9 @@ compile "$OUT/obj/haumea" "$COMMON -I$LIBRW -I$ROOT/src -I$LIBRW/skeleton -I$ROO
 # The manifest (UTF-8 code page) goes in as a resource, as MSVC embeds it
 # itself, and the version info (haumea.rc).
 WINDRES=${WINDRES:-x86_64-w64-mingw32-windres}
-printf '1 24 "%s"\n#include "haumea.rc"\n' "$ROOT/tools/haumea/haumea.exe.manifest" > "$OUT/haumea.rc"
-$WINDRES -I "$ROOT/tools/haumea" "$OUT/haumea.rc" -O coff -o "$OUT/haumea_res.o"
+# (Not named haumea.rc: its #include "haumea.rc" would find itself.)
+printf '1 24 "%s"\n#include "haumea.rc"\n' "$ROOT/tools/haumea/haumea.exe.manifest" > "$OUT/haumea_res.rc"
+$WINDRES -I "$ROOT/tools/haumea" "$OUT/haumea_res.rc" -O coff -o "$OUT/haumea_res.o"
 $CXX -o "$OUT/haumea.exe" "$OUT"/obj/haumea/*.o "$OUT/haumea_res.o" "$OUT/librwgta.a" "$OUT/librw.a" \
 	$GFXLIBS -lwinhttp -lws2_32 -lgdi32 -lcomdlg32 -lshell32 -lole32 -luuid -lpsapi -ldwmapi -lshlwapi \
 	-static -static-libgcc -static-libstdc++ -mwindows
