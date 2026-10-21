@@ -657,10 +657,12 @@ drawTextDraw(ImDrawList *dl, const Canvas &cv, const TextDraw &td)
 		return;
 	}
 	if(td.font == TD_FONT_PREVIEW){
-		// Rendered with its own background, rotation and zoom.
+		// Rendered with its own background, rotation and zoom, then drawn in
+		// TextDrawColor like any textdraw texture (DrawTextDrawRuntimeTexture).
 		rw::Texture *tex = previewTexture(td);
 		if(tex)
-			dl->AddImage((ImTextureID)tex, cv.at(x0, y0), cv.at(x1, y1), ImVec2(0, 1), ImVec2(1, 0));
+			dl->AddImage((ImTextureID)tex, cv.at(x0, y0), cv.at(x1, y1), ImVec2(0, 1), ImVec2(1, 0),
+				rgbaToImU32(td.colour));
 		else
 			dl->AddRectFilled(cv.at(x0, y0), cv.at(x1, y1), rgbaToImU32(td.backgroundColour));
 		return;

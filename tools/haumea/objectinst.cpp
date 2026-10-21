@@ -4516,10 +4516,11 @@ renderObjectToRaster(int objectId, rw::Raster *colorRaster, rw::Raster *depthRas
 
 	cam->frameBuffer = colorRaster;
 	cam->zBuffer = depthRaster;
-	cam->setNearPlane(max(0.05f, dist - radius * 1.5f));
-	cam->setFarPlane(dist + radius * 2.0f + 10.0f);
-	cam->fogPlane = dist + radius * 2.0f;
-	cam->setFOV(55.0f, 1.0f);
+	cam->setNearPlane(0.01f);
+	cam->setFarPlane(300.0f);
+	cam->fogPlane = 300.0f;
+	rw::V2d window = { 0.5f, 0.5f };
+	cam->setViewWindow(&window);
 	camFrame->matrix.pos = eye;
 	camFrame->matrix.lookAt(dir, up);
 	camFrame->updateObjects();
@@ -4533,8 +4534,12 @@ renderObjectToRaster(int objectId, rw::Raster *colorRaster, rw::Raster *depthRas
 	rw::SetRenderState(rw::FOGENABLE, 0);
 	rw::SetRenderState(rw::ZTESTENABLE, 1);
 	rw::SetRenderState(rw::ZWRITEENABLE, 1);
-	pAmbient->setColor(0.7f, 0.7f, 0.7f);
-	pDirect->setColor(0.5f, 0.5f, 0.5f);
+	// One white ambient light, no directional one, and no culling, so the
+	// one-sided faces of wedges and panels show from either side.
+	uint32 oldCull = rw::GetRenderState(rw::CULLMODE);
+	rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
+	pAmbient->setColor(1.0f, 1.0f, 1.0f);
+	pDirect->setColor(0.0f, 0.0f, 0.0f);
 
 	rw::Matrix ident;
 	ident.setIdentity();
@@ -4572,23 +4577,30 @@ RenderModelPreviewToRaster(int objectId, rw::V3d rot, float zoom, int colour1, i
 	if(!obj->IsLoaded() || !CreateObjectPreviewRwObject(objectId, &atm, &clump))
 		return false;
 	paintPreviewVehicle(obj, clump, colour1, colour2);
+	// The client's preview scene (reSA-MP 0.3.7 InitializePreviewSceneResources,
+	// RenderStreamedModelPreviewToTextureSurface, RenderCharacterLikePreview...):
+	// a camera looking along -Y with a 0.5 view window, the model's collision
+	// sphere setting the distance, zoom moving it away, and the rotations
+	// turning the model about its own origin, Z first, then Y, then X.
 	rw::V3d center = { 0.0f, 0.0f, 0.0f };
 	float radius = 1.0f;
-	if(!previewGeometryBounds(atm, clump, &center, &radius) && obj->m_colModel){
+	if(obj->m_colModel){
 		center = obj->m_colModel->boundingSphere.center;
 		radius = obj->m_colModel->boundingSphere.radius;
-	}
-	radius = max(radius, 0.25f);
-
-	// Turn the model about its centre, X then Y then Z.
+	}else
+		previewGeometryBounds(atm, clump, &center, &radius);
+	rw::V3d pos;
+	if(obj->m_isVehicle)
+		pos = { 0.0f, -(1.0f + radius * 2.0f) * zoom, 0.0f };
+	else
+		pos = { -center.x, -(0.1f + radius * 2.25f) * zoom, -center.z };
 	rw::Matrix m;
 	m.setIdentity();
-	rw::V3d offset = scale(center, -1.0f);
-	m.translate(&offset, rw::COMBINEREPLACE);
+	m.translate(&pos, rw::COMBINEREPLACE);
 	rw::V3d xaxis = { 1.0f, 0.0f, 0.0f }, yaxis = { 0.0f, 1.0f, 0.0f }, zaxis = { 0.0f, 0.0f, 1.0f };
-	m.rotate(&xaxis, rot.x, rw::COMBINEPOSTCONCAT);
-	m.rotate(&yaxis, rot.y, rw::COMBINEPOSTCONCAT);
-	m.rotate(&zaxis, rot.z, rw::COMBINEPOSTCONCAT);
+	if(rot.x != 0.0f) m.rotate(&xaxis, rot.x, rw::COMBINEPRECONCAT);
+	if(rot.y != 0.0f) m.rotate(&yaxis, rot.y, rw::COMBINEPRECONCAT);
+	if(rot.z != 0.0f) m.rotate(&zaxis, rot.z, rw::COMBINEPRECONCAT);
 
 	rw::Camera *cam = getPreviewCamera();
 	if(cam == nil){
@@ -4596,18 +4608,17 @@ RenderModelPreviewToRaster(int objectId, rw::V3d rot, float zoom, int colour1, i
 		if(clump) clump->destroy();
 		return false;
 	}
-	// Zoom 1 fills the box, as the client frames it.
-	float dist = radius / 0.4617f * 0.65f / max(zoom, 0.05f);
-	rw::V3d eye = { 0.0f, dist, 0.0f };	// in front: models face +Y
+	rw::V3d eye = { 0.0f, 0.0f, 0.0f };
 	rw::V3d dir = { 0.0f, -1.0f, 0.0f };
 	rw::V3d up = { 0.0f, 0.0f, -1.0f };	// UI textures are drawn flipped
 	rw::Raster *oldColor = cam->frameBuffer, *oldDepth = cam->zBuffer;
 	cam->frameBuffer = colorRaster;
 	cam->zBuffer = depthRaster;
-	cam->setNearPlane(max(0.05f, dist - radius * 1.5f));
-	cam->setFarPlane(dist + radius * 2.0f + 10.0f);
-	cam->fogPlane = dist + radius * 2.0f;
-	cam->setFOV(55.0f, 1.0f);
+	cam->setNearPlane(0.01f);
+	cam->setFarPlane(300.0f);
+	cam->fogPlane = 300.0f;
+	rw::V2d window = { 0.5f, 0.5f };
+	cam->setViewWindow(&window);
 	rw::Frame *camFrame = cam->getFrame();
 	camFrame->matrix.pos = eye;
 	camFrame->matrix.lookAt(dir, up);
@@ -4617,8 +4628,12 @@ RenderModelPreviewToRaster(int objectId, rw::V3d rot, float zoom, int colour1, i
 	rw::SetRenderState(rw::FOGENABLE, 0);
 	rw::SetRenderState(rw::ZTESTENABLE, 1);
 	rw::SetRenderState(rw::ZWRITEENABLE, 1);
-	pAmbient->setColor(0.7f, 0.7f, 0.7f);
-	pDirect->setColor(0.5f, 0.5f, 0.5f);
+	// One white ambient light, no directional one, and no culling, so the
+	// one-sided faces of wedges and panels show from either side.
+	uint32 oldCull = rw::GetRenderState(rw::CULLMODE);
+	rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
+	pAmbient->setColor(1.0f, 1.0f, 1.0f);
+	pDirect->setColor(0.0f, 0.0f, 0.0f);
 	if(atm){
 		atm->getFrame()->transform(&m, rw::COMBINEREPLACE);
 		atm->render();
@@ -4626,6 +4641,7 @@ RenderModelPreviewToRaster(int objectId, rw::V3d rot, float zoom, int colour1, i
 		clump->getFrame()->transform(&m, rw::COMBINEREPLACE);
 		clump->render();
 	}
+	rw::SetRenderState(rw::CULLMODE, oldCull);
 	cam->endUpdate();
 	cam->frameBuffer = oldColor;
 	cam->zBuffer = oldDepth;
@@ -5161,8 +5177,12 @@ RenderPreviewObject(int objectId)
 	rw::SetRenderState(rw::FOGENABLE, 0);
 	rw::SetRenderState(rw::ZTESTENABLE, 1);
 	rw::SetRenderState(rw::ZWRITEENABLE, 1);
-	pAmbient->setColor(0.7f, 0.7f, 0.7f);
-	pDirect->setColor(0.5f, 0.5f, 0.5f);
+	// One white ambient light, no directional one, and no culling, so the
+	// one-sided faces of wedges and panels show from either side.
+	uint32 oldCull = rw::GetRenderState(rw::CULLMODE);
+	rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
+	pAmbient->setColor(1.0f, 1.0f, 1.0f);
+	pDirect->setColor(0.0f, 0.0f, 0.0f);
 
 	rw::Matrix ident;
 	ident.setIdentity();
