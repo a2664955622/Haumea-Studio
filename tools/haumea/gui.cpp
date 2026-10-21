@@ -4505,6 +4505,9 @@ uiHelpWindow(void)
 		ImGui::Text("Haumea Studio %s, %s channel", HaumeaVersionDisplay(), channel);
 	else
 		ImGui::Text("Haumea Studio %s", HaumeaVersionDisplay());
+	// A CI artifact (a main push or a pull request), not a release.
+	if(strcmp(HAUMEA_CHANNEL, "dev") == 0 || strcmp(HAUMEA_CHANNEL, "pr") == 0)
+		ImGui::TextDisabled("An unofficial build: it updates to the next official release.");
 	ImGui::TextDisabled("The all-in-one editor for open.mp and SA-MP, by itsneufox.");
 	if(ImGui::SmallButton("Licenses..."))
 		showLicensesWindow = true;

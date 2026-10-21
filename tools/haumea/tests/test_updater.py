@@ -136,7 +136,8 @@ class UpdaterTests(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
-    def run_editor(self, *args, current='1.0.0.10', url=None, skip=None, channel='production', go_back=False):
+    def run_editor(self, *args, current='1.0.0.10', url=None, skip=None, channel='production', go_back=False,
+                   build=None):
         env = editor_env(str(self.tmp))
         env.pop('HAUMEA_NO_UPDATE', None)
         headless(env, str(self.tmp))
@@ -147,6 +148,8 @@ class UpdaterTests(unittest.TestCase):
             env['HAUMEA_UPDATE_SKIP'] = skip
         if go_back:
             env['HAUMEA_UPDATE_GO_BACK'] = '1'
+        if build:
+            env['HAUMEA_UPDATE_BUILD'] = build	# the build's own channel: production, beta, dev, pr
         report = self.tmp / 'report.json'
         report.unlink(missing_ok=True)
         result = subprocess.run([BINARY, *args, str(report)], env=env, capture_output=True, text=True,
@@ -217,6 +220,35 @@ class UpdaterTests(unittest.TestCase):
         report = self.check(current='1.0.0.30')
         self.assertEqual((report['result'], report.get('version')), ('staged', '1.0.0.50'), report)
         self.assertNotIn('go-back', self.staged_release())
+
+    def test_a_dev_build_takes_its_official_build_and_newer_never_older(self):
+        # A CI artifact from main (channel dev) at build 20.
+        self.github.publish([self.github.release('v1.0.0.20-production', NEW)])
+        report = self.check(build='dev', current='1.0.0.20')
+        self.assertEqual((report['result'], report.get('version'), report.get('unofficial')),
+                         ('staged', '1.0.0.20', True), report)
+        self.github.publish([self.github.release('v1.0.0.25-production', NEW),
+                             self.github.release('v1.0.0.20-production', NEW)])
+        shutil.rmtree(self.tmp / 'work')
+        report = self.check(build='dev', current='1.0.0.20')
+        self.assertEqual((report['result'], report.get('version')), ('staged', '1.0.0.25'), report)
+        self.github.publish([self.github.release('v1.0.0.17-production', NEW)])
+        shutil.rmtree(self.tmp / 'work')
+        report = self.check(build='dev', current='1.0.0.20')
+        self.assertEqual(report['result'], 'up_to_date', report)
+        # An official production build isn't offered its own version again.
+        self.github.publish([self.github.release('v1.0.0.20-production', NEW)])
+        report = self.check(build='production', current='1.0.0.20')
+        self.assertEqual(report['result'], 'up_to_date', report)
+
+    def test_a_pr_build_can_switch_to_the_latest_official_release(self):
+        # A pull request's build number can run ahead of main's.
+        self.github.publish([self.github.release('v1.0.0.30-production', NEW)])
+        report = self.check(build='pr', current='1.0.0.50')
+        self.assertEqual(report['result'], 'up_to_date', report)
+        report = self.check(build='pr', current='1.0.0.50', go_back=True)
+        self.assertEqual((report['result'], report.get('version')), ('staged', '1.0.0.30'), report)
+        self.assertIn('go-back', self.staged_release())
 
     def test_bad_checksum_stages_nothing(self):
         self.github.publish([self.github.release('v1.0.0.20-production', NEW, sums='0' * 64 + f'  {BUNDLE}\n')])

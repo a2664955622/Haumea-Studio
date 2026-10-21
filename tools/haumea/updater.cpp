@@ -43,13 +43,14 @@ static bool gUpdateDownloadAuto = false;
 // newest of beta and production). A beta build starts on beta; every other
 // build (production, a local or CI "dev" one) on production.
 static char gUpdateChannel[32];
+static const char *buildChannel(void);
 
 static void
 defaultChannel(void)
 {
 	if(gUpdateChannel[0] == '\0')
 		snprintf(gUpdateChannel, sizeof(gUpdateChannel), "%s",
-			strcmp(HAUMEA_CHANNEL, "beta") == 0 ? "beta" : "production");
+			strcmp(buildChannel(), "beta") == 0 ? "beta" : "production");
 }
 
 static bool
@@ -65,6 +66,23 @@ followedChannels(bool beta)
 	if(beta)
 		return { "beta", "production" };
 	return { "production" };
+}
+
+// This build's own channel: a release's, or "dev" (a main push) / "pr" (a pull
+// request) for CI artifacts. HAUMEA_UPDATE_BUILD stands in for it in tests.
+static const char*
+buildChannel(void)
+{
+	const char *test = getenv("HAUMEA_UPDATE_BUILD");
+	return test && test[0] ? test : HAUMEA_CHANNEL;
+}
+
+// A CI artifact, not a release: it updates to the official releases, the
+// official build of its own commit (the same version) included.
+static bool
+unofficialBuild(void)
+{
+	return strcmp(buildChannel(), "dev") == 0 || strcmp(buildChannel(), "pr") == 0;
 }
 static char gUpdateSkip[32];	// "Skip this version"
 
@@ -350,7 +368,7 @@ checkReleases(const std::string &work, const std::vector<std::string> &channels,
 	if(!UpdateMakeDirs(work) || !httpGetString(releaseListUrl(), work + "/releases.json", &json, error))
 		return UPD_OFFLINE;
 	error->clear();
-	if(UpdatePickRelease(json, channels, current, skip, allowOlder, rel, error))
+	if(UpdatePickRelease(json, channels, current, skip, allowOlder, unofficialBuild(), rel, error))
 		return UPD_AVAILABLE;
 	return error->empty() ? UPD_UP_TO_DATE : UPD_FAILED;
 }
@@ -559,9 +577,10 @@ UpdaterInstallStaged(void)
 	bool goBack = false;
 	std::string version = stagedVersion(staged, &goBack);
 	HaumeaVersion v;
-	// Never older than this one, unless the user asked to go back to Production.
+	// Never older than this one, unless the user asked to go back; the same
+	// version only replaces a CI artifact (its commit's official build).
 	int cmp = ParseHaumeaVersion(version.c_str(), &v) ? CompareHaumeaVersion(v, HaumeaCurrentVersion()) : 0;
-	if(cmp == 0 || (cmp < 0 && !goBack)){
+	if((cmp == 0 && !unofficialBuild() && !goBack) || (cmp < 0 && !goBack)){
 		UpdateRemoveTree(staged);
 		return;
 	}
@@ -636,9 +655,9 @@ checkWorker(void)
 {
 	UpdateRelease rel;
 	std::string error;
-	// Going back takes the newest production release, even an older one.
+	// Going back takes the newest release of what it follows, even an older one.
 	int status = gGoingBack ?
-		checkReleases(updateDir(), followedChannels(false), HaumeaCurrentVersion(), "", true, &rel, &error) :
+		checkReleases(updateDir(), followedChannels(followsBeta()), HaumeaCurrentVersion(), "", true, &rel, &error) :
 		checkReleases(updateDir(), followedChannels(followsBeta()), HaumeaCurrentVersion(), gUpdateSkip, false,
 			&rel, &error);
 	gRelease = rel;
@@ -976,16 +995,25 @@ UpdaterPreferences(void)
 	ImGui::SetItemTooltip("New features before everyone else, and sometimes new bugs.\n"
 		"You get the newest of Beta and Production.");
 	snprintf(gUpdateChannel, sizeof(gUpdateChannel), "%s", beta ? "beta" : "production");
+	// A CI artifact updates to the next official release; a PR build (whose
+	// build number can run ahead of main's) can also switch to the latest one
+	// now, even an older one.
+	bool pr = strcmp(buildChannel(), "pr") == 0;
+	if(unofficialBuild())
+		ImGui::TextWrapped("This is %s, not an official release: it updates to the next official release.",
+			pr ? "a PR build" : "a Dev build");
 	// A beta build back on Production is never downgraded on its own.
-	if(!beta && strcmp(HAUMEA_CHANNEL, "beta") == 0){
+	bool backToProduction = !beta && strcmp(buildChannel(), "beta") == 0;
+	if(backToProduction)
 		ImGui::TextWrapped("You'll move to Production with the next production release newer than %s.",
 			HaumeaFullVersion());
+	if(backToProduction || pr){
 		ImGui::BeginDisabled(gWorking);
-		if(ImGui::Button("Go back to the latest Production now"))
+		if(ImGui::Button(pr ? "Switch to the latest official release" : "Go back to the latest Production now"))
 			startGoBack();
 		ImGui::EndDisabled();
-		ImGui::SetItemTooltip("Downloads the newest Production release, even if it's older than this beta;\n"
-			"it installs the next time Haumea starts. Your maps and settings stay.");
+		ImGui::SetItemTooltip("Downloads the newest %s release, even if it's older than this build;\n"
+			"it installs the next time Haumea starts. Your maps and settings stay.", beta ? "Beta or Production" : "Production");
 	}
 	if(gUpdateSkip[0]){
 		ImGui::TextDisabled("Skipping %s", gUpdateSkip);
@@ -1054,7 +1082,7 @@ UpdaterCommandLine(int argc, char **argv)
 			std::string error;
 			const char *goBackEnv = getenv("HAUMEA_UPDATE_GO_BACK");
 			bool goBack = goBackEnv && strcmp(goBackEnv, "1") == 0;
-			bool beta = !goBack && (channel ? strcmp(channel, "beta") == 0 : strcmp(HAUMEA_CHANNEL, "beta") == 0);
+			bool beta = channel ? strcmp(channel, "beta") == 0 : strcmp(buildChannel(), "beta") == 0;
 			int status = checkReleases(work, followedChannels(beta), current, goBack || !skip ? "" : skip, goBack,
 				&rel, &error);
 			if(status != UPD_AVAILABLE)
@@ -1065,7 +1093,8 @@ UpdaterCommandLine(int argc, char **argv)
 			if(!downloadAndStage(work, rel, goBack, &error, &badChecksum))
 				return writeReport(report, badChecksum ? "bad_checksum" : "error",
 					fields + ", \"error\": " + jsonString(error));
-			return writeReport(report, "staged", fields + ", \"staged\": " + jsonString(work + "/staged"));
+			return writeReport(report, "staged", fields + ", \"staged\": " + jsonString(work + "/staged") +
+				", \"unofficial\": " + (unofficialBuild() ? "true" : "false"));
 		}
 		if(strcmp(argv[i], "--update-install") == 0 && i + 3 < argc){
 			UpdateInstallResult result;
