@@ -2787,6 +2787,10 @@ uiMainmenu(void)
 			if(ImGui::MenuItem("Delete", ShortcutLabel(SC_DELETE), false, hasSelection)) uiRunShortcut(SC_DELETE);
 			ImGui::Separator();
 			if(ImGui::MenuItem("Focus on Selection", ShortcutLabel(SC_FOCUS_SELECTION), false, hasSelection)) uiRunShortcut(SC_FOCUS_SELECTION);
+			if(ImGui::MenuItem("Go to Coordinates...", ShortcutLabel(SC_GO_TO_COORDINATES))) uiRunShortcut(SC_GO_TO_COORDINATES);
+			ImGui::SetItemTooltip("Moves the camera to look at a point: paste x, y, z or a SetPlayerPos line.");
+			if(ImGui::MenuItem("Copy Camera Position", ShortcutLabel(SC_COPY_CAMERA_POSITION))) uiRunShortcut(SC_COPY_CAMERA_POSITION);
+			ImGui::SetItemTooltip("Copies where the camera is as \"x, y, z\", ready for SetPlayerPos.");
 			if(ImGui::MenuItem("Drop to Ground", ShortcutLabel(SC_SNAP_TO_GROUND), false, hasSelection)) uiRunShortcut(SC_SNAP_TO_GROUND);
 			if(ImGui::MenuItem("Drop and Align to Ground", ShortcutLabel(SC_ALIGN_TO_GROUND), false, hasSelection)) uiRunShortcut(SC_ALIGN_TO_GROUND);
 			ImGui::Separator();
@@ -3461,6 +3465,100 @@ continuePendingMapAction(void)
 	char path[1024];
 	strncpy(path, gPendingMapPath, sizeof(path));
 	performMapAction(action, path);
+}
+
+// The point in pasted text: "x, y, z", "x y z", with an angle after it, or a
+// Pawn call such as SetPlayerPos(playerid, x, y, z). In a call, a leading
+// whole number (a model or skin id) is skipped when more numbers follow, as in
+// CreateObject(1634, x, y, z, ...). False without three numbers.
+static bool
+ParseCoordinates(const char *text, rw::V3d *out)
+{
+	bool call = false;
+	if(const char *open = strchr(text, '(')){
+		const char *p = text;
+		while(*p == ' ' || *p == '\t') p++;
+		call = p < open && (isalpha((unsigned char)*p) || *p == '_');
+		if(call)
+			text = open + 1;
+	}
+	float values[16];
+	bool whole[16];
+	int n = 0;
+	for(const char *p = text; *p && n < 16; ){
+		if(call && *p == ')')
+			break;
+		// Skip names, digits and all, such as playerid2.
+		if(isalpha((unsigned char)*p) || *p == '_'){
+			while(isalnum((unsigned char)*p) || *p == '_') p++;
+			continue;
+		}
+		char *end;
+		float v = strtof(p, &end);
+		if(end == p || !(isdigit((unsigned char)*p) || *p == '-' || *p == '+' || *p == '.')){
+			p++;
+			continue;
+		}
+		whole[n] = strcspn(p, ".eE") >= (size_t)(end - p);
+		values[n++] = v;
+		p = end;
+		if(*p == 'f' || *p == 'F') p++;
+	}
+	int first = call && n >= 4 && whole[0] ? 1 : 0;
+	if(n - first < 3)
+		return false;
+	*out = { values[first], values[first + 1], values[first + 2] };
+	return true;
+}
+
+static bool gOpenGoToCoordinates;
+
+static void
+uiCopyCameraPosition(void)
+{
+	char text[96];
+	snprintf(text, sizeof(text), "%.4f, %.4f, %.4f",
+		TheCamera.m_position.x, TheCamera.m_position.y, TheCamera.m_position.z);
+	SetEditorClipboardText(text);
+	Toast(TOAST_COPY_PASTE, "Copied the camera position: %s", text);
+}
+
+// A view change only: nothing goes on the undo stack.
+static void
+uiGoToCoordinatesPopup(void)
+{
+	static char text[512];
+	static bool bad;
+	if(gOpenGoToCoordinates){
+		ImGui::OpenPopup("Go to Coordinates");
+		gOpenGoToCoordinates = false;
+		bad = false;
+	}
+	if(!ImGui::BeginPopupModal("Go to Coordinates", nil, ImGuiWindowFlags_AlwaysAutoResize))
+		return;
+	ImGui::TextUnformatted("Paste a position: x, y, z (an angle after it is fine) or a SetPlayerPos line.");
+	if(ImGui::IsWindowAppearing())
+		ImGui::SetKeyboardFocusHere();
+	ImGui::SetNextItemWidth(420.0f);
+	bool go = ImGui::InputText("##coordinates", text, sizeof(text), ImGuiInputTextFlags_EnterReturnsTrue);
+	if(bad)
+		ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.4f, 1.0f), "That has no x, y and z in it.");
+	ImGui::Spacing();
+	go |= ImGui::Button("Go", ImVec2(110, 0));
+	ImGui::SameLine();
+	if(ImGui::Button("Cancel", ImVec2(110, 0)) || ImGui::IsKeyPressed(ImGuiKey_Escape))
+		ImGui::CloseCurrentPopup();
+	if(go){
+		rw::V3d point;
+		if(ParseCoordinates(text, &point)){
+			TheCamera.setTarget(point);
+			TheCamera.setDistanceFromTarget(25.0f);
+			Toast(TOAST_SELECTION, "Camera at %.2f, %.2f, %.2f", point.x, point.y, point.z);
+			ImGui::CloseCurrentPopup();
+		}else
+			bad = true;
+	}
+	ImGui::EndPopup();
 }
 
 static void
@@ -11929,6 +12027,8 @@ uiRunShortcut(int action)
 		Toast(TOAST_SELECTION, "Object snap mode %s", gObjectSnapMode ? "enabled" : "disabled");
 		break;
 	case SC_FOCUS_SELECTION: FocusSelection(); break;
+	case SC_GO_TO_COORDINATES: gOpenGoToCoordinates = true; break;
+	case SC_COPY_CAMERA_POSITION: uiCopyCameraPosition(); break;
 
 	case SC_OUTLINE_OBJECTS: gOutlineMapObjects = !gOutlineMapObjects; break;
 	case SC_VIEWER_CAMERA: gUseViewerCam = !gUseViewerCam; break;
@@ -12139,6 +12239,7 @@ gui(void)
 		uiDrawNpcPaths();
 	}
 	uiUnsavedMapPopup();
+	uiGoToCoordinatesPopup();
 	DrawStartScreen(true);
 	// TODO: restore when the Destroy Entire Map workflow is finished.
 	UpdaterDrawGui();

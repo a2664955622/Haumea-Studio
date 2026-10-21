@@ -1,0 +1,47 @@
+# Edit > Go to Coordinates (Ctrl+J) takes pasted positions in the usual forms.
+open "$UI_FIXTURES/ui_map.pwn"
+key Ctrl+J
+wait 3
+assert window "Go to Coordinates"
+set_item 'Go to Coordinates' '##coordinates' "1952.53, -1394.02, 13.78"
+wait 3
+assert no_window "Go to Coordinates"
+assert camera_target.x > 1952.52
+assert camera_target.x < 1952.54
+assert camera_target.y > -1394.03
+assert camera_target.y < -1394.01
+assert camera_target.z > 13.77
+assert camera_target.z < 13.79
+# x y z with an angle after it.
+key Ctrl+J
+wait 3
+set_item 'Go to Coordinates' '##coordinates' "1900 -2900 20 90.0"
+wait 3
+assert camera_target.x == 1900
+assert camera_target.y == -2900
+assert camera_target.z == 20
+# A SetPlayerPos line, and a call whose first number is an id.
+key Ctrl+J
+wait 3
+set_item 'Go to Coordinates' '##coordinates' "SetPlayerPos(playerid, 2063.5f, -1731.25, 15.0);"
+wait 3
+assert camera_target.x == 2063.5
+assert camera_target.y == -1731.25
+key Ctrl+J
+wait 3
+set_item 'Go to Coordinates' '##coordinates' "CreateObject(1634, 1910.0, -2910.0, 12.0, 0.0, 0.0, 90.0);"
+wait 3
+assert camera_target.x == 1910
+assert camera_target.z == 12
+# Text with no position keeps the window open and the camera where it was.
+key Ctrl+J
+wait 3
+set_item 'Go to Coordinates' '##coordinates' "nowhere"
+wait 3
+assert window "Go to Coordinates"
+assert camera_target.x == 1910
+key Esc
+wait 3
+assert no_window "Go to Coordinates"
+# The move said where it went.
+assert toast_contains "Camera at"

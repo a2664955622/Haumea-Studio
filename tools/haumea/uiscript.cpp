@@ -634,6 +634,7 @@ windowOpen(const std::string &title)
 // assert window "Title"     / no_window "Title"
 // assert item 'Window' 'Label'   / no_item
 // assert hidden|player_view_hidden|fov|ui_scale|camera_moved <op> N   (camera_moved: metres since mark_camera)
+// assert camera_target.x|y|z <op> N   (the point the camera looks at)
 static bool
 uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 {
@@ -705,7 +706,8 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		return mode == arg(1);
 	}
 	if(what == "hidden" || what == "player_view_hidden" || what == "fov" || what == "ui_scale" ||
-	   what == "camera_moved"){
+	   what == "camera_moved" || what == "camera_target.x" || what == "camera_target.y" ||
+	   what == "camera_target.z"){
 		double v = 0;
 		if(what == "hidden"){
 			v = CountHiddenInstances();
@@ -715,6 +717,9 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 					v++;
 		}else if(what == "fov") v = TheCamera.m_fov;
 		else if(what == "ui_scale") v = GetUiScale();
+		else if(what == "camera_target.x") v = TheCamera.m_target.x;
+		else if(what == "camera_target.y") v = TheCamera.m_target.y;
+		else if(what == "camera_target.z") v = TheCamera.m_target.z;
 		else v = rw::length(rw::sub(TheCamera.m_position, gMarkedCamera));
 		snprintf(buf, sizeof(buf), "%s is %g", what.c_str(), v);
 		why = buf;

@@ -75,6 +75,9 @@ the Haumea map editor; what changed for its users is in
 - **Texture Browser** (Ctrl+T) searches every texture.
 - **Interiors** panel with the game's interiors and their spawn points.
 - Duplicate (Ctrl+D) and focus the camera on the selection (F).
+- **Edit → Go to Coordinates** (Ctrl+J) takes a pasted position (`x, y, z`,
+  `x y z` with an angle after it, or a `SetPlayerPos` line) and points the
+  camera there; **Copy Camera Position** copies it back as `x, y, z`.
 - Every keyboard shortcut can be rebound in **Preferences → Shortcuts**, and
   every mouse-wheel action has keys: Ctrl+= / Ctrl+- / Ctrl+0 for zoom (and
   numpad + / -), Ctrl+Shift+= / - for fly speed, Ctrl+wheel or

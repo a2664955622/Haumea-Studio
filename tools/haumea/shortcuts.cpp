@@ -50,6 +50,8 @@ const ShortcutDef defs[SC_NUM_ACTIONS] = {
 	{ { "align_to_ground", "Transform", "Drop and align to the ground's slope", SHORTCUT_EDITOR, false }, { { ImGuiKey_G, SHIFT } } },
 	{ { "object_snap", "Transform", "Object snap on / off", SHORTCUT_EDITOR, false }, { { ImGuiKey_N, 0 } } },
 	{ { "focus_selection", "Transform", "Focus the camera on the selection", SHORTCUT_EDITOR, false }, { { ImGuiKey_F, 0 } } },
+	{ { "go_to_coordinates", "Transform", "Go to coordinates (pasted x, y, z)", SHORTCUT_EDITOR, false }, { { ImGuiKey_J, CTRL } } },
+	{ { "copy_camera_position", "Transform", "Copy the camera position", SHORTCUT_EDITOR, false }, { } },
 
 	{ { "outline_objects", "View", "Outline every map object", SHORTCUT_EDITOR, false }, { { ImGuiKey_O, 0 } } },
 	{ { "viewer_camera", "View", "Viewer camera (longer draw distance)", SHORTCUT_EDITOR, false }, { { ImGuiKey_C, 0 } } },
