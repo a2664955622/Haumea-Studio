@@ -24,5 +24,8 @@
 #endif
 
 // The channel as people see it, next to the version; production says nothing.
+// CI builds that aren't releases are unofficial: they update to the next
+// official release.
 #define HAUMEA_CHANNEL_DISPLAY (strcmp(HAUMEA_CHANNEL, "production") == 0 ? "" : \
-	strcmp(HAUMEA_CHANNEL, "beta") == 0 ? "Beta" : strcmp(HAUMEA_CHANNEL, "dev") == 0 ? "Dev" : HAUMEA_CHANNEL)
+	strcmp(HAUMEA_CHANNEL, "beta") == 0 ? "Beta" : strcmp(HAUMEA_CHANNEL, "dev") == 0 ? "Dev build" : \
+	strcmp(HAUMEA_CHANNEL, "pr") == 0 ? "PR build" : HAUMEA_CHANNEL)
