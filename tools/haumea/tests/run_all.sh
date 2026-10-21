@@ -107,6 +107,23 @@ if "$HERE/pawn/fetch_toolchain.sh" "$PAWN_TOOLCHAIN"; then
 	export PAWNCC OMP_INCLUDE SAMP037_INCLUDE
 fi
 
+# Namaka's installer tests (test_namaka_install, namaka.uis) need its wheels:
+# fetched once into a cache, like the toolchain, so they don't skip unseen.
+if [ -z "${NAMAKA_WHEELHOUSE:-}" ]; then
+	NAMAKA_WHEELHOUSE=$HERE/.wheelhouse
+	if [ ! -f "$NAMAKA_WHEELHOUSE/.complete" ]; then
+		rm -rf "$NAMAKA_WHEELHOUSE"
+		if sh "$ROOT/tools/release/fetch_wheelhouse.sh" linux "$NAMAKA_WHEELHOUSE" > "$WORK/wheelhouse.log" 2>&1; then
+			touch "$NAMAKA_WHEELHOUSE/.complete"
+		else
+			echo "WARNING: could not fetch Namaka's wheelhouse (needs uv and the network); its tests will skip:"
+			tail -n 3 "$WORK/wheelhouse.log"
+			NAMAKA_WHEELHOUSE=
+		fi
+	fi
+fi
+export NAMAKA_WHEELHOUSE
+
 echo "== unit tests"
 { (cd "$HERE" && python3 -m unittest discover -v -p "test_*.py") 2>&1; echo $? > "$WORK/unit.status"; } |
 	tee "$WORK/unit.log"

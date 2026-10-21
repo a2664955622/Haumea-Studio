@@ -10,7 +10,7 @@
 # pip download evaluates environment markers against the Python running it:
 # from Linux it leaves out pywin32, and from 3.12 it leaves out
 # exceptiongroup, which 3.10 needs. pip then fetches exactly those pins.
-# Needs uv and python3 with pip.
+# Needs uv, and python3 with pip (else uv provides pip).
 set -eu
 
 case "${1:-}" in
@@ -26,6 +26,11 @@ windows)
 esac
 DEST=${2:?usage: $0 linux|windows <dest>}
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
+if python3 -m pip --version > /dev/null 2>&1; then
+	PIP="python3 -m pip"
+else
+	PIP="uv run -q --no-project --with pip python -m pip"
+fi
 mkdir -p "$DEST"
 REQS=$(mktemp)
 
@@ -43,7 +48,7 @@ for minor in 10 11 12 13 14; do
 	target=$DEST
 	[ "$minor" = "$OFFLINE_MINOR" ] || target=$PURE
 	# shellcheck disable=SC2086
-	python3 -m pip download -q --no-deps --only-binary=:all: --dest "$target" \
+	$PIP download -q --no-deps --only-binary=:all: --dest "$target" \
 		--implementation cp --python-version "3.$minor" --abi "cp3$minor" \
 		$PIP_PLATFORMS -r "$REQS"
 done
