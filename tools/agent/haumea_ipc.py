@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import socket
 import struct
+import sys
 import tempfile
 import uuid
 
@@ -19,6 +20,8 @@ PROTOCOL_VERSION = 1
 DEFAULT_ENGINE_SOCKET = Path(os.environ.get(
 	"HAUMEA_ENGINE_SOCKET", str(Path.home() / ".cache" / "haumea-agent.sock")))
 MAX_REQUEST_BYTES = 1_048_576
+# sockaddr_un.sun_path, with its terminating NUL.
+SUN_PATH_MAX = 104 if sys.platform == "darwin" else 108
 MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 
 
@@ -47,6 +50,15 @@ class HaumeaClient:
 				raise HaumeaError("HAUMEA_ENGINE_TCP_PORT must be between 1 and 65535")
 			if not 32 <= len(self.token.encode("utf-8")) <= 256 or any(c in self.token for c in "\r\n"):
 				raise HaumeaError("HAUMEA_ENGINE_TOKEN must contain 32-256 UTF-8 bytes and no newlines")
+		elif len(os.fsencode(self.engine_socket)) >= SUN_PATH_MAX:
+			runtime = os.environ.get("XDG_RUNTIME_DIR") or (
+				f"/run/user/{os.getuid()}" if hasattr(os, "getuid") else tempfile.gettempdir())
+			raise HaumeaError(
+				f"The agent socket path is {len(os.fsencode(self.engine_socket))} bytes long: {self.engine_socket}. "
+				f"Unix socket paths must be shorter than {SUN_PATH_MAX} bytes (the AF_UNIX limit), so "
+				f"neither the editor nor this client can use it. Pick a shorter one, such as "
+				f"{runtime}/haumea.sock, and give the same path to the editor's --agent-socket "
+				"and to HAUMEA_ENGINE_SOCKET here.")
 
 	def _unreachable(self, error: OSError) -> HaumeaError:
 		if self.tcp_port is not None:
