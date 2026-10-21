@@ -29,12 +29,14 @@ TESTS=$ROOT/tools/haumea/tests
 RUN_TESTS=/mnt/devfast/Projects/Other/ariane-wt/HANDOFF/run_tests.sh
 
 # Steps 3-6 start editors: only ever in an Xvfb of this run's own, with
-# Wayland pointed nowhere (as run_all.sh does), never on the user's desktop.
+# Wayland pointed nowhere (as run_all.sh does), never on the user's desktop,
+# and two software render threads each (Mesa starts one per CPU otherwise).
 if [ "$(uname -s)" = Linux ] && [ "${HAUMEA_RC_XVFB:-}" != 1 ]; then
 	command -v xvfb-run > /dev/null || { echo "FAIL: xvfb-run is needed" >&2; exit 1; }
 	RUNTIME=$(mktemp -d)
 	exec env -u DISPLAY -u XAUTHORITY -u WAYLAND_SOCKET WAYLAND_DISPLAY=/nonexistent/haumea-test \
 		XDG_SESSION_TYPE=x11 XDG_RUNTIME_DIR="$RUNTIME" HAUMEA_RC_XVFB=1 \
+		LP_NUM_THREADS="${LP_NUM_THREADS:-2}" MESA_GLTHREAD=false GALLIUM_DRIVER=llvmpipe \
 		xvfb-run -a -s "-screen 0 1600x1000x24" sh "$0" "$@"
 fi
 
