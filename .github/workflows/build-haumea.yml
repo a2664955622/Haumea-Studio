@@ -1,22 +1,42 @@
 name: Build Haumea Studio
 
-# main is where Haumea is developed; master and PE are the release channels.
+# main is where Haumea is developed. Releases are beta (a GitHub prerelease)
+# or production; they come from a pushed v<version>-beta / -production tag, or
+# from a manual run (Actions > Build Haumea Studio > Run workflow) with a
+# channel and a release choice. tools/release/release_plan.py decides what a
+# run may release.
 on:
   push:
-    branches: [main, master, PE]
+    branches: [main]
     # A pushed release tag is checked against version.h (check-tag).
     tags: ['v*']
   pull_request:
-    branches: [main, master, PE]
+    branches: [main]
   workflow_dispatch:
+    inputs:
+      channel:
+        description: Channel
+        type: choice
+        options: [beta, production]
+        default: beta
+      release:
+        description: Release
+        type: choice
+        options: [build only, draft, publish]
+        default: build only
+      notes:
+        description: Notes above the CHANGELOG section (optional)
+        type: string
+        required: false
 
 permissions:
   contents: write
 
 env:
   LIBRW: ${{ github.workspace }}/librw
-  # The updater's release channel; pull requests build as "pr".
-  CHANNEL: ${{ github.event_name == 'pull_request' && 'pr' || github.ref_name }}
+  # The channel built in: a manual run's choice, a release tag's suffix, "pr"
+  # for pull requests and "dev" for everything else.
+  CHANNEL: ${{ github.event_name == 'pull_request' && 'pr' || github.event_name == 'workflow_dispatch' && (inputs.channel || 'beta') || github.ref_type == 'tag' && (endsWith(github.ref_name, '-beta') && 'beta' || endsWith(github.ref_name, '-production') && 'production' || 'invalid') || 'dev' }}
 
 jobs:
   build-windows:
@@ -587,9 +607,12 @@ jobs:
         run: python3 tools/release/check_tag.py "${{ github.ref_name }}"
 
   release:
-    # Releases come only from the release channels.
-    if: github.event_name == 'push' && (github.ref_name == 'master' || github.ref_name == 'PE')
-    needs: [build-windows, build-linux, build-macos, test-linux, pawn]
+    # A pushed release tag, or a manual run asking for a draft or a release.
+    # check-tag runs only for a tag, hence !failure() rather than success().
+    if: >-
+      !cancelled() && !failure() && github.event_name != 'pull_request' &&
+      (github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && inputs.release != 'build only'))
+    needs: [build-windows, build-linux, build-macos, test-linux, pawn, check-tag]
     runs-on: ubuntu-latest
 
     steps:
@@ -597,6 +620,23 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: haumea
+          fetch-depth: 0
+
+      # Production only from main, never over an existing tag (a pushed tag is
+      # the release's own): tools/release/release_plan.py.
+      - name: Plan the release
+        id: plan
+        working-directory: haumea
+        run: |
+          version='${{ needs.build-windows.outputs.version }}'
+          tag="v$version-$CHANNEL"
+          [ "$GITHUB_REF_TYPE" = tag ] && tag=$GITHUB_REF_NAME
+          git fetch -q origin main
+          on_main=no; git merge-base --is-ancestor "$GITHUB_SHA" origin/main && on_main=yes
+          exists=no; [ -n "$(git ls-remote --tags origin "refs/tags/$tag")" ] && exists=yes
+          python3 tools/release/release_plan.py --event "$GITHUB_EVENT_NAME" --ref-type "$GITHUB_REF_TYPE" \
+            --ref-name "$GITHUB_REF_NAME" --version "$version" --channel "$CHANNEL" \
+            --release '${{ inputs.release }}' --on-main $on_main --tag-exists $exists | tee -a "$GITHUB_OUTPUT"
 
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
@@ -617,9 +657,8 @@ jobs:
           path: dist/macos
 
       # The updater (tools/haumea/updatecore.cpp) installs a platform's
-      # bundle by its MANIFEST after checking it against SHA256SUMS. The
-      # plain haumea.exe stays for older installs, whose updater replaces
-      # only the exe; haumea and haumea-macos keep their old names.
+      # bundle by its MANIFEST after checking it against SHA256SUMS. macOS
+      # has no bundle: its users download haumea-macos.
       - name: Make the update bundles and SHA256SUMS
         run: |
           mkdir -p dist/release dist/linux-bundle
@@ -628,30 +667,37 @@ jobs:
           cp -r haumea/tools/haumea/prefabs dist/linux-bundle/prefabs
           python3 haumea/tools/release/make_update_bundle.py dist/linux-bundle dist/release/haumea-linux-amd64.tar.gz
           python3 haumea/tools/release/make_update_bundle.py dist/windows dist/release/haumea-windows-gl3.tar.gz
-          cp dist/windows/haumea.exe dist/release/haumea.exe
-          install -m 755 dist/linux/haumea dist/release/haumea
           install -m 755 dist/macos/haumea dist/release/haumea-macos
           (cd dist/release && sha256sum * > SHA256SUMS && cat SHA256SUMS)
 
       # What's new in the editor's update banner: this version's CHANGELOG section.
+      # What's new in the editor's update banner: the run's notes, if any, then
+      # this version's CHANGELOG section.
       - name: Write the release notes
+        env:
+          NOTES: ${{ inputs.notes }}
         run: |
           version='${{ needs.build-windows.outputs.version }}'
           {
-            echo "Haumea Studio $version, channel **${{ needs.build-windows.outputs.channel }}**"
+            if [ -n "$NOTES" ]; then printf '%s\n\n' "$NOTES"; fi
+            echo "Haumea Studio $version, channel **${{ steps.plan.outputs.channel }}**"
             echo
             python3 haumea/tools/release/changelog_section.py "${version%.*}" haumea/CHANGELOG.md || true
           } > dist/notes.md
+          cat dist/notes.md
 
+      # Under act (local checks) everything above runs, but nothing is published.
       - name: Create GitHub Release
+        if: env.ACT != 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.build-windows.outputs.tag }}
+          tag_name: ${{ steps.plan.outputs.tag }}
           target_commitish: ${{ github.sha }}
-          name: Haumea Studio ${{ needs.build-windows.outputs.version }} (${{ needs.build-windows.outputs.channel }})
+          name: Haumea Studio ${{ needs.build-windows.outputs.version }} (${{ steps.plan.outputs.channel }})
           body_path: dist/notes.md
           files: dist/release/*
-          draft: false
-          prerelease: ${{ needs.build-windows.outputs.channel == 'PE' }}
+          draft: ${{ steps.plan.outputs.release == 'draft' }}
+          prerelease: ${{ steps.plan.outputs.prerelease == 'true' }}
+          make_latest: ${{ steps.plan.outputs.latest }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
