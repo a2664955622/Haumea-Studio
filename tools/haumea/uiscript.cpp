@@ -42,7 +42,7 @@
 //   wheel N
 //   click_object N|model=M [right]  a map object, where it is on screen
 //   camera X Y Z TX TY TZ / mark_camera
-//   click_item 'Window' 'Label' [right]   '*' for any window
+//   click_item 'Window' 'Label' [N] [right]   '*' for any window; N: the Nth match, -1 the last
 //   hover_item 'Window' 'Label'
 //   set_item 'Window' 'Label' "text" [N] [tab] types into a field ('Colour/##X' = red)
 //   close_popup                         clicks the empty end of the menu bar
@@ -203,16 +203,18 @@ findItem(const std::string &window, const std::string &label, int nth)
 		}
 		return nil;
 	}
-	if(nth > 1){
-		int seen = 0;
+	// A negative N counts from the last one drawn.
+	if(nth > 1 || nth < 0){
+		std::vector<const UiItem*> matches;
 		for(size_t i = 0; i < gPrevItems.size(); i++){
 			const UiItem &it = gPrevItems[i];
 			bool named = plainLabel(it.label) == label || it.label == label ||
 				(it.label.empty() && ImHashStr(label.c_str(), 0, it.seed) == it.id);
-			if(windowMatches(it, window) && named && ++seen == nth)
-				return &it;
+			if(windowMatches(it, window) && named)
+				matches.push_back(&it);
 		}
-		return nil;
+		int at = nth > 0 ? nth - 1 : (int)matches.size() + nth;
+		return at >= 0 && at < (int)matches.size() ? matches[at] : nil;
 	}
 	for(size_t i = 0; i < gPrevItems.size(); i++){
 		const UiItem &it = gPrevItems[i];
@@ -678,7 +680,7 @@ runStep(const Step &s)
 		break;
 	}
 	case Step::ITEM: {
-		const UiItem *item = findItem(s.window, s.label, s.nth > 0 ? s.nth : 1);
+		const UiItem *item = findItem(s.window, s.label, s.nth ? s.nth : 1);
 		if(item == nil){
 			say("line %d: FAIL no item '%s' in window '%s'", (int)gLine, s.label.c_str(), s.window.c_str());
 			dumpSeen(s.window);
@@ -789,7 +791,7 @@ nextCommand(void)
 			// An optional number picks the Nth item with that label
 			// (after dx dy for drag_item).
 			for(size_t k = cmd == "drag_item" ? 5 : 3; k < a.size(); k++)
-				if(isdigit((unsigned char)a[k][0]))
+				if(isdigit((unsigned char)a[k][0]) || (a[k][0] == '-' && isdigit((unsigned char)a[k][1])))
 					s.nth = atoi(a[k].c_str());
 			gSteps.push_back(s);
 			addStep(Step::NOP);
@@ -1158,7 +1160,7 @@ UiScriptTick(void)
 		static int itemWait;
 		const Step &next = gSteps[gStep];
 		if(next.type == Step::ITEM && itemWait < 60 &&
-		   findItem(next.window, next.label, next.nth > 0 ? next.nth : 1) == nil){
+		   findItem(next.window, next.label, next.nth ? next.nth : 1) == nil){
 			itemWait++;
 			return;
 		}

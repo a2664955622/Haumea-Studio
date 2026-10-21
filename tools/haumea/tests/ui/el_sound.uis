@@ -1,0 +1,49 @@
+# Sounds: a game sound with an ID and radius, stop-on-leave turned off; then an audio stream with a URL and distance; save, reopen.
+open "$UI_FIXTURES/ui_floor.pwn"
+shortcut window_browser
+wait 5
+click_item 'Object Browser' 'SA-MP'
+wait 5
+scroll_until 'Object Browser' 'Race'
+click_item 'Object Browser' 'Place' -2
+wait 3
+click_world 2000 -3000 4
+wait 5
+key Esc
+assert objects == 2
+shortcut window_object_info
+wait 5
+click_item 'Object Info' 'Sound' 2
+wait_until item '*' 'ID'
+wait 3
+set_item '*' 'ID' "1062"
+wait 3
+close_popup
+wait 3
+set_item 'Object Info' 'Radius' "15"
+wait 3
+click_item 'Object Info' 'Stop when the player leaves'
+wait 3
+click_item 'Object Browser' 'Place' -2
+wait 3
+click_world 2003 -3000 4
+wait 5
+key Esc
+assert objects == 3
+click_item 'Object Info' 'Kind'
+wait 3
+click_item '*' 'Audio stream'
+wait 3
+set_item 'Object Info' 'URL' "http://example.com/radio.mp3" tab
+wait 3
+set_item 'Object Info' 'Distance' "30"
+wait 3
+key Ctrl+S
+wait 5
+reopen
+wait 10
+assert objects == 3
+assert pawn_contains "AddSound(1062, "
+assert pawn_contains ", 15.00, false, -1, -1); // sound"
+assert pawn_contains "PlayAudioStreamForPlayer(playerid, \"http://example.com/radio.mp3\", "
+assert pawn_contains ", 30.00, true); // sound"

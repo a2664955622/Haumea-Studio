@@ -8971,8 +8971,13 @@ uiInstWindow(void)
 				uiSelectedInstances(selected);
 				uiVehicleSettings(inst, selected, gBatchEditSelection && selected.size() > 1, canEdit);
 			}
-		}else if(!isObject && ImGui::CollapsingHeader(GetSampElementKindName(kind), ImGuiTreeNodeFlags_DefaultOpen))
-			uiObjectProperties(inst, UI_PROPS_ELEMENT);
+		}else if(!isObject){
+			// Its own ID: a field may have the kind's name (a sound's Sound).
+			char header[64];
+			snprintf(header, sizeof(header), "%s###element", GetSampElementKindName(kind));
+			if(ImGui::CollapsingHeader(header, ImGuiTreeNodeFlags_DefaultOpen))
+				uiObjectProperties(inst, UI_PROPS_ELEMENT);
+		}
 		if(ImGui::CollapsingHeader(uiRotationMode(inst) == UI_ROTATION_FULL ? "Position & Rotation###where" :
 		   "Position###where", ImGuiTreeNodeFlags_DefaultOpen))
 			uiInstInfo(inst);
