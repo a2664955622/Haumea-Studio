@@ -45,6 +45,8 @@ if args.engine:
     shutil.copy2(root / 'tools/haumea/minilzo/COPYING', stage / 'COPYING-LZO')
 if args.wheelhouse:
     shutil.copytree(args.wheelhouse, stage / 'wheelhouse', ignore=shutil.ignore_patterns('.DS_Store'))
+    # setup-agent's helper: another Python downloads only its binary wheels.
+    shutil.copy2(root / 'tools/release/missing_wheels.py', stage / 'missing_wheels.py')
 commit = subprocess.check_output(
     ['git', '-C', str(root), 'rev-parse', 'HEAD'], text=True).strip()
 (stage / 'BUILD_INFO.json').write_text(json.dumps({

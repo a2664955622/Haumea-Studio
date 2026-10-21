@@ -9,7 +9,8 @@ includes the authenticated agent bridge.
 
 ## Install
 
-Install Python 3.10 or newer with the Windows `py` launcher. Extract this ZIP,
+Install Python 3.10 or newer with the Windows `py` launcher; Python 3.14 sets up
+fully offline. Extract this ZIP,
 open PowerShell in the extracted folder, then run:
 
 ```powershell
@@ -17,9 +18,10 @@ open PowerShell in the extracted folder, then run:
 ```
 
 The setup creates `.venv-agent` and installs the package and its MCP
-dependencies. With a `wheelhouse` folder (CPython 3.10–3.14) it installs
-offline; otherwise, or on another Python version, the first setup needs access
-to the configured Python package index.
+dependencies. With Python 3.14 (picked when the `py` launcher has it) it
+installs offline from the `wheelhouse` folder. Python 3.10–3.13 downloads only
+the few compiled parts the wheelhouse has for 3.14 alone, so the first setup
+needs the internet; without it, setup says so and stops.
 
 ## Connect the Windows editor
 

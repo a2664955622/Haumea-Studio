@@ -20,8 +20,10 @@ cd Haumea-Agent-Alpha-linux-x86_64
 ```
 
 The setup script creates `.venv-agent` beside the bundle and installs the MCP
-adapter and CLI. The wheelhouse supports CPython 3.10–3.14 on Linux x86_64;
-other Python versions download them from the configured package index. The
+adapter and CLI. With Python 3.14 (Ubuntu 26.04, Fedora, Arch) it installs
+fully offline from the wheelhouse; Python 3.10–3.13 (Ubuntu 24.04, Debian)
+downloads only the few compiled parts the wheelhouse has for 3.14 alone, so
+the first setup needs the internet, and says so if it can't reach it. The
 Agent Alpha CLI is `.venv-agent/bin/haumeactl`; the MCP server command is
 `.venv-agent/bin/haumea-mcp`. If setup stops halfway, fix what it says and run
 it again.

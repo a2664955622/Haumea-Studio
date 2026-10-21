@@ -384,11 +384,14 @@ jobs:
           path: ${{ runner.temp }}/windows-check
 
   # The Agent Alpha bundle for Linux: build-linux's editor, the haumea_agent
-  # wheel and a CPython 3.10-3.14 wheelhouse (tools/release/fetch_wheelhouse.sh).
-  # Every wheelhouse Python installs it offline here, and a clean ubuntu:24.04
-  # container with no network runs the bundle's setup-agent.sh as a user would,
-  # then checks the editor's libraries and the MCP tool count. Not in the
-  # release job's needs until it has been green for a while.
+  # wheel and a wheelhouse with every wheel for CPython 3.14 and the pure ones
+  # for 3.10-3.13 (tools/release/fetch_wheelhouse.sh). The bundle's
+  # setup-agent.sh runs on each of 3.10-3.14 (the others download only their
+  # binary wheels); a clean ubuntu:26.04 (3.14) with no network sets it up as a
+  # user would, checking the editor's libraries and the MCP tool count, and a
+  # clean ubuntu:24.04 (3.12) with no network must stop with the
+  # "needs Python 3.14" message. Not in the release job's needs until it has
+  # been green for a while.
   agent-bundle-linux:
     needs: build-linux
     runs-on: ubuntu-24.04
@@ -427,30 +430,39 @@ jobs:
             --wheel dist/wheel/haumea_agent-*.whl --wheelhouse dist/wheelhouse \
             --output dist/agent --name "$BUNDLE"
 
-      - name: Install offline on CPython 3.10-3.14
+      # The bundle's own setup-agent.sh, with each Python as python3.
+      - name: Set up the bundle on CPython 3.10-3.14
         run: |
           for v in 3.10 3.11 3.12 3.13 3.14; do
-            uv venv -q --seed -p "$v" "$RUNNER_TEMP/py$v"
-            "$RUNNER_TEMP/py$v/bin/python" -m pip install -q --no-index \
-              --find-links dist/wheelhouse "$(ls dist/wheel/haumea_agent-*.whl)[mcp]"
-            "$RUNNER_TEMP/py$v/bin/python" haumea/tools/release/check_agent_bundle.py \
-              "$RUNNER_TEMP/py$v/bin/haumea-mcp" --tools "$AGENT_MCP_TOOLS" | cut -c1-80
+            uv python install -q "$v"
+            mkdir -p "$RUNNER_TEMP/bin$v" "$RUNNER_TEMP/py$v"
+            ln -sf "$(uv python find "$v")" "$RUNNER_TEMP/bin$v/python3"
+            (cd "$RUNNER_TEMP/py$v" && unzip -q "$GITHUB_WORKSPACE/dist/agent/$BUNDLE.zip")
+            (cd "$RUNNER_TEMP/py$v/$BUNDLE" && PATH="$RUNNER_TEMP/bin$v:$PATH" ./setup-agent.sh > setup.log 2>&1) ||
+              { tail -30 "$RUNNER_TEMP/py$v/$BUNDLE/setup.log"; exit 1; }
+            grep -E '^(Python|Agent Alpha)' "$RUNNER_TEMP/py$v/$BUNDLE/setup.log"
+            mcp="$RUNNER_TEMP/py$v/$BUNDLE/.venv-agent/bin/haumea-mcp"
+            "$(dirname "$mcp")/python" haumea/tools/release/check_agent_bundle.py "$mcp" \
+              --tools "$AGENT_MCP_TOOLS" | cut -c1-80
           done
 
       # docker cp rather than bind mounts, so this also runs under act.
-      - name: Set up the bundle offline in a clean ubuntu:24.04
+      - name: Set up the bundle offline in clean ubuntu:26.04 and 24.04
         run: |
-          base=agent-base-$GITHUB_RUN_ID
-          docker run --name "$base" ubuntu:24.04 sh -c '
-            apt-get update -q && apt-get install -yq --no-install-recommends \
-              python3 python3-venv libglfw3 unzip >/dev/null'
-          docker commit "$base" "$base:ci" >/dev/null
-          docker create --name "agent-test-$GITHUB_RUN_ID" --network none -w /root \
-            "$base:ci" sleep infinity
-          docker cp "dist/agent/$BUNDLE.zip" "agent-test-$GITHUB_RUN_ID:/root/"
-          docker cp haumea/tools/release/check_agent_bundle.py "agent-test-$GITHUB_RUN_ID:/root/"
-          docker start "agent-test-$GITHUB_RUN_ID"
-          docker exec -e BUNDLE -e AGENT_MCP_TOOLS "agent-test-$GITHUB_RUN_ID" sh -ec '
+          for image in ubuntu:26.04 ubuntu:24.04; do
+            tag=$(echo "$image" | tr ':.' '--')-$GITHUB_RUN_ID
+            docker run --name "agent-base-$tag" "$image" sh -c '
+              apt-get update -q && apt-get install -yq --no-install-recommends \
+                python3 python3-venv libglfw3 unzip >/dev/null'
+            docker commit "agent-base-$tag" "agent-base-$tag:ci" >/dev/null
+            docker create --name "agent-test-$tag" --network none -w /root \
+              "agent-base-$tag:ci" sleep infinity
+            docker cp "dist/agent/$BUNDLE.zip" "agent-test-$tag:/root/"
+            docker cp haumea/tools/release/check_agent_bundle.py "agent-test-$tag:/root/"
+            docker start "agent-test-$tag"
+          done
+          # Python 3.14: everything offline.
+          docker exec -e BUNDLE -e AGENT_MCP_TOOLS "agent-test-ubuntu-26-04-$GITHUB_RUN_ID" sh -ec '
             unzip -q "$BUNDLE.zip" && cd "$BUNDLE"
             sha256sum -c --quiet SHA256SUMS
             test -x haumea && test -x setup-agent.sh
@@ -459,12 +471,19 @@ jobs:
             .venv-agent/bin/python /root/check_agent_bundle.py .venv-agent/bin/haumea-mcp \
               --tools "$AGENT_MCP_TOOLS"
             .venv-agent/bin/haumeactl --help >/dev/null'
+          # Python 3.12 with no network: a clear stop, not a pip traceback.
+          docker exec -e BUNDLE "agent-test-ubuntu-24-04-$GITHUB_RUN_ID" sh -c '
+            unzip -q "$BUNDLE.zip" && cd "$BUNDLE"
+            if ./setup-agent.sh > log 2>&1; then echo "setup worked offline on 3.12?"; exit 1; fi
+            grep -F "needs Python 3.14 to install offline, or an internet connection" log'
 
       - name: Remove the test containers
         if: always()
         run: |
-          docker rm -f "agent-base-$GITHUB_RUN_ID" "agent-test-$GITHUB_RUN_ID" || true
-          docker rmi "agent-base-$GITHUB_RUN_ID:ci" || true
+          for tag in ubuntu-26-04-$GITHUB_RUN_ID ubuntu-24-04-$GITHUB_RUN_ID; do
+            docker rm -f "agent-base-$tag" "agent-test-$tag" || true
+            docker rmi "agent-base-$tag:ci" || true
+          done
 
       - name: Upload the Linux Agent Alpha bundle
         uses: actions/upload-artifact@v4
@@ -510,13 +529,14 @@ jobs:
           uv build --wheel -o dist/wheel haumea
           haumea/tools/release/fetch_wheelhouse.sh windows dist/wheelhouse
 
+      # Python 3.14 installs from the wheelhouse alone; the others have their
+      # pins there and download only their binary wheels.
       - name: Check the wheelhouse resolves offline
         run: |
-          for v in 3.10 3.11 3.12 3.13 3.14; do
-            uv pip compile -q --no-index --find-links dist/wheelhouse --find-links dist/wheel \
-              --only-binary :all: --python-version "$v" --python-platform x86_64-pc-windows-msvc \
-              -o "$RUNNER_TEMP/resolved.txt" - <<< "haumea-agent[mcp]"
-          done
+          uv pip compile -q --no-index --find-links dist/wheelhouse --find-links dist/wheel \
+            --only-binary :all: --python-version 3.14 --python-platform x86_64-pc-windows-msvc \
+            -o "$RUNNER_TEMP/resolved.txt" - <<< "haumea-agent[mcp]"
+          for v in 3.10 3.11 3.12 3.13 3.14; do test -s "dist/wheelhouse/constraints-$v.txt"; done
 
       - name: Package the companion
         run: |

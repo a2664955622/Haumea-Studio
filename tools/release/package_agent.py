@@ -49,6 +49,8 @@ version = re.search(r'#define\s+HAUMEA_VERSION\s+"([^"]+)"', version_h).group(1)
 if a.wheelhouse:
     shutil.copytree(a.wheelhouse, stage / 'wheelhouse',
         ignore=shutil.ignore_patterns('.DS_Store'))
+    # setup-agent's helper: another Python downloads only its binary wheels.
+    shutil.copy2(root / 'tools/release/missing_wheels.py', stage / 'missing_wheels.py')
 if a.glfw:
     lib = stage / 'lib'; lib.mkdir()
     bundled = lib / 'libglfw.3.dylib'
