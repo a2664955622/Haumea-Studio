@@ -11074,8 +11074,11 @@ uiOutlinerAddHeader(const std::string &key, const std::string &label, int depth,
 
 static bool uiOutlinerOpen(const std::string &key) { return !gOutliner.closed.count(key); }
 
+// notes: the lines under it (an area's items, an NPC's path...); left out
+// where the rows around it say the same.
 static void
-uiOutlinerAddObject(ObjectInst *inst, int depth, const std::unordered_map<int32, const char*> &problems)
+uiOutlinerAddObject(ObjectInst *inst, int depth, const std::unordered_map<int32, const char*> &problems,
+	bool notes = true)
 {
 	UiOutlinerRow row = {};
 	row.type = UiOutlinerRow::OBJECT;
@@ -11094,6 +11097,8 @@ uiOutlinerAddObject(ObjectInst *inst, int depth, const std::unordered_map<int32,
 	std::unordered_map<int32, const char*>::const_iterator problem = problems.find(inst->m_id);
 	row.problem = problem != problems.end() ? problem->second : nil;
 	gOutliner.rows.push_back(row);
+	if(!notes)
+		return;
 	const ObjectPawnProperties *p = GetObjectPawnProperties(inst);
 	auto note = [&](const std::string &text, const std::vector<ObjectInst*> &refs){
 		UiOutlinerRow n = {};
@@ -11239,6 +11244,25 @@ uiOutlinerRebuild(void)
 					if(uiOutlinerOpen(sub))
 						for(ObjectInst *inst : inOrder)
 							uiOutlinerAddObject(inst, 2, problems);
+				}
+				continue;
+			}
+			if(c.kind == SAMP_ELEMENT_AREA){
+				// Each area with the items shown only inside it.
+				for(ObjectInst *area : members){
+					const char *name = GetObjectPawnProperties(area)->name;
+					std::vector<ObjectInst*> group = { area };
+					for(ObjectInst *inst : objects)
+						if(inst != area && !inst->m_isVehicle && name[0] &&
+						   strcmp(GetObjectPawnProperties(inst)->areaName, name) == 0)
+							group.push_back(inst);
+					std::string sub = key + "/" + std::to_string(area->m_id);
+					char label[160];
+					uiObjectLabel(area, label, sizeof(label));
+					uiOutlinerAddHeader(sub, label, 1, group);
+					if(uiOutlinerOpen(sub))
+						for(ObjectInst *inst : group)
+							uiOutlinerAddObject(inst, 2, problems, false);
 				}
 				continue;
 			}
