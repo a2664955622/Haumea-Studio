@@ -2138,7 +2138,7 @@ static std::string
 agentInstanceJson(ObjectInst *inst, bool includeAgentFlag)
 {
 	ObjectDef *object = GetObjectDef(inst->m_objectId);
-	rw::V3d degrees = GetObjectRotationDegrees(inst->m_rotation);
+	rw::V3d degrees = GetInstanceRotationDegrees(inst);
 	char item[768];
 	snprintf(item, sizeof(item),
 		"{\"instance_id\":%d,\"object_key\":\"runtime:%d\",\"model_id\":%d,"

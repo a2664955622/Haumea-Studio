@@ -6359,9 +6359,28 @@ struct PawnEulerRotation
 	float x, y, z;
 };
 
+bool
+InstanceUsesSourceDegrees(const ObjectInst *inst)
+{
+	if(inst == nil || !inst->m_hasSourceDegrees)
+		return false;
+	const rw::Quat &a = inst->m_rotation, &b = inst->m_sourceRotation;
+	return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
+}
+
+rw::V3d
+GetInstanceRotationDegrees(const ObjectInst *inst)
+{
+	return InstanceUsesSourceDegrees(inst) ? inst->m_sourceDegrees : GetObjectRotationDegrees(inst->m_rotation);
+}
+
 static PawnEulerRotation
 pawnGetEulerRotation(const ObjectInst *inst)
 {
+	if(InstanceUsesSourceDegrees(inst)){
+		PawnEulerRotation e = { inst->m_sourceDegrees.x, inst->m_sourceDegrees.y, inst->m_sourceDegrees.z };
+		return e;	// the file's numbers, unrounded: 89.999992 stays 89.999992
+	}
 	rw::V3d degrees = GetObjectRotationDegrees(inst->m_rotation);
 	// Snap float noise so files read 0.0/90.0 rather than -0.000000/90.000008,
 	// and write a half turn as 180: -180 and 180 alternated between saves.
@@ -9888,6 +9907,9 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 			}
 			rw::Quat rotation = pawnMakeStoredQuaternion(e.rx, e.ry, e.rz);
 			ObjectInst *inst = createSpawnedInstance(e.objectId, position, file, ++maxIdx, &rotation);
+			inst->m_sourceDegrees = { e.rx, e.ry, e.rz };
+			inst->m_sourceRotation = inst->m_rotation;
+			inst->m_hasSourceDegrees = true;
 			inst->m_area = e.interior >= 0 ? e.interior : 0;
 			if(e.isVehicle){
 				inst->m_vehicleStatic = e.vehicleStatic;

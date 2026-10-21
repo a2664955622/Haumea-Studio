@@ -750,6 +750,10 @@ void UndoEndGroup(void);
 void ResetUndoHistory(void);
 
 rw::V3d GetObjectRotationDegrees(const rw::Quat &rotation);
+// An instance's rotation in degrees: the map file's own numbers while the
+// rotation is unchanged, else GetObjectRotationDegrees.
+rw::V3d GetInstanceRotationDegrees(const ObjectInst *inst);
+bool InstanceUsesSourceDegrees(const ObjectInst *inst);
 // Stored (conjugated) ObjectInst rotation for a rendered basis matrix.
 rw::Quat QuatFromMatrix(const rw::Matrix &matrix);
 rw::Quat MakeObjectRotationDegrees(const rw::V3d &degrees);
@@ -1217,6 +1221,12 @@ struct ObjectInst
 {
 	rw::V3d m_translation;
 	rw::Quat m_rotation;
+	// The rx, ry, rz a map file gave, and the rotation they made: shown and
+	// saved as written while m_rotation is still that one (several triples
+	// give the same rotation, e.g. 180,90,0 and 0,-90,180).
+	rw::V3d m_sourceDegrees;
+	rw::Quat m_sourceRotation;
+	bool m_hasSourceDegrees;
 	// cached form of the above
 	rw::Matrix m_matrix;
 	int m_objectId;

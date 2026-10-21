@@ -4959,7 +4959,7 @@ refreshTransformPanel(ObjectInst *inst)
 	gTransformPanel.leader = inst;
 	if(inst == nil)
 		return;
-	rw::V3d degrees = GetObjectRotationDegrees(inst->m_rotation);
+	rw::V3d degrees = GetInstanceRotationDegrees(inst);
 	if(gTransformPanel.relative){
 		gTransformPanel.position[0] = 0.0f;
 		gTransformPanel.position[1] = 0.0f;
@@ -5225,7 +5225,7 @@ uiTransformPanel(ObjectInst *inst)
 		finishTransformPanelEdit();
 		gTransformClipboard.valid = true;
 		gTransformClipboard.position = inst->m_translation;
-		gTransformClipboard.rotationDegrees = GetObjectRotationDegrees(inst->m_rotation);
+		gTransformClipboard.rotationDegrees = GetInstanceRotationDegrees(inst);
 		char text[256];
 		snprintf(text, sizeof(text),
 			"Position %.9g %.9g %.9g\nRotation %.9g %.9g %.9g",

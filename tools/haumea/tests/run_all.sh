@@ -174,6 +174,17 @@ if [ -z "${NAMAKA_WHEELHOUSE:-}" ]; then
 fi
 export NAMAKA_WHEELHOUSE
 
+# The rotation test compiles against librw: the one the editor was built with
+# (the build's private makefile names it) unless LIBRW says otherwise, as in CI.
+if [ -z "${LIBRW:-}" ]; then
+	for mk in "$ROOT"/build/.claude-haumea.make "$ROOT"/build/haumea.make; do
+		[ -f "$mk" ] || continue
+		LIBRW=$(sed -n 's#.*-I\([^ ]*\)/skeleton.*#\1#p' "$mk" | head -n 1)
+		[ -n "$LIBRW" ] && [ -f "$LIBRW/rw.h" ] && break
+		LIBRW=
+	done
+	[ -n "${LIBRW:-}" ] && export LIBRW
+fi
 phase "unit tests"
 { (cd "$HERE" && python3 -m unittest discover -v --durations 8 -p "test_*.py") 2>&1; echo $? > "$WORK/unit.status"; } |
 	tee "$WORK/unit.log"
@@ -181,7 +192,7 @@ phase "unit tests"
 # Skips this mode expects: scripts that need the real game, the showcase's
 # real-game models, and the rotation test's own librw build. Anything else
 # (no display, no toolchain, no editor) means the run tested less than it says.
-KNOWN="set LIBRW to a built librw"
+KNOWN="set LIBRW to a built librw"	# only when no built librw is found
 [ "$SYNTHETIC" = 1 ] && KNOWN="$KNOWN|needs the real game|synthetic fixture"
 SKIPPED=$(grep -c " skipped '" "$WORK/unit.log")
 echo "$SKIPPED test(s) skipped"
