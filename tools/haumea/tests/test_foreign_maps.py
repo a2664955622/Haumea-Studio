@@ -9,8 +9,12 @@ import glob
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from haumea_test_env import editor_env  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = Path(__file__).resolve().parent / 'fixtures'
@@ -28,7 +32,7 @@ class ForeignMapTests(unittest.TestCase):
             source = Path(tmp, name)
             shutil.copy(FIXTURES / name, source)
             target = Path(tmp, 'out.pwn')
-            env = dict(os.environ, XDG_CONFIG_HOME=str(Path(tmp, 'config')))
+            env = editor_env(tmp)
             result = subprocess.run([BINARY, '--game', GAME_DIR, '--pawn-roundtrip', str(source), str(target)],
                                     cwd=GAME_DIR, capture_output=True, text=True, timeout=600, env=env)
             self.assertIn('0 skipped on save', result.stdout, result.stdout[-2000:])

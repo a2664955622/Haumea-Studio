@@ -36,6 +36,8 @@ import time
 import zlib
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+from haumea_test_env import check_virtual_display  # noqa: E402
 ROOT = HERE.parents[2]
 MAPS = sorted(HERE.glob('fixtures/*.pwn')) + sorted(HERE.glob('pawn/maps/*.pwn'))
 
@@ -234,4 +236,11 @@ if __name__ == '__main__':
                         help='use HAUMEA_WINDOWS_EXE_GL3 / _D3D9 instead of building')
     parser.add_argument('--no-capture', action='store_true')
     parser.add_argument('--keep', action='store_true', help='keep the work folder')
-    sys.exit(WindowsCheck(parser.parse_args()).main())
+    args = parser.parse_args()
+    # The Linux editor and Wine both open windows: never on the user's display.
+    try:
+        check_virtual_display()
+    except RuntimeError as e:
+        print(e)
+        sys.exit(1)
+    sys.exit(WindowsCheck(args).main())

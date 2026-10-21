@@ -2,14 +2,31 @@
 
 Haumea keeps settings, recent maps and window state in ~/.config/haumea
 (%APPDATA%\\Haumea, ~/Library/Application Support/Haumea). Every editor a
-test starts gets a fresh private config folder instead."""
+test starts gets a fresh private config folder instead.
+
+On Linux the editor never opens on the user's real display either: it only
+starts inside run_all.sh's own Xvfb (HAUMEA_TEST_XVFB=1), or in an Xvfb the
+test starts itself (virtual_display=True)."""
 import os
 import sys
 import tempfile
 
 
-def editor_env(scratch):
-    """Environment for one editor process, with its config under scratch."""
+def check_virtual_display():
+    """Raise unless an editor started now would open on a virtual display."""
+    if not sys.platform.startswith('linux') or os.environ.get('HAUMEA_TEST_XVFB') == '1':
+        return
+    if os.environ.get('DISPLAY') or os.environ.get('WAYLAND_DISPLAY'):
+        raise RuntimeError("refusing to open the editor on the real display: run the tests through "
+                           "tools/haumea/tests/run_all.sh, which starts its own Xvfb, or under "
+                           "xvfb-run with HAUMEA_TEST_XVFB=1")
+
+
+def editor_env(scratch, virtual_display=False):
+    """Environment for one editor process, with its config under scratch.
+    virtual_display: the caller starts the editor in its own Xvfb (xvfb-run)."""
+    if not virtual_display:
+        check_virtual_display()
     config = tempfile.mkdtemp(prefix='haumea-config-', dir=scratch)
     env = dict(os.environ)
     env['XDG_CONFIG_HOME'] = config

@@ -22,7 +22,8 @@
 # The game folder is $HAUMEA_GAME_DIR, else the one Haumea has saved, else
 # (or with --fixture) a synthetic one made by fixture/make_game.py with no
 # game files, as in CI. The editor is $HAUMEA_BINARY, else
-# bin/*/Release/haumea. --update-expected replaces pawn/expected with the
+# bin/*/Release/haumea; the run fails at once without it, or when it is older
+# than a source file in tools/haumea. --update-expected replaces pawn/expected with the
 # editor's output after an intended change.
 set -u
 HERE=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
@@ -38,7 +39,19 @@ for arg in "$@"; do
 	*) echo "usage: run_all.sh [--fixture] [--update-expected] [--windows]" >&2; exit 2 ;;
 	esac
 done
+# The editors these tests start (and Wine with --windows) open windows: on
+# Linux they only ever go to an Xvfb of this run's own, never the user's
+# display, where they would take focus and the user's keys would reach them.
+if [ "$(uname -s)" = Linux ] && [ "${HAUMEA_TEST_XVFB:-}" != 1 ]; then
+	if ! command -v xvfb-run > /dev/null; then
+		echo "FAIL: xvfb-run is needed: the tests never open the editor on the real display"
+		exit 1
+	fi
+	exec env -u WAYLAND_DISPLAY -u DISPLAY -u XAUTHORITY HAUMEA_TEST_XVFB=1 \
+		xvfb-run -a -s "-screen 0 1600x1000x24" sh "$0" "$@"
+fi
 status=0
+SYNTHETIC=0
 
 [ "$FIXTURE" = 1 ] && HAUMEA_GAME_DIR=
 if [ -z "${HAUMEA_GAME_DIR:-}" ] && [ "$FIXTURE" = 0 ]; then
@@ -48,12 +61,24 @@ fi
 if [ -z "${HAUMEA_BINARY:-}" ]; then
 	for b in "$ROOT"/bin/*/Release/haumea; do [ -x "$b" ] && HAUMEA_BINARY=$b && break; done
 fi
+# Without the editor, or with one built before the latest source change, the
+# tests that need it skip or test old code, and the run would still pass.
+if [ -z "${HAUMEA_BINARY:-}" ] || [ ! -x "$HAUMEA_BINARY" ]; then
+	echo "FAIL: no editor binary: build bin/*/Release/haumea or set HAUMEA_BINARY"
+	exit 1
+fi
+NEWER=$(find "$ROOT/tools/haumea" \( -name '*.cpp' -o -name '*.h' \) -newer "$HAUMEA_BINARY" | head -n 1)
+if [ -n "$NEWER" ]; then
+	echo "FAIL: $HAUMEA_BINARY is older than $NEWER: rebuild the editor"
+	exit 1
+fi
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 if [ -z "${HAUMEA_GAME_DIR:-}" ] || [ ! -d "$HAUMEA_GAME_DIR" ]; then
 	echo "== synthetic game folder (no GTA files)"
 	if python3 "$HERE/fixture/make_game.py" "$WORK/game" > /dev/null; then
 		HAUMEA_GAME_DIR=$WORK/game
+		SYNTHETIC=1
 	else
 		echo "could not make the synthetic game folder"
 		status=1
@@ -79,7 +104,21 @@ if "$HERE/pawn/fetch_toolchain.sh" "$PAWN_TOOLCHAIN"; then
 fi
 
 echo "== unit tests"
-(cd "$HERE" && python3 -m unittest discover -p "test_*.py") || status=1
+{ (cd "$HERE" && python3 -m unittest discover -v -p "test_*.py") 2>&1; echo $? > "$WORK/unit.status"; } |
+	tee "$WORK/unit.log"
+[ "$(cat "$WORK/unit.status")" = 0 ] || status=1
+# Skips this mode expects: scripts that need the real game, the showcase's
+# real-game models, and the rotation test's own librw build. Anything else
+# (no display, no toolchain, no editor) means the run tested less than it says.
+KNOWN="set LIBRW to a built librw"
+[ "$SYNTHETIC" = 1 ] && KNOWN="$KNOWN|needs the real game|synthetic fixture"
+SKIPPED=$(grep -c " skipped '" "$WORK/unit.log")
+echo "$SKIPPED test(s) skipped"
+UNEXPECTED=$(grep " skipped '" "$WORK/unit.log" | grep -v -E "$KNOWN")
+if [ -n "$UNEXPECTED" ]; then
+	echo "WARNING: $(echo "$UNEXPECTED" | wc -l) test(s) skipped for a reason this mode doesn't expect:"
+	echo "$UNEXPECTED"
+fi
 
 echo "== Pawn exporter round trip"
 GENERATED=$HERE/pawn/expected
