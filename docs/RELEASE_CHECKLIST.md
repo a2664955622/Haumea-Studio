@@ -1,73 +1,72 @@
 # Release checklist
 
-How a Haumea release goes out, and what to watch the first time CI runs the
+How a Haumea Studio release goes out, and what to watch the first time CI runs the
 newer jobs. Nothing here is automatic: pushing and releasing are your call.
 
 ## How releases work
 
-- `main` is where Haumea is developed. A push to `main` (or a pull request)
-  runs CI: the Windows, Linux and macOS builds, the Linux tests, the Pawn
-  compile check and the Windows-under-Wine check. It doesn't release
-  anything.
-- A push to **`master`** (the stable channel) or **`PE`** (pre-release, shown
-  as "FLA") also runs the `release` job, after the builds, tests and Pawn
-  check pass. It creates the GitHub release and its tag itself, named
-  `v<version>-<channel>` (for example `v1.41.0.57-master`), with the
-  Windows, Linux and macOS binaries.
+- `main` is where Haumea Studio is developed. A push to any branch (or a pull
+  request) runs CI: the Windows, Linux and macOS builds, the Linux tests, the
+  Pawn compile check and the Windows-under-Wine check. It doesn't release
+  anything; those builds call themselves channel `dev` (`pr` for pull
+  requests).
+- **A release is a pushed tag**: `v1.0.0.<build>-production` or
+  `v1.0.0.<build>-beta`. The two channels are **production** (what everyone
+  gets) and **beta** (opt-in in the editor; published as a GitHub
+  prerelease). CI's `check-tag` job checks the tag
+  (`tools/release/check_tag.py`): its 1.0.0 must be version.h's, its build
+  number the tagged commit's commit count, and its channel production or
+  beta. Then the release job builds that commit as that channel and publishes
+  the release with the builds, the Namaka bundles and a `SHA256SUMS` file
+  (see `.github/workflows/build-haumea.yml`).
 - **Version numbers work as open.mp's do.** `tools/haumea/version.h` holds
-  MAJOR.MINOR.PATCH (`HAUMEA_VERSION_MAJOR/MINOR/PATCH`); the build number is
-  the commit count (`git rev-list --count HEAD`), and the commit its short
-  hash (`-dirty` with uncommitted changes), both written by
+  MAJOR.MINOR.PATCH (`HAUMEA_VERSION_MAJOR/MINOR/PATCH`, 1.0.0 now); the
+  build number is the commit count (`git rev-list --count HEAD`), and the
+  commit its short hash (`-dirty` with uncommitted changes), both written by
   `tools/release/gen_buildinfo.py` into `haumea_buildinfo.h` at build time
-  (0 and `unknown` without git). The full version, `1.41.0.<build>`, shows in
+  (0 and `unknown` without git). The full version, `1.0.0.<build>`, shows in
   About, the title bar, `haumea --version`, telemetry, the exe's version
-  info, `BUILD_INFO.json` and the agent wheel (`1.41.0.<build>`, PEP 440).
-- The updater offers the newest release of its channel with a higher
-  version, all four parts compared. Older tags (`v1.41.0-master-abc1234`)
-  read as build 0 of their X.Y.Z.
-- **Every release bumps PATCH at least.** Installs from before four-part
-  versions compare only X.Y.Z, so a new build of the same 1.41.0 is not an
-  update to them. Also, the build number restarts when history is
-  rewritten: main was squashed into one root commit on 2026-10-21, so builds
-  restarted near 15. They only go up as long as main is never squashed
-  again; a PATCH bump keeps releases ordered even if it is.
-- **Tags by hand** go through `tools/release/tag_release.sh [--create]
-  [channel]`: it prints (or makes, locally) `v1.41.0.<build>-<channel>` for
-  HEAD, refuses a dirty tree and an X.Y.Z that isn't newer than that
-  channel's newest tag, and never pushes. CI checks every pushed `v*` tag
-  (`check-tag`, `tools/release/check_tag.py`): its X.Y.Z must be
-  version.h's and its build the tagged commit's count. CI needs the full
-  history for that (`fetch-depth: 0`).
-- Namaka is packaged from the same commit and version by
-  `tools/release/package_agent.py` (release tag `v<version>-agent-alpha`).
+  info, `BUILD_INFO.json` and Namaka's wheel (`1.0.0.<build>`, PEP 440). CI
+  checks out the full history for the count (`fetch-depth: 0`).
+- The build number only goes up as long as main's history is never
+  rewritten again (main was squashed into one root commit on 2026-10-21).
+  Don't squash or rewrite main; if it ever happens, bump PATCH so the next
+  release still sorts above the last.
+- The updater offers the newest release of the channel it follows with a
+  higher version, all four parts compared.
 
-## Before pushing
+## Before tagging
 
-1. `tools/haumea/version.h`: `HAUMEA_VERSION_PATCH` (at least) is higher
-   than the last release's (1.41.0 now; after 1.49 comes 1.50). Keep
-   `tools/agent/_version.py`'s `1.41.0.0` in step (test_version checks it).
+1. `tools/haumea/version.h`: the version is right for this release (bump
+   MINOR or PATCH as the changes deserve). Keep `tools/agent/_version.py`'s
+   `1.0.0.0` in step (test_version checks it).
 2. `CHANGELOG.md` has a section for this version.
-3. The local test matrix is green (see "Local checks" below).
+3. The local test matrix is green (see "Local checks" below), and so is CI
+   on `main`.
 
-## Push and release
+## Tag and release
 
 ```sh
 cd /mnt/devfast/Projects/Other/ariane
 git status                      # clean, on main
-git log --oneline origin/main..main | wc -l   # what is about to go out
 git push origin main            # CI only, no release
 ```
 
-Wait for the run on `main` to be green (Actions tab). Then release:
+Wait for the run on `main` to be green (Actions tab). Then make the tag for
+that commit and push it:
 
 ```sh
-git push origin main:master     # stable: the release job publishes v1.41.0.<build>-master
-# or, for a pre-release first:
-git push origin main:PE         # publishes v1.41.0.<build>-PE, marked pre-release
+tools/release/tag_release.sh --create            # v1.0.0.<build>-production
+# or, for a beta first:
+tools/release/tag_release.sh --create beta       # v1.0.0.<build>-beta
+git push origin <the tag it printed>             # this releases it
 ```
 
-Check the release page has three binaries (Windows exe, `haumea` for Linux,
-`haumea-macos`), then start an older build and confirm it offers the update.
+`tag_release.sh` only makes the tag locally; it refuses a dirty tree, a
+channel other than production or beta, and a version that isn't newer than
+that channel's newest tag. Pushing the tag is the release. Check the release
+page has the builds and `SHA256SUMS`, then start a build of the channel and
+confirm it offers the update.
 
 ## What to watch in the first CI run
 
@@ -113,7 +112,7 @@ After pulling a commit that changes `build/haumea.make`'s defines, delete
 `build/obj/*/Release/haumea/imgui*.o` before building: make doesn't rebuild
 on flag changes.
 
-## Last local matrix (2026-10-21, 1.41.0, main f07bff3)
+## Last local matrix (2026-10-21, main f07bff3)
 
 | Check | Result |
 |---|---|

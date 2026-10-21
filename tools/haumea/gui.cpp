@@ -4498,7 +4498,11 @@ uiHelpWindow(void)
 	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 30.0f, 0.0f), ImGuiCond_FirstUseEver);
 	ImGui::Begin(ICON_FA_CIRCLE_QUESTION " Help", &showHelpWindow);
 	// About.
-	ImGui::Text("Haumea Studio %s, %s channel", HaumeaVersionDisplay(), HAUMEA_CHANNEL_DISPLAY);
+	const char *channel = HAUMEA_CHANNEL_DISPLAY;	// empty for production
+	if(channel[0])
+		ImGui::Text("Haumea Studio %s, %s channel", HaumeaVersionDisplay(), channel);
+	else
+		ImGui::Text("Haumea Studio %s", HaumeaVersionDisplay());
 	ImGui::TextDisabled("The all-in-one editor for open.mp and SA-MP, by itsneufox.");
 	if(ImGui::SmallButton("Licenses..."))
 		showLicensesWindow = true;

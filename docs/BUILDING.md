@@ -17,7 +17,7 @@ python3 tools/release/patch_librw_haumea.py "$LIBRW"
 (cd "$LIBRW" && premake5 gmake2)
 make -C "$LIBRW/build" config=release_linux-amd64-gl3 librw
 
-premake5 gmake2 --channel=master
+premake5 gmake2
 make -C build -j2 config=release_linux-amd64-gl3 haumea
 ```
 
@@ -34,7 +34,7 @@ python3 tools/release/patch_librw_haumea.py "$LIBRW"
 make -C "$LIBRW/build" config=release_macos-arm64-gl3 librw  # Apple Silicon
 # or: make -C "$LIBRW/build" config=release_macos-amd64-gl3 librw  # Intel
 
-premake5 gmake2 --channel=master
+premake5 gmake2
 make -C build config=release_macos-arm64-gl3 haumea  # Apple Silicon
 # or: make -C build config=release_macos-amd64-gl3 haumea  # Intel
 ```
@@ -58,7 +58,7 @@ msbuild build\librw.sln /p:Configuration=Release /p:Platform=win-amd64-gl3 /t:li
 Pop-Location
 
 Push-Location $Haumea
-premake5 vs2019 --channel=master "--glfwdir64=$Glfw"
+premake5 vs2019 "--glfwdir64=$Glfw"
 msbuild build\librwgta.sln /p:Configuration=Release /p:Platform=win-amd64-gl3 '/t:librwgta;haumea' /m
 Pop-Location
 ```

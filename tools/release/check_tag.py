@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """check_tag.py TAG: a release tag must match the source it points at.
 
-Release tags are v1.41.0.<build>-<channel> (versionutil.h reads them the same
-way): MAJOR.MINOR.PATCH must be version.h's, and <build> the commit count of
-the tagged commit (`git rev-list --count TAG`). CI runs this on every pushed
+Release tags are v1.0.0.<build>-<channel> (versionutil.h reads them the same
+way), the channel production or beta: MAJOR.MINOR.PATCH must be version.h's,
+and <build> the commit count of the tagged commit (`git rev-list --count TAG`). CI runs this on every pushed
 v* tag; tag_release.sh makes the tags. Exit status 0 when the tag is right.
 """
 import re
@@ -15,6 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import gen_buildinfo  # noqa: E402
 
+CHANNELS = ('production', 'beta')
 TAG = re.compile(r'v(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?-(.+)')
 OLD_COMMIT = re.compile(r'-[0-9a-fA-F]{7,40}$')
 
@@ -40,8 +41,10 @@ def git(*args):
 def check(tag):
 	parsed = parse_tag(tag)
 	if parsed is None:
-		return f'{tag}: not a release tag (v1.41.0.<build>-<channel>)'
+		return f'{tag}: not a release tag (v1.0.0.<build>-<channel>)'
 	major, minor, patch, build, channel = parsed
+	if channel not in CHANNELS:
+		return f'{tag}: the channel is production or beta, not {channel}'
 	want = gen_buildinfo.base_version()
 	if (major, minor, patch) != want:
 		return f'{tag}: version.h says {".".join(map(str, want))}'

@@ -40,7 +40,7 @@ if engine.suffix.lower() != '.exe':
 shutil.copy2(root / 'tools/haumea/minilzo/COPYING', stage / 'COPYING-LZO')
 commit = subprocess.check_output(['git', '-C', str(root), 'rev-parse', 'HEAD'], text=True).strip()
 # The editor and Namaka are built from the same commit and version:
-# 1.41.0.<build>, as gen_buildinfo.py numbers it.
+# 1.0.0.<build>, as gen_buildinfo.py numbers it.
 sys.path.insert(0, str(root / 'tools/release'))
 import gen_buildinfo
 major, minor, patch = gen_buildinfo.base_version(root)

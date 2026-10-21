@@ -2354,7 +2354,8 @@ DrawSplash(float dt)
 	snprintf(tipText, sizeof(tipText), "Tip: %s", tipBody);
 	dl->AddText(font, fontSize, ImVec2(left, H - fontSize * 2.6f), IM_COL32(170, 172, 195, 210), tipText);
 	char version[64];
-	snprintf(version, sizeof(version), "%s  \xC2\xB7  %s", HaumeaFullVersion(), HAUMEA_CHANNEL_DISPLAY);
+	const char *channel = HAUMEA_CHANNEL_DISPLAY;	// empty for production
+	snprintf(version, sizeof(version), "%s%s%s", HaumeaFullVersion(), channel[0] ? "  \xC2\xB7  " : "", channel);
 	ImVec2 versionSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, version);
 	dl->AddText(font, fontSize, ImVec2(W - versionSize.x - left * 0.5f, H - fontSize * 2.6f),
 		IM_COL32(150, 152, 175, 190), version);

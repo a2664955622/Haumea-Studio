@@ -35,8 +35,8 @@ newoption {
 newoption {
 	trigger     = "channel",
 	value       = "NAME",
-	description = "Update channel (master, PE, or agent-alpha)",
-	default     = "master",
+	description = "Release channel: production or beta for releases, dev for other builds",
+	default     = "dev",
 }
 
 -- gmake (gmake2 before premake 5.0 beta 8): objects built with other defines

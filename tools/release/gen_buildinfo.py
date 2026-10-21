@@ -11,10 +11,10 @@ the environment override both (builds from a source archive); without git
 they are 0 and "unknown".
 
 --header writes the C header the editor includes (haumea_buildinfo.h),
---python the agent wheel's _version.py (PEP 440: 1.41.0.57, a dirty tree
-1.41.0.57+dirty). Files are only rewritten when their content changes, so a
+--python the agent wheel's _version.py (PEP 440: 1.0.0.57, a dirty tree
+1.0.0.57+dirty). Files are only rewritten when their content changes, so a
 build that didn't change recompiles nothing. --print prints
-"1.41.0.57 abc1234".
+"1.0.0.57 abc1234".
 """
 import argparse
 import os
