@@ -1,0 +1,36 @@
+# W/A/S/D fly the camera, but not with Ctrl: Ctrl+D duplicates in place and
+# leaves the view where it was (it used to pan right too).
+open "$UI_FIXTURES/ui_map.pwn"
+click_object model=1634
+wait 5
+assert selected == 1
+# Away from the gizmo: keys go to the camera only when it is not hovered.
+move 1000 150
+wait 2
+
+# Control: D alone does fly
+mark_camera
+hold D
+wait 20
+release D
+wait 3
+assert camera_moved > 0.5
+
+mark_camera
+hold Ctrl
+hold D
+wait 20
+release D
+release Ctrl
+wait 5
+assert objects == 5
+assert camera_moved < 0.01
+
+mark_camera
+hold Ctrl
+hold A
+wait 20
+release A
+release Ctrl
+wait 5
+assert camera_moved < 0.01

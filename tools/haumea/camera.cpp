@@ -78,7 +78,11 @@ CCamera::Process(void)
 		}
 	}
 
-	// Keyboard
+	// Keyboard. Not with Ctrl, which makes W/A/S/D shortcuts (Ctrl+D duplicates,
+	// Ctrl+S saves), nor while ImGui has the keyboard (a key held into a field).
+	// Alt (slow) and Shift (fast) still fly.
+	bool flyKeys = !CPad::IsCtrlDown() && !io.WantCaptureKeyboard && !io.WantTextInput;
+	auto flyKey = [flyKeys](int key){ return flyKeys && CPad::IsKeyDown(key); };
 	float flyMul = 1.0f;
 	if(CPad::IsShiftDown()) flyMul = gFlyFastMul;
 	else if(CPad::IsAltDown()) flyMul = gFlySlowMul;
@@ -92,30 +96,30 @@ CCamera::Process(void)
 		wasFlyAcceleration = gFlyAcceleration;
 	}
 	if(gFlyAcceleration){
-		if(CPad::IsKeyDown('W'))
+		if(flyKey('W'))
 			speed += 0.1f;
-		else if(CPad::IsKeyDown('S'))
+		else if(flyKey('S'))
 			speed -= 0.1f;
 		else
 			speed = 0.0f;
 	}else{
-		speed = CPad::IsKeyDown('W') ? gFlySpeed :
-		        CPad::IsKeyDown('S') ? -gFlySpeed : 0.0f;
+		speed = flyKey('W') ? gFlySpeed :
+		        flyKey('S') ? -gFlySpeed : 0.0f;
 	}
 	if(speed > 70.0f) speed = 70.0f;
 	if(speed < -70.0f) speed = -70.0f;
 	dolly(speed*scl*flyMul);
 
 	if(gFlyAcceleration){
-		if(CPad::IsKeyDown('A'))
+		if(flyKey('A'))
 			sidespeed -= 0.1f;
-		else if(CPad::IsKeyDown('D'))
+		else if(flyKey('D'))
 			sidespeed += 0.1f;
 		else
 			sidespeed = 0.0f;
 	}else{
-		sidespeed = CPad::IsKeyDown('A') ? -gFlySpeed :
-		            CPad::IsKeyDown('D') ? gFlySpeed : 0.0f;
+		sidespeed = flyKey('A') ? -gFlySpeed :
+		            flyKey('D') ? gFlySpeed : 0.0f;
 	}
 	if(sidespeed > 70.0f) sidespeed = 70.0f;
 	if(sidespeed < -70.0f) sidespeed = -70.0f;
