@@ -24,9 +24,11 @@ rw::Image *RenderMaterialTextImage(const ObjectMaterialOverride &material);
 // Font family names found on this system, sorted case-insensitively.
 const std::vector<std::string> &GetMaterialFontFamilies(void);
 
-// Describes which installed face the preview uses for a font name. Returns
-// false when the name is unknown and a fallback face is used instead.
-bool DescribeMaterialFont(const char *fontName, bool bold, std::string *description);
+// Describes which installed face the preview uses for a font name: the font
+// itself, a metric-compatible free substitute (Liberation Sans for Arial), or
+// a fallback when neither is here.
+enum { MATERIAL_FONT_FOUND, MATERIAL_FONT_SUBSTITUTE, MATERIAL_FONT_MISSING };
+int DescribeMaterialFont(const char *fontName, bool bold, std::string *description);
 
 // Forgets the font index so newly installed fonts are found.
 void RescanMaterialFonts(void);

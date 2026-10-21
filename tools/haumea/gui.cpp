@@ -5669,9 +5669,15 @@ uiMaterialFontPicker(ObjectMaterialOverride *material)
 	ImGui::TextUnformatted("Font");
 
 	std::string description;
-	if(DescribeMaterialFont(material->font, material->bold, &description))
+	int fontStatus = DescribeMaterialFont(material->font, material->bold, &description);
+	if(fontStatus == MATERIAL_FONT_FOUND)
 		ImGui::TextDisabled("Preview font: %s", description.c_str());
-	else{
+	else if(fontStatus == MATERIAL_FONT_SUBSTITUTE){
+		ImGui::TextDisabled("Preview font: %s (substitute)", description.c_str());
+		if(ImGui::IsItemHovered())
+			ImGui::SetTooltip("\"%s\" is not installed here. This free font has the same letter widths,\n"
+				"so the text fits as in game; the letter shapes differ a little.", material->font);
+	}else{
 		char text[512];
 		snprintf(text, sizeof(text), "\"%s\" is not installed here; the preview uses %s. "
 			"Players without it get Windows' substitute font.", material->font, description.c_str());
@@ -12219,7 +12225,34 @@ gui(void)
 			for(int i = 1; i + 1 < sk::args.argc; i++)
 				if(strcmp(sk::args.argv[i], "--open") == 0)
 					openPath = sk::args.argv[i+1];
-			if(textDrawsIn){
+			// --material-text-png out.png text materialSize font fontSize bold alignment:
+			// one SetObjectMaterialText texture, white on transparent (tests).
+			for(int i = 1; i + 7 < sk::args.argc; i++)
+				if(strcmp(sk::args.argv[i], "--material-text-png") == 0){
+					ObjectMaterialOverride m = {};
+					m.textEnabled = true;
+					snprintf(m.text, sizeof(m.text), "%s", sk::args.argv[i+2]);
+					m.materialSize = atoi(sk::args.argv[i+3]);
+					snprintf(m.font, sizeof(m.font), "%s", sk::args.argv[i+4]);
+					m.fontSize = atoi(sk::args.argv[i+5]);
+					m.bold = atoi(sk::args.argv[i+6]) != 0;
+					m.alignment = atoi(sk::args.argv[i+7]);
+					m.textColor = { 255, 255, 255, 255 };
+					m.backgroundColor = { 0, 0, 0, 0 };
+					std::string font;
+					DescribeMaterialFont(m.font, m.bold, &font);
+					rw::Image *image = RenderMaterialTextImage(m);
+					bool written = image != nil;
+					if(image){
+						rw::writePNG(image, sk::args.argv[i+1]);
+						image->destroy();
+					}
+					printf("material-text-png: %s (%s)\n", written ? sk::args.argv[i+1] : "failed", font.c_str());
+					fflush(stdout);
+					sk::globals.quit = 1;
+				}
+			if(sk::globals.quit){
+			}else if(textDrawsIn){
 				std::string error;
 				bool done = OpenTextDrawFile(textDrawsIn, &error) && SaveTextDrawFile(textDrawsOut, &error);
 				printf("textdraw-roundtrip: %s -> %s: %d textdraw(s)%s%s\n", textDrawsIn, textDrawsOut,

@@ -1,0 +1,9 @@
+# Map Check: material text in a font that isn't installed gets a note naming
+# it and the font the preview uses instead.
+open "$UI_FIXTURES/ui_material_font.pwn"
+wait 5
+assert objects == 1
+shortcut window_map_check
+wait 10
+assert window "Map Check"
+assert item 'Map Check' 'use the font "Haumea Missing Font"'

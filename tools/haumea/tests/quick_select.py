@@ -32,7 +32,7 @@ NONE = ('docs/', 'README', 'CHANGELOG', '.github/', 'tools/release/', 'tools/age
 # 'roundtrip', 'showcase'. Files not listed here (and not in NONE) select all.
 SOURCES = {
 	'texbrowser.cpp': ['texture_browser', 'texture_studio_list', 'materials'],
-	'materialtext.cpp': ['materials', 'texture_browser', 'roundtrip'],
+	'materialtext.cpp': ['materials', 'material_font', 'texture_browser', 'roundtrip'],
 	'custommodels.cpp': ['custom_model', 'showcase', 'roundtrip'],
 	'objectinst.cpp': ['roundtrip', 'showcase', 'import_export', 'materials', 'el_vehicle', 'el_npc'],
 	'mapimport.cpp': ['import_export', 'roundtrip'],
@@ -56,7 +56,7 @@ SOURCES = {
 	'maptools.cpp': ['map_tools'],
 	'radarart.cpp': ['radar_art', 'roundtrip'],
 	'trains.cpp': ['trains', 'roundtrip'],
-	'mapcheck.cpp': ['map_check'],
+	'mapcheck.cpp': ['map_check', 'material_font'],
 	'playerview.cpp': ['player_view'],
 	'interiors.cpp': ['interiors'],
 	'startscreen.cpp': ['startscreen', 'startscreen_launch', 'first_run'],

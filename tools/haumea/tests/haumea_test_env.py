@@ -51,6 +51,8 @@ def editor_env(scratch, virtual_display=False):
     env['APPDATA'] = config
     # Start empty: never inherit the user's old <GTA>/haumea_data.
     env['HAUMEA_NO_MIGRATE'] = '1'
+    # Material-text fonts from a private folder: never the user's real one.
+    env['HAUMEA_USER_FONTS_DIR'] = os.path.join(config, 'fonts')
     env.update(SOFTWARE_GL)
     env.setdefault('LP_NUM_THREADS', '2')
     # Never look for updates, or install one, from a test.

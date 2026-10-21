@@ -7,6 +7,7 @@
 #include "textdraws.h"
 #include "encoding.h"
 #include "radarart.h"
+#include "materialtext.h"
 
 #include <ctype.h>
 #include <math.h>
@@ -460,6 +461,8 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 
 	// --- Materials ---
 	const char *MATERIALS = "Materials";
+	std::map<std::string, std::vector<int>> missingFonts;	// lowercase name -> objects
+	std::map<std::string, std::string> missingFontNames, missingFontPreviews;
 	for(ObjectInst *inst : objects){
 		if(!HasObjectMaterialOverrides(inst))
 			continue;
@@ -483,6 +486,16 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 						"%s: material slot %d: %s", label(inst, name, sizeof(name)), slot, why);
 			}
 			if(m->textEnabled){
+				std::string preview;
+				if(DescribeMaterialFont(m->font, m->bold, &preview) == MATERIAL_FONT_MISSING){
+					std::string key = m->font;
+					for(char &ch : key) ch = tolower((unsigned char)ch);
+					std::vector<int> &list = missingFonts[key];
+					if(list.empty() || list.back() != inst->m_id)
+						list.push_back(inst->m_id);
+					missingFontNames[key] = m->font;
+					missingFontPreviews[key] = preview;
+				}
 				if(badColourCode(m->text))
 					c.add(MAPCHECK_WARNING, MATERIALS, inst, "%s: material text in slot %d has a '{' that isn't a "
 						"{RRGGBB} colour code; it shows as text.", label(inst, name, sizeof(name)), slot);
@@ -492,6 +505,12 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 			}
 		}
 	}
+
+	for(auto &f : missingFonts)
+		c.add(MAPCHECK_INFO, MATERIALS, f.second, "%d object(s) use the font \"%s\", which isn't installed here: "
+			"the preview uses %s. Players see it only if they have the font. To preview it, put its .ttf in "
+			"the fonts folder (Object Info, Open fonts folder) and rescan.", (int)f.second.size(),
+			missingFontNames[f.first].c_str(), missingFontPreviews[f.first].c_str());
 
 	// --- Elements ---
 	const char *ELEMENTS = "Elements";

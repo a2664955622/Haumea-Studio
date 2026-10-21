@@ -145,9 +145,17 @@ Under **Materials** in Object Info, each material slot of an object can get anot
 colour or text. **Browse textures...** shows the textures to choose from, and **Windows →
 Texture Browser** has every texture, Texture Studio's texture list too. The 3D view
 shows them as the SA-MP 0.3.7 client does: text uses the real font files, including
-`{RRGGBB}` colours, and recoloured materials lose their shading as they do in game. Fonts are
-found in the config folder's `fonts`, the Wine prefix's `windows/Fonts` and the system font
-folders.
+`{RRGGBB}` colours, and recoloured materials lose their shading as they do in game.
+
+Fonts are looked up by name in this order: your fonts folder, the system's fonts (and the
+Wine prefix's `windows/Fonts`), the GTA folder, then the fonts Haumea ships. Haumea ships
+SA-MP's own fonts (GTAWEAPON3 for the weapon and skull icons, SampAux3) and puts them in your
+fonts folder at start: `%APPDATA%\haumea\fonts` on Windows, `~/.local/share/haumea/fonts`
+on Linux, `~/Library/Application Support/Haumea/fonts` on macOS. **Open fonts folder** (next to
+the font in Object Info, and in Preferences) opens it: drop in any `.ttf` and press **Rescan
+fonts**. Without Arial, Times New Roman or Courier New, the preview uses Liberation Sans, Serif
+or Mono, which have the same letter widths. Object Info shows which font file the preview uses,
+and Map Check notes a font that isn't installed at all.
 
 ## Custom models (SA-MP 0.3.DL and open.mp)
 

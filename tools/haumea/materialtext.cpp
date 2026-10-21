@@ -563,14 +563,14 @@ findFontFamily(const std::string &wanted, int weight)
 // GDI resolves a missing face through font substitution. Wine and most Linux
 // systems ship metric-compatible replacements for the core Windows fonts.
 static const MaterialFontFace*
-resolveFont(const char *fontName, bool bold, bool *exact)
+resolveFont(const char *fontName, bool bold, int *status)
 {
 	buildFontIndex();
 	int weight = bold ? 700 : 400;
 	std::string wanted = lowerString(fontName && fontName[0] ? fontName : "Arial");
 	const MaterialFontFace *face = findFontFamily(wanted, weight);
-	if(exact)
-		*exact = face != nil;
+	if(status)
+		*status = face ? MATERIAL_FONT_FOUND : MATERIAL_FONT_SUBSTITUTE;
 	if(face)
 		return face;
 
@@ -589,6 +589,8 @@ resolveFont(const char *fontName, bool bold, bool *exact)
 			if((face = findFontFamily(substitutes[i][j], weight)) != nil)
 				return face;
 	}
+	if(status)
+		*status = MATERIAL_FONT_MISSING;
 	static const char *fallbacks[] = {
 		"arial", "liberation sans", "arimo", "dejavu sans", "noto sans", "inter"
 	};
@@ -598,11 +600,11 @@ resolveFont(const char *fontName, bool bold, bool *exact)
 	return gFontFaces.empty() ? nil : &gFontFaces[0];
 }
 
-bool
+int
 DescribeMaterialFont(const char *fontName, bool bold, std::string *description)
 {
-	bool exact = false;
-	const MaterialFontFace *face = resolveFont(fontName, bold, &exact);
+	int status = MATERIAL_FONT_MISSING;
+	const MaterialFontFace *face = resolveFont(fontName, bold, &status);
 	if(description){
 		if(face == nil)
 			*description = "no usable font files found";
@@ -617,7 +619,7 @@ DescribeMaterialFont(const char *fontName, bool bold, std::string *description)
 			*description += slash ? slash + 1 : face->path.c_str();
 		}
 	}
-	return exact;
+	return status;
 }
 
 /*
