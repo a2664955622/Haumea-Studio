@@ -115,6 +115,12 @@ class WindowsCheck:
         result = run(['wineboot', '-i'], env=self.wine_env, timeout=600)
         if result.returncode != 0:
             skip('wineboot failed: ' + result.stderr[-500:])
+        # A new prefix links the user folders (Documents, Desktop, ...) to the
+        # real home folders; empty folders instead, so nothing lands there.
+        for folder in sorted(self.prefix.glob('drive_c/users/*/*')):
+            if folder.is_symlink():
+                folder.unlink()
+                folder.mkdir()
         print('== Wine ' + run(['wine', '--version']).stdout.strip() + ', fresh prefix')
 
     def build(self, gfx):
