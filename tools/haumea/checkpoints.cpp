@@ -130,26 +130,25 @@ hoop(rw::V3d centre, rw::V3d dir, float radius, float thickness, rw::RGBA colour
 	}
 }
 
-// A flat arrow lying level, pointing along dir: a shaft and a head.
+// An arrow pointing along dir: the shaft-and-head shape twice, crossed (once
+// level, once upright), so it reads from any side as the game's arrow does.
 static void
 arrow(rw::V3d centre, rw::V3d dir, float length, rw::RGBA colour)
 {
 	float flat = sqrtf(dir.x * dir.x + dir.y * dir.y);
 	rw::V3d d = flat > 0.001f ? rw::V3d{ dir.x / flat, dir.y / flat, 0.0f } : rw::V3d{ 1.0f, 0.0f, 0.0f };
-	rw::V3d s = { -d.y, d.x, 0.0f };
+	rw::V3d across[2] = { { -d.y, d.x, 0.0f }, { 0.0f, 0.0f, 1.0f } };
 	float half = length * 0.5f, shaft = length * 0.12f, head = length * 0.3f, headLength = length * 0.45f;
-	auto at = [&](float along, float across, float up){
-		return rw::V3d{ centre.x + d.x * along + s.x * across, centre.y + d.y * along + s.y * across,
-			centre.z + up };
-	};
-	float thick = length * 0.08f;
-	for(int side = 0; side < 2; side++){
-		float z = side ? thick : 0.0f;
-		quad(at(-half, -shaft, z), at(half - headLength, -shaft, z), at(half - headLength, shaft, z),
-			at(-half, shaft, z), colour, colour, colour, colour);
+	for(const rw::V3d &s : across){
+		auto at = [&](float along, float side){
+			return rw::V3d{ centre.x + d.x * along + s.x * side, centre.y + d.y * along + s.y * side,
+				centre.z + s.z * side };
+		};
+		quad(at(-half, -shaft), at(half - headLength, -shaft), at(half - headLength, shaft), at(-half, shaft),
+			colour, colour, colour, colour);
 		reserve(3, 3);
-		triangle(vertex(at(half - headLength, -head, z), colour), vertex(at(half, 0.0f, z), colour),
-			vertex(at(half - headLength, head, z), colour));
+		triangle(vertex(at(half - headLength, -head), colour), vertex(at(half, 0.0f), colour),
+			vertex(at(half - headLength, head), colour));
 	}
 }
 
