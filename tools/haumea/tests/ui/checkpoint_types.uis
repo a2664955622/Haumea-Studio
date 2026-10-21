@@ -1,5 +1,7 @@
-# Checkpoints drawn as in game: a race of nine, one of each type 0-8, picked by
-# clicking its marker; saved and read back with every type.
+# Checkpoints drawn as in game: a race of nine, one of each type 0-8, each set
+# while it is selected from placing it (size 1, 4 m apart, so their markers
+# don't overlap); then nothing draws the stand-in model, and all nine types
+# save and read back.
 open "$UI_FIXTURES/ui_floor_streamer.pwn"
 shortcut window_browser
 wait 5
@@ -11,95 +13,137 @@ wait 3
 scroll_until 'Object Browser' 'Race'
 click_item 'Object Browser' 'Place' -1
 wait 3
-click_world 1992 -3000 4 shift
-wait 5
-click_world 1994 -3000 4 shift
-wait 5
-click_world 1996 -3000 4 shift
-wait 5
-click_world 1998 -3000 4 shift
-wait 5
-click_world 2000 -3000 4 shift
-wait 5
-click_world 2002 -3000 4 shift
-wait 5
-click_world 2004 -3000 4 shift
-wait 5
-click_world 2006 -3000 4 shift
-wait 5
-click_world 2008 -3000 4
+click_world 1996 -3004 4
 wait 5
 key Esc
-assert objects == 10
-# Drawn as markers and icons: the stand-in model never.
-wait 5
-assert proxy_draws == 0
+wait 3
+assert objects == 2
 shortcut window_object_info
 wait 5
-click_world 1994 -3000 4.6
+set_item 'Object Info' 'Size' "1"
+wait 3
+scroll_until 'Object Browser' 'Race'
+click_item 'Object Browser' 'Place' -1
+wait 3
+click_world 2000 -3004 4
 wait 5
-assert selected == 1
+key Esc
+wait 3
+assert objects == 3
+set_item 'Object Info' 'Size' "1"
+wait 3
 click_item 'Object Info' 'Type'
 wait 3
 scroll_until '*' '1  Finish'
 click_item '*' '1  Finish'
 wait 3
-click_world 1996 -3000 4.6
+scroll_until 'Object Browser' 'Race'
+click_item 'Object Browser' 'Place' -1
+wait 3
+click_world 2004 -3004 4
 wait 5
-assert selected == 1
+key Esc
+wait 3
+assert objects == 4
+set_item 'Object Info' 'Size' "1"
+wait 3
 click_item 'Object Info' 'Type'
 wait 3
 scroll_until '*' '2  Nothing'
 click_item '*' '2  Nothing'
 wait 3
-click_world 1998 -3000 4.6
+scroll_until 'Object Browser' 'Race'
+click_item 'Object Browser' 'Place' -1
+wait 3
+click_world 1996 -3000 4
 wait 5
-assert selected == 1
+key Esc
+wait 3
+assert objects == 5
+set_item 'Object Info' 'Size' "1"
+wait 3
 click_item 'Object Info' 'Type'
 wait 3
 scroll_until '*' '3  Air normal'
 click_item '*' '3  Air normal'
 wait 3
-click_world 2000 -3000 4.6
+scroll_until 'Object Browser' 'Race'
+click_item 'Object Browser' 'Place' -1
+wait 3
+click_world 2000 -3000 4
 wait 5
-assert selected == 1
+key Esc
+wait 3
+assert objects == 6
+set_item 'Object Info' 'Size' "1"
+wait 3
 click_item 'Object Info' 'Type'
 wait 3
 scroll_until '*' '4  Air finish'
 click_item '*' '4  Air finish'
 wait 3
-click_world 2002 -3000 4.6
+scroll_until 'Object Browser' 'Race'
+click_item 'Object Browser' 'Place' -1
+wait 3
+click_world 2004 -3000 4
 wait 5
-assert selected == 1
+key Esc
+wait 3
+assert objects == 7
+set_item 'Object Info' 'Size' "1"
+wait 3
 click_item 'Object Info' 'Type'
 wait 3
 scroll_until '*' '5  Air (rotates and stops)'
 click_item '*' '5  Air (rotates and stops)'
 wait 3
-click_world 2004 -3000 4.6
+scroll_until 'Object Browser' 'Race'
+click_item 'Object Browser' 'Place' -1
+wait 3
+click_world 1996 -2996 4
 wait 5
-assert selected == 1
+key Esc
+wait 3
+assert objects == 8
+set_item 'Object Info' 'Size' "1"
+wait 3
 click_item 'Object Info' 'Type'
 wait 3
 scroll_until '*' '6  Air (grows, shrinks, disappears)'
 click_item '*' '6  Air (grows, shrinks, disappears)'
 wait 3
-click_world 2006 -3000 4.6
+scroll_until 'Object Browser' 'Race'
+click_item 'Object Browser' 'Place' -1
+wait 3
+click_world 2000 -2996 4
 wait 5
-assert selected == 1
+key Esc
+wait 3
+assert objects == 9
+set_item 'Object Info' 'Size' "1"
+wait 3
 click_item 'Object Info' 'Type'
 wait 3
 scroll_until '*' '7  Air (swings down and up)'
 click_item '*' '7  Air (swings down and up)'
 wait 3
-click_world 2008 -3000 4.6
+scroll_until 'Object Browser' 'Race'
+click_item 'Object Browser' 'Place' -1
+wait 3
+click_world 2004 -2996 4
 wait 5
-assert selected == 1
+key Esc
+wait 3
+assert objects == 10
+set_item 'Object Info' 'Size' "1"
+wait 3
 click_item 'Object Info' 'Type'
 wait 3
 scroll_until '*' '8  Air (swings up and down)'
 click_item '*' '8  Air (swings up and down)'
 wait 3
+# Drawn as markers and icons: the stand-in model never.
+assert proxy_draws == 0
 key Ctrl+S
 wait 5
 reopen
