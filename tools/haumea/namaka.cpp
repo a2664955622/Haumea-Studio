@@ -71,7 +71,12 @@ logPath(void)
 	return namakaDir() + "/install.log";
 }
 
-// The bundled wheel's file name in dir, or "".
+struct Version;
+static std::string wheelVersion(const std::string &wheel);
+static bool newerWheel(const std::string &a, const std::string &b);
+
+// The bundled wheel's file name in dir, or "": the newest by version when
+// there are several (the installer then asks to remove the others).
 static std::string
 wheelIn(const std::string &dir)
 {
@@ -99,8 +104,11 @@ wheelIn(const std::string &dir)
 		closedir(d);
 	}
 #endif
-	std::sort(names.begin(), names.end());
-	return names.empty() ? std::string() : names.back();
+	std::string best;
+	for(const std::string &name : names)
+		if(best.empty() || newerWheel(name, best))
+			best = name;
+	return best;
 }
 
 // Where Namaka's wheel, wheelhouse and installer are: <install>/namaka in a
@@ -198,6 +206,12 @@ wheelVersion(const std::string &wheel)
 	size_t dash = wheel.find('-');
 	size_t end = dash == std::string::npos ? std::string::npos : wheel.find('-', dash + 1);
 	return end == std::string::npos ? "" : wheel.substr(dash + 1, end - dash - 1);
+}
+
+static bool
+newerWheel(const std::string &a, const std::string &b)
+{
+	return newer(parseVersion(wheelVersion(a)), parseVersion(wheelVersion(b)));
 }
 
 static std::string

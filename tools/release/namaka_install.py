@@ -43,17 +43,17 @@ def venv_python(venv):
     return venv / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
 
 
-def offline_env():
-    env = dict(os.environ, PIP_DISABLE_PIP_VERSION_CHECK='1', PIP_NO_INPUT='1')
-    env.pop('PIP_INDEX_URL', None)
-    return env
+def pip_env():
+    """The user's own pip settings (a company index or proxy), with no prompts and no
+    version check. The bundle steps pass --no-index, so only downloads use the index."""
+    return dict(os.environ, PIP_DISABLE_PIP_VERSION_CHECK='1', PIP_NO_INPUT='1')
 
 
 def run(argv, env=None):
     """Runs argv with its output passed through; True on success."""
     say('$ ' + ' '.join(str(a) for a in argv))
     process = subprocess.Popen([str(a) for a in argv], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                               env=env or offline_env(), text=True, errors='replace')
+                               env=env or pip_env(), text=True, errors='replace')
     for line in process.stdout:
         say(line.rstrip())
     return process.wait() == 0
@@ -64,7 +64,11 @@ def bundled_wheel(bundle):
     wheels = sorted(bundle.glob('haumea_namaka-*.whl')) or sorted(bundle.glob('haumea_agent-*.whl'))
     if not wheels:
         fail('the bundle has no Namaka wheel (%s): reinstall Haumea, or use a release build' % bundle)
-    return wheels[-1]
+    if len(wheels) > 1:
+        # A bundle unzipped over an older one: which is newer isn't for a string sort to say.
+        fail('the bundle has %d Namaka wheels (%s): remove the older ones from %s'
+             % (len(wheels), ', '.join(w.name for w in wheels), bundle))
+    return wheels[0]
 
 
 def recover(venv):
@@ -99,7 +103,7 @@ def missing_binary_wheels(python, wheelhouse, constraints):
         '    if (canonicalize_name(name), version.split(";")[0].strip()) not in have:\n'
         '        print(name.strip() + "==" + version.strip())\n')
     result = subprocess.run([str(python), '-c', code, str(wheelhouse), str(constraints)],
-                            capture_output=True, text=True, env=offline_env())
+                            capture_output=True, text=True, env=pip_env())
     if result.returncode != 0:
         fail('could not compare the bundled wheels with this Python:\n' + result.stderr[-2000:])
     return [line for line in result.stdout.splitlines() if line.strip()]
@@ -154,7 +158,7 @@ def install(bundle, venv, allow_network):
             say('STEP 3/%d Downloading the parts for Python %s (%d)' % (steps, version, len(missing)))
             if not allow_network:
                 undo('Namaka needs Python 3.14 to install offline, or an internet connection.', 2)
-            env = offline_env()
+            env = pip_env()
             ok = run([python, '-m', 'pip', 'download', '--no-input', '--no-deps', '--only-binary=:all:',
                       '-d', download] + missing, env)
             if not ok:
@@ -184,7 +188,7 @@ def count_tools(python):
     code = ('import asyncio\n'
             'from haumea_agent_tools import haumea_mcp as m\n'
             'print(len(asyncio.run(m.mcp.list_tools())))\n')
-    result = subprocess.run([str(python), '-I', '-c', code], capture_output=True, text=True, env=offline_env())
+    result = subprocess.run([str(python), '-I', '-c', code], capture_output=True, text=True, env=pip_env())
     if result.returncode != 0:
         say(result.stdout + result.stderr)
         return None
@@ -209,7 +213,7 @@ def status(venv):
                              'for name in ("haumea-namaka", "haumea-agent"):\n'
                              '    try: print("VERSION " + m.version(name)); break\n'
                              '    except m.PackageNotFoundError: pass\n'],
-                            capture_output=True, text=True, env=offline_env())
+                            capture_output=True, text=True, env=pip_env())
     say(result.stdout.strip())
     tools = count_tools(python)
     if tools is not None:
