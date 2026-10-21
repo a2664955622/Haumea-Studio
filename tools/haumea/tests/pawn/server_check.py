@@ -12,7 +12,8 @@ joins; on its spawn the gamemode calls the map's _RemoveWorldObjectsForPlayer,
 _ShowForPlayer and _ShowTextDraws and its sound helpers for it, then checks the
 server's state: the gang zones are visible to it, its buildings are removed,
 the textdraws and per-player gang zones are visible, streamed gang zones load
-around it and unload far away, every map NPC exists, and the NPCs that play a
+around it and unload far away, objects limited to a dynamic area are streamed
+to it only once it stands inside that area, every map NPC exists, and the NPCs that play a
 recording or walk a path or the nodes are doing so and have moved. The server
 log must have no errors or warnings.
 
@@ -175,6 +176,11 @@ def gamemode(map_path, source):
 		              f'\tnew left = HC_playerZones(HC_probe) - HC_baseZones;\n'
 		              f'\tprintf("[check] streamed gang zones: %d loaded on the first zone, %d left far away", streamedZones, left);\n'
 		              f'\tif(streamedZones < 1 || left != 0) failures++;')
+	# Dynamic areas: each object limited to one is not streamed to the probe
+	# just outside it (within stream range), and is once the probe is inside.
+	area_check = ''
+	if streamer and re.search(r'CreateDynamic(Circle|Cylinder|Sphere|Rectangle|Cuboid|Cube|Polygon)\(', source):
+		area_check = '\tfailures += HC_CheckAreas();'
 	return f'''#include <open.mp>
 {'#include <streamer>' if streamer else ''}
 {HOOKS}
@@ -236,6 +242,7 @@ public HC_Check()
 		if(playerZones != HC_calls[HC_PZONE] - HC_fails[HC_PZONE]) failures++;
 	}}
 {zone_check}
+{area_check}
 	new removed = GetPlayerBuildingsRemoved(HC_probe);
 	printf("[check] buildings removed for the player: %d of %d", removed, HC_calls[HC_REMOVE]);
 	if(removed != HC_calls[HC_REMOVE]) failures++;
@@ -264,6 +271,7 @@ public HC_CheckRecordings()
 	SendRconCommand("exit");
 }}
 
+{AREA_CHECK if area_check else ''}
 stock HC_CheckMovers(bool:recordings)
 {{
 	for(new m = 0; m < HC_numMovers; m++)
@@ -285,6 +293,64 @@ stock HC_CheckMovers(bool:recordings)
 }}
 {DEFINES}
 #include "{map_path}"
+'''
+
+
+# The probe at a spot, twice so the streamer knows which areas it is in
+# before it streams the objects.
+AREA_CHECK = r'''
+stock HC_probeAt(Float:x, Float:y, Float:z, world, interior)
+{
+	for(new u = 0; u < 2; u++)
+		Streamer_UpdateEx(HC_probe, x, y, z, world, interior, -1, -1, 0);
+}
+
+stock HC_first(type, id, data, fallback)
+{
+	new values[1];
+	return Streamer_GetArrayData(type, id, data, values) && Streamer_GetArrayDataLength(type, id, data) > 0 ?
+		values[0] : fallback;
+}
+
+stock HC_CheckAreas()
+{
+	new failures, checked, skipped;
+	static const Float:away[][3] = { {0.0, 0.0, 60.0}, {0.0, 0.0, -60.0}, {60.0, 0.0, 0.0}, {-60.0, 0.0, 0.0},
+		{0.0, 60.0, 0.0}, {0.0, -60.0, 0.0} };
+	// The streamer leaves NPCs out unless asked.
+	Streamer_ToggleItemUpdate(HC_probe, STREAMER_TYPE_OBJECT, true);
+	Streamer_ToggleItemUpdate(HC_probe, STREAMER_TYPE_AREA, true);
+	for(new o = 1; o <= Streamer_GetUpperBound(STREAMER_TYPE_OBJECT); o++)
+	{
+		if(!IsValidDynamicObject(o) || Streamer_GetArrayDataLength(STREAMER_TYPE_OBJECT, o, E_STREAMER_AREA_ID) < 1)
+			continue;
+		new area = HC_first(STREAMER_TYPE_OBJECT, o, E_STREAMER_AREA_ID, -1), Float:x, Float:y, Float:z;
+		new world = HC_first(STREAMER_TYPE_OBJECT, o, E_STREAMER_WORLD_ID, 0);
+		new interior = HC_first(STREAMER_TYPE_OBJECT, o, E_STREAMER_INTERIOR_ID, 0);
+		GetDynamicObjectPos(o, x, y, z);
+		new outside = -1;
+		for(new a = 0; a < sizeof away && outside < 0; a++)
+			if(!IsPointInDynamicArea(area, x + away[a][0], y + away[a][1], z + away[a][2])) outside = a;
+		if(!IsPointInDynamicArea(area, x, y, z) || outside < 0)
+		{
+			skipped++;	// the object stands outside its own area, or the area is everywhere near it
+			continue;
+		}
+		HC_probeAt(x + away[outside][0], y + away[outside][1], z + away[outside][2], world, interior);
+		new bool:before = bool:Streamer_IsItemVisible(HC_probe, STREAMER_TYPE_OBJECT, o);
+		HC_probeAt(x, y, z, world, interior);
+		new bool:after = bool:Streamer_IsItemVisible(HC_probe, STREAMER_TYPE_OBJECT, o);
+		checked++;
+		if(before || !after)
+		{
+			printf("[check] dynamic object %d (area %d): %s outside the area, %s inside", o, area,
+				before ? "streamed" : "not streamed", after ? "streamed" : "NOT streamed");
+			failures++;
+		}
+	}
+	printf("[check] objects limited to a dynamic area: %d checked, %d failed, %d skipped", checked, failures, skipped);
+	return failures || !checked;
+}
 '''
 
 
