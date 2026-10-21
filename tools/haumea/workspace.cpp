@@ -265,7 +265,7 @@ saveSettings(void)
 		const RecentInfo &info = gRecentInfo[recent];
 		fprintf(f, "recent_info %lld %d %s\n", info.lastOpened, info.pinned ? 1 : 0, recent.c_str());
 	}
-	fprintf(f, "open_last_workspace %d\n", gOpenLastWorkspace ? 1 : 0);
+	fprintf(f, "skip_start_screen %d\n", gOpenLastWorkspace ? 1 : 0);
 	fclose(f);
 }
 
@@ -293,8 +293,8 @@ loadSettings(std::string *game, std::string *workspace)
 			int pinned = 0, used = 0;
 			if(sscanf(line + 12, "%lld %d %n", &when, &pinned, &used) >= 2 && used > 0)
 				gRecentInfo[line + 12 + used] = { when, pinned != 0 };
-		}else if(strncmp(line, "open_last_workspace ", 20) == 0)
-			gOpenLastWorkspace = atoi(line + 20) != 0;
+		}else if(strncmp(line, "skip_start_screen ", 18) == 0)
+			gOpenLastWorkspace = atoi(line + 18) != 0;
 	}
 	fclose(f);
 }
