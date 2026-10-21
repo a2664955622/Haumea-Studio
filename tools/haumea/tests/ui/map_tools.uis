@@ -1,4 +1,4 @@
-# Map tools: Array with its preview, then Apply (one undo step); Mirror.
+# Map tools: Array with its preview, then Apply (one undo step); Mirror the same way.
 open "$UI_FIXTURES/ui_map.pwn"
 click_object model=1271
 wait 5
@@ -26,6 +26,8 @@ click_item 'Tools' 'Around'
 wait 3
 click_item '*' 'World origin'
 wait 3
-click_item 'Tools' '##apply'
+assert objects == 4
+assert pawn_lacks "CreateObject(1634, -2030.000000"
+click_item 'Tools' '##mirror_apply'
 wait 5
 assert pawn_contains "CreateObject(1634, -2030.000000"

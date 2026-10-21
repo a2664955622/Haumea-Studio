@@ -321,16 +321,52 @@ mirroredRotation(const rw::Quat &stored, int axis, int symmetryAxis)
 	return QuatFromMatrix(w);
 }
 
+static bool
+mirrorCheck(int axis, const std::vector<ObjectInst*> &objs, std::string *error)
+{
+	if(!needSelection(objs, 1, error))
+		return false;
+	if(axis < 0 || axis > 1){
+		if(error) *error = "mirror across X or Y";
+		return false;
+	}
+	return true;
+}
+
+static void
+mirrorTransform(ObjectInst *inst, int axis, float plane, rw::V3d *pos, rw::Quat *rot)
+{
+	*pos = inst->m_translation;
+	setComp(*pos, axis, 2.0f * plane - comp(*pos, axis));
+	*rot = mirroredRotation(inst->m_rotation, axis, modelSymmetryAxis(inst->m_objectId));
+}
+
+bool
+MapToolsMirrorPreview(int axis, const float *at, std::vector<rw::V3d> &positions,
+	std::vector<rw::Quat> &rotations, float *plane, std::string *error)
+{
+	positions.clear();
+	rotations.clear();
+	std::vector<ObjectInst*> objs = selectedObjects();
+	if(!mirrorCheck(axis, objs, error))
+		return false;
+	*plane = at ? *at : comp(groupCentre(objs), axis);
+	for(size_t i = 0; i < objs.size(); i++){
+		rw::V3d pos;
+		rw::Quat rot;
+		mirrorTransform(objs[i], axis, *plane, &pos, &rot);
+		positions.push_back(pos);
+		rotations.push_back(rot);
+	}
+	return true;
+}
+
 int
 MapToolsMirror(int axis, const float *at, bool keepOriginal, std::string *error)
 {
 	std::vector<ObjectInst*> objs = selectedObjects();
-	if(!needSelection(objs, 1, error))
+	if(!mirrorCheck(axis, objs, error))
 		return -1;
-	if(axis < 0 || axis > 1){
-		if(error) *error = "mirror across X or Y";
-		return -1;
-	}
 	float plane = at ? *at : comp(groupCentre(objs), axis);
 	int changed = 0;
 	UndoBeginGroup();
@@ -346,10 +382,10 @@ MapToolsMirror(int axis, const float *at, bool keepOriginal, std::string *error)
 		objs = selectedObjects();
 	}
 	for(size_t i = 0; i < objs.size(); i++){
-		rw::V3d pos = objs[i]->m_translation;
-		setComp(pos, axis, 2.0f * plane - comp(pos, axis));
-		if(placeObject(objs[i], pos, mirroredRotation(objs[i]->m_rotation, axis,
-		                                              modelSymmetryAxis(objs[i]->m_objectId))))
+		rw::V3d pos;
+		rw::Quat rot;
+		mirrorTransform(objs[i], axis, plane, &pos, &rot);
+		if(placeObject(objs[i], pos, rot))
 			changed++;
 	}
 	UndoEndGroup();
@@ -776,7 +812,7 @@ mirrorSection(const std::vector<ObjectInst*> &objs)
 {
 	static int axis = 0, around = 0;
 	static float at[2] = { 0.0f, 0.0f };
-	static bool keepOriginal = false;
+	static bool keepOriginal = false, preview = true;
 	static const char *axes[] = { "X (east-west)", "Y (north-south)" };
 	static const char *pivots[] = { "Selection centre", "World origin", "At" };
 	ImGui::Combo("Axis##mirror", &axis, axes, IM_ARRAYSIZE(axes));
@@ -793,16 +829,43 @@ mirrorSection(const std::vector<ObjectInst*> &objs)
 	}
 	ImGui::Checkbox("Keep original", &keepOriginal);
 	ImGui::SetItemTooltip("Mirrors a copy, for symmetric builds: the selection stays.");
+	ImGui::Checkbox("Preview##mirror", &preview);
+	ImGui::SetItemTooltip("Shows the mirror and where the objects go before you apply.");
+	float origin = 0.0f;
+	const float *plane = around == 0 ? nil : around == 1 ? &origin : &at[axis];
 	ImGui::BeginDisabled(objs.empty());
-	if(ImGui::Button("Mirror##apply")){
+	if(ImGui::Button("Apply##mirror_apply")){
 		std::string error;
-		float origin = 0.0f;
-		const float *plane = around == 0 ? nil : around == 1 ? &origin : &at[axis];
 		reportResult(MapToolsMirror(axis, plane, keepOriginal, &error), error, "Mirror");
 	}
 	ImGui::SetItemTooltip("Objects are turned, not flipped: ramps and stairs rise the\n"
 		"mirrored way, but a model that is lopsided both ways keeps its left and right.");
 	ImGui::EndDisabled();
+	std::vector<rw::V3d> positions;
+	std::vector<rw::Quat> rotations;
+	float where;
+	if(preview && !objs.empty() &&
+	   MapToolsMirrorPreview(axis, plane, positions, rotations, &where, nil)){
+		// The mirror: a line across the selection at its height, then a box
+		// where each object goes.
+		rw::V3d mn = objs[0]->m_translation, mx = mn;
+		for(ObjectInst *inst : objs)
+			for(int c = 0; c < 3; c++){
+				setComp(mn, c, std::min(comp(mn, c), comp(inst->m_translation, c)));
+				setComp(mx, c, std::max(comp(mx, c), comp(inst->m_translation, c)));
+			}
+		int other = 1 - axis;
+		float from = comp(mn, other) - 10.0f, to = comp(mx, other) + 10.0f;
+		rw::RGBA lineCol = { 255, 200, 40, 230 };
+		for(float z : { mn.z, mx.z + 2.0f }){
+			rw::V3d a = { 0.0f, 0.0f, z }, b = a;
+			setComp(a, axis, where); setComp(a, other, from);
+			setComp(b, axis, where); setComp(b, other, to);
+			RenderLine(a, b, lineCol, lineCol);
+		}
+		for(size_t i = 0; i < positions.size(); i++)
+			drawBox(objs[i]->m_objectId, positions[i], rotations[i], { 90, 200, 255, 220 });
+	}
 }
 
 static void

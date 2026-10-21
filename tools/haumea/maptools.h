@@ -30,6 +30,10 @@ int MapToolsArray(const MapArrayParams &params, std::string *error);
 // through *at on that axis, or the selection's centre when at is nil.
 // keepOriginal mirrors a copy and leaves the selection where it is.
 int MapToolsMirror(int axis, const float *at, bool keepOriginal, std::string *error);
+// Where the selection's objects would go (selection order), and the mirror's
+// coordinate on that axis, for previews.
+bool MapToolsMirrorPreview(int axis, const float *at, std::vector<rw::V3d> &positions,
+	std::vector<rw::Quat> &rotations, float *plane, std::string *error);
 
 // axis 0-2 (X, Y, Z); mode 0 = min, 1 = centre, 2 = max of the bounding
 // boxes, to the first selected object.
