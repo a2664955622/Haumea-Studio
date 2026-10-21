@@ -512,7 +512,9 @@ readNotice(void)
 void
 UpdaterInstallStaged(void)
 {
-	if(!updatesAllowed())
+	// Never from a UI script, even against a test server: installing ends in
+	// starting a new editor.
+	if(!updatesAllowed() || UiScriptActive() || hasArg("--ui-script"))
 		return;
 	std::string staged = updateDir() + "/staged";
 	if(!UpdateIsDirectory(staged))

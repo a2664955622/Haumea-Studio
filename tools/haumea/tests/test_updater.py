@@ -124,6 +124,8 @@ class UpdaterTests(unittest.TestCase):
     def run_editor(self, *args, current='1.41.0.10', url=None, skip=None):
         env = editor_env(str(self.tmp))
         env.pop('HAUMEA_NO_UPDATE', None)
+        for var in ('DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY'):	# never the user's desktop
+            env.pop(var, None)
         env['HAUMEA_UPDATE_URL'] = url or self.github.url
         env['HAUMEA_UPDATE_CHANNEL'] = 'master'
         env['HAUMEA_UPDATE_CURRENT'] = current
@@ -274,7 +276,9 @@ class UpdaterTests(unittest.TestCase):
         (server / 'gamemodes').mkdir(parents=True)
         env = editor_env(str(self.tmp))
         env.pop('HAUMEA_NO_UPDATE', None)
-        env.pop('WAYLAND_DISPLAY', None)
+        # Only Xvfb: GLFW prefers Wayland, so the user's WAYLAND_DISPLAY must go.
+        for var in ('DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY'):
+            env.pop(var, None)
         env['HAUMEA_UPDATE_URL'] = self.github.url
         env['UPDATE_SHOT'] = str(self.tmp / 'banner.png')
         result = subprocess.run(['xvfb-run', '-a', '-s', '-screen 0 1600x1000x24', BINARY, '--game', str(game),
