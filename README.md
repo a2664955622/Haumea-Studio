@@ -107,7 +107,7 @@ The first start asks for your game folder and workspace (see [Run](#run)).
 
 ## Namaka
 
-Namaka is bundled as a Python companion. Its CLI and MCP adapter connect to Haumea over a private local socket; the editor does not host MCP internally. See [the bundle setup guide](tools/release/AGENT_README.md) to install the companion, launch the editor with `--agent-socket`, and configure Claude Code or another MCP host. Its `save` command exports Pawn source through Haumea's native or streamer exporter.
+Namaka (formerly Agent Alpha) is bundled as a Python companion. Its CLI and MCP adapter connect to Haumea over a private local socket; the editor does not host MCP internally. Install it from **Windows → Namaka** in the editor (offline with Python 3.14), or see [the bundle setup guide](tools/release/AGENT_README.md) to install the companion by hand, launch the editor with `--agent-socket`, and configure Claude Code or another MCP host. Its `save` command exports Pawn source through Haumea's native or streamer exporter.
 
 ## Build
 

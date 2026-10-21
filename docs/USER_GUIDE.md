@@ -170,10 +170,32 @@ saved file say which functions to call from your gamemode. **File → Open** rea
 and Texture Studio `.db` maps; **File → Import → Merge Pawn File** also takes MTA:SA `.map` and
 IPL files.
 
-## The agent
+## Namaka (AI assistant)
 
-Namaka lets an AI assistant (Claude Code or another MCP host) look at and edit the open map
-through a local socket. See [the agent setup guide](../tools/release/AGENT_README.md).
+Namaka, named after Haumea's inner moon, lets an AI assistant (Claude Code, Claude Desktop or
+another MCP host) look at and edit the open map through a local socket. It used to be called
+Agent Alpha.
+
+**Windows → Namaka** installs it. It needs Python 3.10 or newer; the panel says which Python it
+found and what to install if there is none.
+
+- With **Python 3.14**, **Install** works offline from the files that come with Haumea.
+- With 3.10-3.13 it downloads only the few parts Haumea bundles for 3.14 alone.
+
+Installing runs in the background: the panel shows progress, **Cancel** stops it, and **Open the
+log** shows what happened. Namaka goes in the config folder (`~/.config/haumea/namaka` on Linux,
+`%APPDATA%\Haumea\namaka` on Windows), so updating Haumea doesn't move it.
+
+- **Repair** installs it again; the old install stays until the new one works.
+- **Update** appears when Haumea comes with a newer Namaka, and Haumea also updates it after an
+  editor update.
+- **Uninstall** removes it.
+
+**Copy for Claude Code** puts a `claude mcp add` command on the clipboard, and **Copy for Claude
+Desktop** an entry for `claude_desktop_config.json`, both for this install and this editor's
+socket. Haumea must be listening: start it with `launch-haumea-agent` (or `--agent-socket`).
+An Agent Alpha install keeps working; once Namaka is set up, point your MCP client at it and
+delete the old folder. More in [the setup guide](../tools/release/AGENT_README.md).
 
 ## Shortcuts
 

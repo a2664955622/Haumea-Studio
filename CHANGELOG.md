@@ -79,6 +79,12 @@ game.
   numpad + / -), Ctrl+Shift+= / - for fly speed, Ctrl+wheel or
   Ctrl+Alt+= / - for the interface size, PgUp / PgDn to scroll a panel.
 
+**Namaka** (formerly Agent Alpha), the AI assistant companion, installs from
+**Windows → Namaka**: offline with Python 3.14, or downloading only a few
+parts on 3.10-3.13. It has Repair, Update, Uninstall, a log, and copies the
+MCP setup for Claude Code or Claude Desktop. Its install sits in the config
+folder, so editor updates don't move it.
+
 **The agent** (Namaka) can edit the open map and every element kind,
 run Map Check and Test in game, and grab frames with the panels.
 
