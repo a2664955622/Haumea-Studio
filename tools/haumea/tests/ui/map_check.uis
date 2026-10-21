@@ -1,0 +1,41 @@
+# Map Check: an audio stream without a URL is a problem; clicking it selects the sound; with a URL it's gone.
+open "$UI_FIXTURES/ui_floor.pwn"
+shortcut window_browser
+wait 5
+click_item 'Object Browser' 'SA-MP'
+wait 5
+scroll_until 'Object Browser' 'Race'
+click_item 'Object Browser' 'Place' -2
+wait 3
+click_world 2003 -3003 4
+wait 5
+key Esc
+shortcut window_object_info
+wait 5
+click_item 'Object Info' 'Kind'
+wait 3
+click_item '*' 'Audio stream'
+wait 3
+# Select the floor, so the problem's click has something to change.
+click_object model=19377
+wait 5
+assert selected.model == 19377
+shortcut window_map_check
+wait 10
+assert window "Map Check"
+assert item 'Map Check' 'PlayAudioStreamForPlayer needs'
+click_item 'Map Check' 'PlayAudioStreamForPlayer needs'
+wait 3
+assert selected == 1
+assert selected.model != 19377
+# Map Check floats over Object Info: close it to type the URL.
+shortcut window_map_check
+wait 3
+set_item 'Object Info' 'URL' "http://example.com/radio.mp3"
+wait 3
+close_popup
+shortcut window_map_check
+wait 5
+click_item 'Map Check' 'Check again'
+wait 5
+assert no_item 'Map Check' 'PlayAudioStreamForPlayer needs'
