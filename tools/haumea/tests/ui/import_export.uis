@@ -1,0 +1,47 @@
+# File > Import > Merge Pawn File with an MTA:SA .map and a Texture Studio .db
+# (two objects each, the .db one textured), then File > Export > Selection as
+# Pawn (what was merged last, still selected) to the editor's pawn-exports folder.
+open "$UI_FIXTURES/ui_map.pwn"
+wait 5
+assert objects == 4
+
+click_item '' 'File'
+wait 3
+click_item '*' 'Import'
+wait 3
+click_item '*' 'Merge Pawn File...'
+wait 5
+assert window "Merge Pawn File"
+set_item 'Merge Pawn File' '##merge_path' "$UI_FIXTURES/ui_mta.map"
+click_item 'Merge Pawn File' 'Merge into map'
+wait 10
+assert toast_contains "Merged ui_mta.map"
+assert objects == 6
+assert pawn_contains "CreateObject(1634, 2050.000000, -3000.000000"
+
+set_item 'Merge Pawn File' '##merge_path' "$UI_FIXTURES/ui_tstudio.db"
+click_item 'Merge Pawn File' 'Merge into map'
+wait 10
+assert toast_contains "Merged ui_tstudio.db"
+assert objects == 8
+assert pawn_contains "\"ferry_build14\""
+assert pawn_contains "@note(\"ts ramp\")"
+click_item 'Merge Pawn File' 'Close'
+wait 3
+assert no_window "Merge Pawn File"
+
+# What came in from the .db stays selected: export it alone
+assert selected == 2
+click_item '' 'File'
+wait 3
+click_item '*' 'Export'
+wait 3
+click_item '*' 'Selection as Pawn...'
+wait 5
+assert window "Export Pawn Code"
+set_item 'Export Pawn Code' 'Name' "ui_export"
+click_item 'Export Pawn Code' 'Export'
+wait 5
+assert toast_contains "Exported 2 Pawn object(s)"
+assert file_contains "$XDG_CONFIG_HOME/haumea/pawn-exports/ui_export.pwn" "\"ferry_build14\""
+assert file_contains "$XDG_CONFIG_HOME/haumea/pawn-exports/ui_export.pwn" "1634, 2070.000000"

@@ -1,0 +1,4 @@
+<map edf:definitions="editor_main">
+    <object id="mta_crate" model="1271" posX="2040.0" posY="-3000.0" posZ="5.0" rotX="0" rotY="0" rotZ="45"/>
+    <object id="mta_ramp" model="1634" posX="2050.0" posY="-3000.0" posZ="5.0" rotX="0" rotY="0" rotZ="90"/>
+</map>

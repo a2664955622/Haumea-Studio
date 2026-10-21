@@ -1,0 +1,25 @@
+# Texture Browser > Texture Studio list: find a texture by its Texture Studio
+# number, TXD and name, click it onto the selected wall, one undo step.
+open "$UI_FIXTURES/ui_map.pwn"
+click_object model=19353
+wait 5
+assert selected.texture 0 "white"
+shortcut window_textures
+wait 10
+assert window "Texture Browser"
+click_item 'Texture Browser' 'Texture Studio list'
+wait 5
+click_item 'Texture Browser' '##tssearch'
+type "84 a51 redmetal"
+wait 10
+click_item 'Texture Browser' '##tex redmetal'
+wait 5
+assert selected.texture 0 "redmetal"
+assert pawn_contains "\"a51\", \"redmetal\""
+key Esc
+move 640 400
+wait 2
+key Ctrl+Z
+wait 5
+assert selected.texture 0 "white"
+assert pawn_lacks "\"redmetal\""
