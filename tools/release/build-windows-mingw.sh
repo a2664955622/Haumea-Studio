@@ -92,6 +92,15 @@ compile() {
 		case "$src" in *.c) comp="$2" ;; *) comp="$3 -std=c++14" ;; esac
 		echo "  $(basename "$src")"
 		$comp $4 -c "$src" -o "$obj"' _ {} "$CC" "$CXX" "$flags"
+	# Objects of sources no longer listed (a removed file, or a header an older
+	# script took for a source) would be archived or linked by the *.o globs.
+	keep=$(for src in "$@"; do
+		echo "$objdir/$(echo "$src" | sed 's|\.[^.]*$||; s|.*/\([^/]*/[^/]*\)$|\1|; s|/|_|g').o"
+	done)
+	for obj in "$objdir"/*.o; do
+		[ -e "$obj" ] || continue
+		printf '%s\n' "$keep" | grep -qxF "$obj" || rm -f "$obj"
+	done
 }
 
 # Sources a makefile builds, with /opt/librw pointing at our librw.
