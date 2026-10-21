@@ -2354,7 +2354,7 @@ handleMapTool(const std::string &requestId, const std::vector<std::string> &line
 			flag("on_ground", true), &error);
 	}else{
 		writeError(requestId, "unknown maptool operation (array, mirror, align, distribute, "
-			"snap_rotations, move, rotate, drop, relative, lay_along, radar_art)");
+			"snap_rotations, drop, relative, lay_along, radar_art)");
 		return;
 	}
 	if(result < 0){
