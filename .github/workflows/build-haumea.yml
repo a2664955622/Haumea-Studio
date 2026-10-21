@@ -639,7 +639,8 @@ jobs:
           exists=no; [ -n "$(git ls-remote --tags origin "refs/tags/$tag")" ] && exists=yes
           python3 tools/release/release_plan.py --event "$GITHUB_EVENT_NAME" --ref-type "$GITHUB_REF_TYPE" \
             --ref-name "$GITHUB_REF_NAME" --version "$version" --channel "$CHANNEL" \
-            --release '${{ inputs.release }}' --on-main $on_main --tag-exists $exists | tee -a "$GITHUB_OUTPUT"
+            --release '${{ inputs.release }}' --on-main $on_main --tag-exists $exists > "$RUNNER_TEMP/plan.txt"
+          cat "$RUNNER_TEMP/plan.txt" | tee -a "$GITHUB_OUTPUT"
 
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
