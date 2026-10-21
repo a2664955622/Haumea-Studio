@@ -64,7 +64,7 @@ jobs:
         id: version
         shell: pwsh
         working-directory: haumea
-        # 1.41.0.<build>, the build being the commit count (as open.mp does).
+        # 1.0.0.<build>, the build being the commit count (as open.mp does).
         run: |
           $ver, $commit = (python tools/release/gen_buildinfo.py --print).Split(" ")
           $branch = "${{ env.CHANNEL }}"
@@ -572,7 +572,7 @@ jobs:
           path: dist/agent/${{ env.BUNDLE }}.zip
 
   check-tag:
-    # A pushed v1.41.0.<build>-<channel> tag must match version.h's 1.41.0 and
+    # A pushed v1.0.0.<build>-<channel> tag must match version.h's 1.0.0 and
     # the commit count of the commit it points at.
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest

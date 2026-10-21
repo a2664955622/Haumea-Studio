@@ -11,7 +11,7 @@
 // A venv exists at <config>/namaka/venv (not the legacy
 // haumea-agent-alpha/.venv-agent, which keeps working but is never updated).
 bool NamakaInstalled(void);
-// The bundled wheel is newer than the venv's (PEP 440: 1.41.0.100 > 1.41.0.99,
+// The bundled wheel is newer than the venv's (PEP 440: 1.0.0.100 > 1.0.0.99,
 // a +local label ignored for the comparison).
 bool NamakaUpdateAvailable(void);
 // After an editor update, when NamakaInstalled() && NamakaUpdateAvailable():

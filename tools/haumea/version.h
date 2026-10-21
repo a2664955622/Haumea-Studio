@@ -16,10 +16,11 @@
 	HAUMEA_VERSION_STR(HAUMEA_VERSION_MINOR) "." HAUMEA_VERSION_STR(HAUMEA_VERSION_PATCH)
 
 // The release channel this build belongs to, set by the build: production
-// or beta for a release (from its tag, v1.0.0.<build>-<channel>), dev for
-// every other build. The updater treats dev as production.
+// or beta, from a release's tag (v1.0.0.<build>-<channel>); CI builds that
+// aren't releases say dev (pr for pull requests), which the updater treats
+// as production.
 #ifndef HAUMEA_CHANNEL
-#define HAUMEA_CHANNEL "dev"
+#define HAUMEA_CHANNEL "production"
 #endif
 
 // The channel as people see it, next to the version; production says nothing.

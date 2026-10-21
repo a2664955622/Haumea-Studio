@@ -184,7 +184,7 @@ class ReleaseTagTests(unittest.TestCase):
 			self.assertEqual(run('sh', script, 'production').returncode, 0)
 			# Beta has its own tags; there are no other channels.
 			self.assertEqual(run('sh', script, 'beta').returncode, 0)
-			for channel in ('master', 'agent-alpha', 'PE'):
+			for channel in ('stable', 'nightly', 'dev'):
 				self.assertIn('production or beta', run('sh', script, channel).stderr, channel)
 			count = run('git', 'rev-list', '--count', 'HEAD').stdout.strip()
 			wrong = f'v{major}.{minor}.{patch}.{count}-master'

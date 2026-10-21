@@ -44,7 +44,7 @@ ifeq ($(config),release_linux-x86-gl3)
 TARGETDIR = ../bin/linux-x86-gl3/Release
 TARGET = $(TARGETDIR)/haumea
 OBJDIR = obj/linux-x86-gl3/Release/haumea
-DEFINES += -DNDEBUG -DRW_GL3 -DLIBRW_GLFW -DIMGUI_ENABLE_TEST_ENGINE -DHAUMEA_CHANNEL=\"dev\"
+DEFINES += -DNDEBUG -DRW_GL3 -DLIBRW_GLFW -DIMGUI_ENABLE_TEST_ENGINE -DHAUMEA_CHANNEL=\"production\"
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m32 -O2
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m32 -O2 -std=c++14
 LIBS += ../lib/linux-x86-gl3/Release/librwgta.a -lrw -lGL -lglfw -lpthread
@@ -55,7 +55,7 @@ else ifeq ($(config),release_linux-amd64-gl3)
 TARGETDIR = ../bin/linux-amd64-gl3/Release
 TARGET = $(TARGETDIR)/haumea
 OBJDIR = obj/linux-amd64-gl3/Release/haumea
-DEFINES += -DNDEBUG -DRW_GL3 -DLIBRW_GLFW -DIMGUI_ENABLE_TEST_ENGINE -DHAUMEA_CHANNEL=\"dev\"
+DEFINES += -DNDEBUG -DRW_GL3 -DLIBRW_GLFW -DIMGUI_ENABLE_TEST_ENGINE -DHAUMEA_CHANNEL=\"production\"
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m64 -O2
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m64 -O2 -std=c++14
 LIBS += ../lib/linux-amd64-gl3/Release/librwgta.a -lrw -lGL -lglfw -lpthread
@@ -66,7 +66,7 @@ else ifeq ($(config),release_linux-arm-gl3)
 TARGETDIR = ../bin/linux-arm-gl3/Release
 TARGET = $(TARGETDIR)/haumea
 OBJDIR = obj/linux-arm-gl3/Release/haumea
-DEFINES += -DNDEBUG -DRW_GL3 -DLIBRW_GLFW -DIMGUI_ENABLE_TEST_ENGINE -DHAUMEA_CHANNEL=\"dev\"
+DEFINES += -DNDEBUG -DRW_GL3 -DLIBRW_GLFW -DIMGUI_ENABLE_TEST_ENGINE -DHAUMEA_CHANNEL=\"production\"
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -O2
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -O2 -std=c++14
 LIBS += ../lib/linux-arm-gl3/Release/librwgta.a -lrw -lGL -lglfw -lpthread
@@ -77,7 +77,7 @@ else ifeq ($(config),debug_linux-x86-gl3)
 TARGETDIR = ../bin/linux-x86-gl3/Debug
 TARGET = $(TARGETDIR)/haumea
 OBJDIR = obj/linux-x86-gl3/Debug/haumea
-DEFINES += -DDEBUG -DRW_GL3 -DLIBRW_GLFW -DIMGUI_ENABLE_TEST_ENGINE -DHAUMEA_CHANNEL=\"dev\"
+DEFINES += -DDEBUG -DRW_GL3 -DLIBRW_GLFW -DIMGUI_ENABLE_TEST_ENGINE -DHAUMEA_CHANNEL=\"production\"
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m32 -g
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m32 -g -std=c++14
 LIBS += ../lib/linux-x86-gl3/Debug/librwgta.a -lrw -lGL -lglfw -lpthread
@@ -88,7 +88,7 @@ else ifeq ($(config),debug_linux-amd64-gl3)
 TARGETDIR = ../bin/linux-amd64-gl3/Debug
 TARGET = $(TARGETDIR)/haumea
 OBJDIR = obj/linux-amd64-gl3/Debug/haumea
-DEFINES += -DDEBUG -DRW_GL3 -DLIBRW_GLFW -DIMGUI_ENABLE_TEST_ENGINE -DHAUMEA_CHANNEL=\"dev\"
+DEFINES += -DDEBUG -DRW_GL3 -DLIBRW_GLFW -DIMGUI_ENABLE_TEST_ENGINE -DHAUMEA_CHANNEL=\"production\"
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m64 -g
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m64 -g -std=c++14
 LIBS += ../lib/linux-amd64-gl3/Debug/librwgta.a -lrw -lGL -lglfw -lpthread
@@ -99,7 +99,7 @@ else ifeq ($(config),debug_linux-arm-gl3)
 TARGETDIR = ../bin/linux-arm-gl3/Debug
 TARGET = $(TARGETDIR)/haumea
 OBJDIR = obj/linux-arm-gl3/Debug/haumea
-DEFINES += -DDEBUG -DRW_GL3 -DLIBRW_GLFW -DIMGUI_ENABLE_TEST_ENGINE -DHAUMEA_CHANNEL=\"dev\"
+DEFINES += -DDEBUG -DRW_GL3 -DLIBRW_GLFW -DIMGUI_ENABLE_TEST_ENGINE -DHAUMEA_CHANNEL=\"production\"
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -g
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -g -std=c++14
 LIBS += ../lib/linux-arm-gl3/Debug/librwgta.a -lrw -lGL -lglfw -lpthread

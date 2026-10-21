@@ -35,8 +35,8 @@ newoption {
 newoption {
 	trigger     = "channel",
 	value       = "NAME",
-	description = "Release channel: production or beta for releases, dev for other builds",
-	default     = "dev",
+	description = "Release channel: production (default) or beta; CI uses dev for non-release builds",
+	default     = "production",
 }
 
 -- gmake (gmake2 before premake 5.0 beta 8): objects built with other defines

@@ -152,7 +152,7 @@ legacyVenv(void)
 
 // ---- Versions ----
 
-// "1.41.0.100", "0.1.0a1", "1.41.0.7+dirty": the release numbers, then the
+// "1.0.0.100", "0.1.0a1", "1.0.0.7+dirty": the release numbers, then the
 // pre-release (a < b < rc < none); a +local label doesn't count.
 struct Version {
 	std::vector<int> release;
