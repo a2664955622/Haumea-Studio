@@ -2442,6 +2442,7 @@ spawnCustomImportedObject(int objectId)
 	inst->m_iplIndex = maxIplIndex + 1;
 	SetInstIplFilterKey(inst, file ? file->name : nil);
 	inst->m_isAdded = true;
+	inst->m_iplRotation = IsIplMapDocumentOpen();
 	inst->m_isDirty = true;
 	inst->m_savedStateValid = false;
 	inst->m_wasSavedDeleted = false;

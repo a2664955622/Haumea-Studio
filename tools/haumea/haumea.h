@@ -1266,6 +1266,10 @@ struct ObjectInst
 	bool m_hasSourceDegrees;
 	// cached form of the above
 	rw::Matrix m_matrix;
+	// Drawn the way SA's IPL loader places it: a rotation with |x| and |y| at
+	// most 0.05 keeps only its heading. Script objects (CreateObject) always
+	// get the full rotation, so only instances read from or saved to an IPL.
+	bool m_iplRotation;
 	int m_objectId;
 	int m_area;
 
@@ -1362,6 +1366,7 @@ extern CPtrList selection;
 ObjectInst *GetInstanceByID(int32 id);
 int32 pick(void);
 ObjectInst *AddInstance(void);
+void BuildInstanceMatrix(rw::Matrix *matrix, const rw::Quat &rotation, const rw::V3d &translation, bool iplRotation);
 void ClearSelection(void);
 void DeleteSelected(void);
 int DeleteAllInstances(void);

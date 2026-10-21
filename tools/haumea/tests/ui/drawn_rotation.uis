@@ -1,0 +1,16 @@
+# Map objects are drawn exactly as the game rotates them (CMatrix::SetRotate),
+# also when tilted by only a few degrees: the IPL loader's heading-only
+# shortcut for |qx|, |qy| <= 0.05 never applies to CreateObject.
+open "$UI_FIXTURES/ui_tilted.pwn"
+assert objects == 11
+assert drawn_rotation 0 -1.999987 0 0
+assert drawn_rotation 1 -1.999987 0 -44.999988
+assert drawn_rotation 2 -5.099997 0 0
+assert drawn_rotation 3 -0.499960 0 -0.700110
+assert drawn_rotation 4 1.700008 0 -44.999988
+assert drawn_rotation 5 -0.199983 0 -135.4
+assert drawn_rotation 6 0 3 20
+assert drawn_rotation 7 89.999992 -45.199764 -89.999961
+assert drawn_rotation 8 0 28.300006 90.000106
+assert drawn_rotation 9 180 90 0
+assert drawn_rotation 10 0 0 33

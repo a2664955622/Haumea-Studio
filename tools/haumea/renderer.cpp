@@ -429,27 +429,6 @@ static rw::RGBA highlightColor;
 static uint8 highlightAlpha = 128;
 
 static void
-BuildGhostMatrix(rw::Matrix *matrix, const rw::Quat &rotation, const rw::V3d &translation)
-{
-	if(isSA() && fabs(rotation.x) <= 0.05f && fabs(rotation.y) <= 0.05f){
-		float w = rotation.w;
-		if(w < -1.0f) w = -1.0f;
-		if(w > 1.0f) w = 1.0f;
-		float heading = acosf(w) * (rotation.z < 0.0f ? 2.0f : -2.0f);
-		float s = sinf(heading);
-		float c = cosf(heading);
-
-		matrix->setIdentity();
-		matrix->right = { c, s, 0.0f };
-		matrix->up = { -s, c, 0.0f };
-		matrix->at = { 0.0f, 0.0f, 1.0f };
-		matrix->flags = rw::Matrix::TYPEORTHONORMAL;
-	}else
-		matrix->rotate(conj(rotation), rw::COMBINEREPLACE);
-	matrix->translate(&translation, rw::COMBINEPOSTCONCAT);
-}
-
-static void
 SetClumpRenderCB(rw::Clump *clump, rw::Atomic::RenderCB cb)
 {
 	if(clump == nil)
@@ -523,7 +502,7 @@ RenderPlacementGhost(int objectId, rw::V3d position, rw::Quat rotation, rw::RGBA
 		return;
 
 	rw::Matrix matrix;
-	BuildGhostMatrix(&matrix, rotation, position);
+	BuildInstanceMatrix(&matrix, rotation, position, IsIplMapDocumentOpen());
 
 	int32 zwrite = GetRenderState(rw::ZWRITEENABLE);
 	int32 fog = rw::GetRenderState(rw::FOGENABLE);

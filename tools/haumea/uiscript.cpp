@@ -625,6 +625,32 @@ windowOpen(const std::string &title)
 	return false;
 }
 
+// The map's objects in the map's order.
+static std::vector<ObjectInst*>
+mapObjectsInOrder(void)
+{
+	std::vector<ObjectInst*> objs;
+	for(CPtrNode *p = instances.first; p; p = p->next){
+		ObjectInst *inst = (ObjectInst*)p->item;
+		if(inst->m_isAdded && !inst->m_isDeleted) objs.push_back(inst);
+	}
+	std::stable_sort(objs.begin(), objs.end(), [](ObjectInst *x, ObjectInst *y){ return x->m_iplIndex < y->m_iplIndex; });
+	return objs;
+}
+
+// The basis the game gives an object rotated by rx, ry, rz degrees (SA-MP's
+// SetObjectRot is opcode 0453 -> CPlaceable::SetOrientation ->
+// CMatrix::SetRotate, gta-reversed Core/Matrix.cpp): R = Rz * Rx * Ry.
+static void
+gameObjectBasis(float rx, float ry, float rz, rw::V3d *right, rw::V3d *up, rw::V3d *at)
+{
+	float d = 3.14159265358979f/180.0f;
+	float sx = sinf(rx*d), cx = cosf(rx*d), sy = sinf(ry*d), cy = cosf(ry*d), sz = sinf(rz*d), cz = cosf(rz*d);
+	*right = { cz*cy - sz*sx*sy, cz*sx*sy + sz*cy, -sy*cx };
+	*up = { -sz*cx, cz*cx, sx };
+	*at = { cz*sy + sz*sx*cy, sz*sy - cz*sx*cy, cy*cx };
+}
+
 // assert objects|selected|textdraws <op> N
 // assert selected.model|selected.x|selected.y|selected.z <op> N
 // assert selected.texture <slot> "name"
@@ -637,6 +663,7 @@ windowOpen(const std::string &title)
 // assert hidden|player_view_hidden|fov|ui_scale|camera_moved <op> N   (camera_moved: metres since mark_camera)
 // assert camera_target.x|y|z <op> N   (the point the camera looks at)
 // assert train.cars|train.off_track|train.N.x|y|z|model <op> N   (the selected engine's train in game)
+// assert drawn_rotation N RX RY RZ   (the map's Nth object, from 0, is drawn as the game rotates it)
 static bool
 uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 {
@@ -712,6 +739,22 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		bool found = text.find(arg(2)) != std::string::npos;
 		why = f ? (found ? "found" : "not in the file") : "can't read " + arg(1);
 		return f && (what == "file_contains" ? found : !found);
+	}
+	if(what == "drawn_rotation"){
+		std::vector<ObjectInst*> objs = mapObjectsInOrder();
+		int index = atoi(arg(1).c_str());
+		if(index < 0 || index >= (int)objs.size()){ why = "no such object"; return false; }
+		rw::V3d want[3];
+		gameObjectBasis(atof(arg(2).c_str()), atof(arg(3).c_str()), atof(arg(4).c_str()), &want[0], &want[1], &want[2]);
+		const rw::Matrix &m = objs[index]->m_matrix;
+		const rw::V3d got[3] = { m.right, m.up, m.at };
+		float err = 0;
+		for(int i = 0; i < 3; i++)
+			err = std::max(err, std::max(fabsf(got[i].x - want[i].x), std::max(fabsf(got[i].y - want[i].y), fabsf(got[i].z - want[i].z))));
+		snprintf(buf, sizeof(buf), "drawn basis is off by %g (right %g %g %g, up %g %g %g, at %g %g %g)", err,
+			got[0].x, got[0].y, got[0].z, got[1].x, got[1].y, got[1].z, got[2].x, got[2].y, got[2].z);
+		why = buf;
+		return err <= 2e-5f;
 	}
 	if(what == "gizmo_hovered"){
 		why = gGizmoHovered ? "the gizmo is hovered" : "the gizmo isn't hovered";
@@ -1109,6 +1152,25 @@ nextCommand(void)
 				if(filter.empty() || line.find(filter) != std::string::npos)
 					say("  item %s at %.0f,%.0f", line.c_str(), it.bb.Min.x, it.bb.Min.y);
 			}
+			continue;
+		}else if(cmd == "dump_matrices" && a.size() >= 2){
+			// dump_matrices PATH: the matrix each map object is drawn with, in
+			// the map's order: model, then right, up, at and pos.
+			std::vector<ObjectInst*> objs = mapObjectsInOrder();
+			FILE *f = fopen(a[1].c_str(), "w");
+			if(f == nil){
+				say("line %d: FAIL could not write %s", (int)gLine, a[1].c_str());
+				gFails++;
+				continue;
+			}
+			for(ObjectInst *inst : objs){
+				const rw::Matrix &m = inst->m_matrix;
+				fprintf(f, "%d %.9g %.9g %.9g %.9g %.9g %.9g %.9g %.9g %.9g %.9g %.9g %.9g\n", inst->m_objectId,
+					m.right.x, m.right.y, m.right.z, m.up.x, m.up.y, m.up.z,
+					m.at.x, m.at.y, m.at.z, m.pos.x, m.pos.y, m.pos.z);
+			}
+			fclose(f);
+			say("dumped %d matrices to %s", (int)objs.size(), a[1].c_str());
 			continue;
 		}else if(cmd == "mark_camera"){
 			gMarkedCamera = TheCamera.m_position;

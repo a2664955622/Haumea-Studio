@@ -827,28 +827,35 @@ countLiveLodChildren(ObjectInst *lodInst, ObjectInst *ignoreInst)
 	return count;
 }
 
+// CFileLoader::LoadObjectInstance (gta-reversed FileLoader.cpp) sets only the
+// heading when the IPL quaternion has |x| and |y| at most 0.05, unless the
+// instance is "don't stream" and tilted on both axes. Script objects get the
+// whole rotation (SET_OBJECT_ROTATION, CMatrix::SetRotate).
 void
-ObjectInst::UpdateMatrix(void)
+BuildInstanceMatrix(rw::Matrix *matrix, const rw::Quat &rotation, const rw::V3d &translation, bool iplRotation)
 {
-	if(isSA() && std::fabs(m_rotation.x) <= 0.05f && std::fabs(m_rotation.y) <= 0.05f){
-		// Match SA's IPL loader: quaternions with tiny X/Y components are treated
-		// as heading-only instead of full 3D rotations.
-		float w = m_rotation.w;
+	if(iplRotation && isSA() && std::fabs(rotation.x) <= 0.05f && std::fabs(rotation.y) <= 0.05f){
+		float w = rotation.w;
 		if(w < -1.0f) w = -1.0f;
 		if(w > 1.0f) w = 1.0f;
-		float heading = acosf(w) * (m_rotation.z < 0.0f ? 2.0f : -2.0f);
+		float heading = acosf(w) * (rotation.z < 0.0f ? 2.0f : -2.0f);
 		float s = sinf(heading);
 		float c = cosf(heading);
 
-		m_matrix.setIdentity();
-		m_matrix.right = { c, s, 0.0f };
-		m_matrix.up = { -s, c, 0.0f };
-		m_matrix.at = { 0.0f, 0.0f, 1.0f };
-		m_matrix.flags = rw::Matrix::TYPEORTHONORMAL;
-	}else{
-		m_matrix.rotate(conj(m_rotation), rw::COMBINEREPLACE);
-	}
-	m_matrix.translate(&m_translation, rw::COMBINEPOSTCONCAT);
+		matrix->setIdentity();
+		matrix->right = { c, s, 0.0f };
+		matrix->up = { -s, c, 0.0f };
+		matrix->at = { 0.0f, 0.0f, 1.0f };
+		matrix->flags = rw::Matrix::TYPEORTHONORMAL;
+	}else
+		matrix->rotate(conj(rotation), rw::COMBINEREPLACE);
+	matrix->translate(&translation, rw::COMBINEPOSTCONCAT);
+}
+
+void
+ObjectInst::UpdateMatrix(void)
+{
+	BuildInstanceMatrix(&m_matrix, m_rotation, m_translation, m_iplRotation);
 }
 
 static bool
@@ -2502,6 +2509,7 @@ ObjectInst::Init(FileObjectInstance *fi)
 	m_savedTranslation = fi->position;
 	m_savedRotation = fi->rotation;
 	m_savedStateValid = true;
+	m_iplRotation = !((fi->area & 0x200) && fi->rotation.x != 0.0f && fi->rotation.y != 0.0f);
 	m_wasSavedDeleted = false;
 	m_gameEntityExists = true;
 	m_lodId = fi->lod;
@@ -3308,6 +3316,7 @@ createSpawnedInstance(int objectId, rw::V3d position, GameFile *file, int iplInd
 	inst->m_iplIndex = iplIndex;
 	SetInstIplFilterKey(inst, file ? file->name : nil);
 	inst->m_isAdded = true;
+	inst->m_iplRotation = IsIplMapDocumentOpen();
 	inst->m_isDirty = true;
 	inst->m_savedStateValid = false;
 	inst->m_wasSavedDeleted = false;
@@ -5691,6 +5700,7 @@ cloneInstanceWithObjectId(ObjectInst *src, GameFile *dstFile, int iplIndex, rw::
 	inst->m_iplIndex = iplIndex;
 	SetInstIplFilterKey(inst, dstFile ? dstFile->name : nil);
 	inst->m_isAdded = true;
+	inst->m_iplRotation = IsIplMapDocumentOpen();
 	inst->m_isDirty = true;
 	inst->m_savedStateValid = false;
 	inst->m_wasSavedDeleted = false;
@@ -10940,6 +10950,7 @@ ImportPrefabAtEx(const char *path, rw::V3d spawnPos, float heading, const char *
 		inst->m_iplIndex = ++maxIdx;
 		SetInstIplFilterKey(inst, file ? file->name : nil);
 		inst->m_isAdded = true;
+		inst->m_iplRotation = IsIplMapDocumentOpen();
 		inst->m_isDirty = true;
 		inst->m_savedStateValid = false;
 		inst->m_wasSavedDeleted = false;
