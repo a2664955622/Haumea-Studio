@@ -2385,6 +2385,15 @@ DrawSplash(float dt)
 	ShowEditorWindow();
 }
 
+// Test runs and command-line modes (--pawn-roundtrip...): nobody watches the
+// splash, and under software GL on a busy machine each frame of it costs more
+// than the loading it shows.
+static bool
+splashUnwatched(void)
+{
+	return SettingsAreReadOnly() || getenv("HAUMEA_TEST_XVFB") != nil;
+}
+
 // Grows the splash window into the editor window, then applies the saved
 // placement (and maximized state).
 void
@@ -2394,6 +2403,13 @@ ExpandSplashWindow(void)
 	int tx, ty, tw, th;
 	bool canPosition;
 	if(!GetInitialEditorWindowRect(&tx, &ty, &tw, &th, &canPosition)){
+		ApplyInitialEditorWindowState();
+		return;
+	}
+	if(splashUnwatched()){
+		// No animation: straight to the editor's size.
+		SetEditorWindowDecorated(true);
+		SetEditorWindowRect(tx, ty, tw, th, canPosition);
 		ApplyInitialEditorWindowState();
 		return;
 	}
@@ -2443,20 +2459,24 @@ ExpandSplashWindow(void)
 	ApplyInitialEditorWindowState();
 }
 
-// Draws at most every 33 ms, so a quick run of small files is not slowed
-// down by drawing.
+// Draws at most every 33 ms (every second when unwatched), and never more
+// often than 4x what the last frame took to draw, so drawing stays a small
+// part of loading even with a slow GPU.
 static void
 SplashDrawThrottled(void)
 {
 	using Clock = std::chrono::steady_clock;
 	static Clock::time_point last;
+	static float cost;
 	static bool drawn;
 	Clock::time_point now = Clock::now();
 	float elapsed = std::chrono::duration<float>(now - last).count();
-	if(drawn && elapsed < 0.033f)
+	float interval = max(splashUnwatched() ? 1.0f : 0.033f, cost * 4.0f);
+	if(drawn && elapsed < interval)
 		return;
 	DrawSplash(drawn ? min(elapsed, 0.1f) : 1/60.0f);
-	last = now;
+	last = Clock::now();
+	cost = std::chrono::duration<float>(last - now).count();
 	drawn = true;
 }
 
