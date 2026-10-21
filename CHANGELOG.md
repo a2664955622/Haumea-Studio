@@ -33,7 +33,12 @@ game.
 - Sound places play an audio stream or a game sound to players nearby.
 - Checkpoints and race checkpoints (streamer maps), with race order.
 - **TextDraw designer**: draw global and per-player textdraws on the 640x448
-  canvas over the 3D view, with the game's fonts, sprites and model previews.
+  canvas, with the game's fonts, sprites and model previews. Textdraws have a
+  `.pwn`/`.inc` file of their own (New, Open, Save, recent files in the
+  TextDraws window), which Test in game includes; the map holds only the
+  world. **TextDraw mode** swaps the world for a plain canvas or a still frame
+  and turns map editing off, with its own undo; Esc leaves it. Maps from
+  earlier builds keep their textdraws read-only until you move them to a file.
 - SA-MP 0.3.DL and open.mp **custom models** from the server's
   `models/artconfig.txt`, under Custom models in the browser.
 - Open and merge **Texture Studio** maps (`.db`), **MTA:SA** `.map` files and

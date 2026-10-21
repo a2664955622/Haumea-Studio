@@ -3033,7 +3033,8 @@ handleRequest(const std::vector<std::string> &lines)
 		// The textdraw file, apart from the map: textdraw_new [discard];
 		// textdraw_open <path> [discard]; textdraw_save [path];
 		// textdraw_move_from_map [path] (an old map's read-only textdraws).
-		if(gAgentSessionActive){
+		// Saving keeps the session; the others replace what rollback would restore.
+		if(gAgentSessionActive && command != "textdraw_save"){
 			writeError(requestId, "commit or roll back the edit session first");
 			return;
 		}

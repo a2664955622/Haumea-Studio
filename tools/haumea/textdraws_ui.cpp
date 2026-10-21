@@ -464,6 +464,7 @@ listSpriteTxds(std::vector<std::string> &out)
 
 struct Canvas {
 	float x, y, sx, sy;	// screen origin and units per canvas unit
+	float areaY;	// the top of the free area, above the canvas when it is letterboxed
 	ImVec2 at(float cx, float cy) const { return ImVec2(x + cx * sx, y + cy * sy); }
 };
 
@@ -492,6 +493,7 @@ getCanvas(void)
 	c.y = pos.y + (size.y - h) * 0.5f;
 	c.sx = w / 640.0f;
 	c.sy = h / 448.0f;
+	c.areaY = pos.y;
 	return c;
 }
 
@@ -1163,7 +1165,8 @@ drawBanner(void)
 {
 	Canvas cv = getCanvas();
 	KeepNextEditorOverlayOnMainWindow();
-	ImGui::SetNextWindowPos(ImVec2(cv.at(320, 0).x, cv.y + ImGui::GetFontSize() * 0.5f), ImGuiCond_Always,
+	// In the band above the canvas when there is one, so it covers less of it.
+	ImGui::SetNextWindowPos(ImVec2(cv.at(320, 0).x, cv.areaY + ImGui::GetFontSize() * 0.5f), ImGuiCond_Always,
 		ImVec2(0.5f, 0.0f));
 	ImGui::SetNextWindowBgAlpha(0.85f);
 	if(ImGui::Begin("##textdraw_mode_banner", nil, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |

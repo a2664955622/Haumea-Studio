@@ -917,7 +917,7 @@ def save_prefab(name: str, instance_ids: list[int], folder: str = "", tags: str 
                 origin: str = "lowest", where: str = "mine") -> dict:
 	"""Save instances as a prefab file (.haumea) in Mine or the workspace's prefabs/, optionally in a
 	subfolder, with comma-separated tags. origin is what is held when it is placed: lowest (the middle,
-	at the bottom), centre or first (the first id). TextDraws are not kept in prefabs."""
+	at the bottom), centre or first (the first id). TextDraws have their own file, not prefabs."""
 	return service.save_prefab(name, instance_ids, folder=folder, tags=tags, origin=origin, where=where)
 
 
@@ -1055,11 +1055,37 @@ def search_textures(query: str, limit: int = 50) -> dict:
 
 @mcp.tool()
 def list_textdraws() -> dict:
-	"""List the map's textdraws with their index and every field (read-only)."""
+	"""List the textdraw file's textdraws with their index and every field (read-only).
+
+	Textdraws live in their own .pwn/.inc file, apart from the map; file gives
+	its path, unsaved_changes, its function prefix (prefix_CreateTextDraws /
+	prefix_ShowTextDraws) and read_only_in_map: textdraws an old map still holds."""
 	return service.engine("textdraws", [])
 
 
-@mcp.tool(description=inspect.cleandoc("""Add a textdraw to the map (needs an edit session); returns it with its index.
+@mcp.tool()
+def textdraw_file(action: Literal["new", "open", "save", "move_from_map"], path: str | None = None,
+                  discard_changes: bool = False) -> dict:
+	"""The textdraw file, like the TextDraws window's file buttons.
+
+	new starts an untitled file; open reads a .pwn/.inc (any Pawn file's textdraws);
+	both refuse unsaved textdraw changes unless discard_changes, and like move_from_map
+	need no edit session open (save_map commits one). save writes the
+	file, to path when given (needed while untitled). move_from_map moves an old
+	map's read-only textdraws into the file and saves it (path, or <map>_textdraws.pwn,
+	when untitled); save the map afterwards to take them out of it."""
+	command = {"new": "textdraw_new", "open": "textdraw_open", "save": "textdraw_save",
+	           "move_from_map": "textdraw_move_from_map"}[action]
+	if action == "open" and not path:
+		raise ValueError("open needs a path")
+	if action in ("new", "open"):
+		lines = ([path] if action == "open" else []) + (["true"] if discard_changes else [])
+	else:
+		lines = [path or ""]
+	return service.engine(command, lines)
+
+
+@mcp.tool(description=inspect.cleandoc("""Add a textdraw to the textdraw file (needs an edit session); returns it with its index.
 
 	Without fields it is a "Text" at the screen's centre with SA-MP's defaults.
 	Session rollback restores the textdraws as they were when the session began.

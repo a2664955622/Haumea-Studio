@@ -1,4 +1,5 @@
-"""Open a map with textdraws in the real editor, save it, and check the code.
+"""Textdraws in the real editor: an old map's are saved back with it, and a
+textdraw file of their own is written and compiles beside that map.
 
 Needs a built editor, a GTA San Andreas directory with SA-MP installed and a
 display: set HAUMEA_GAME_DIR (and HAUMEA_BINARY if it is not in bin/).
@@ -60,6 +61,24 @@ public OnPlayerConnect(playerid)
 }
 '''
 
+# The map with its old read-only textdraws and a textdraw file, together.
+GAMEMODE_WITH_FILE = '''#include "map.pwn"
+#include "hud.pwn"
+main(){}
+public OnGameModeInit()
+{
+	Haumea_map_CreateTextDraws();
+	Haumea_hud_CreateTextDraws();
+	return 1;
+}
+public OnPlayerConnect(playerid)
+{
+	Haumea_map_ShowTextDraws(playerid);
+	Haumea_hud_ShowTextDraws(playerid);
+	return 1;
+}
+'''
+
 GAMEMODE = '''#include "map.pwn"
 main(){}
 public OnGameModeInit()
@@ -78,6 +97,53 @@ public OnPlayerConnect(playerid)
 @unittest.skipUnless(GAME_DIR and BINARY and HAVE_DISPLAY,
                      'set HAUMEA_GAME_DIR and build the editor to run')
 class TextDrawTests(unittest.TestCase):
+    def compile(self, tmp, gamemode):
+        """0 errors and 0 warnings on every include set given."""
+        if not PAWNCC:
+            return
+        Path(tmp, 'gm.pwn').write_text(gamemode)
+        for variable in ('OMP_INCLUDE', 'SAMP037_INCLUDE'):
+            include = os.environ.get(variable)
+            if not include:
+                continue
+            compiled = subprocess.run([PAWNCC, 'gm.pwn', '-i' + include, '-ogm.amx', '-d0'],
+                                      cwd=tmp, capture_output=True, text=True,
+                                      env=dict(os.environ, LD_LIBRARY_PATH=str(Path(PAWNCC).parent)))
+            messages = [line for line in (compiled.stdout + compiled.stderr).splitlines()
+                        if 'warning' in line or 'error' in line]
+            self.assertEqual(messages, [], variable)
+
+    def test_textdraw_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp, 'in.pwn')
+            source.write_text(MAP)
+            # The file's own textdraws, named apart from the map's.
+            hud_source = Path(tmp, 'hud_in.pwn')
+            hud_source.write_text(MAP.replace('Title', 'HudTitle').replace('Box', 'HudBox')
+                                  .replace('PlayerTD', 'HudTD'))
+            env = editor_env(tmp)
+            result = subprocess.run([BINARY, '--game', GAME_DIR, '--textdraw-roundtrip', str(hud_source),
+                                     str(Path(tmp, 'hud.pwn'))],
+                                    cwd=tmp, env=env, capture_output=True, text=True, timeout=600)
+            self.assertIn(': 4 textdraw(s)', result.stdout, result.stdout[-2000:])
+            hud = Path(tmp, 'hud.pwn').read_text()
+            self.assertIn('stock Haumea_hud_CreateTextDraws()', hud)
+            self.assertIn('stock Haumea_hud_ShowTextDraws(playerid)', hud)
+            self.assertIn('HudTitle = TextDrawCreate(320.000, 10.000,', hud)
+            self.assertNotIn('CreateObject', hud)
+            # Opened again, the file gives the same file back.
+            result = subprocess.run([BINARY, '--game', GAME_DIR, '--textdraw-roundtrip', str(Path(tmp, 'hud.pwn')),
+                                     str(Path(tmp, 'hud2.pwn'))],
+                                    cwd=tmp, env=env, capture_output=True, text=True, timeout=600)
+            self.assertIn(': 4 textdraw(s)', result.stdout, result.stdout[-2000:])
+            self.assertEqual(Path(tmp, 'hud2.pwn').read_text().replace('hud2', 'hud'), hud)
+
+            result = subprocess.run([BINARY, '--game', GAME_DIR, '--pawn-roundtrip', str(source),
+                                     str(Path(tmp, 'map.pwn'))],
+                                    cwd=tmp, env=env, capture_output=True, text=True, timeout=600)
+            self.assertIn('pawn-roundtrip:', result.stdout, result.stdout[-2000:])
+            self.compile(tmp, GAMEMODE_WITH_FILE)
+
     def test_textdraws_round_trip(self):
         with tempfile.TemporaryDirectory() as tmp:
             source = Path(tmp, 'in.pwn')
@@ -101,19 +167,7 @@ class TextDrawTests(unittest.TestCase):
             self.assertIn('PlayerTextDrawSetPreviewVehicleColours(playerid', out)
             self.assertIn('TextDrawShowForPlayer(playerid, Title);', out)
 
-            if not PAWNCC:
-                return
-            Path(tmp, 'gm.pwn').write_text(GAMEMODE)
-            for variable in ('OMP_INCLUDE', 'SAMP037_INCLUDE'):
-                include = os.environ.get(variable)
-                if not include:
-                    continue
-                compiled = subprocess.run([PAWNCC, 'gm.pwn', '-i' + include, '-ogm.amx', '-d0'],
-                                          cwd=tmp, capture_output=True, text=True,
-                                          env=dict(os.environ, LD_LIBRARY_PATH=str(Path(PAWNCC).parent)))
-                messages = [line for line in (compiled.stdout + compiled.stderr).splitlines()
-                            if 'warning' in line or 'error' in line]
-                self.assertEqual(messages, [], variable)
+            self.compile(tmp, GAMEMODE)
 
 
 if __name__ == '__main__':

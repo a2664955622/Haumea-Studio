@@ -4514,9 +4514,11 @@ uiHelpWindow(void)
 		ImGui::BulletText("Find it in Object Browser > Custom models and place it like any object.");
 	}
 	if(uiHelpTopic("Design a textdraw")){
-		ImGui::BulletText("Windows > TextDraws: add a text, box, sprite or model preview.");
-		ImGui::BulletText("Drag it on the screen; its settings are in the TextDraws window.");
-		ImGui::BulletText("The saved map gets _CreateTextDraws and _ShowTextDraws(playerid).");
+		ImGui::BulletText("Windows > TextDraws starts TextDraw mode: a canvas instead of the world.");
+		ImGui::BulletText("Add a text, box, sprite or model preview and drag it on the screen.");
+		ImGui::BulletText("Textdraws have their own .pwn file: Save in the TextDraws window or %s.", uiKey(SC_SAVE_MAP));
+		ImGui::BulletText("Your gamemode includes it and calls _CreateTextDraws and _ShowTextDraws(playerid).");
+		ImGui::BulletText("Exit in the banner or %s goes back to the map.", uiKey(SC_CANCEL));
 	}
 	if(uiHelpTopic("Test the map in game")){
 		ImGui::BulletText("Test in game (%s) runs the map on a private open.mp server.", uiKey(SC_TEST_IN_GAME));
@@ -11657,9 +11659,10 @@ uiStartGuide(void)
 	ImGui::Text("3.  NPCs: place an NPC and NPC path points there too.");
 	ImGui::SameLine();
 	UiBadge("open.mp only");
-	ImGui::Text("4.  Test in game (%s) and Map check (%s) before you ship it.",
+	ImGui::Text("4.  Textdraws: Windows > TextDraws. They go in a file of their own.");
+	ImGui::Text("5.  Test in game (%s) and Map check (%s) before you ship it.",
 		uiKey(SC_TEST_IN_GAME), uiKey(SC_WINDOW_MAP_CHECK));
-	ImGui::Text("5.  %s saves the map.", uiKey(SC_SAVE_MAP));
+	ImGui::Text("6.  %s saves the map.", uiKey(SC_SAVE_MAP));
 	ImGui::Spacing();
 	if(ImGui::Button(ICON_FA_MAGNIFYING_GLASS " Browse objects"))
 		showBrowserWindow = true;
@@ -11915,10 +11918,15 @@ gui(void)
 			// --open <map.pwn> opens that map instead of the last one.
 			const char *roundtripIn = nil, *roundtripOut = nil, *openPath = nil;
 			const char *selftestIn = nil, *selftestOut = nil, *profileIn = nil;
+			const char *textDrawsIn = nil, *textDrawsOut = nil;
 			for(int i = 1; i + 2 < sk::args.argc; i++)
 				if(strcmp(sk::args.argv[i], "--pawn-roundtrip") == 0){
 					roundtripIn = sk::args.argv[i+1];
 					roundtripOut = sk::args.argv[i+2];
+				}else if(strcmp(sk::args.argv[i], "--textdraw-roundtrip") == 0){
+					// The same for a textdraw file (the textdraws of any Pawn file).
+					textDrawsIn = sk::args.argv[i+1];
+					textDrawsOut = sk::args.argv[i+2];
 				}else if(strcmp(sk::args.argv[i], "--undo-selftest") == 0){
 					selftestIn = sk::args.argv[i+1];
 					selftestOut = sk::args.argv[i+2];
@@ -11929,7 +11937,14 @@ gui(void)
 			for(int i = 1; i + 1 < sk::args.argc; i++)
 				if(strcmp(sk::args.argv[i], "--open") == 0)
 					openPath = sk::args.argv[i+1];
-			if(selftestIn || profileIn){
+			if(textDrawsIn){
+				std::string error;
+				bool done = OpenTextDrawFile(textDrawsIn, &error) && SaveTextDrawFile(textDrawsOut, &error);
+				printf("textdraw-roundtrip: %s -> %s: %d textdraw(s)%s%s\n", textDrawsIn, textDrawsOut,
+					done ? (int)GetTextDraws().size() : -1, done ? "" : ", ", done ? "" : error.c_str());
+				fflush(stdout);
+				sk::globals.quit = 1;
+			}else if(selftestIn || profileIn){
 				// Developer self-tests (selftest.h): report to a file, then quit.
 				FILE *report = fopen(selftestOut, "w");
 				if(report == nil)

@@ -86,9 +86,20 @@ paintjob and tuning parts. Only parts that fit the model are offered, one per sl
 
 ## TextDraws
 
-**Windows → TextDraws** designs on-screen text, boxes, sprites and model previews. Add one, drag
-it on the screen, and set its text, font, colours and style. The saved map gets
-`_CreateTextDraws()` and `_ShowTextDraws(playerid)`.
+Textdraws are saved in a file of their own, apart from the map. **Windows → TextDraws** opens
+TextDraw mode: the world gives way to the 640x448 game screen, either a plain colour or a still
+frame of the view you had, and map editing is off until you leave with **Exit** in the banner or
+**Esc**. Add text, boxes, sprites and model previews, drag them on the screen (the corner resizes
+them), and set their text, font, colours and style. Undo (Ctrl+Z) has its own history here.
+
+The window's **New**, **Open**, **Save** and **Save As** work on the textdraw file (a `.pwn` or
+`.inc`), and Ctrl+S saves it while the mode is on. Include it in your gamemode and call
+`Haumea_<file>_CreateTextDraws()` from `OnGameModeInit` and `Haumea_<file>_ShowTextDraws(playerid)`
+when a player should see them. **Test in game** includes the open textdraw file as it is.
+
+A map saved by an earlier build may still hold textdraws. Opening it offers **Move textdraws to a
+separate file** (`<map>_textdraws.pwn`); save the map afterwards to take them out of it. If you
+keep them in the map, they show on the canvas but are read-only and are saved back unchanged.
 
 ![The TextDraw designer](images/textdraws.png)
 
