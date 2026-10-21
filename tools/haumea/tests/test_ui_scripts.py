@@ -127,6 +127,13 @@ class UiScriptTests(unittest.TestCase):
             # Scripts skip it otherwise. It only shows the screen; settings still go to
             # editor_env's private config, like every script's.
             env['HAUMEA_START_SCREEN'] = '1'
+        if name == 'namaka.uis':
+            from test_namaka_install import make_bundle, python314
+            bundle = make_bundle(Path(work, 'namaka'))
+            if bundle is None:
+                self.skipTest('needs NAMAKA_WHEELHOUSE and CPython 3.14')
+            env['HAUMEA_NAMAKA_BUNDLE'] = str(bundle)
+            env['HAUMEA_NAMAKA_PYTHON'] = python314()
         if name == 'custom_model.uis':
             entries = img_entries(Path(self.game, 'models', 'gta3.img'))
             with open(Path(self.game, 'models', 'gta3.img'), 'rb') as f:

@@ -1,0 +1,23 @@
+# Windows > Namaka: it finds Python 3.14, installs from the bundle offline,
+# copies the MCP command, and uninstalls. The runner makes the bundle and
+# sets HAUMEA_NAMAKA_BUNDLE/PYTHON (skipped without NAMAKA_WHEELHOUSE).
+click_item '*' 'Windows'
+wait 3
+click_item '*' 'Namaka'
+wait 5
+assert window "Namaka"
+wait_until item 'Namaka' 'Look again'
+click_item 'Namaka' 'Install'
+wait 600
+wait 600
+wait 600
+wait_until item 'Namaka' 'Repair'
+assert item 'Namaka' 'Uninstall'
+scroll_until 'Namaka' 'Copy for Claude Code'
+click_item 'Namaka' 'Copy for Claude Code'
+wait 3
+assert toast_contains "Copied the claude mcp add command"
+click_item 'Namaka' 'Uninstall'
+wait 600
+wait_until item 'Namaka' 'Install'
+assert no_item 'Namaka' 'Repair'

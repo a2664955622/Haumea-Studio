@@ -654,7 +654,7 @@ statusSection(void)
 static void
 actionsSection(void)
 {
-	ImGui::SeparatorText("Install");
+	ImGui::SeparatorText("Install and update");
 	bool busy = gJob != JOB_NONE;
 	bool installed = NamakaInstalled();
 	bool canRun = !busy && !gProbing && gPython >= 0 && !bundleDir().empty();

@@ -1,6 +1,6 @@
 """Namaka's installer (tools/release/namaka_install.py) with the network cut off.
 
-Builds the wheel from this checkout, puts it with a wheelhouse and the
+Builds the wheel from this checkout (make_bundle, also used by namaka.uis), puts it with a wheelhouse and the
 installer in a scratch bundle, then installs into a scratch venv with no
 network: Python 3.14 installs everything from the wheelhouse. The MCP server
 must start and list as many tools as CI expects (AGENT_MCP_TOOLS). Then
@@ -51,28 +51,35 @@ def offline_env():
                 http_proxy='http://127.0.0.1:9', https_proxy='http://127.0.0.1:9', PIP_NO_INDEX='1')
 
 
+def make_bundle(work):
+    """A Namaka bundle in work/bundle: the wheel built from this checkout, the
+    wheelhouse and the installer. None without NAMAKA_WHEELHOUSE or Python 3.14."""
+    if not (WHEELHOUSE and Path(WHEELHOUSE).is_dir() and python314()):
+        return None
+    work = Path(work)
+    src = work / 'src'
+    src.mkdir(parents=True)
+    # Built from a copy, so no egg-info lands in the checkout.
+    shutil.copy2(ROOT / 'pyproject.toml', src / 'pyproject.toml')
+    shutil.copytree(ROOT / 'tools' / 'agent', src / 'tools' / 'agent',
+                    ignore=shutil.ignore_patterns('__pycache__'))
+    bundle = work / 'bundle'
+    bundle.mkdir()
+    subprocess.run([sys.executable, '-c', 'import sys; from setuptools import build_meta; '
+                    'build_meta.build_wheel(sys.argv[1])', str(bundle)], cwd=src, check=True,
+                   capture_output=True)
+    shutil.copytree(WHEELHOUSE, bundle / 'wheelhouse')
+    shutil.copy2(INSTALLER, bundle / 'namaka_install.py')
+    return bundle
+
+
 @unittest.skipUnless(WHEELHOUSE and Path(WHEELHOUSE or '.').is_dir() and python314(),
                      'set NAMAKA_WHEELHOUSE and have CPython 3.14 to run')
 class NamakaInstallTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tmp = Path(tempfile.mkdtemp(prefix='namaka-'))
-        # The wheel, built from a copy so no egg-info lands in the checkout.
-        src = cls.tmp / 'src'
-        src.mkdir()
-        archive = subprocess.run(['git', '-C', str(ROOT), 'archive', 'HEAD', 'pyproject.toml', 'tools/agent'],
-                                 capture_output=True, check=True).stdout
-        subprocess.run(['tar', '-x', '-C', str(src)], input=archive, check=True)
-        # The working tree's versions of the two, so uncommitted changes count.
-        shutil.copy2(ROOT / 'pyproject.toml', src / 'pyproject.toml')
-        shutil.copytree(ROOT / 'tools' / 'agent', src / 'tools' / 'agent', dirs_exist_ok=True)
-        cls.bundle = cls.tmp / 'bundle'
-        cls.bundle.mkdir()
-        subprocess.run([sys.executable, '-c', 'import sys; from setuptools import build_meta; '
-                        'build_meta.build_wheel(sys.argv[1])', str(cls.bundle)], cwd=src, check=True,
-                       capture_output=True)
-        shutil.copytree(WHEELHOUSE, cls.bundle / 'wheelhouse')
-        shutil.copy2(INSTALLER, cls.bundle / 'namaka_install.py')
+        cls.bundle = make_bundle(cls.tmp)
         cls.venv = cls.tmp / 'config' / 'namaka' / 'venv'
 
     @classmethod
