@@ -52,13 +52,14 @@ class PawnRoundtripTests(unittest.TestCase):
     def test_area_removals_clear_the_skatepark(self):
         # A beta tester's map: two model -1 spheres over the Glen Park skatepark
         # must remove its ground 5390 (and that one's LOD 5575) and the ramp 5415.
-        # Removed buildings drop out of the agent's zone listing.
+        # Removed buildings drop out of the agent's zone listing. It never lists
+        # LODs, so 5575 isn't checked here (hv_removals.pwn covers an HD and its LOD).
         import shutil
         import signal
         import time
         sys.path.insert(0, str(ROOT / 'tools' / 'agent'))
         from haumea_ipc import HaumeaClient
-        skatepark = {5390, 5575, 5415}
+        skatepark = {5390, 5415}
         tmp = Path(tempfile.mkdtemp(prefix='hsk-', dir='/tmp'))	# short: AF_UNIX paths
         self.addCleanup(shutil.rmtree, tmp, True)
         (tmp / 'skatepark.pwn').write_text(
