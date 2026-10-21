@@ -967,10 +967,13 @@ InitRW(void)
 
 	RenderInit();
 
-	if(!IsAutomatedRun()){
+	// A test that points the updater at its own release server
+	// (HAUMEA_UPDATE_URL) still checks; nothing else does in an automated run.
+	const char *testReleases = getenv("HAUMEA_UPDATE_URL");
+	if(!IsAutomatedRun() || (testReleases && testReleases[0]))
 		UpdaterCheckForUpdate();
+	if(!IsAutomatedRun())
 		TelemetrySendPing();
-	}
 
 	return true;
 }
