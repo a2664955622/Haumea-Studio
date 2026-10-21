@@ -1,0 +1,42 @@
+# Dynamic area: place a cuboid from the SA-MP tab, size it, limit three boxes to it in one
+# batch edit; save, reopen. The area is written first, the boxes take it as their areaid.
+open "$UI_FIXTURES/ui_areas.pwn"
+shortcut window_browser
+wait 5
+click_item 'Object Browser' 'SA-MP'
+wait 5
+scroll_until 'Object Browser' 'Place'
+click_item 'Object Browser' 'Place' -1
+wait 3
+click_world 2000 -3000 4
+wait 5
+key Esc
+assert objects == 5
+shortcut window_object_info
+wait 5
+set_item 'Object Info' 'Size (X, Y, Z)/#0' "20"
+set_item 'Object Info' 'Size (X, Y, Z)/#2' "8"
+wait 3
+shortcut window_map_objects
+wait 10
+click_item 'Map Objects' 'box_a (gunbox)'
+wait 3
+hold Ctrl
+click_item 'Map Objects' 'box_b (gunbox)'
+click_item 'Map Objects' 'box_c (gunbox)'
+release Ctrl
+wait 3
+assert selected == 3
+shortcut window_object_info
+wait 10
+click_item 'Object Info' 'Only inside area'
+wait 3
+click_item '*' 'area'
+wait 3
+key Ctrl+S
+wait 5
+reopen
+wait 10
+assert objects == 5
+assert pawn_contains "new const area = CreateDynamicCuboid(" streamer
+assert pawn_contains "STREAMER_OBJECT_SD, STREAMER_OBJECT_DD, area);" streamer

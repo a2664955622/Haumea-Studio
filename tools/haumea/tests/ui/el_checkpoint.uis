@@ -9,7 +9,7 @@ set_item 'Object Browser' 'Race' "rally" tab
 wait 3
 # Tab scrolled the panel back up.
 scroll_until 'Object Browser' 'Race'
-click_item 'Object Browser' 'Place' -1
+click_item 'Object Browser' 'Place' -2
 wait 3
 click_world 1997 -3000 4 shift
 wait 5
