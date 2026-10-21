@@ -5,12 +5,19 @@
 #include <string.h>
 #include <algorithm>
 
-// Checkpoints drawn the way the SA-MP client shows them, as meshes made here
-// like the game's 3D markers (C3dMarkers): a red cylinder that fades upward
-// for checkpoints and ground race checkpoints, a hoop for the air types, an
-// arrow to the next checkpoint and a chequered flag at the finish. The air
-// types 5-8 move as they do in game. Colours, alpha and heights follow the
-// game's look by eye: they are close, not measured.
+// Checkpoints drawn the way the SA-MP client shows them, with the game's own
+// marker models as C3dMarkers places them (gta-reversed Checkpoint.cpp,
+// 3dMarkers.cpp, TheScripts.cpp; ariane-a9's notes in HANDOFF):
+// - a player checkpoint: the cylinder (1317) scaled by its size, red at alpha
+//   76, pulsing every 2.048 s by 10%, sunk by size/20;
+// - race checkpoints 0-2: the same cylinder as a tall tube (1.5, 1.5 and 30
+//   times the size), alpha 128, 0.5 m down; type 0 adds the diamond (1559)
+//   3 m up pointing at the next one, black and then (255, 64, 64) at 0.8 of
+//   that; type 1 the finishFlag sprite (particle.txd) 3 m up;
+// - air checkpoints 3-8: the hoop (1316) scaled by the size, facing the next
+//   one, alpha 96, moving as types 5-8 do.
+// A missing model (the synthetic test game) falls back to meshes made here.
+// The colour-coded pick pass draws the same shapes in the element's id colour.
 
 static const rw::RGBA CP_RED = { 255, 0, 0, 255 };
 
@@ -176,6 +183,115 @@ finishFlag(rw::V3d foot, float height, rw::V3d facing)
 		}
 }
 
+// ---- The game's models ----
+
+enum { MODEL_CYLINDER, MODEL_HOOP, MODEL_DIAMOND, NUM_MODELS };
+struct MarkerModel { int id; rw::Atomic *atomic; rw::Clump *clump; bool tried; };
+static MarkerModel gModels[NUM_MODELS] = { { 1317 }, { 1316 }, { 1559 } };
+
+static MarkerModel*
+model(int which)
+{
+	MarkerModel *m = &gModels[which];
+	if(!m->tried){
+		m->tried = true;
+		if(GetObjectDef(m->id))
+			CreateObjectPreviewRwObject(m->id, &m->atomic, &m->clump);
+	}
+	return m->atomic || m->clump ? m : nil;
+}
+
+// Position, a model z axis (GTA's "up") and a scale along x, y and z.
+static rw::Matrix
+placement(rw::V3d pos, rw::V3d zAxis, rw::V3d scale)
+{
+	float length = sqrtf(zAxis.x * zAxis.x + zAxis.y * zAxis.y + zAxis.z * zAxis.z);
+	rw::V3d u = length > 0.0001f ? rw::V3d{ zAxis.x / length, zAxis.y / length, zAxis.z / length } :
+		rw::V3d{ 0.0f, 0.0f, 1.0f };
+	rw::V3d helper = fabsf(u.z) < 0.99f ? rw::V3d{ 0.0f, 0.0f, 1.0f } : rw::V3d{ 1.0f, 0.0f, 0.0f };
+	rw::V3d right = { helper.y * u.z - helper.z * u.y, helper.z * u.x - helper.x * u.z, helper.x * u.y - helper.y * u.x };
+	float rl = sqrtf(right.x * right.x + right.y * right.y + right.z * right.z);
+	right = { right.x / rl, right.y / rl, right.z / rl };
+	rw::V3d forward = { u.y * right.z - u.z * right.y, u.z * right.x - u.x * right.z, u.x * right.y - u.y * right.x };
+	rw::Matrix m;
+	m.setIdentity();
+	m.right = { right.x * scale.x, right.y * scale.x, right.z * scale.x };
+	m.up = { forward.x * scale.y, forward.y * scale.y, forward.z * scale.y };
+	m.at = { u.x * scale.z, u.y * scale.z, u.z * scale.z };
+	m.pos = pos;
+	m.update();
+	return m;
+}
+
+// The model in one flat colour, as the game modulates its material colour:
+// blended in the world pass; in the pick pass (gta::renderColourCoded) the
+// colour-code pipeline draws the id colour solid by itself.
+static void
+drawModel(MarkerModel *m, const rw::Matrix &matrix, rw::RGBA colour)
+{
+	rw::Frame *frame = m->atomic ? m->atomic->getFrame() : m->clump->getFrame();
+	frame->transform(&matrix, rw::COMBINEREPLACE);
+	if(gta::renderColourCoded){
+		rw::RGBA oldColour = gta::colourCode;
+		gta::colourCode = colour;
+		if(m->atomic)
+			m->atomic->render();
+		else
+			m->clump->render();
+		gta::colourCode = oldColour;
+	}else if(m->atomic)
+		RenderAtomicTinted(m->atomic, colour);
+	else
+		FORLIST(lnk, m->clump->atomics)
+			RenderAtomicTinted(rw::Atomic::fromClump(lnk), colour);
+}
+
+// The finishFlag sprite, facing the camera.
+static rw::Texture*
+finishFlagTexture(void)
+{
+	static bool tried;
+	static rw::Texture *texture;
+	if(!tried){
+		tried = true;
+		int slot = AddTxdSlot("~cp_particle");
+		LoadTxd(slot, "MODELS/PARTICLE.TXD");
+		texture = FindTextureInTxd(slot, "finishFlag");
+	}
+	return texture;
+}
+
+static void
+flagSprite(rw::V3d centre, float half, rw::RGBA tint)
+{
+	rw::Texture *texture = finishFlagTexture();
+	if(texture == nil){
+		finishFlag({ centre.x, centre.y, centre.z - half }, half * 2.0f, { 0.0f, 1.0f, 0.0f });
+		flush();
+		return;
+	}
+	rw::Matrix *cam = TheCamera.m_rwcam->getFrame()->getLTM();
+	rw::V3d r = { cam->right.x * half, cam->right.y * half, cam->right.z * half };
+	rw::V3d u = { cam->up.x * half, cam->up.y * half, cam->up.z * half };
+	rw::SetRenderStatePtr(rw::TEXTURERASTER, texture->raster);
+	reserve(4, 6);
+	auto corner = [&](float a, float b, float tu, float tv){
+		rw::RWDEVICE::Im3DVertex &v = gVerts[gNumVerts];
+		v.setX(centre.x + r.x * a + u.x * b);
+		v.setY(centre.y + r.y * a + u.y * b);
+		v.setZ(centre.z + r.z * a + u.z * b);
+		v.setU(tu);
+		v.setV(tv);
+		v.setColor(tint.red, tint.green, tint.blue, tint.alpha);
+		return gNumVerts++;
+	};
+	int i = corner(-1, 1, 0, 0), j = corner(1, 1, 1, 0), k = corner(1, -1, 1, 1), l = corner(-1, -1, 0, 1);
+	triangle(i, j, k);
+	triangle(i, k, l);
+	flush();
+	rw::SetRenderStatePtr(rw::TEXTURERASTER, nil);
+}
+
 // ---- Checkpoints ----
 
 // Where a race checkpoint points: at the next one, or north for the last.
@@ -191,6 +307,35 @@ pointing(const ObjectInst *inst)
 	return length > 0.01f ? rw::V3d{ d.x / length, d.y / length, d.z / length } : rw::V3d{ 0.0f, 1.0f, 0.0f };
 }
 
+static float
+pulse(float time, float period, float amount)
+{
+	return 1.0f + amount * sinf(time / period * 2.0f * (float)M_PI);
+}
+
+// The model, or the made-here shape when the game has no such model.
+static void
+cylinderShape(rw::V3d base, float radius, float height, rw::RGBA colour, bool picking)
+{
+	if(MarkerModel *m = model(MODEL_CYLINDER))
+		drawModel(m, placement(base, { 0.0f, 0.0f, 1.0f }, { radius, radius, height }), colour);
+	else{
+		cylinder(base, radius, std::min(height, radius * 2.0f), colour, picking);
+		flush();
+	}
+}
+
+static void
+hoopShape(rw::V3d centre, rw::V3d facing, float size, rw::RGBA colour)
+{
+	if(MarkerModel *m = model(MODEL_HOOP))
+		drawModel(m, placement(centre, facing, { size, size, size }), colour);
+	else{
+		hoop(centre, facing, size * 0.5f, size * 0.04f, colour);
+		flush();
+	}
+}
+
 void
 DrawCheckpointMarker(const ObjectInst *inst, float time, const rw::RGBA *pickColour)
 {
@@ -199,68 +344,116 @@ DrawCheckpointMarker(const ObjectInst *inst, float time, const rw::RGBA *pickCol
 	int type = race ? std::max(0, std::min(8, p->cpRaceType)) : -1;
 	float size = std::max(p->cpSize, 0.5f);
 	rw::V3d at = inst->m_translation;
-	// The id colour for picking: everything solid, nothing blended.
 	bool picking = pickColour != nil;
-	rw::RGBA red = picking ? *pickColour : CP_RED;
+	auto colour = [&](int alpha){ return picking ? *pickColour : withAlpha(CP_RED, alpha); };
 
-	if(type >= 3){
-		// Air: a hoop facing the next checkpoint, moving as types 5-8 do.
-		rw::V3d dir = pointing(inst);
-		float radius = size * 0.5f, scale = 1.0f, swing = 0.0f, spin = 0.0f;
-		float cycle = fmodf(time, 4.0f) / 4.0f;
-		if(type == 5)	// turns a few times, then rests
-			spin = cycle < 0.5f ? cycle * 2.0f * 4.0f * (float)M_PI : 0.0f;
-		else if(type == 6)	// grows, shrinks, is gone for a moment
-			scale = cycle < 0.8f ? 0.6f + 0.4f * sinf(cycle / 0.8f * (float)M_PI) : 0.0f;
-		else if(type == 7)	// swings down and back up
-			swing = -sinf(cycle * 2.0f * (float)M_PI) * radius * 0.5f;
-		else if(type == 8)	// swings up and back down
-			swing = sinf(cycle * 2.0f * (float)M_PI) * radius * 0.5f;
-		if(spin != 0.0f){
-			float c = cosf(spin), s = sinf(spin);
-			dir = { dir.x * c - dir.y * s, dir.x * s + dir.y * c, dir.z };
-		}
-		if(scale > 0.0f)
-			hoop({ at.x, at.y, at.z + swing }, dir, radius * scale, radius * 0.08f * scale,
-				picking ? red : withAlpha(red, 200));
-		if(type == 3 && !picking)
-			arrow({ at.x, at.y, at.z + radius * 1.4f }, dir, radius * 0.9f, withAlpha(red, 220));
-		else if(type == 4 && !picking)
-			finishFlag({ at.x, at.y, at.z + radius * 1.1f }, radius * 0.9f, dir);
-		flush();
+	if(type < 0){
+		// A player checkpoint: the cylinder, pulsing, a little sunk.
+		float s = size * pulse(time, 2.048f, 0.1f);
+		cylinderShape({ at.x, at.y, at.z - size / 20.0f }, s, s, colour(76), picking);
+		return;
+	}
+	if(type <= 2){
+		// A tall tube; in the pick pass only its foot, so it doesn't hide what's behind.
+		float s = 1.5f * size * pulse(time, 1.024f, 0.075f);
+		cylinderShape({ at.x, at.y, at.z - 0.5f }, s, picking ? 2.0f * s : 20.0f * s, colour(128), picking);
+		if(picking)
+			return;
+		rw::V3d above = { at.x, at.y, at.z + 3.0f };
+		if(type == 0){
+			rw::V3d fwd = pointing(inst);
+			rw::V3d down = { -fwd.x, -fwd.y, -fwd.z };
+			if(MarkerModel *m = model(MODEL_DIAMOND)){
+				// No blending: black, then the red one inside it.
+				rw::SetRenderState(rw::VERTEXALPHA, 0);
+				float s = 0.625f * size;
+				drawModel(m, placement(above, down, { s, s, s }), { 0, 0, 0, 255 });
+				drawModel(m, placement(above, down, { 0.8f * s, 0.8f * s, 0.8f * s }), { 255, 64, 64, 255 });
+				rw::SetRenderState(rw::VERTEXALPHA, 1);
+			}else{
+				arrow(above, fwd, std::max(1.5f, size * 0.5f), withAlpha(CP_RED, 230));
+				flush();
+			}
+		}else if(type == 1)
+			flagSprite(above, size * 0.25f, CP_RED);
 		return;
 	}
 
-	// On the ground: the cylinder, about as tall as it is wide in game.
-	float radius = size * 0.5f;
-	cylinder(at, radius, std::max(1.0f, size * 0.75f), red, picking);
-	if(!picking){
-		float bob = sinf(time * 2.5f) * 0.15f;
-		rw::V3d above = { at.x, at.y, at.z + std::max(1.0f, size * 0.75f) + 1.0f + bob };
-		if(type == 0)
-			arrow(above, pointing(inst), std::max(1.5f, radius), withAlpha(red, 230));
-		else if(type == 1)
-			finishFlag({ at.x, at.y, at.z + std::max(1.0f, size * 0.75f) }, std::max(1.5f, radius), pointing(inst));
+	// Air: the hoop facing the next checkpoint.
+	rw::V3d fwd = pointing(inst);
+	rw::V3d centre = at;
+	switch(type){
+	case 5: {	// its facing wobbles from side to side
+		rw::V3d side = { -fwd.y, fwd.x, 0.0f };
+		float w = 0.5f * sinf(time / 0.66f * 2.0f * (float)M_PI);
+		fwd = { fwd.x + side.x * w, fwd.y + side.y * w, fwd.z };
+		break;
 	}
-	flush();
+	case 6: {	// four hoops spread along the way, fading, then gone for a moment
+		float cycle = fmodf(time, 1.5f) / 1.5f;
+		if(cycle < 0.85f){
+			float multi = 0.75f * cycle / 0.85f;
+			for(int i = 0; i < 4; i++){
+				rw::V3d c = { at.x + fwd.x * i * multi * size, at.y + fwd.y * i * multi * size,
+					at.z + fwd.z * i * multi * size };
+				hoopShape(c, fwd, size, colour(96 - 16 * i));
+				if(picking)
+					break;
+			}
+		}else if(picking)
+			hoopShape(at, fwd, size, colour(96));
+		return;
+	}
+	case 7:	// bobs up and down 0.2 m
+		centre.z += 0.2f * sinf(time / 2.0f * 2.0f * (float)M_PI);
+		break;
+	case 8:	// sinks (towards the player, in game), then starts again
+		centre.z -= fmodf(time, 3.0f) / 3.0f * 2.0f;
+		break;
+	}
+	hoopShape(centre, fwd, size, colour(96));
+}
+
+static void
+setMarkerState(bool picking)
+{
+	rw::SetRenderState(rw::VERTEXALPHA, picking ? 0 : 1);
+	rw::SetRenderState(rw::ZWRITEENABLE, picking ? 1 : 0);
+	rw::SetRenderState(rw::ZTESTENABLE, 1);
+	rw::SetRenderState(rw::FOGENABLE, 0);
+	rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+	rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+	rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
+	rw::SetRenderStatePtr(rw::TEXTURERASTER, nil);
+}
+
+static void
+renderMarkers(float time, bool picking)
+{
+	int32 vertexAlpha = rw::GetRenderState(rw::VERTEXALPHA), zwrite = rw::GetRenderState(rw::ZWRITEENABLE);
+	int32 fog = rw::GetRenderState(rw::FOGENABLE), cull = rw::GetRenderState(rw::CULLMODE);
+	setMarkerState(picking);
+	for(CPtrNode *n = instances.first; n; n = n->next){
+		ObjectInst *inst = (ObjectInst*)n->item;
+		if(inst->m_isDeleted || inst->m_editorHidden || GetSampElementKind(inst) != SAMP_ELEMENT_CHECKPOINT)
+			continue;
+		rw::RGBA id = { (uint8)(inst->m_id & 0xFF), (uint8)(inst->m_id >> 8 & 0xFF), (uint8)(inst->m_id >> 16 & 0xFF), 255 };
+		DrawCheckpointMarker(inst, time, picking ? &id : nil);
+	}
+	rw::SetRenderState(rw::VERTEXALPHA, vertexAlpha);
+	rw::SetRenderState(rw::ZWRITEENABLE, zwrite);
+	rw::SetRenderState(rw::FOGENABLE, fog);
+	rw::SetRenderState(rw::CULLMODE, cull);
 }
 
 void
 RenderCheckpointMarkers(float time)
 {
-	rw::SetRenderState(rw::VERTEXALPHA, 1);
-	rw::SetRenderState(rw::ZWRITEENABLE, 0);
-	rw::SetRenderState(rw::ZTESTENABLE, 1);
-	rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-	rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
-	rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
-	rw::SetRenderState(rw::TEXTURERASTER, 0);	// untextured
-	for(CPtrNode *n = instances.first; n; n = n->next){
-		ObjectInst *inst = (ObjectInst*)n->item;
-		if(inst->m_isDeleted || inst->m_editorHidden || GetSampElementKind(inst) != SAMP_ELEMENT_CHECKPOINT)
-			continue;
-		DrawCheckpointMarker(inst, time, nil);
-	}
-	rw::SetRenderState(rw::ZWRITEENABLE, 1);
-	rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
+	renderMarkers(time, false);
+}
+
+void
+RenderCheckpointMarkersColourCoded(void)
+{
+	renderMarkers((float)ImGui::GetTime(), true);
 }

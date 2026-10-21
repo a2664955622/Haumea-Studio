@@ -10,7 +10,7 @@
 
 namespace {
 
-enum IconKind { ICON_LABEL, ICON_SOUND, ICON_MAPICON, ICON_GANGZONE, ICON_PATHPOINT, NUM_ICONS };
+enum IconKind { ICON_LABEL, ICON_SOUND, ICON_MAPICON, ICON_GANGZONE, ICON_PATHPOINT, ICON_CHECKPOINT, NUM_ICONS };
 
 struct IconStyle {
 	uint8 r, g, b;			// the disc
@@ -23,6 +23,7 @@ const IconStyle kStyles[NUM_ICONS] = {
 	{ 245, 145,  40, 255, 255, 255 },	// map icon: orange
 	{  52, 168,  83, 255, 255, 255 },	// gang zone: green
 	{ 240, 200,  40,  40,  40,  40 },	// path point: yellow, dark glyph
+	{ 220,  30,  30, 255, 255, 255 },	// checkpoint: red, as in game (its marker is drawn too)
 };
 
 int
@@ -34,6 +35,7 @@ iconOf(int kind)
 	case SAMP_ELEMENT_MAPICON: return ICON_MAPICON;
 	case SAMP_ELEMENT_GANGZONE: return ICON_GANGZONE;
 	case SAMP_ELEMENT_PATHPOINT: return ICON_PATHPOINT;
+	case SAMP_ELEMENT_CHECKPOINT: return ICON_CHECKPOINT;
 	}
 	return -1;
 }
@@ -101,6 +103,14 @@ glyph(int icon, float x, float y)
 		float r = sqrtf(x*x + y*y);
 		return r < 0.17f || fabsf(r - 0.38f) < 0.06f;
 	}
+	case ICON_CHECKPOINT:	// a chequered flag on a pole
+		if(inRect(x, y, -0.44f, -0.5f, -0.32f, 0.46f))
+			return true;
+		if(inRect(x, y, -0.32f, -0.02f, 0.46f, 0.46f)){
+			int cx = (int)floorf((x + 0.32f) / 0.195f), cy = (int)floorf((y + 0.02f) / 0.16f);
+			return (cx + cy) % 2 == 0;
+		}
+		return false;
 	}
 	return false;
 }

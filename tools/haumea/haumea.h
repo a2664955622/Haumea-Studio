@@ -74,6 +74,7 @@ struct ObjectInst;
 #include "sapaths.h"
 #include "textdraws.h"
 #include "checkpoints.h"
+void RenderAtomicTinted(rw::Atomic *atomic, rw::RGBA colour);	// renderer.cpp, alpha blended
 #include "startscreen.h"
 
 #ifdef RWHALFPIXEL

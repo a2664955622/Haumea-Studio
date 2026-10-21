@@ -1,7 +1,8 @@
 #pragma once
 
 // Editor icons for the SA-MP elements players never see as a model: 3D text
-// labels, sounds, map icons, gang zones and NPC path points. They are drawn
+// labels, sounds, map icons, gang zones and NPC path points, plus checkpoints
+// (whose game-style marker checkpoints.cpp draws as well). They are drawn
 // as camera-facing billboards of a constant screen size, with art made here
 // in code (nothing from GTA's files), in the world pass and in the
 // colour-coded pick pass, so picking, captures and thumbnails all get them.

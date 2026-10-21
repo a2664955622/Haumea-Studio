@@ -31,6 +31,9 @@ click_world 2008 -3000 4
 wait 5
 key Esc
 assert objects == 10
+# Drawn as markers and icons: the stand-in model never.
+wait 5
+assert proxy_draws == 0
 shortcut window_object_info
 wait 5
 click_world 1994 -3000 4.6

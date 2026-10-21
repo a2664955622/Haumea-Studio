@@ -9,5 +9,7 @@ struct ObjectInst;
 // One checkpoint at time seconds. pickColour: drawn solid in that colour for
 // the picking pass (no arrow or flag); nil draws it as in game.
 void DrawCheckpointMarker(const ObjectInst *inst, float time, const rw::RGBA *pickColour);
-// Every checkpoint in the map, after the world's transparent pass.
+// Every checkpoint in the map, in the transparent pass (renderer.cpp), and
+// in the colour-coded pick pass in their id colours.
 void RenderCheckpointMarkers(float time);
+void RenderCheckpointMarkersColourCoded(void);

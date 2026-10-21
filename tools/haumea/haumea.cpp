@@ -3305,7 +3305,6 @@ renderWorld(void)
 	if(gRenderWater)
 		WaterLevel::Render();
 	RenderTransparent();
-	RenderCheckpointMarkers((float)ImGui::GetTime());
 	if(gRenderLightEffects)
 		Effects::RenderLights();
 

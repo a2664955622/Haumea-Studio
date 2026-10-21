@@ -51,6 +51,8 @@ SOURCES = {
 	'childprocess.cpp': ['test_in_game', 'namaka'],
 	'namaka.cpp': ['namaka'],
 	'namaka.h': ['namaka'],
+	'checkpoints.cpp': ['checkpoint_types', 'el_checkpoint'],
+	'checkpoints.h': ['checkpoint_types', 'el_checkpoint'],
 	'maptools.cpp': ['map_tools'],
 	'radarart.cpp': ['radar_art', 'roundtrip'],
 	'mapcheck.cpp': ['map_check'],

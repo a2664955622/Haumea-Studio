@@ -522,6 +522,23 @@ RenderPlacementGhost(int objectId, rw::V3d position, rw::Quat rotation, rw::RGBA
 	SetRenderState(rw::ALPHATESTREF, aref);
 }
 
+// An atomic in one colour with its alpha blended (checkpoint markers). The
+// colour-code pipeline turns blending off only in the pick pass, so this
+// draws through it outside that pass.
+void
+RenderAtomicTinted(rw::Atomic *atomic, rw::RGBA colour)
+{
+	if(colourCodePipe == nil || atomic == nil)
+		return;
+	bool oldCoded = gta::renderColourCoded;
+	rw::RGBA oldColour = gta::colourCode;
+	gta::renderColourCoded = false;
+	gta::colourCode = colour;
+	colourCodePipe->render(atomic);
+	gta::colourCode = oldColour;
+	gta::renderColourCoded = oldCoded;
+}
+
 void
 myRenderCB(rw::Atomic *atomic)
 {
@@ -760,10 +777,14 @@ RenderTransparent(void)
 	});
 	for(int i = (int)sortedInsts.size()-1; i >= 0; i--)
 		RenderTransparentInst(sortedInsts[i].inst);
-	if(gta::renderColourCoded)
+	// Checkpoint markers, then the icons over them.
+	if(gta::renderColourCoded){
+		RenderCheckpointMarkersColourCoded();
 		RenderElementIconsColourCoded();
-	else
+	}else{
+		RenderCheckpointMarkers((float)ImGui::GetTime());
 		RenderElementIcons();
+	}
 }
 
 void
