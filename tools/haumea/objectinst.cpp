@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "editoricons.h"
 #include "encoding.h"
 #include "imgui/imgui_internal.h"
 #include "workspace.h"
@@ -4547,8 +4548,13 @@ renderPrefabToRaster(const char *path, rw::Raster *colorRaster, rw::Raster *dept
 		rw::Clump *clump;
 	};
 	PrefabPreviewModel models[256];
-	int numModels = 0;
+	int numModels = 0, numIcons = 0;
 	for(int i = 0; i < numEntries; i++){
+		// Labels, sounds and the like are drawn as editor icons, not models.
+		if(ElementKindUsesIcon(entries[i].properties.elementKind)){
+			numIcons++;
+			continue;
+		}
 		int modelIndex = -1;
 		for(int j = 0; j < numModels; j++)
 			if(models[j].objectId == entries[i].objectId){
@@ -4567,7 +4573,7 @@ renderPrefabToRaster(const char *path, rw::Raster *colorRaster, rw::Raster *dept
 		models[numModels].clump = clump;
 		numModels++;
 	}
-	if(numModels == 0)
+	if(numModels == 0 && numIcons == 0)
 		return false;
 
 	uint32 hash = 2166136261u;
@@ -4610,6 +4616,11 @@ renderPrefabToRaster(const char *path, rw::Raster *colorRaster, rw::Raster *dept
 	pDirect->setColor(0.52f, 0.52f, 0.52f);
 
 	for(int i = 0; i < numEntries; i++){
+		if(ElementKindUsesIcon(entries[i].properties.elementKind)){
+			rw::V3d at = { entries[i].relX, entries[i].relY, entries[i].relZ };
+			RenderElementIconBillboard(entries[i].properties.elementKind, at, dir, max(0.6f, radius*0.18f));
+			continue;
+		}
 		PrefabPreviewModel *model = nil;
 		for(int j = 0; j < numModels; j++)
 			if(models[j].objectId == entries[i].objectId){
@@ -5985,7 +5996,8 @@ ExportPrefabEx(const char *path, int origin, const char *tags)
 		// The bottom of the lowest model, not its origin: each model's origin
 		// sits its ground offset above where it touches the ground.
 		for(int i = 0; i < numInsts; i++){
-			float bottom = insts[i]->m_translation.z - GetPlacementBaseOffset(insts[i]->m_objectId);
+			float bottom = insts[i]->m_translation.z -
+				GetElementPlacementBaseOffset(GetSampElementKind(insts[i]), insts[i]->m_objectId);
 			centroid.z = i == 0 ? bottom : min(centroid.z, bottom);
 		}
 
@@ -10238,7 +10250,10 @@ RenderPrefabPlacementGhost(const char *path, rw::V3d spawnPos, float heading)
 		rw::V3d pos;
 		rw::Quat rot;
 		prefabEntryPlace(&entries[i], spawnPos, heading, &pos, &rot);
-		RenderPlacementGhost(entries[i].objectId, pos, rot, col);
+		if(ElementKindUsesIcon(entries[i].properties.elementKind))
+			RenderElementIconGhost(entries[i].properties.elementKind, pos);
+		else
+			RenderPlacementGhost(entries[i].objectId, pos, rot, col);
 	}
 }
 

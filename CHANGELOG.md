@@ -105,6 +105,11 @@ run Map Check and Test in game, and grab frames with the panels.
 
 ### Also
 
+- **Labels, sounds, map icons, gang zones and path points are editor icons**,
+  not GTA models: a coloured T, speaker, pin, square or node that keeps its
+  size on screen, shows faintly through walls, and is clicked, box-selected,
+  moved and dropped to the ground like before. Placing one puts it on the
+  surface. Pickups, actors, classes, NPCs and vehicles keep their models.
 - **W/A/S/D fly the camera only while the right mouse button is held**, as in
   Unity and Unreal: hold it to look around and fly, with Shift (fast) and Alt
   (slow). On their own the keys are shortcuts, so `W`, `E` and `D` never move

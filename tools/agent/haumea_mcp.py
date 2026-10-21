@@ -864,8 +864,11 @@ PLACE_DOC = inspect.cleandoc("""
 	model: an object or vehicle model id/name (required for those kinds); the
 	skin for actor, class and npc (default 0, CJ); the pickup model (default
 	1239); omitted for label, gangzone, mapicon, pathpoint, sound and checkpoint.
-	snap (default) puts it on the highest surface below (x, y), peds 1 m above
-	it, so a roof, awning or lamp post counts too: check with capture_view.
+	Labels, gang zones, map icons, path points and sounds have no model: the
+	editor and its captures show them as small coloured icons.
+	snap (default) puts it on the highest surface below (x, y) (an icon kind at
+	that point, peds 1 m above it), so a roof, awning or lamp post counts too:
+	check with capture_view.
 	snap=False uses z. heading: degrees, counter-clockwise from north.
 	Settings go in properties in the same call, e.g. a tuned car:
 	  kind="vehicle", model=560, x=..., y=..., properties={"color1": 1, "mods": [1010, 1080]}

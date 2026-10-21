@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "editoricons.h"
 #include "textdraws.h"
 #include "namaka.h"
 #include "samp_loader.h"
@@ -10391,11 +10392,19 @@ uiDrawSampElementOverlays(void)
 		ImU32 tagColor = selected ? IM_COL32(255, 220, 90, 255) : IM_COL32(220, 220, 220, 230);
 		char tag[160];
 		ImVec2 screen;
+		// Text and tags go just above an editor icon, not over it.
+		auto toScreen = [&](rw::V3d p, ImVec2 *out){
+			if(!uiWorldToScreen(p, out))
+				return false;
+			if(ElementKindUsesIcon(kind))
+				out->y -= 20.0f*GetUiScale();
+			return true;
+		};
 		switch(kind){
 		case SAMP_ELEMENT_LABEL: {
 			float drawDistance = properties->drawDistance > 0.0f ? properties->drawDistance : 20.0f;
 			// As in game, unless it is selected.
-			if((dist > drawDistance && !selected) || !uiWorldToScreen(inst->m_translation, &screen))
+			if((dist > drawDistance && !selected) || !toScreen(inst->m_translation, &screen))
 				break;
 			uiDrawPawnLabelText(drawList, screen, properties->labelText, properties->labelColor);
 			break;
@@ -10424,7 +10433,7 @@ uiDrawSampElementOverlays(void)
 				rw::V3d b = { minX + max(0.0f, d - (maxY - minY)), minY + min(d, maxY - minY), z };
 				RenderLine(a, b, hatch, hatch);
 			}
-			if((selected || numZones <= 64) && dist < 400.0f && uiWorldToScreen(inst->m_translation, &screen)){
+			if((selected || numZones <= 64) && dist < 400.0f && toScreen(inst->m_translation, &screen)){
 				snprintf(tag, sizeof(tag), "Gang zone %.0f x %.0f", properties->zoneSizeX, properties->zoneSizeY);
 				uiDrawWorldTag(drawList, screen, tag, tagColor);
 			}
@@ -10472,7 +10481,7 @@ uiDrawSampElementOverlays(void)
 			}
 			rw::V3d above = c;
 			above.z += race ? 3.5f : h + 0.5f;
-			if((dist > 120.0f && !selected) || !uiWorldToScreen(above, &screen))
+			if((dist > 120.0f && !selected) || !(ElementKindUsesIcon(kind) ? toScreen(inst->m_translation, &screen) : uiWorldToScreen(above, &screen)))
 				break;
 			if(race){
 				std::vector<ObjectInst*> points;
@@ -10507,7 +10516,7 @@ uiDrawSampElementOverlays(void)
 			}
 			rw::V3d above = inst->m_translation;
 			above.z += 0.8f;
-			if((dist > 120.0f && !selected) || !uiWorldToScreen(above, &screen))
+			if((dist > 120.0f && !selected) || !(ElementKindUsesIcon(kind) ? toScreen(inst->m_translation, &screen) : uiWorldToScreen(above, &screen)))
 				break;
 			if(stream)
 				snprintf(tag, sizeof(tag), "Audio stream  %s", properties->soundUrl[0] ? properties->soundUrl : "(no URL)");
@@ -10524,7 +10533,7 @@ uiDrawSampElementOverlays(void)
 			rw::V3d above = inst->m_translation;
 			above.z += kind == SAMP_ELEMENT_ACTOR || kind == SAMP_ELEMENT_CLASS ||
 				kind == SAMP_ELEMENT_NPC ? 1.2f : 0.8f;
-			if(!uiWorldToScreen(above, &screen))
+			if(!(ElementKindUsesIcon(kind) ? toScreen(inst->m_translation, &screen) : uiWorldToScreen(above, &screen)))
 				break;
 			switch(kind){
 			case SAMP_ELEMENT_PICKUP:
@@ -12253,7 +12262,7 @@ gui(void)
 				rw::V3d hitPos, hitNormal;
 				if(GetPlacementSurfaceHit(&hitPos, &hitNormal)){
 					rw::V3d centerPos = hitPos;
-					centerPos.z += GetPlacementBaseOffset(GetSpawnObjectId());
+					centerPos.z += GetElementPlacementBaseOffset(GetSpawnElementKind(), GetSpawnObjectId());
 
 					rw::V3d centerScreen;
 					float csw, csh;
@@ -12270,7 +12279,7 @@ gui(void)
 						dl->AddCircleFilled(c, 4.0f, outer, 12);
 
 						rw::V3d normalEnd = add(hitPos, scale(hitNormal, 2.0f));
-						normalEnd.z += GetPlacementBaseOffset(GetSpawnObjectId());
+						normalEnd.z += GetElementPlacementBaseOffset(GetSpawnElementKind(), GetSpawnObjectId());
 						rw::V3d normalScreen;
 						float nsw, nsh;
 						if(Sprite::CalcScreenCoors(normalEnd, &normalScreen, &nsw, &nsh, false))
@@ -12317,7 +12326,7 @@ gui(void)
 				rw::V3d bHit, bNormal;
 				if(GetBrushSurfaceHit(&bHit, &bNormal)){
 					rw::V3d centerPos = bHit;
-					centerPos.z += GetPlacementBaseOffset(GetSpawnObjectId());
+					centerPos.z += GetElementPlacementBaseOffset(GetSpawnElementKind(), GetSpawnObjectId());
 					centerPos.z += gBrushZOffset;
 
 					ImDrawList *dl = EditorForegroundDrawList();

@@ -5,6 +5,7 @@
 #include <ws2tcpip.h>
 #endif
 #include "haumea.h"
+#include "editoricons.h"
 #include "agentbridge.h"
 #include "materialtext.h"
 #include "mapcheck.h"
@@ -3168,7 +3169,7 @@ handleRequest(const std::vector<std::string> &lines)
 				writeError(requestId, "no ground surface at placement");
 				return;
 			}
-			position.z = ground.z + (isPedKind ? 1.0f : GetPlacementBaseOffset(displayModel));
+			position.z = ground.z + (isPedKind ? 1.0f : GetElementPlacementBaseOffset(elementKind, displayModel));
 		}
 		int oldSpawnId = GetSpawnObjectId(), oldSpawnKind = GetSpawnElementKind();
 		std::string oldPath = GetSpawnPathName(), oldRace = GetSpawnRaceName();
@@ -3568,7 +3569,8 @@ handleRequest(const std::vector<std::string> &lines)
 				return;
 			}
 			ObjectDef *def = GetObjectDef(inst->m_objectId);
-			position.z = ground.z + (def && def->m_isPed ? 1.0f : GetPlacementBaseOffset(inst->m_objectId));
+			position.z = ground.z + (def && def->m_isPed ? 1.0f :
+				GetElementPlacementBaseOffset(GetSampElementKind(inst), inst->m_objectId));
 		}
 		std::vector<UndoTransform> transforms;
 		if(!CaptureObjectTransformTargets(inst, false, transforms)){

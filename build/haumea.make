@@ -191,6 +191,7 @@ GENERATED += $(OBJDIR)/timecycle.o
 GENERATED += $(OBJDIR)/tstudio.o
 GENERATED += $(OBJDIR)/txdstore.o
 GENERATED += $(OBJDIR)/updatecore.o
+GENERATED += $(OBJDIR)/editoricons.o
 GENERATED += $(OBJDIR)/updater.o
 GENERATED += $(OBJDIR)/win.o
 GENERATED += $(OBJDIR)/testserver.o
@@ -274,6 +275,7 @@ OBJECTS += $(OBJDIR)/timecycle.o
 OBJECTS += $(OBJDIR)/tstudio.o
 OBJECTS += $(OBJDIR)/txdstore.o
 OBJECTS += $(OBJDIR)/updatecore.o
+OBJECTS += $(OBJDIR)/editoricons.o
 OBJECTS += $(OBJDIR)/updater.o
 OBJECTS += $(OBJDIR)/win.o
 OBJECTS += $(OBJDIR)/testserver.o
@@ -603,6 +605,9 @@ $(OBJDIR)/txdstore.o: ../tools/haumea/txdstore.cpp
 	@echo "$(notdir $<)"
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/updatecore.o: ../tools/haumea/updatecore.cpp
+	@echo "$(notdir $<)"
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/editoricons.o: ../tools/haumea/editoricons.cpp
 	@echo "$(notdir $<)"
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/updater.o: ../tools/haumea/updater.cpp

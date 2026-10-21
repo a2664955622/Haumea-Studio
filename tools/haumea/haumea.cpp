@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "editoricons.h"
 #include "anim.h"
 #include "npcpreview.h"
 #include "testserver.h"
@@ -725,7 +726,8 @@ IntersectRayColModel(const Ray &worldRay, ObjectInst *inst, rw::V3d *hitPos)
 static bool
 CanSnapToInst(ObjectInst *inst)
 {
-	if(inst == nil || inst->m_isDeleted || inst->m_editorHidden)
+	// Nothing lands on an editor icon: its stand-in model isn't there.
+	if(inst == nil || inst->m_isDeleted || inst->m_editorHidden || InstUsesEditorIcon(inst))
 		return false;
 	if(!gNoAreaCull && inst->m_area != currentArea && inst->m_area != 13)
 		return false;
@@ -929,6 +931,9 @@ NormalizeOr(const rw::V3d &v, const rw::V3d &fallback)
 static float
 GetMinZOffsetForRotation(ObjectInst *inst, const rw::Quat &rotation)
 {
+	// An editor icon's element sits at its position, on the surface.
+	if(InstUsesEditorIcon(inst))
+		return 0.0f;
 	ObjectDef *obj = GetObjectDef(inst->m_objectId);
 	if(obj == nil || obj->m_colModel == nil)
 		return 0.0f;
@@ -1466,7 +1471,7 @@ GetPlacementPosition(void)
 {
 	rw::V3d hitPos, hitNormal;
 	GetPlacementSurfaceHit(&hitPos, &hitNormal);
-	hitPos.z += GetPlacementBaseOffset(GetSpawnObjectId());
+	hitPos.z += GetElementPlacementBaseOffset(GetSpawnElementKind(), GetSpawnObjectId());
 	return hitPos;
 }
 
@@ -1800,7 +1805,8 @@ instOverlapsScreenRect(ObjectInst *inst, float rx1, float ry1, float rx2, float 
 {
 	ObjectDef *obj = GetObjectDef(inst->m_objectId);
 
-	if(obj && obj->m_colModel){
+	// An editor icon is a point on screen, not its stand-in model's box.
+	if(obj && obj->m_colModel && !InstUsesEditorIcon(inst)){
 		CColModel *col = obj->m_colModel;
 		float sxMin = 1e30f, syMin = 1e30f;
 		float sxMax = -1e30f, syMax = -1e30f;
@@ -2845,6 +2851,7 @@ findObjectSnapDeltaForBounds(const ObjectSnapBounds &moving, ObjectInst *self, i
 	for(size_t i = 0; i < candidates.size(); i++){
 		ObjectInst *candidate = candidates[i];
 		if(candidate == nil || candidate == self || candidate->m_isDeleted || candidate->m_selected ||
+		   InstUsesEditorIcon(candidate) ||
 		   movingSet.count(candidate) || (self && (candidate->m_lod == self || self->m_lod == candidate)))
 			continue;
 		if(!gNoAreaCull && candidate->m_area != area &&
@@ -3287,10 +3294,13 @@ renderWorld(void)
 			rw::V3d hitPos, hitNormal;
 			if(GetPlacementSurfaceHit(&hitPos, &hitNormal)){
 				rw::V3d pos = hitPos;
-				pos.z += GetPlacementBaseOffset(GetSpawnObjectId());
+				pos.z += GetElementPlacementBaseOffset(GetSpawnElementKind(), GetSpawnObjectId());
 				rw::Quat rot = { 0.0f, 0.0f, 0.0f, 1.0f };
 				rw::RGBA col = { 80, 220, 120, 110 };
-				RenderPlacementGhost(GetSpawnObjectId(), pos, rot, col);
+				if(ElementKindUsesIcon(GetSpawnElementKind()))
+					RenderElementIconGhost(GetSpawnElementKind(), pos);
+				else
+					RenderPlacementGhost(GetSpawnObjectId(), pos, rot, col);
 			}
 		}
 	}

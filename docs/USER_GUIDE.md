@@ -79,6 +79,10 @@ The browser's **SA-MP** tab places everything else a server map needs:
 | Actors, player classes (spawn points) | Pickups, 3D text labels, gang zones |
 | NPCs and NPC path points (open.mp only) | Map icons, sound places, checkpoints (streamer only) |
 
+Players never see 3D text labels, gang zones, map icons, sound places and path points as
+objects, so the editor shows each as a small coloured icon (a T, a speaker, a pin, a square,
+a node) that keeps its size on screen; click it to select it.
+
 Each row shows how many the map has; click the count to select them all. Elements are saved
 as native or streamer calls (`CreateActor`, `CreateDynamicPickup`, ...) and read back from
 existing scripts. Gang zones and native map icons are shown to a player by the map's

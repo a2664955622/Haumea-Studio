@@ -1,5 +1,6 @@
 #define WITH_D3D
 #include "haumea.h"
+#include "editoricons.h"
 #include "playerview.h"
 #include "templates.h"
 #include <algorithm>
@@ -88,6 +89,12 @@ AddToRenderList(ObjectInst *inst, float dist)
 {
 	ObjectDef *obj = GetObjectDef(inst->m_objectId);
 	if(obj == nil) return;
+	// Labels, sounds, map icons, gang zones and path points are drawn as
+	// editor icons, never as their stand-in model (editoricons.cpp).
+	if(InstUsesEditorIcon(inst)){
+		QueueElementIcon(inst);
+		return;
+	}
 	if(inst->m_rwObject == nil) return;
 
 	inst->PreRender();
@@ -556,6 +563,8 @@ RenderInst(ObjectInst *inst)
 	// (a skin or pickup model change) replaces the RW object; when the new
 	// model can't be built (a missing or broken DFF) there is none left.
 	if(obj == nil || inst->m_rwObject == nil) return;
+	if(InstUsesEditorIcon(inst))
+		NoteElementProxyModelDraw();	// never: they are queued as icons instead
 	obj->m_hasPreRendered = false;
 
 	uint32 cull;
@@ -677,6 +686,7 @@ BuildRenderList(void)
 	visibleInsts.clear();
 	sortedInsts.clear();
 	lodList.clear();
+	ClearElementIcons();
 
 	rw::BBox frustBox = Scene.camera->frustumBoundBox;
 //	printf("%f %f %f    %f %f %f\n",
@@ -750,6 +760,10 @@ RenderTransparent(void)
 	});
 	for(int i = (int)sortedInsts.size()-1; i >= 0; i--)
 		RenderTransparentInst(sortedInsts[i].inst);
+	if(gta::renderColourCoded)
+		RenderElementIconsColourCoded();
+	else
+		RenderElementIcons();
 }
 
 void
@@ -1043,7 +1057,8 @@ RenderObjectOutlines(void)
 		points[k].clear();
 	for(CPtrNode *p = instances.first; p; p = p->next){
 		ObjectInst *inst = (ObjectInst*)p->item;
-		if(inst->m_isDeleted || inst->m_editorHidden || PlayerViewHides(inst) || inst->m_rwObject == nil)
+		if(inst->m_isDeleted || inst->m_editorHidden || PlayerViewHides(inst) || inst->m_rwObject == nil ||
+		   InstUsesEditorIcon(inst))
 			continue;
 		if(inst->m_selected && gOutlineSelection)
 			AddInstOutline(inst, points[OUTLINE_SELECTED]);

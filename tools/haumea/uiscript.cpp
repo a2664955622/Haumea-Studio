@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "editoricons.h"
 #include "workspace.h"
 #include "shortcuts.h"
 #include "playerview.h"
@@ -690,6 +691,13 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 	if(what == "gizmo_hovered"){
 		why = gGizmoHovered ? "the gizmo is hovered" : "the gizmo isn't hovered";
 		return gGizmoHovered;
+	}
+	if(what == "proxy_draws"){
+		// Labels, sounds, map icons, gang zones and path points drawn with a
+		// model this frame instead of their editor icon (should be 0).
+		double v = GetElementProxyModelDraws();
+		why = "proxy_draws is " + std::to_string((int)v);
+		return compare(v, arg(1), atof(arg(2).c_str()));
 	}
 	if(what == "gizmo"){
 		std::string mode = gGizmoMode == GIZMO_ROTATE ? "rotate" : "move";
