@@ -1,20 +1,61 @@
-# W/A/S/D fly the camera, but not with Ctrl: Ctrl+D duplicates in place and
-# leaves the view where it was (it used to pan right too).
+# W/A/S/D fly the camera only while the right mouse button is held (as in
+# Unity and Unreal), and never with Ctrl: Ctrl+D duplicates in place and leaves
+# the view where it was (it used to pan right too).
 open "$UI_FIXTURES/ui_map.pwn"
 click_object model=1634
 wait 5
 assert selected == 1
-# Away from the gizmo: keys go to the camera only when it is not hovered.
-move 1000 150
+# Pressed on the gizmo, the right button looks around too (the gizmo takes only
+# the left one) and D flies.
+move 640 400
+wait 3
+assert gizmo_hovered
+mark_camera
+hold right
+hold D
+wait 20
+release D
+release right
+wait 5
+assert camera_moved > 0.5
+assert selected == 1
+assert no_item '*' 'Isolate'
+# In the open view, away from the gizmo and the Tools panel: the right button
+# looks around only after a press in the view.
+move 25% 25%
 wait 2
 
-# Control: D alone does fly
+# D alone doesn't fly: without the right button it is a key like any other.
 mark_camera
 hold D
 wait 20
 release D
 wait 3
+assert camera_moved < 0.01
+
+# Control: with the right button held, D flies. The hold is no right-click
+# (no menu, the selection stays), and E doesn't switch the gizmo meanwhile.
+assert gizmo move
+mark_camera
+hold right
+hold D
+wait 20
+key E
+wait 3
+release D
+release right
+wait 5
 assert camera_moved > 0.5
+assert gizmo move
+assert selected == 1
+assert no_item '*' 'Isolate'
+# Without the right button, E is the rotate gizmo again.
+key E
+wait 3
+assert gizmo rotate
+key W
+wait 3
+assert gizmo move
 
 mark_camera
 hold Ctrl

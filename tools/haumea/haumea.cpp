@@ -100,6 +100,7 @@ float gFlyFastMul = 2.0f;
 float gFlySlowMul = 0.5f;
 float gFovWheelStep = 2.0f;
 int gCameraLookButton = 3;
+bool gCameraLooking;
 
 // non-rendering things
 bool gRenderCollision;

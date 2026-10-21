@@ -84,6 +84,12 @@ run Map Check and Test in game, and grab frames with the panels.
 
 ### Changed
 
+- **W/A/S/D fly the camera only while the right mouse button is held**, as in
+  Unity and Unreal: hold it to look around and fly, with Shift (fast) and Alt
+  (slow). On their own the keys are shortcuts again, so `W`, `E` and `D` never
+  move the view. It works with the mouse on the gizmo too, and a hold spent
+  flying doesn't open the right-click menu. (The button is the look button in
+  **Preferences → Camera**.)
 - **The name is Haumea Studio**, the all-in-one editor for SA-MP and open.mp.
   Only the name you see changes: the program is still `haumea` (`haumea.exe`),
   and settings stay in the same folders.

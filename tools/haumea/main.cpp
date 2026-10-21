@@ -923,18 +923,25 @@ AppEventHandler(sk::Event e, void *param)
 	case PLUGINATTACH:
 		return attachPlugins() ? EVENTPROCESSED : EVENTERROR;
 	case KEYDOWN:
-		if(input && !input->WantCaptureKeyboard && !input->WantTextInput && !gGizmoHovered)
+		// Over the gizmo keys are its own, except while looking around (W/A/S/D fly).
+		if(input && !input->WantCaptureKeyboard && !input->WantTextInput && (!gGizmoHovered || gCameraLooking))
 			CPad::tempKeystates[*(int*)param] = 1;
 		return EVENTPROCESSED;
 	case KEYUP:
 		CPad::tempKeystates[*(int*)param] = 0;
 		return EVENTPROCESSED;
 	case MOUSEBTN:
-		if(input && !input->WantCaptureMouse && !gGizmoHovered){
-			ms = (MouseState*)param;
+		ms = (MouseState*)param;
+		// The gizmo (which ImGui counts as capturing the mouse) takes only
+		// the left button, so the right one still looks around on it. Over a
+		// panel: no new presses, but a button held since a press in the view
+		// stays held (looking around goes on).
+		if(gGizmoHovered)
+			CPad::tempMouseState.btns = (CPad::tempMouseState.btns & ms->buttons) | (ms->buttons & ~1u);
+		else if(input && input->WantCaptureMouse)
+			CPad::tempMouseState.btns &= ms->buttons;
+		else
 			CPad::tempMouseState.btns = ms->buttons;
-		}else
-			CPad::tempMouseState.btns = 0;
 		return EVENTPROCESSED;
 	case MOUSEMOVE:
 		ms = (MouseState*)param;

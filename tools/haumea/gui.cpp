@@ -4362,18 +4362,18 @@ uiKeyboardShortcutsWindow(void)
 	static const ShortcutEntry fixedShortcuts[] = {
 		{ "File", "Alt+F4", "Exit Haumea Studio", "Editor" },
 
-		{ "Camera", "LMB drag", "First-person look around", "3D view" },
-		{ "Camera", "Ctrl+Alt+LMB drag", "Dolly camera along view direction", "3D view" },
+		{ "Camera", "RMB drag", "Look around (the look button: Preferences > Camera)", "3D view" },
+		{ "Camera", "Ctrl+Alt+RMB drag", "Dolly camera along view direction", "3D view" },
 		{ "Camera", "MMB drag", "Pan camera", "3D view" },
 		{ "Camera", "Alt+MMB click", "Reset FOV", "3D view" },
 		{ "Camera", "Alt+MMB drag", "Arc rotate around camera target", "3D view" },
 		{ "Camera", "Ctrl+Alt+MMB drag", "Zoom camera toward target", "3D view" },
 		{ "Camera", "Mouse wheel", "Adjust FOV zoom", "3D view" },
 		{ "Camera", "Ctrl+wheel", "Interface size", "Editor" },
-		{ "Camera", "W / S", "Move forward / backward", "3D view" },
-		{ "Camera", "A / D", "Move left / right", "3D view" },
-		{ "Camera", "Shift+WASD", "Fast camera movement", "3D view" },
-		{ "Camera", "Alt+WASD", "Slow camera movement", "3D view" },
+		{ "Camera", "RMB held + W / S", "Fly forward / backward", "3D view" },
+		{ "Camera", "RMB held + A / D", "Fly left / right", "3D view" },
+		{ "Camera", "RMB held + Shift+WASD", "Fly fast", "3D view" },
+		{ "Camera", "RMB held + Alt+WASD", "Fly slowly", "3D view" },
 
 		{ "Selection", "Click object", "Select object", "3D view" },
 		{ "Selection", "Shift+click object", "Add object to selection", "3D view" },
@@ -7576,12 +7576,14 @@ uiCameraPreferences(void)
 	ImGui::SameLine();
 	ImGui::TextDisabled("(?)");
 	ImGui::SetItemTooltip(gCameraLookButton == 1 ?
-		"Hold it and drag to look; a click without dragging still selects.\n"
+		"Hold it and drag to look, and fly with W/A/S/D while it's held;\n"
+		"a click without dragging still selects.\n"
 		"While brushing, LMB paints, so hold RMB to look." :
-		"Hold it and drag to look; a click without dragging still selects.");
+		"Hold it and drag to look, and fly with W/A/S/D while it's held;\n"
+		"a click without dragging still selects.");
 	ImGui::SeparatorText("Flying");
 	changed |= ImGui::Checkbox("Accelerate fly movement", &gFlyAcceleration);
-	ImGui::SetItemTooltip("When off, WASD moves at the constant fly speed below.");
+	ImGui::SetItemTooltip("When off, flying (W/A/S/D with the look button held) goes at the constant fly speed below.");
 	ImGui::BeginDisabled(gFlyAcceleration);
 	ImGui::SliderFloat("Fly speed", &gFlySpeed, 0.1f, 70.0f, "%.2f");
 	ImGui::EndDisabled();
@@ -12118,7 +12120,9 @@ gui(void)
 	UpdaterDrawGui();
 	autosaveTick();
 
-	ShortcutsBeginFrame(gCopyableTextCopiedThisFrame);
+	// While looking around, W/A/S/D fly and no key is a shortcut (W/E/R
+	// don't switch the gizmo).
+	ShortcutsBeginFrame(gCopyableTextCopiedThisFrame || gCameraLooking);
 	for(int action = 0; action < SC_NUM_ACTIONS; action++)
 		if(ShortcutPressed(action))
 			uiRunShortcut(action);

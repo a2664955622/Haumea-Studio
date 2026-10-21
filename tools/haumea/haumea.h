@@ -193,6 +193,7 @@ extern float gFovWheelStep;
 // Mouse button used for first-person camera look while dragging: 1=LMB,
 // 2=MMB, 3=RMB. RMB is the default; stationary clicks keep their tool actions.
 extern int gCameraLookButton;
+extern bool gCameraLooking;	// the look button is held after a press in the view
 void SetInstIplFilterKey(ObjectInst *inst, const char *sceneName);
 
 // non-rendering things

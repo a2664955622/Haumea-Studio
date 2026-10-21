@@ -51,7 +51,16 @@ CCamera::Process(void)
 	if(gBrushMode && lookButton == 1)
 		lookButton = 3;
 	bool lookBlockedByTool = gRectSelectActive;
-	if(!blockMouse && !lookBlockedByTool && CPad::IsMButtonDown(lookButton)){
+	// Looking starts with a press in the view and lasts until the release, also
+	// across the gizmo or a panel; W/A/S/D fly only while it lasts.
+	static bool looking;
+	if(!CPad::IsMButtonDown(lookButton))
+		looking = false;
+	else if(CPad::IsMButtonJustDown(lookButton) && !gGizmoUsing && !lookBlockedByTool &&
+	        (gGizmoHovered ? lookButton != 1 : !io.WantCaptureMouse))
+		looking = true;	// on the gizmo too, unless it is the left button's
+	gCameraLooking = looking;
+	if(looking){
 		if(CPad::IsAltDown() && CPad::IsCtrlDown()){
 			float dy = (CPad::oldMouseState.y - CPad::newMouseState.y);
 			dolly(dy*scl);
@@ -78,10 +87,15 @@ CCamera::Process(void)
 		}
 	}
 
-	// Keyboard. Not with Ctrl, which makes W/A/S/D shortcuts (Ctrl+D duplicates,
-	// Ctrl+S saves), nor while ImGui has the keyboard (a key held into a field).
-	// Alt (slow) and Shift (fast) still fly.
-	bool flyKeys = !CPad::IsCtrlDown() && !io.WantCaptureKeyboard && !io.WantTextInput;
+	// Keyboard: W/A/S/D fly only while looking (the look button, RMB by default,
+	// held), as in Unity and Unreal; on their own they are shortcuts. Not with
+	// Ctrl (Ctrl+D duplicates, Ctrl+S saves), nor while ImGui has the keyboard
+	// (a key held into a field). Alt (slow) and Shift (fast) still fly.
+	bool flyKeys = looking && !CPad::IsCtrlDown() && !io.WantCaptureKeyboard && !io.WantTextInput;
+	// A hold spent flying is not a click: releasing it doesn't open the
+	// viewport menu or stop placing.
+	if(flyKeys && (CPad::IsKeyDown('W') || CPad::IsKeyDown('A') || CPad::IsKeyDown('S') || CPad::IsKeyDown('D')))
+		CPad::CancelClick();
 	auto flyKey = [flyKeys](int key){ return flyKeys && CPad::IsKeyDown(key); };
 	float flyMul = 1.0f;
 	if(CPad::IsShiftDown()) flyMul = gFlyFastMul;

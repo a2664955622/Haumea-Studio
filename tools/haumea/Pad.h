@@ -105,6 +105,8 @@ public:
 	static bool IsMButtonJustUp(int btn);
 	static bool IsMButtonClicked(int btn);
 	static bool IsMButtonDown(int btn);
+	// The press in progress won't count as a click when it's released.
+	static void CancelClick(void) { if(clickState == 1) clickState = 0; }
 };
 
 #define IsButtonJustDown(pad, btn) \

@@ -23,6 +23,12 @@ each path or use **Browse...** (on Linux that needs `zenity` or `kdialog`). You 
 **Preferences → Workspace**. Haumea keeps its own settings, autosaves and prefabs in its
 config folder (`~/.config/haumea` on Linux, `%APPDATA%\Haumea` on Windows).
 
+## Moving around
+
+Hold the right mouse button in the 3D view to look around, and while it's held fly with
+`W`/`A`/`S`/`D` (`Shift` faster, `Alt` slower). Middle-drag pans and the wheel zooms. The
+look button can be changed in **Preferences → Camera**.
+
 ## Placing objects
 
 1. Open the **Object Browser** (`Ctrl+1`) and pick an object. Search by name, ID, a list or

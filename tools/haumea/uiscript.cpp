@@ -36,7 +36,7 @@
 //   wait_until <assert>         up to 600 frames
 //   key Ctrl+Shift+H            press and release a chord
 //   shortcut <id|name>          the chord of a shortcut-table action
-//   hold KEY / release KEY
+//   hold KEY / release KEY      also left, right or middle (a mouse button)
 //   move X Y                    pixels, or 50% 40% of the window
 //   click [X Y] [left|right|middle]
 //   drag X1 Y1 X2 Y2 [frames]
@@ -596,6 +596,10 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		why = f ? (found ? "found" : "not in the file") : "can't read " + arg(1);
 		return f && (what == "file_contains" ? found : !found);
 	}
+	if(what == "gizmo_hovered"){
+		why = gGizmoHovered ? "the gizmo is hovered" : "the gizmo isn't hovered";
+		return gGizmoHovered;
+	}
 	if(what == "gizmo"){
 		std::string mode = gGizmoMode == GIZMO_ROTATE ? "rotate" : "move";
 		why = "gizmo is " + mode;
@@ -755,6 +759,12 @@ nextCommand(void)
 			return;
 		}else if(cmd == "key" || cmd == "shortcut" || cmd == "hold" || cmd == "release"){
 			std::string chord = a.size() > 1 ? a[1] : "";
+			if((cmd == "hold" || cmd == "release") &&
+			   (chord == "left" || chord == "right" || chord == "middle")){
+				addStep(cmd == "hold" ? Step::DOWN : Step::UP, 0, 0, buttonBit(chord));
+				addStep(Step::NOP);
+				return;
+			}
 			if(cmd == "shortcut" && !shortcutChordText(chord, chord)){
 				say("line %d: FAIL no shortcut '%s'", (int)gLine, a.size() > 1 ? a[1].c_str() : "");
 				gFails++;
