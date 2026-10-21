@@ -2,7 +2,6 @@
 #include "haumea.h"
 #include "workspace.h"
 #include "icons.h"
-#include "tstudio_textures.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -181,8 +180,13 @@ static int
 tstudioIndexOf(const char *txd, const char *texture)
 {
 	static std::vector<std::pair<std::string, int>> sorted;
-	if(sorted.empty()){
-		int n = sizeof(tstudioTextures) / sizeof(tstudioTextures[0]);
+	static std::string sortedFrom;
+	int n;
+	std::string from;
+	const TStudioTexture *tstudioTextures = TStudioTextureList(&n, &from);
+	if(sorted.empty() || from != sortedFrom){
+		sorted.clear();
+		sortedFrom = from;
 		for(int i = 1; i < n; i++){
 			std::string key = std::string(tstudioTextures[i].txd) + ":" + tstudioTextures[i].texture;
 			std::transform(key.begin(), key.end(), key.begin(), ::tolower);
@@ -471,6 +475,8 @@ tileGrid(const std::vector<int> &items, bool tstudio)
 				int slot;
 				char title[64];
 				if(tstudio){
+					int numTs;
+					const TStudioTexture *tstudioTextures = TStudioTextureList(&numTs);
 					int i = items[k];
 					pick.model = EditorModelId(tstudioTextures[i].model);
 					pick.txd = tstudioTextures[i].txd;
@@ -590,9 +596,12 @@ DrawTextureBrowserWindow(bool *open)
 		}
 		if(ImGui::BeginTabItem("Texture Studio list")){
 			gTsSearch.Draw("##tssearch", -FLT_MIN);
-			ImGui::SetItemTooltip("Texture Studio's texture index (alltextures.pwn): search by number, TXD or name.");
+			std::string from;
+			int n;
+			const TStudioTexture *tstudioTextures = TStudioTextureList(&n, &from);
+			ImGui::SetItemTooltip("Texture Studio's texture index (alltextures.pwn): search by number, TXD or name.\n"
+				"From %s.", from == "bundled" ? "the copy that comes with Haumea" : from.c_str());
 			std::vector<int> items;
-			int n = sizeof(tstudioTextures) / sizeof(tstudioTextures[0]);
 			for(int i = 1; i < n; i++){
 				char line[128];
 				snprintf(line, sizeof(line), "%d %s %s", i, tstudioTextures[i].txd, tstudioTextures[i].texture);

@@ -891,6 +891,12 @@ void DrawTextureBrowserWindow(bool *open);
 void DrawLicensesWindow(bool *open);
 struct TextureSearchResult { int model; std::string txd, texture; bool samp, custom; int tstudioIndex; };
 int SearchTextures(const char *query, int limit, std::vector<TextureSearchResult> &out);	// indexes everything first
+// Texture Studio's texture list (tstudio.cpp): Texture Studio maps store
+// textures as indices into it, so its order matters. The workspace's own
+// alltextures.pwn when the server has Texture Studio, else the bundled copy;
+// *source says which. Index 0 is "no texture".
+struct TStudioTexture { int model; const char *txd, *texture; };
+const TStudioTexture *TStudioTextureList(int *count, std::string *source = nil);
 void InitObjectPawnProperties(ObjectPawnProperties *properties);
 // Never nil: instances without their own properties share the defaults.
 const ObjectPawnProperties *GetObjectPawnProperties(const ObjectInst *inst);

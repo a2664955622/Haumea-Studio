@@ -220,7 +220,8 @@ and the SA-MP 0.3.7 includes.
 
 - **Open**: **File → Open Map** (`Ctrl+O`, or drop a `.pwn` on the window) reads `.pwn` maps and
   Texture Studio `.db` maps (from `scriptfiles/tstudio/SavedMaps`). Saving a Texture Studio map
-  writes a new `.pwn` and never changes the `.db`.
+  writes a new `.pwn` and never changes the `.db`. Texture Studio stores textures by number in its
+  texture list; when your server has Texture Studio installed, Haumea uses that server's list.
 - **Merge**: **File → Import → Merge Pawn File** adds another `.pwn`, `.db`, MTA:SA `.map` or IPL
   map to yours.
 - **Groups and notes** are saved after each object as `// model @group("...") @note("...")`.

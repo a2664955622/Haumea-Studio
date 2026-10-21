@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "workspace.h"
 #include "tstudio_textures.h"
 
 #include <string.h>
@@ -10,6 +11,90 @@
 #include <vector>
 #include <map>
 #include <algorithm>
+#include <sys/stat.h>
+
+// ---- Texture Studio's texture list ----
+
+// The server's own copy, where Texture Studio installs it, wins over the
+// bundled one: a .db saved with another Texture Studio version numbers its
+// textures by that version's list.
+static const char *tstudioListPaths[] = {
+	"filterscripts/tstudio/alltextures.pwn",
+	"qawno/include/tstudio/alltextures.pwn",
+	"pawno/include/tstudio/alltextures.pwn",
+};
+
+static long long
+fileTime(const std::string &path)
+{
+	struct stat st;
+	return stat(path.c_str(), &st) == 0 && S_ISREG(st.st_mode) ? (long long)st.st_mtime : -1;
+}
+
+const TStudioTexture*
+TStudioTextureList(int *count, std::string *source)
+{
+	static std::string loadedFrom;
+	static long long loadedTime = -1;
+	static std::vector<std::string> strings;	// what the workspace list points into
+	static std::vector<TStudioTexture> workspaceList;
+	std::string found;
+	for(const char *rel : tstudioListPaths){
+		std::string path = WorkspacePath(rel);
+		if(!path.empty() && fileTime(path) >= 0){
+			found = path;
+			break;
+		}
+	}
+	long long mtime = found.empty() ? -1 : fileTime(found);
+	if(found != loadedFrom || mtime != loadedTime){
+		loadedFrom = found;
+		loadedTime = mtime;
+		workspaceList.clear();
+		strings.clear();
+		FILE *f = found.empty() ? nil : fopen(found.c_str(), "rb");
+		if(f){
+			// Rows of ObjectTextures[][TEXTUREDEF]: { model, "txd", "texture" },
+			std::vector<std::pair<int, std::pair<std::string, std::string>>> rows;
+			char line[512];
+			bool inTable = false;
+			while(fgets(line, sizeof(line), f)){
+				if(!inTable){
+					inTable = strstr(line, "ObjectTextures[][TEXTUREDEF]") != nil;
+					continue;
+				}
+				const char *p = line;
+				while(*p == ' ' || *p == '\t') p++;
+				if(p[0] == '}' && p[1] == ';')
+					break;
+				int model;
+				char txd[128], tex[128];
+				if(sscanf(p, "{ %d , \"%127[^\"]\" , \"%127[^\"]\" }", &model, txd, tex) == 3 ||
+				   sscanf(p, "{%d,\"%127[^\"]\",\"%127[^\"]\"}", &model, txd, tex) == 3)
+					rows.push_back({ model, { txd, tex } });
+			}
+			fclose(f);
+			// Too short to be the list (an unrelated file): use the bundled one.
+			if(rows.size() > 1000){
+				strings.reserve(rows.size() * 2);
+				for(auto &r : rows){
+					strings.push_back(r.second.first);
+					strings.push_back(r.second.second);
+				}
+				for(size_t i = 0; i < rows.size(); i++)
+					workspaceList.push_back({ rows[i].first, strings[2*i].c_str(), strings[2*i+1].c_str() });
+			}
+		}
+	}
+	if(!workspaceList.empty()){
+		if(source) *source = loadedFrom;
+		*count = (int)workspaceList.size();
+		return workspaceList.data();
+	}
+	if(source) *source = "bundled";
+	*count = (int)(sizeof(tstudioTextures)/sizeof(tstudioTextures[0]));
+	return tstudioTextures;
+}
 
 // Texture Studio maps (scriptfiles/tstudio/SavedMaps/*.db) are SQLite files.
 // They are read here without SQLite itself: only reading is needed, and the
@@ -418,7 +503,8 @@ BuildTextureStudioPawn(const char *path, std::string &source, std::string &error
 		return objects.get(objects.rows[a], "IndexID").integer((int64)a) <
 			objects.get(objects.rows[b], "IndexID").integer((int64)b);
 	});
-	const int numTextures = (int)(sizeof(tstudioTextures)/sizeof(tstudioTextures[0]));
+	int numTextures;
+	const TStudioTexture *tstudioTextures = TStudioTextureList(&numTextures);
 	for(size_t k = 0; k < order.size(); k++){
 		const std::vector<SqlValue> &row = objects.rows[order[k]];
 		float drawDistance = (float)objects.get(row, "DrawDistance").number(300.0);
