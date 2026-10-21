@@ -15,6 +15,11 @@ click_world 2000 -3000 4
 wait 5
 key Esc
 assert objects == 2
+# Standing on the floor (top z 4.0 on the fixture, 4.09 in the game), its wheels
+# under the origin: not lifted by the body's bounding sphere (6.56 and 7.07 were).
+assert selected == 1
+assert selected.z > 4.3
+assert selected.z < 5.2
 shortcut window_object_info
 wait 5
 set_item 'Object Info' 'Colour 1/##value' "3" tab

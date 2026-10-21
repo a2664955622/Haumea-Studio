@@ -320,12 +320,31 @@ buildVehicleSelectionCollision(ObjectDef *obj, rw::Clump *clump)
 		rw::Geometry *geometry = atomic ? atomic->geometry : nil;
 		if(geometry == nil || geometry->numMorphTargets <= 0)
 			continue;
+		rw::Matrix frameMatrix;
+		frameMatrix.setIdentity();
+		if(atomic->getFrame())
+			frameMatrix = *atomic->getFrame()->getLTM();
+		// The vertices give the real extent: a body's bounding sphere reaches
+		// as far below it as it is long, and placement stands the car on
+		// this box (2.5 m in the air for an Infernus).
+		const rw::V3d *vertices = geometry->morphTargets[0].vertices;
+		if(vertices && geometry->numVertices > 0){
+			for(int32 i = 0; i < geometry->numVertices; i++){
+				rw::V3d v;
+				rw::V3d::transformPoints(&v, &vertices[i], 1, &frameMatrix);
+				if(v.x < min.x) min.x = v.x;
+				if(v.y < min.y) min.y = v.y;
+				if(v.z < min.z) min.z = v.z;
+				if(v.x > max.x) max.x = v.x;
+				if(v.y > max.y) max.y = v.y;
+				if(v.z > max.z) max.z = v.z;
+			}
+			found = true;
+			continue;
+		}
 		const rw::Sphere &sphere = geometry->morphTargets[0].boundingSphere;
 		rw::V3d center = sphere.center;
-		if(atomic->getFrame()){
-			rw::Matrix frameMatrix = *atomic->getFrame()->getLTM();
-			rw::V3d::transformPoints(&center, &center, 1, &frameMatrix);
-		}
+		rw::V3d::transformPoints(&center, &center, 1, &frameMatrix);
 		float radius = sphere.radius > 0.25f ? sphere.radius : 0.25f;
 		if(center.x - radius < min.x) min.x = center.x - radius;
 		if(center.y - radius < min.y) min.y = center.y - radius;
