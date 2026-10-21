@@ -2786,14 +2786,30 @@ tryObjectSnapAxis(float movingMin, float movingMax, float targetMin, float targe
 	}
 }
 
-static bool
-findObjectSnapDelta(ObjectInst *leader, const rw::V3d &proposedPosition, rw::V3d *outDelta)
+// How good a snap is: the largest correction on one axis (smaller wins),
+// then more axes closed at once, then the smaller total.
+struct ObjectSnapScore
 {
-	if(leader == nil || outDelta == nil || gObjectSnapDistance <= 0.0f)
-		return false;
-	ObjectSnapBounds moving;
-	if(!getObjectSnapBounds(leader, &proposedPosition, &moving))
-		return false;
+	float max;
+	float sum;
+	int axes;
+};
+
+static bool
+snapScoreBetter(const ObjectSnapScore &a, const ObjectSnapScore &b)
+{
+	return a.max < b.max - 0.0001f ||
+		(fabsf(a.max - b.max) <= 0.0001f &&
+		 (a.axes > b.axes || (a.axes == b.axes && a.sum < b.sum)));
+}
+
+// The snap of one moving box against the objects around it. self is the
+// object the box belongs to (nil for a whole selection's box); nothing in
+// movingSet (the selection and the LODs moving with it) is a target.
+static bool
+findObjectSnapDeltaForBounds(const ObjectSnapBounds &moving, ObjectInst *self, int area,
+	const std::unordered_set<ObjectInst*> &movingSet, rw::V3d *outDelta, ObjectSnapScore *outScore)
+{
 
 	std::vector<ObjectInst*> candidates;
 	float radius = gObjectSnapDistance;
@@ -2820,18 +2836,16 @@ findObjectSnapDelta(ObjectInst *leader, const rw::V3d &proposedPosition, rw::V3d
 	addObjectSnapCandidates(&outOfBoundsSector.bigbuildings, candidates);
 	addObjectSnapCandidates(&outOfBoundsSector.bigbuildings_overlap, candidates);
 
-	float bestScore = 1.0e30f;
-	float bestSum = 1.0e30f;
-	int bestAxes = 0;
+	ObjectSnapScore best = { 1.0e30f, 1.0e30f, 0 };
 	bool found = false;
 	rw::V3d bestDelta = { 0.0f, 0.0f, 0.0f };
 	for(size_t i = 0; i < candidates.size(); i++){
 		ObjectInst *candidate = candidates[i];
-		if(candidate == nil || candidate == leader || candidate->m_isDeleted || candidate->m_selected ||
-		   candidate->m_lod == leader || leader->m_lod == candidate)
+		if(candidate == nil || candidate == self || candidate->m_isDeleted || candidate->m_selected ||
+		   movingSet.count(candidate) || (self && (candidate->m_lod == self || self->m_lod == candidate)))
 			continue;
-		if(!gNoAreaCull && candidate->m_area != leader->m_area &&
-		   candidate->m_area != 13 && leader->m_area != 13)
+		if(!gNoAreaCull && candidate->m_area != area &&
+		   candidate->m_area != 13 && area != 13)
 			continue;
 
 		ObjectSnapBounds target;
@@ -2871,27 +2885,70 @@ findObjectSnapDelta(ObjectInst *leader, const rw::V3d &proposedPosition, rw::V3d
 
 		if(candidateAxes == 0)
 			continue;
-		float candidateMax = max(fabsf(candidateDelta.x),
-			max(fabsf(candidateDelta.y), fabsf(candidateDelta.z)));
-		float candidateSum = sq(candidateDelta.x) + sq(candidateDelta.y) + sq(candidateDelta.z);
+		ObjectSnapScore score;
+		score.max = max(fabsf(candidateDelta.x), max(fabsf(candidateDelta.y), fabsf(candidateDelta.z)));
+		score.sum = sq(candidateDelta.x) + sq(candidateDelta.y) + sq(candidateDelta.z);
+		score.axes = candidateAxes;
 		// Prefer the closest target, and prefer a multi-axis correction when
 		// it closes a corner in one gesture instead of one axis per frame.
-		if(!found || candidateMax < bestScore - 0.0001f ||
-		   (fabsf(candidateMax - bestScore) <= 0.0001f &&
-		    (candidateAxes > bestAxes ||
-		     (candidateAxes == bestAxes && candidateSum < bestSum)))){
-			bestScore = candidateMax;
-			bestSum = candidateSum;
-			bestAxes = candidateAxes;
+		if(!found || snapScoreBetter(score, best)){
+			best = score;
 			bestDelta = candidateDelta;
 			found = true;
 		}
 	}
 
-	if(!found)
+	if(!found || best.axes == 0)
 		return false;
 	*outDelta = bestDelta;
-	return bestAxes > 0;
+	*outScore = best;
+	return true;
+}
+
+// Selections up to this size snap by each object's own box; bigger ones by
+// the box around them all, which keeps a drag of thousands cheap.
+#define MAX_OBJECT_SNAP_TESTED 64
+
+// The snap for moving objs (each from startPositions[i]) by delta: the best
+// of every object's own snap, so a group snaps by whichever member is
+// nearest something, not only by the one under the gizmo.
+bool
+FindSelectionSnapDelta(const std::vector<ObjectInst*> &objs, const std::vector<rw::V3d> &startPositions,
+	const rw::V3d &delta, rw::V3d *outDelta)
+{
+	if(objs.empty() || objs.size() != startPositions.size() || outDelta == nil || gObjectSnapDistance <= 0.0f)
+		return false;
+	std::unordered_set<ObjectInst*> movingSet(objs.begin(), objs.end());
+	bool found = false;
+	ObjectSnapScore best = { 1.0e30f, 1.0e30f, 0 };
+	if(objs.size() > MAX_OBJECT_SNAP_TESTED){
+		ObjectSnapBounds all;
+		bool first = true;
+		for(size_t i = 0; i < objs.size(); i++){
+			ObjectSnapBounds b;
+			rw::V3d pos = add(startPositions[i], delta);
+			if(!getObjectSnapBounds(objs[i], &pos, &b))
+				continue;
+			addObjectSnapPoint(b.min, &all, &first);
+			addObjectSnapPoint(b.max, &all, &first);
+		}
+		return !first && findObjectSnapDeltaForBounds(all, nil, objs[0]->m_area, movingSet, outDelta, &best);
+	}
+	for(size_t i = 0; i < objs.size(); i++){
+		ObjectSnapBounds moving;
+		rw::V3d pos = add(startPositions[i], delta);
+		if(!getObjectSnapBounds(objs[i], &pos, &moving))
+			continue;
+		rw::V3d d;
+		ObjectSnapScore score;
+		if(findObjectSnapDeltaForBounds(moving, objs[i], objs[i]->m_area, movingSet, &d, &score) &&
+		   (!found || snapScoreBetter(score, best))){
+			best = score;
+			*outDelta = d;
+			found = true;
+		}
+	}
+	return found;
 }
 
 void
@@ -3092,8 +3149,16 @@ dogizmo(void)
 			// Compute total delta from leader's start position (avoids frame-by-frame drift)
 			rw::V3d totalDelta = sub(newLeaderPos, dragStartLeaderPos);
 			if(gObjectSnapMode){
+				std::vector<ObjectInst*> moving;
+				std::vector<rw::V3d> starts;
+				moving.reserve(dragTransforms.size());
+				starts.reserve(dragTransforms.size());
+				for(int i = 0; i < (int)dragTransforms.size(); i++){
+					moving.push_back(dragTransforms[i].inst);
+					starts.push_back(dragTransforms[i].oldPos);
+				}
 				rw::V3d snapDelta;
-				if(findObjectSnapDelta(inst, add(dragStartLeaderPos, totalDelta), &snapDelta))
+				if(FindSelectionSnapDelta(moving, starts, totalDelta, &snapDelta))
 					totalDelta = add(totalDelta, snapDelta);
 			}
 

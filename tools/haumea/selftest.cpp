@@ -355,6 +355,46 @@ RunUndoSelfTest(FILE *out)
 	}else
 		fprintf(gReport, "SKIP nodes: the game's node files aren't loaded\n");
 
+	// Object snap with several objects moving: B, not the leader A, is 0.2 m
+	// short of T, so the selection snaps by B (only the leader's box was tried).
+	std::vector<ObjectInst*> snappable;
+	for(CPtrNode *p = instances.first; p && snappable.size() < 3; p = p->next){
+		ObjectInst *inst = (ObjectInst*)p->item;
+		ObjectDef *def = GetObjectDef(inst->m_objectId);
+		if(!inst->m_isDeleted && PawnObjectNeedsExport(inst) && def && def->m_colModel &&
+		   GetObjectPawnProperties(inst)->attachParent < 0)
+			snappable.push_back(inst);
+	}
+	if(snappable.size() == 3){
+		ObjectInst *a = snappable[0], *b = snappable[1], *t = snappable[2];
+		auto boxOf = [](ObjectInst *inst){ return GetObjectDef(inst->m_objectId)->m_colModel->boundingBox; };
+		auto put = [](ObjectInst *inst, rw::V3d pos){
+			inst->m_translation = pos;
+			inst->m_rotation = { 0.0f, 0.0f, 0.0f, 1.0f };
+			inst->m_area = 0;	// the same interior, or they aren't snap targets
+			inst->UpdateMatrix();
+			RemoveInstFromSectors(inst);
+			InsertInstIntoSectors(inst);
+		};
+		rw::V3d tPos = { 2900.0f, 2900.0f, 50.0f };
+		put(t, tPos);
+		put(b, { tPos.x + boxOf(t).min.x - boxOf(b).max.x - 0.2f, tPos.y, tPos.z });
+		put(a, { tPos.x - 40.0f, tPos.y, tPos.z });
+		selectOnly({ a, b });
+		float distance = gObjectSnapDistance;
+		gObjectSnapDistance = 0.5f;
+		rw::V3d none = { 0.0f, 0.0f, 0.0f }, d = none;
+		bool leaderOnly = FindSelectionSnapDelta({ a }, { a->m_translation }, none, &d);
+		bool both = FindSelectionSnapDelta({ a, b }, { a->m_translation, b->m_translation }, none, &d);
+		gObjectSnapDistance = distance;
+		char why[128];
+		snprintf(why, sizeof(why), "leader alone %s, both %s with dx %.3f",
+			leaderOnly ? "snapped" : "didn't", both ? "snapped" : "didn't", d.x);
+		report(!leaderOnly && both && fabsf(d.x - 0.2f) < 0.01f, "snap: a selection snaps by any member", why);
+		ClearSelection();
+	}else
+		fprintf(gReport, "SKIP snap: fewer than three objects with collision\n");
+
 	fprintf(gReport, "undo self-test: %d passed, %d failed\n", gPassed, gFailed);
 	fflush(gReport);
 	return gFailed;

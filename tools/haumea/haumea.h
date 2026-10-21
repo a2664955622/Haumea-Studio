@@ -589,6 +589,9 @@ extern bool gGizmoHovered;
 extern bool gGizmoUsing;
 extern bool gPlaceSnapToObjects;
 extern bool gPlaceSnapToGround;
+// Object snap for moving objs from startPositions by delta (selection-wide).
+bool FindSelectionSnapDelta(const std::vector<ObjectInst*> &objs, const std::vector<rw::V3d> &startPositions,
+	const rw::V3d &delta, rw::V3d *outDelta);
 extern bool gDragFollowGround;
 extern bool gDragAlignToSurface;
 
