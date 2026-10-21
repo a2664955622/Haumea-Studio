@@ -10605,6 +10605,7 @@ struct UiOutlinerRow
 	std::vector<ObjectInst*> members;	// HEADER: everything under it, open or not
 	std::vector<ObjectInst*> refs;	// NOTE: what clicking it selects
 	int textDraw;	// TEXTDRAW
+	bool mapTextDraw;	// an old map's read-only one: textDraw indexes GetMapTextDraws()
 	const char *problem;	// OBJECT: the first Map check problem, or nil
 };
 
@@ -10868,27 +10869,34 @@ uiOutlinerRebuild(void)
 				uiOutlinerAddObject(inst, 1, problems);
 		}
 	}
-	// TextDraws are not in the world; they list by name and open the designer.
-	std::vector<TextDraw> &tds = GetTextDraws();
+	// TextDraws are not in the world; they list by name and open TextDraw
+	// mode. The file's come first, then an old map's read-only ones.
 	bool textDraws = (gOutliner.kind < 0 || gOutliner.kind == UI_OUTLINER_TEXTDRAWS) &&
 		!gOutliner.hiddenOnly && !gOutliner.problemsOnly;
-	std::vector<int> tdShown;
-	for(size_t i = 0; textDraws && i < tds.size(); i++)
-		if(!gOutliner.search[0] || idQuery || ImStristr(tds[i].name, nil, gOutliner.search, nil) ||
-		   ImStristr(tds[i].text.c_str(), nil, gOutliner.search, nil))
-			tdShown.push_back((int)i);
+	struct TdShown { int index; bool map; };
+	std::vector<TdShown> tdShown;
+	for(int list = 0; list < 2 && textDraws; list++){
+		const std::vector<TextDraw> &tds = list ? GetMapTextDraws() : GetTextDraws();
+		for(size_t i = 0; i < tds.size(); i++)
+			if(!gOutliner.search[0] || idQuery || ImStristr(tds[i].name, nil, gOutliner.search, nil) ||
+			   ImStristr(tds[i].text.c_str(), nil, gOutliner.search, nil))
+				tdShown.push_back({ (int)i, list == 1 });
+	}
 	if(!tdShown.empty()){
 		uiOutlinerAddHeader("t:", "TextDraws", 0, {});
 		gOutliner.rows.back().count = (int)tdShown.size();
 		if(uiOutlinerOpen("t:"))
-			for(int i : tdShown){
+			for(const TdShown &shown : tdShown){
+				const TextDraw &td = (shown.map ? GetMapTextDraws() : GetTextDraws())[shown.index];
 				UiOutlinerRow row = {};
 				row.type = UiOutlinerRow::TEXTDRAW;
 				row.depth = 1;
-				row.textDraw = i;
-				std::string text = tds[i].text.substr(0, 32);
+				row.textDraw = shown.index;
+				row.mapTextDraw = shown.map;
+				std::string text = td.text.substr(0, 32);
 				std::replace(text.begin(), text.end(), '\n', ' ');
-				row.label = std::string(ICON_FA_FONT " ") + (tds[i].name[0] ? tds[i].name : "textdraw") + "  " + text;
+				row.label = std::string(ICON_FA_FONT " ") + (td.name[0] ? td.name : "textdraw") + "  " + text +
+					(shown.map ? "  (in the map, read-only)" : "");
 				gOutliner.rows.push_back(row);
 			}
 	}
@@ -11071,9 +11079,10 @@ uiMapObjectsList(void)
 	// Rebuild when what the rows show may have changed. Gizmo and brush drags
 	// change the sequence every frame, so while a button is held they wait.
 	char key[256];
-	snprintf(key, sizeof(key), "%d|%s|%d|%d|%d|%d|%d|%d|%d|%zu", gOutliner.mode, gOutliner.search, gOutliner.kind,
+	snprintf(key, sizeof(key), "%d|%s|%d|%d|%d|%d|%d|%d|%u|%d|%zu", gOutliner.mode, gOutliner.search, gOutliner.kind,
 		gOutliner.hiddenOnly, gOutliner.problemsOnly, gOutliner.closedVersion, CountHiddenInstances(),
-		gMapCheckDone ? (int)gMapCheck.items.size() : -1, (int)GetTextDraws().size(), (size_t)instances.first);
+		gMapCheckDone ? (int)gMapCheck.items.size() : -1, TextDrawsChangeSeq(), (int)GetMapTextDraws().size(),
+		(size_t)instances.first);
 	uint32 seq = GetLatestChangeSeq();
 	double now = ImGui::GetTime();
 	bool dragging = ImGui::IsMouseDown(ImGuiMouseButton_Left) || ImGui::IsMouseDown(ImGuiMouseButton_Right);
@@ -11250,6 +11259,13 @@ uiMapObjectsList(void)
 				ImGui::PopStyleColor();
 				if(!row.refs.empty())
 					ImGui::SetItemTooltip("Click to select it.");
+			}else if(row.mapTextDraw){
+				ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+				if(ImGui::Selectable(row.label.c_str(), false))
+					EnterTextDrawMode();
+				ImGui::PopStyleColor();
+				ImGui::SetItemTooltip("Saved with the map as it is. Move it to a textdraw file to edit it:\n"
+					"TextDraws > Move to a separate file.");
 			}else{
 				if(ImGui::Selectable(row.label.c_str(), false))
 					SelectTextDraw(row.textDraw);

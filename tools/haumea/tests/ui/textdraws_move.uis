@@ -2,6 +2,10 @@
 open "$UI_FIXTURES/ui_old_textdraws.pwn"
 wait 5
 assert pawn_contains "TextDrawCreate(320.000, 10.000"
+# Map Objects lists it, read-only.
+shortcut window_map_objects
+wait 5
+assert item 'Map Objects' 'OldTitle  Old title  (in the map, read-only)'
 click_item '*' 'Windows'
 wait 3
 click_item '*' 'TextDraws'
@@ -14,3 +18,5 @@ wait 5
 assert textdraws == 1
 assert file_contains "$UI_FIXTURES/ui_old_textdraws_textdraws.pwn" "OldTitle = TextDrawCreate(320.000, 10.000"
 assert pawn_lacks "TextDrawCreate("
+assert item 'Map Objects' 'OldTitle  Old title'
+assert no_item 'Map Objects' 'OldTitle  Old title  (in the map, read-only)'
