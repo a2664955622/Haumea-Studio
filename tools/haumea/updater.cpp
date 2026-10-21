@@ -20,8 +20,8 @@
 // Not portable to ARM or non-MSVC compilers; fine for this D3D9-only Windows app.
 //
 // Update policy: a release of this channel with a higher version, all four
-// parts compared (versionutil.h). Tags are v1.0.0.<build>-<channel>; tags
-// without a build number count as build 0.
+// parts compared (versionutil.h). Tags are v1.41.0.<build>-<channel>; older
+// ones v1.41.0-<channel>-<sha> count as build 0.
 
 static volatile long gUpdateCheckDone = 0;
 static volatile long gUpdateAvailable = 0;
@@ -329,7 +329,7 @@ static unsigned __stdcall
 CheckThread(void *arg)
 {
 	// Query GitHub API for the latest release matching our channel:
-	// v1.0.0.<build>-<channel>.
+	// v1.41.0.<build>-<channel>, or an older v1.41.0-<channel>-<sha>.
 	wchar_t path[512];
 	swprintf(path, 512, L"/repos/itsneufox/haumea/releases?per_page=20");
 
