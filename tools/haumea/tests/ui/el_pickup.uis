@@ -1,0 +1,32 @@
+# Pickup: model chosen in the SA-MP tab, then type changed in Object Info; save, reopen.
+open "$UI_FIXTURES/ui_floor.pwn"
+shortcut window_browser
+wait 5
+click_item 'Object Browser' 'SA-MP'
+wait 5
+click_item 'Object Browser' 'Model##pickup'
+wait 3
+set_item '*' 'ID' "1242"
+wait 3
+click_item 'Object Browser' 'Model##pickup'
+wait 3
+click_item 'Object Browser' 'Place' 5
+wait 3
+click_world 2000 -3000 4
+wait 5
+key Esc
+assert objects == 2
+shortcut window_object_info
+wait 5
+click_item 'Object Info' 'Type'
+wait 3
+set_item '*' 'ID' "14"
+wait 3
+click_item 'Object Info' 'Type'
+wait 3
+key Ctrl+S
+wait 5
+reopen
+wait 10
+assert objects == 2
+assert pawn_contains "CreatePickup(1242, 14, 1999.9"

@@ -79,7 +79,9 @@ class UiScriptTests(unittest.TestCase):
         work = tempfile.mkdtemp(dir=self.tmp)
         env = editor_env(work)
         env.pop('WAYLAND_DISPLAY', None)
-        env['UI_FIXTURES'] = str(UI / 'fixtures')
+        # A copy, so scripts can save over the maps they open.
+        shutil.copytree(UI / 'fixtures', Path(work, 'fixtures'))
+        env['UI_FIXTURES'] = str(Path(work, 'fixtures'))
         server = Path(work, 'server')
         (server / 'gamemodes').mkdir(parents=True)
         (server / 'models').mkdir()

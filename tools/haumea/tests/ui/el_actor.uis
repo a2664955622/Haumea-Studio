@@ -1,0 +1,45 @@
+# Actor: Place from the SA-MP tab, then skin, health, Invulnerable and an
+# animation through Object Info; Ctrl+S, reopen, check the code.
+# needs: game (animation libraries)
+open "$UI_FIXTURES/ui_floor.pwn"
+shortcut window_browser
+wait 5
+click_item 'Object Browser' 'SA-MP'
+wait 5
+click_item 'Object Browser' 'Place' 1
+wait 3
+click_world 2000 -3000 4
+wait 5
+key Esc
+assert objects == 2
+shortcut window_object_info
+wait 5
+click_item 'Object Info' 'Skin'
+wait 3
+set_item '*' 'ID' "280"
+wait 3
+click_item 'Object Info' 'Skin'
+wait 3
+click_item 'Object Info' 'Invulnerable'
+wait 2
+set_item 'Object Info' 'Health' "50"
+wait 3
+click_item 'Object Info' 'Library'
+wait 3
+click_item '*' 'PED'
+wait 3
+set_item 'Object Info' '##filter' "WALK_civi"
+wait 3
+click_item 'Object Info' 'WALK_civi'
+wait 3
+click_item 'Object Info' 'Lock X'
+wait 3
+key Ctrl+S
+wait 5
+reopen
+wait 10
+assert objects == 2
+assert pawn_contains "= CreateActor(280, 1999.9"
+assert pawn_contains "SetActorInvulnerable(Haumea_ui_floor_actor_0, false);"
+assert pawn_contains "SetActorHealth(Haumea_ui_floor_actor_0, 50.00);"
+assert pawn_contains "ApplyActorAnimation(Haumea_ui_floor_actor_0, \"PED\", \"WALK_civi\", 4.10, true, true, false, false, 0);"

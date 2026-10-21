@@ -44,6 +44,9 @@
 //   camera X Y Z TX TY TZ / mark_camera
 //   click_item 'Window' 'Label' [right]   '*' for any window
 //   hover_item 'Window' 'Label'
+//   set_item 'Window' 'Label' "text" [N] [tab] types into a field ('Colour/##X' = red)
+//   reopen                              opens the map file again
+//   click_world X Y Z [shift|right]    looks at a world point and clicks it
 //   scroll_until 'Window' 'Label'      scrolls the window until the item shows
 //   dump_items [filter]                 lists what ImGui drew last frame
 //   drag_item 'Window' 'Label' DX DY [N]
@@ -64,7 +67,9 @@ static FILE *gLog;
 // ---- Items seen through the test-engine hooks ----
 
 struct UiItem {
-	ImGuiID id, seed;	// seed: the ID stack top, to match items ImGui gives no label (closed combos)
+	// seed: the ID stack top, to match items ImGui gives no label (closed combos);
+	// parent and grand: the two below it, for parts of a widget ('Colour/##X', 'Size/#1')
+	ImGuiID id, seed, parent, grand;
 	ImRect bb;
 	std::string window, rootWindow, label, rawLabel;
 };
@@ -89,10 +94,13 @@ ImGuiTestEngineHook_ItemAdd(ImGuiContext *ctx, ImGuiID id, const ImRect &bb, con
 	ImGuiWindow *w = ctx->CurrentWindow;
 	UiItem item;
 	item.id = id;
-	item.seed = 0;
+	item.seed = item.parent = item.grand = 0;
 	item.bb = bb;
 	if(w){
-		item.seed = w->IDStack.empty() ? 0 : w->IDStack.back();
+		int n = w->IDStack.Size;
+		item.seed = n > 0 ? w->IDStack[n-1] : 0;
+		item.parent = n > 1 ? w->IDStack[n-2] : 0;
+		item.grand = n > 2 ? w->IDStack[n-3] : 0;
 		item.window = visibleTitle(w->Name);
 		item.rootWindow = visibleTitle(w->RootWindow ? w->RootWindow->Name : w->Name);
 	}
@@ -143,9 +151,54 @@ windowMatches(const UiItem &item, const std::string &window)
 		plainLabel(item.rootWindow).find(window) != std::string::npos;
 }
 
+static const UiItem *findItem(const std::string &window, const std::string &label, int nth = 1);
+
+// 'Widget/part': a part of a widget that pushes its label as an ID, like a
+// colour channel ('Colour/##X') or a DragFloat2 component ('Size (X, Y)/#1').
 static const UiItem*
-findItem(const std::string &window, const std::string &label, int nth = 1)
+findPart(const std::string &window, const std::string &widget, const std::string &part, int nth)
 {
+	int seen = 0;
+	bool index = part.size() > 1 && part[0] == '#' && isdigit((unsigned char)part[1]);
+	int i = index ? atoi(part.c_str() + 1) : 0;
+	for(size_t k = 0; k < gPrevItems.size(); k++){
+		const UiItem &it = gPrevItems[k];
+		if(!windowMatches(it, window))
+			continue;
+		bool match;
+		if(index)
+			match = it.parent == ImHashStr(widget.c_str(), 0, it.grand) &&
+				it.seed == ImHashData(&i, sizeof(i), it.parent);
+		else
+			match = it.seed == ImHashStr(widget.c_str(), 0, it.parent) &&
+				(it.rawLabel == part || plainLabel(it.label) == part ||
+				 (it.label.empty() && ImHashStr(part.c_str(), 0, it.seed) == it.id));
+		if(match && ++seen == nth)
+			return &it;
+	}
+	return nil;
+}
+
+static const UiItem*
+findItem(const std::string &window, const std::string &label, int nth)
+{
+	size_t slash = label.rfind('/');
+	if(slash != std::string::npos && slash > 0 && slash + 1 < label.size() && label[slash+1] == '#')
+		return findPart(window, label.substr(0, slash), label.substr(slash + 1), nth);
+	const UiItem *contains = nil;
+	// A label starting with "##" is an ID: matched against the raw label.
+	if(label.compare(0, 2, "##") == 0){
+		int seen = 0;
+		for(size_t i = 0; i < gPrevItems.size(); i++){
+			const UiItem &it = gPrevItems[i];
+			bool named = it.label.empty() && it.rawLabel.empty() ?
+				ImHashStr(label.c_str(), 0, it.seed) == it.id :
+				it.rawLabel.find(label) != std::string::npos;
+			if(windowMatches(it, window) && named && ++seen == nth)
+				return &it;
+		}
+		return nil;
+	}
 	if(nth > 1){
 		int seen = 0;
 		for(size_t i = 0; i < gPrevItems.size(); i++){
@@ -155,14 +208,6 @@ findItem(const std::string &window, const std::string &label, int nth = 1)
 			if(windowMatches(it, window) && named && ++seen == nth)
 				return &it;
 		}
-		return nil;
-	}
-	const UiItem *contains = nil;
-	// A label starting with "##" is an ID: matched against the raw label.
-	if(label.compare(0, 2, "##") == 0){
-		for(size_t i = 0; i < gPrevItems.size(); i++)
-			if(windowMatches(gPrevItems[i], window) && gPrevItems[i].rawLabel.find(label) != std::string::npos)
-				return &gPrevItems[i];
 		return nil;
 	}
 	for(size_t i = 0; i < gPrevItems.size(); i++){
@@ -441,7 +486,14 @@ compare(double a, const std::string &op, double b)
 static std::string
 pawnText(bool streamer)
 {
-	std::string path = std::string(GetConfigDir()) + "/ui-script-export.pwn";
+	// Named like the open map, so the variables read as in the saved file.
+	std::string name = GetPawnMapPath();
+	size_t slash = name.find_last_of("/\\");
+	if(slash != std::string::npos)
+		name = name.substr(slash + 1);
+	if(name.empty())
+		name = "ui-script-export.pwn";
+	std::string path = std::string(GetConfigDir()) + "/" + name;
 	int skipped = 0;
 	ExportPawnCode(path.c_str(), streamer ? PAWN_CODE_STREAMER : PAWN_CODE_NATIVE, false, &skipped);
 	std::string text;
@@ -751,6 +803,43 @@ nextCommand(void)
 			gDragToWindow = a[3];
 			gDragToLabel = a[4];
 			return;
+		}else if(cmd == "set_item" && a.size() >= 4){
+			// set_item 'Window' 'Label' "text" [N] [tab]: double-click the field,
+			// select all, type, Enter (Tab instead for a multiline field, where
+			// Enter is a new line). Works for text, number, drag and colour fields.
+			Step s = {};
+			s.type = Step::ITEM;
+			s.window = a[1];
+			s.label = a[2];
+			s.nth = 1;
+			bool tab = false;
+			for(size_t k = 4; k < a.size(); k++){
+				if(a[k] == "tab") tab = true;
+				else if(isdigit((unsigned char)a[k][0])) s.nth = atoi(a[k].c_str());
+			}
+			gSteps.push_back(s);
+			addStep(Step::NOP);
+			addStep(Step::DOWN, 0, 0, 1);
+			addStep(Step::UP, 0, 0, 1);
+			addStep(Step::DOWN, 0, 0, 1);
+			addStep(Step::UP, 0, 0, 1);
+			addStep(Step::NOP);
+			addStep(Step::NOP);
+			addChord({ sk::KEY_LCTRL, 'A' });
+			for(unsigned char c : a[3])
+				addStep(Step::CHAR, 0, 0, c);
+			addStep(Step::NOP);
+			addChord({ tab ? sk::KEY_TAB : sk::KEY_ENTER });
+			return;
+		}else if(cmd == "reopen"){
+			// Open the map file again, as saved.
+			std::string path = GetPawnMapPath();
+			if(path.empty() || !OpenPawnMapFile(path.c_str())){
+				say("line %d: FAIL could not reopen '%s'", (int)gLine, path.c_str());
+				gFails++;
+			}
+			gWaitFrames = 2;
+			return;
 		}else if(cmd == "click_object" && a.size() >= 2){
 			// The Nth object of the map (from 0), clicked where it is on screen.
 			// click_object N (newest first) or click_object model=M
@@ -795,6 +884,38 @@ nextCommand(void)
 			addStep(Step::NOP);
 			addStep(Step::DOWN, 0, 0, bit);
 			addStep(Step::UP, 0, 0, bit);
+			addStep(Step::NOP);
+			return;
+		}else if(cmd == "click_world" && a.size() >= 4){
+			// click_world X Y Z [shift|right]: look at the point from close by, then click it,
+			// to place an element or pick what is there.
+			rw::V3d p = { (float)atof(a[1].c_str()), (float)atof(a[2].c_str()), (float)atof(a[3].c_str()) };
+			if(!gObjectFramed){
+				TheCamera.m_target = p;
+				TheCamera.m_position = rw::add(p, rw::V3d{ -8.0f, -8.0f, 7.0f });
+				gObjectFramed = true;
+				gLine--;
+				gWaitFrames = 3;
+				return;
+			}
+			gObjectFramed = false;
+			rw::V3d screen;
+			float sw, sh;
+			if(!Sprite::CalcScreenCoors(p, &screen, &sw, &sh, false)){
+				say("line %d: FAIL %s %s %s is not on screen", (int)gLine, a[1].c_str(), a[2].c_str(), a[3].c_str());
+				gFails++;
+				continue;
+			}
+			bool shift = a.size() > 4 && a[4] == "shift";
+			int bit = a.size() > 4 && a[4] == "right" ? 4 : 1;
+			addStep(Step::MOVE, (int)screen.x, (int)screen.y);
+			if(shift)
+				addStep(Step::KEYDOWN, 0, 0, sk::KEY_LSHIFT);
+			addStep(Step::NOP);
+			addStep(Step::DOWN, 0, 0, bit);
+			addStep(Step::UP, 0, 0, bit);
+			if(shift)
+				addStep(Step::KEYUP, 0, 0, sk::KEY_LSHIFT);
 			addStep(Step::NOP);
 			return;
 		}else if(cmd == "scroll_until" && a.size() >= 3){

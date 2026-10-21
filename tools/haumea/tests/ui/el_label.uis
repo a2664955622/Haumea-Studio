@@ -1,0 +1,31 @@
+# 3D text label: text, colour, draw distance and line of sight in Object Info; save, reopen.
+open "$UI_FIXTURES/ui_floor.pwn"
+shortcut window_browser
+wait 5
+click_item 'Object Browser' 'SA-MP'
+wait 5
+click_item 'Object Browser' 'Place' 6
+wait 3
+click_world 2000 -3000 4
+wait 5
+key Esc
+assert objects == 2
+shortcut window_object_info
+wait 5
+set_item 'Object Info' 'Text' "Welcome"
+wait 3
+set_item 'Object Info' 'Colour/##X' "255"
+set_item 'Object Info' 'Colour/##Y' "0"
+set_item 'Object Info' 'Colour/##Z' "0"
+wait 3
+set_item 'Object Info' 'Draw distance' "25"
+wait 3
+click_item 'Object Info' 'Hide behind walls (test LOS)'
+wait 3
+key Ctrl+S
+wait 5
+reopen
+wait 10
+assert objects == 2
+assert pawn_contains "Create3DTextLabel(\"Welcome\", 0xFF0000FF, 1999.9"
+assert pawn_contains ", 25.0"
