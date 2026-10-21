@@ -23,8 +23,8 @@ struct UpdateAsset {
 };
 
 struct UpdateRelease {
-	std::string tag;		// v1.41.0.57-master
-	std::string version;	// 1.41.0.57
+	std::string tag;		// v1.0.0.57-production
+	std::string version;	// 1.0.0.57
 	std::string body;		// What's new (the CHANGELOG section)
 	std::string pageUrl;	// the release's web page
 	HaumeaVersion parsed;
