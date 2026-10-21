@@ -1,0 +1,4 @@
+[console_scripts]
+haumea-agentd = haumea_agent_tools.haumea_agentd:main
+haumea-mcp = haumea_agent_tools.haumea_mcp:main
+haumeactl = haumea_agent_tools.haumeactl:main

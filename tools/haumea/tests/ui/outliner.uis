@@ -1,0 +1,77 @@
+# Map Objects as an outliner: the group and kind views, selection both ways,
+# rename, grouping by drag and by menu, and hiding from the context menu.
+open "$UI_FIXTURES/ui_outliner.pwn"
+wait 5
+shortcut window_map_objects
+wait 5
+assert window "Map Objects"
+assert item 'Map Objects' 'Park (2)'
+assert item 'Map Objects' 'Ungrouped (6)'
+assert item 'Map Objects' '· in car (infernus) (front passenger)'
+
+# Click, Ctrl+click, Shift+click
+click_item 'Map Objects' 'bench_a (parkbench1)'
+wait 3
+assert selected == 1
+hold Ctrl
+click_item 'Map Objects' 'bench_b (parkbench1)'
+release Ctrl
+wait 3
+assert selected == 2
+click_item 'Map Objects' 'grill (DYN_BAR_B_Q)'
+hold Shift
+click_item 'Map Objects' 'car (infernus)'
+release Shift
+wait 3
+assert selected == 3
+
+# Rename the variable in its row, with the shortcut over the list
+click_item 'Map Objects' 'bin (BinNt07_LA)'
+wait 3
+hover_item 'Map Objects' 'bin (BinNt07_LA)'
+shortcut rename
+wait 3
+key Ctrl+A
+type "trash"
+key Enter
+wait 5
+assert item 'Map Objects' 'trash (BinNt07_LA)'
+assert pawn_contains "new trash = CreateObject"
+
+# Drag into a group, as one undo step
+drag_item_to 'Map Objects' 'grill (DYN_BAR_B_Q)' 'Map Objects' 'Park (2)'
+wait 5
+assert item 'Map Objects' 'Park (3)'
+shortcut undo
+wait 5
+assert item 'Map Objects' 'Park (2)'
+
+# Group selected, from the context menu
+click_item 'Map Objects' 'trash (BinNt07_LA)' right
+wait 3
+click_item '*' 'Group selected...'
+wait 3
+type "Bins"
+key Enter
+wait 5
+assert item 'Map Objects' 'Bins (1)'
+
+# Hide from the context menu
+click_item 'Map Objects' 'bench_a (parkbench1)' right
+wait 3
+click_item '*' 'Hide'
+wait 3
+assert hidden == 1
+
+# The kind view nests a path's points under it
+click_item 'Map Objects' 'Kinds'
+wait 3
+assert item 'Map Objects' 'Vehicles (1)'
+assert item 'Map Objects' 'NPC paths (2)'
+assert item 'Map Objects' 'Path path_a (2)'
+
+# A selection made in the viewport shows in the list
+click_object model=1481
+wait 5
+assert selected == 1
+assert item 'Map Objects' 'grill (DYN_BAR_B_Q)'

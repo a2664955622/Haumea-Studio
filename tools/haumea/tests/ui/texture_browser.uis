@@ -1,0 +1,29 @@
+# Texture Browser: search, hover preview (not saved), click-apply, one undo step.
+# needs: game
+open "$UI_FIXTURES/ui_map.pwn"
+click_object model=19353
+wait 5
+assert selected.texture 0 "white"
+shortcut window_textures
+wait 10
+assert window "Texture Browser"
+click_item 'Texture Browser' '##search'
+type "redmetal"
+wait 30
+hover_item 'Texture Browser' '##tex redmetal'
+wait 5
+assert selected.texture 0 "redmetal"
+move 300 600
+wait 5
+assert selected.texture 0 "white"
+click_item 'Texture Browser' '##tex redmetal'
+wait 5
+assert selected.texture 0 "redmetal"
+assert pawn_contains "\"redmetal\""
+key Esc
+wait 2
+move 640 400
+wait 2
+key Ctrl+Z
+wait 5
+assert pawn_lacks "\"redmetal\""

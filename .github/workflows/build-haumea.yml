@@ -1,0 +1,426 @@
+name: Build Haumea Studio
+
+# main is where Haumea is developed; master and PE are the release channels.
+on:
+  push:
+    branches: [main, master, PE]
+  pull_request:
+    branches: [main, master, PE]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  LIBRW: ${{ github.workspace }}/librw
+  # The updater's release channel; pull requests build as "pr".
+  CHANNEL: ${{ github.event_name == 'pull_request' && 'pr' || github.ref_name }}
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      channel: ${{ steps.version.outputs.channel }}
+
+    steps:
+      - name: Checkout Haumea Studio
+        uses: actions/checkout@v4
+        with:
+          path: haumea
+
+      - name: Checkout librw
+        run: git clone --depth=1 https://github.com/aap/librw.git librw
+
+      - name: Apply Haumea patches to librw
+        shell: cmd
+        working-directory: librw
+        run: git apply ..\haumea\patches\librw-haumea.patch
+
+      - name: Restore Haumea multisampling setting in librw
+        run: python haumea/tools/release/patch_librw_haumea.py librw
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Install Premake5
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/premake/premake-core/releases/download/v5.0.0-beta8/premake-5.0.0-beta8-windows.zip" -OutFile premake5.zip
+          Expand-Archive premake5.zip -DestinationPath premake5
+          echo "${{ github.workspace }}\premake5" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Download GLFW for Windows
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/glfw/glfw/releases/download/3.3.4/glfw-3.3.4.bin.WIN64.zip" -OutFile glfw.zip
+          Expand-Archive glfw.zip -DestinationPath "${{ github.workspace }}"
+
+      - name: Read version from header
+        id: version
+        shell: pwsh
+        working-directory: haumea
+        run: |
+          $content = Get-Content "tools/haumea/version.h" -Raw
+          if ($content -match '#define\s+HAUMEA_VERSION\s+"([^"]+)"') {
+            $ver = $Matches[1]
+          } else {
+            $ver = "0.0.0"
+          }
+          $branch = "${{ env.CHANNEL }}"
+          $shortsha = "${{ github.sha }}".Substring(0, 7)
+          echo "version=$ver" >> $env:GITHUB_OUTPUT
+          echo "tag=v${ver}-${branch}-${shortsha}" >> $env:GITHUB_OUTPUT
+          echo "channel=$branch" >> $env:GITHUB_OUTPUT
+
+      - name: Generate librw project files
+        shell: cmd
+        working-directory: librw
+        run: premake5 vs2019
+
+      - name: Build librw
+        shell: cmd
+        working-directory: librw/build
+        run: msbuild librw.sln /p:Configuration=Release /p:Platform=win-amd64-gl3 /t:librw /m
+
+      - name: Generate Haumea project files
+        shell: cmd
+        working-directory: haumea
+        run: premake5 vs2019 --channel=${{ steps.version.outputs.channel }}
+
+      - name: Build Haumea Studio
+        shell: cmd
+        working-directory: haumea/build
+        run: msbuild librwgta.sln /p:Configuration=Release /p:Platform=win-amd64-gl3 /t:librwgta;haumea /m
+
+      - name: Stage Windows editor bundle
+        shell: pwsh
+        run: |
+          $bundle = Join-Path $env:GITHUB_WORKSPACE "dist\haumea-windows-gl3"
+          New-Item -ItemType Directory -Force -Path $bundle | Out-Null
+          Copy-Item "haumea\bin\win-amd64-gl3\Release\haumea.exe" $bundle
+          $fonts = Join-Path $bundle "fonts"
+          New-Item -ItemType Directory -Force -Path $fonts | Out-Null
+          Copy-Item "haumea\fonts\*" $fonts -Recurse
+          $glfwDll = "glfw-3.3.4.bin.WIN64\lib-vc2015\glfw3.dll"
+          if (Test-Path $glfwDll) { Copy-Item $glfwDll $bundle }
+
+      - name: Upload Windows editor bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: haumea-windows-gl3
+          path: dist/haumea-windows-gl3/**
+
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Haumea Studio
+        uses: actions/checkout@v4
+        with:
+          path: haumea
+
+      - name: Checkout librw
+        run: git clone --depth=1 https://github.com/aap/librw.git librw
+
+      - name: Apply Haumea patches to librw
+        working-directory: librw
+        run: git apply ../haumea/patches/librw-haumea.patch
+
+      - name: Restore Haumea multisampling setting in librw
+        run: python3 haumea/tools/release/patch_librw_haumea.py librw
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential g++ make \
+            libgl-dev libglfw3-dev libsdl2-dev \
+            lua5.4 liblua5.4-dev
+
+      - name: Install Premake5
+        run: |
+          curl -fsSL https://github.com/premake/premake-core/releases/download/v5.0.0-beta8/premake-5.0.0-beta8-linux.tar.gz \
+            | tar -xz -C /usr/local/bin premake5
+          chmod +x /usr/local/bin/premake5
+
+      - name: Generate librw project files
+        working-directory: librw
+        run: premake5 gmake2
+
+      - name: Build librw
+        working-directory: librw/build
+        run: make config=release_linux-amd64-gl3 librw "-j$(nproc)"
+
+      - name: Generate Haumea project files
+        working-directory: haumea
+        run: premake5 gmake2 --channel=${{ env.CHANNEL }}
+
+      - name: Build Haumea Studio
+        working-directory: haumea/build
+        run: make config=release_linux-amd64-gl3 librwgta haumea "-j$(nproc)"
+
+      - name: Upload Haumea Studio (Linux)
+        uses: actions/upload-artifact@v4
+        with:
+          name: haumea-linux-gl3
+          path: haumea/bin/linux-amd64-gl3/Release/haumea
+
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Haumea Studio
+        uses: actions/checkout@v4
+        with:
+          path: haumea
+
+      - name: Checkout librw
+        run: git clone --depth=1 https://github.com/aap/librw.git librw
+
+      - name: Apply Haumea patches to librw
+        working-directory: librw
+        run: git apply ../haumea/patches/librw-haumea.patch
+
+      - name: Restore Haumea multisampling setting in librw
+        run: python3 haumea/tools/release/patch_librw_haumea.py librw
+
+      - name: Install dependencies
+        run: brew install glfw
+
+      - name: Install Premake5
+        run: |
+          curl -fsSL https://github.com/premake/premake-core/releases/download/v5.0.0-beta8/premake-5.0.0-beta8-macosx.tar.gz \
+            | tar -xz -C /usr/local/bin premake5
+          chmod +x /usr/local/bin/premake5
+
+      - name: Generate librw project files
+        working-directory: librw
+        run: premake5 gmake2 --gfxlib=glfw
+
+      - name: Build librw
+        working-directory: librw/build
+        run: make config=release_macos-arm64-gl3 librw "-j$(sysctl -n hw.ncpu)"
+
+      - name: Generate Haumea project files
+        working-directory: haumea
+        run: premake5 gmake2 --channel=${{ env.CHANNEL }}
+
+      - name: Build Haumea Studio
+        working-directory: haumea/build
+        run: make config=release_macos-arm64-gl3 librwgta haumea "-j$(sysctl -n hw.ncpu)"
+
+      - name: Upload Haumea Studio (macOS)
+        uses: actions/upload-artifact@v4
+        with:
+          name: haumea-macos-arm64-gl3
+          path: haumea/bin/macos-arm64-gl3/Release/haumea
+
+  test-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Haumea Studio
+        uses: actions/checkout@v4
+        with:
+          path: haumea
+
+      - name: Checkout librw
+        run: git clone --depth=1 https://github.com/aap/librw.git librw
+
+      - name: Apply Haumea patches to librw
+        working-directory: librw
+        run: git apply ../haumea/patches/librw-haumea.patch
+
+      - name: Restore Haumea multisampling setting in librw
+        run: python3 haumea/tools/release/patch_librw_haumea.py librw
+
+      # Xvfb and Mesa give the editor an OpenGL 3 display; pawncc is 32-bit.
+      - name: Install dependencies
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential g++ make libgl-dev libglfw3-dev \
+            xvfb xauth libgl1-mesa-dri libglx-mesa0 \
+            libc6:i386 libgcc-s1:i386 libatomic1:i386
+
+      - name: Install Premake5
+        run: |
+          curl -fsSL https://github.com/premake/premake-core/releases/download/v5.0.0-beta8/premake-5.0.0-beta8-linux.tar.gz \
+            | tar -xz -C /usr/local/bin premake5
+          chmod +x /usr/local/bin/premake5
+
+      - name: Build librw
+        working-directory: librw
+        run: |
+          premake5 gmake2
+          make -C build config=release_linux-amd64-gl3 librw "-j$(nproc)"
+
+      - name: Build the editor
+        working-directory: haumea
+        run: |
+          premake5 gmake2 --channel=${{ env.CHANNEL }}
+          make -C build config=release_linux-amd64-gl3 librwgta haumea "-j$(nproc)"
+
+      - name: Cache the Pawn toolchain
+        uses: actions/cache@v4
+        with:
+          path: haumea/tools/haumea/tests/pawn/.toolchain
+          key: pawn-toolchain-${{ hashFiles('haumea/tools/haumea/tests/pawn/fetch_toolchain.sh') }}
+
+      # No GTA files on the runner: run_all.sh makes a synthetic game folder
+      # (tests/fixture/make_game.py), then runs the unit tests, the editor's
+      # Pawn round trip (checked against tests/pawn/expected) and compiles
+      # the editor's output against open.mp's and SA-MP 0.3.7's includes.
+      - name: Run all tests
+        working-directory: haumea
+        env:
+          XDG_CONFIG_HOME: ${{ runner.temp }}/haumea-config
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: xvfb-run -a -s "-screen 0 1280x800x24" tools/haumea/tests/run_all.sh --fixture
+
+  pawn:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Haumea Studio
+        uses: actions/checkout@v4
+
+      - name: Install the 32-bit C library for pawncc
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libc6:i386
+
+      - name: Cache the Pawn toolchain
+        uses: actions/cache@v4
+        with:
+          path: tools/haumea/tests/pawn/.toolchain
+          key: pawn-toolchain-${{ hashFiles('tools/haumea/tests/pawn/fetch_toolchain.sh') }}
+
+      # The committed exporter output (pawn/expected) compiles with no errors
+      # or warnings against open.mp's and SA-MP 0.3.7's includes; test-linux
+      # also compiles what the editor writes now and checks it matches.
+      - name: Compile the generated maps
+        run: tools/haumea/tests/pawn/check_pawn.sh
+
+  # The Windows build, checked on Linux: cross-compiled with MinGW-w64 (gl3
+  # and d3d9), run under a pinned Wine in a fresh prefix, and every test map's
+  # --pawn-roundtrip output compared byte for byte with build-linux's editor,
+  # plus a capture_screen frame grab of each (tests/windows_check.py). Not in
+  # the release job's needs until it has been green for a while.
+  windows-wine:
+    needs: build-linux
+    runs-on: ubuntu-24.04
+    env:
+      WINE_VERSION: 11.0.0.0~noble-1
+
+    steps:
+      - name: Checkout Haumea Studio
+        uses: actions/checkout@v4
+        with:
+          path: haumea
+
+      - name: Download the Linux editor
+        uses: actions/download-artifact@v4
+        with:
+          name: haumea-linux-gl3
+          path: haumea/bin/linux-amd64-gl3/Release
+
+      - name: Cache the WineHQ packages
+        id: wine-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/winehq-debs
+          key: winehq-${{ env.WINE_VERSION }}
+
+      # WineHQ's own packages at a fixed version, so a Wine update can't change
+      # the result; MinGW-w64, Xvfb and Mesa from Ubuntu.
+      - name: Install Wine, MinGW-w64 and Xvfb
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo mkdir -pm755 /etc/apt/keyrings
+          sudo curl -fsSL -o /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key
+          sudo curl -fsSL -o /etc/apt/sources.list.d/winehq-noble.sources \
+            https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            mingw-w64 xvfb xauth libgl1-mesa-dri libglx-mesa0 libglfw3
+          DEBS="${{ runner.temp }}/winehq-debs"
+          if [ -n "$(ls "$DEBS"/*.deb 2>/dev/null)" ]; then
+            sudo apt-get install -y --no-install-recommends "$DEBS"/*.deb
+          else
+            sudo apt-get install -y --no-install-recommends \
+              winehq-stable=$WINE_VERSION wine-stable=$WINE_VERSION \
+              wine-stable-amd64=$WINE_VERSION wine-stable-i386=$WINE_VERSION
+            mkdir -p "$DEBS"
+            cp /var/cache/apt/archives/*wine*.deb "$DEBS"/ || true
+          fi
+          wine --version
+
+      - name: Check the Windows build under Wine
+        working-directory: haumea
+        env:
+          HAUMEA_BINARY: ${{ github.workspace }}/haumea/bin/linux-amd64-gl3/Release/haumea
+          CC: x86_64-w64-mingw32-gcc-posix
+          CXX: x86_64-w64-mingw32-g++-posix
+          TMPDIR: ${{ runner.temp }}/windows-check
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          chmod +x "$HAUMEA_BINARY"
+          mkdir -p "$TMPDIR"
+          xvfb-run -a -s "-screen 0 1600x1000x24" python3 tools/haumea/tests/windows_check.py
+
+      - name: Upload the work folder on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-check
+          path: ${{ runner.temp }}/windows-check
+
+  release:
+    # Releases come only from the release channels.
+    if: github.event_name == 'push' && (github.ref_name == 'master' || github.ref_name == 'PE')
+    needs: [build-windows, build-linux, build-macos, test-linux, pawn]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: haumea-windows-gl3
+          path: dist/windows
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: haumea-linux-gl3
+          path: dist/linux
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: haumea-macos-arm64-gl3
+          path: dist/macos
+
+      - name: Name the macOS binary
+        run: mv dist/macos/haumea dist/macos/haumea-macos
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.build-windows.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: Haumea Studio ${{ needs.build-windows.outputs.version }} (${{ needs.build-windows.outputs.channel }})
+          body: |
+            Haumea Studio ${{ needs.build-windows.outputs.version }} — channel: **${{ needs.build-windows.outputs.channel }}**
+          files: |
+            dist/windows/**
+            dist/linux/haumea
+            dist/macos/haumea-macos
+          draft: false
+          prerelease: ${{ needs.build-windows.outputs.channel == 'PE' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

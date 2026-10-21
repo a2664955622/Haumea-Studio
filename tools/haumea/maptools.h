@@ -1,0 +1,65 @@
+#pragma once
+
+#include <string>
+#include <vector>
+
+// Transform tools for the selection, as in Texture Studio and MTA's editor.
+// Each action is one undo step and returns how many objects it changed or
+// made, or -1 with *error set.
+
+struct MapArrayParams {
+	int count;	// copies, not counting the selection
+	bool radial;	// false: linear
+	// Linear: copy k is moved k * offset and turned k * rotate (degrees,
+	// world axes) around the selection's centre.
+	rw::V3d offset;
+	rw::V3d rotate;
+	// Radial: copies turned around a vertical axis through centre, spread
+	// over angle degrees (360: a full circle with the selection included).
+	rw::V3d centre;
+	float angle;
+};
+
+// Where each copy's objects would go, for previews: for every copy, the
+// selection's objects in selection order (position, stored rotation).
+bool MapToolsArrayPreview(const MapArrayParams &params, std::vector<rw::V3d> &positions,
+	std::vector<rw::Quat> &rotations, std::string *error);
+int MapToolsArray(const MapArrayParams &params, std::string *error);
+
+// axis: 0 = X (flip east-west), 1 = Y (flip north-south). The plane goes
+// through *at on that axis, or the selection's centre when at is nil.
+// keepOriginal mirrors a copy and leaves the selection where it is.
+int MapToolsMirror(int axis, const float *at, bool keepOriginal, std::string *error);
+
+// axis 0-2 (X, Y, Z); mode 0 = min, 1 = centre, 2 = max of the bounding
+// boxes, to the first selected object.
+int MapToolsAlign(int axis, int mode, std::string *error);
+// Even centre spacing between the two outermost objects along axis.
+int MapToolsDistribute(int axis, std::string *error);
+int MapToolsSnapRotations(float step, std::string *error);
+
+int MapToolsMove(const rw::V3d &offset, std::string *error);
+// World-axis degrees around the selection's centre.
+int MapToolsRotate(const rw::V3d &degrees, std::string *error);
+int MapToolsDropToGround(std::string *error);
+// The selection relative to the first selected object, as Pawn:
+// AttachObjectToObject calls (attach) or a table of offsets.
+std::string MapToolsRelativeOffsetsPawn(bool attach, std::string *error);
+
+// Copies of model every spacing metres along the polyline (0: the model's
+// length), facing along it (heading + headingOffset; alongLength turns a
+// model that is longer in X, like most fences, to run along the line;
+// followSlope also tilts them), optionally dropped to the ground.
+int MapToolsLayAlong(const std::vector<rw::V3d> &points, int model, float spacing,
+	float headingOffset, bool alongLength, bool followSlope, bool toGround, std::string *error);
+bool MapToolsLayAlongPreview(const std::vector<rw::V3d> &points, int model, float spacing,
+	float headingOffset, bool alongLength, bool followSlope, bool toGround,
+	std::vector<rw::V3d> &positions, std::vector<rw::V3d> &degrees);
+
+// The model's length along its longer sideways axis, and whether that is X.
+float MapToolsModelLength(int model, bool *alongX);
+
+// Viewport clicks while picking a line for "Along a line"; true when used.
+bool MapToolsHandleViewportClick(void);
+// The Tools window's sections.
+void MapToolsPanel(void);

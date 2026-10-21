@@ -1,0 +1,5 @@
+#include "universal_resource.h"
+
+IDR_HAUMEA_III RCDATA "bin\\GTA3\\Release\\haumea.III.asi"
+IDR_HAUMEA_VC  RCDATA "bin\\GTA-VC\\Release\\haumea.VC.asi"
+IDR_HAUMEA_SA  RCDATA "bin\\GTA-SA\\Release\\haumea.SA.asi"

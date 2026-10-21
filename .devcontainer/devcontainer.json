@@ -1,0 +1,83 @@
+{
+    "containerEnv": {
+        "TZ": "",
+        "LIBRW": "/opt/librw"
+    },
+    "name": "haumea",
+    "postCreateCommand": "~/.windows.sh && git clone --depth=1 https://github.com/aap/librw /opt/librw && cd /opt/librw && premake5 gmake2 && make -C build config=release_linux-amd64-gl3 rw",
+    "dockerComposeFile": "docker-compose.yml",
+    "overrideCommand": true,
+    "service": "vscode",
+    "workspaceFolder": "/workspace",
+    "mounts": [
+        // Source code
+        {
+            "source": "../",
+            "target": "/workspace",
+            "type": "bind"
+        },
+        // Zsh commands history persistence
+        {
+            "source": "${localEnv:HOME}/.zsh_history",
+            "target": "/root/.zsh_history",
+            "type": "bind"
+        },
+        // Git configuration file
+        {
+            "source": "${localEnv:HOME}/.gitconfig",
+            "target": "/root/.gitconfig",
+            "type": "bind"
+        },
+        // SSH directory for Linux, OSX and WSL
+        // On Linux and OSX, a symlink /mnt/ssh <-> ~/.ssh is
+        // created in the container. On Windows, files are copied
+        // from /mnt/ssh to ~/.ssh to fix permissions.
+        {
+            "source": "${localEnv:HOME}/.ssh",
+            "target": "/mnt/ssh",
+            "type": "bind"
+        },
+        // Earthly config directory
+        {
+            "source": "${localEnv:HOME}/.earthly",
+            "target": "/root/.earthly",
+            "type": "bind"
+        },
+        // Docker socket to access the host Docker server
+        {
+            "source": "/var/run/docker.sock",
+            "target": "/var/run/docker.sock",
+            "type": "bind"
+        }
+    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cpptools-extension-pack",
+                "ms-vscode.makefile-tools",
+                "eamodio.gitlens",
+                "davidanson.vscode-markdownlint",
+                "ms-azuretools.vscode-docker",
+                "shardulm94.trailing-spaces",
+                "Gruntfuggly.todo-tree",
+                "bierner.emojisense",
+                "stkb.rewrap",
+                "vscode-icons-team.vscode-icons",
+                "github.vscode-pull-request-github",
+                "redhat.vscode-yaml",
+                "bajdzis.vscode-database",
+                "IBM.output-colorizer"
+            ],
+            "settings": {
+                "C_Cpp.default.cppStandard": "c++14",
+                "C_Cpp.default.includePath": [
+                    "${env:LIBRW}",
+                    "${env:LIBRW}/skeleton",
+                    "${workspaceFolder}/src",
+                    "${workspaceFolder}/tools/haumea"
+                ]
+            }
+        }
+    }
+}

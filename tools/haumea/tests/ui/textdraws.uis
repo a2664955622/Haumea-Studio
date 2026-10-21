@@ -1,0 +1,21 @@
+# TextDraws: add one, drag it on the canvas, resize it by its corner, undo.
+open "$UI_FIXTURES/ui_map.pwn"
+click_item '*' 'Windows'
+wait 3
+click_item '*' 'TextDraws'
+wait 5
+click_item 'TextDraws' 'Text'
+wait 5
+assert textdraws == 1
+assert textdraw.0.x == 280
+drag_item '*' 'hit' 120 60
+wait 5
+assert textdraw.0.x > 300
+drag_item '*' 'resize' 40 40
+wait 5
+assert textdraw.0.letter_y > 1.2
+move 640 700
+key Ctrl+Z
+wait 5
+assert textdraw.0.letter_y ~ 1.12
+assert pawn_contains "TextDrawCreate("

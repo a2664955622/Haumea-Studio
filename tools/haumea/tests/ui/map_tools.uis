@@ -1,0 +1,31 @@
+# Map tools: Array with its preview, then Apply (one undo step); Mirror.
+open "$UI_FIXTURES/ui_map.pwn"
+click_object model=1271
+wait 5
+assert selected == 1
+click_item 'Tools' 'Array'
+wait 5
+click_item 'Tools' 'Preview'
+wait 10
+assert objects == 4
+click_item 'Tools' 'Apply'
+wait 10
+assert objects > 4
+key Esc
+move 640 400
+key Ctrl+Z
+wait 5
+assert objects == 4
+click_object model=1634
+wait 5
+click_item 'Tools' 'Array'
+wait 3
+click_item 'Tools' 'Mirror'
+wait 5
+click_item 'Tools' 'Around'
+wait 3
+click_item '*' 'World origin'
+wait 3
+click_item 'Tools' '##apply'
+wait 5
+assert pawn_contains "CreateObject(1634, -2030.000000"

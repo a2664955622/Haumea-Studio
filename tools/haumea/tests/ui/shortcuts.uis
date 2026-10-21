@@ -1,0 +1,61 @@
+# Viewport and editing shortcuts, pressed as a user would.
+open "$UI_FIXTURES/ui_map.pwn"
+assert objects == 4
+click_object model=1634
+wait 5
+assert selected == 1
+assert selected.model == 1634
+key W
+wait 2
+assert gizmo move
+key E
+wait 2
+assert gizmo rotate
+key W
+wait 2
+assert gizmo move
+# F: the camera goes to the selection.
+camera 1900 -2900 60 1950 -2950 5
+mark_camera
+key F
+wait 30
+assert camera_moved > 5
+# Ctrl+D duplicates the selection.
+key Ctrl+D
+wait 5
+assert objects == 5
+assert selected == 1
+assert pawn_contains "CreateObject(1634"
+# H hides the selection, Alt+H shows everything, Shift+H isolates.
+key H
+wait 3
+assert hidden == 1
+key Alt+H
+wait 3
+assert hidden == 0
+key Esc
+wait 3
+click_object model=1271
+wait 5
+assert selected.model == 1271
+key Shift+H
+wait 3
+assert hidden > 4
+key Alt+H
+wait 3
+assert hidden == 0
+# Ctrl+= and the numpad zoom the view; Ctrl+Alt+= scales the interface.
+assert fov == 70
+key Ctrl+=
+wait 3
+assert fov < 70
+key Num-
+key Num-
+key Num-
+wait 3
+assert fov > 70
+key Ctrl+Alt+=
+wait 3
+assert ui_scale > 1
+key Ctrl+Z
+wait 3

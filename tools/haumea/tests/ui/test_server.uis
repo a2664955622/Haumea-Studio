@@ -1,0 +1,7 @@
+# Test in game's panel opens from the Windows menu (no server is started).
+open "$UI_FIXTURES/ui_map.pwn"
+click_item '*' 'Windows'
+wait 3
+click_item '*' 'Test server'
+wait 5
+assert window "Test server"

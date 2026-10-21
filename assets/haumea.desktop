@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Haumea Studio
+GenericName=SA-MP and open.mp Editor
+Comment=The all-in-one editor for SA-MP and open.mp
+Icon=haumea
+Exec=haumea
+Terminal=false
+Categories=Graphics;3DGraphics;Development;
+StartupWMClass=haumea

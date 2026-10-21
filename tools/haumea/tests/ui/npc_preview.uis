@@ -1,0 +1,14 @@
+# The NPC element's Preview movement button walks it along its path.
+open "$UI_FIXTURES/ui_npc.pwn"
+click_object model=101
+wait 10
+assert selected == 1
+key Ctrl+2
+wait 5
+scroll_until 'Object Info' 'Preview movement'
+click_item '*' 'Preview movement'
+wait 10
+assert item '*' 'Stop preview'
+click_item '*' 'Stop preview'
+wait 5
+assert item '*' 'Preview movement'

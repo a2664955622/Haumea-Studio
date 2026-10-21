@@ -1,0 +1,5 @@
+# With no game folder known the first-run setup window shows. The runner
+# starts the editor without --game and with an empty config folder.
+wait 30
+assert window "Welcome to Haumea Studio"
+assert item 'Welcome to Haumea Studio' 'Continue'

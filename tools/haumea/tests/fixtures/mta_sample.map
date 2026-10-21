@@ -1,0 +1,13 @@
+<map edf:definitions="editor_main">
+    <object id="ramp" model="1634" posX="2490.0" posY="-1670.0" posZ="13.3" rotX="10" rotY="20" rotZ="-270" scale="1.5" alpha="200" doublesided="true" interior="0" dimension="0"/>
+    <object id="crate" model="1271" posX="2494.0" posY="-1666.0" posZ="13.8" rotX="0" rotY="0" rotZ="45"/>
+    <vehicle id="sultan" model="560" posX="2488.0" posY="-1680.0" posZ="13.1" rotX="0" rotY="0" rotZ="90" color="37 1 0 0" plate="HAUMEA" upgrades="1010,1080" paintjob="1"/>
+    <vehicle id="bike" model="522" posX="2484.0" posY="-1680.0" posZ="13.1" rotX="5" rotY="0" rotZ="180" color="0,0,255,255,255,255" paintjob="false"/>
+    <ped id="guard" model="280" posX="2486.0" posY="-1672.0" posZ="13.5" rotZ="270"/>
+    <pickup id="hp" type="health" amount="100" posX="2492.0" posY="-1674.0" posZ="13.5"/>
+    <pickup id="armour" type="armor" amount="100" posX="2492.5" posY="-1674.0" posZ="13.5"/>
+    <pickup id="fix" type="repair" posX="2493.0" posY="-1674.0" posZ="13.5"/>
+    <marker id="m" type="cylinder" posX="2490.0" posY="-1676.0" posZ="12.5" size="2"/>
+    <removeWorldObject id="rm" radius="0.25" interior="0" model="3563" lodModel="3555" posX="2063.132813" posY="-1731.78125" posZ="15.2734375" rotX="0" rotY="0" rotZ="0"/>
+    <spawnpoint id="spawn" posX="2490.0" posY="-1660.0" posZ="13.5" rotZ="0"/>
+</map>

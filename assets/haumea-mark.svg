@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Haumea</title>
+  <desc id="desc">The dwarf planet Haumea: a stretched icy body with its dark red spot and a ring passing behind and in front of it.</desc>
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#151c35"/>
+      <stop offset="1" stop-color="#0a0e1d"/>
+    </linearGradient>
+    <radialGradient id="body" cx="36%" cy="30%" r="80%">
+      <stop offset="0" stop-color="#f6f8ff"/>
+      <stop offset=".45" stop-color="#b9c2de"/>
+      <stop offset="1" stop-color="#3a4370"/>
+    </radialGradient>
+  </defs>
+  <rect x="1" y="1" width="126" height="126" rx="28" fill="url(#tile)" stroke="#2a3560" stroke-width="1.5"/>
+  <g transform="rotate(-18 64 64)">
+    <path d="M14 64 A50 13 0 0 1 114 64" fill="none" stroke="#7cc4ff" stroke-opacity=".45" stroke-width="4" stroke-linecap="round"/>
+    <ellipse cx="64" cy="64" rx="33" ry="21" fill="url(#body)"/>
+    <ellipse cx="75" cy="60" rx="6.5" ry="4.2" fill="#b4506a" fill-opacity=".85"/>
+    <path d="M14 64 A50 13 0 0 0 114 64" fill="none" stroke="#a9dcff" stroke-width="4" stroke-linecap="round"/>
+  </g>
+</svg>
