@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Compile the production LOD cascade functions against a minimal scene fixture."""
 from pathlib import Path
 import os

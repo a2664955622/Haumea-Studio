@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
 #
 # gen_tstudio_textures.py <Texture Studio>/filterscripts/tstudio/alltextures.pwn
 # Writes tstudio_textures.h: Texture Studio's ObjectTextures table, in its

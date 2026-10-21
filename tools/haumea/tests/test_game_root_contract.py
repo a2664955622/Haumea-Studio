@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Headless source-contract tests for where Haumea finds and writes files."""
 
 from pathlib import Path

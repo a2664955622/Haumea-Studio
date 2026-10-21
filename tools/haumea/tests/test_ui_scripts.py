@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Run the UI scripts in ui/ through the editor's own input driver.
 
 Each script (ui/*.uis) is played with --ui-script in its own Xvfb, against

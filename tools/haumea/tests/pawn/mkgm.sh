@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
 # mkgm.sh map.pwn out.pwn [openmp|samp037]: a gamemode that loads a Haumea map
 # and calls its functions, so the compiler checks every generated call.
 set -eu

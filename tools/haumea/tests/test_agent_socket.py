@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """The agent client explains a socket path too long for AF_UNIX.
 
 Needs nothing but Python: no editor is started.

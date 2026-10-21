@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
 // The Interiors panel: the game's interiors (from its IPL entry/exit

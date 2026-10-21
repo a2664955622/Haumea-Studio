@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
 // Skeletal animation for ped skins (actors, player classes, NPCs) in the

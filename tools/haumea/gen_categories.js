@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: GPL-2.0-or-later
 //
 // gen_categories.js
 // Reads mta_objects.xml and mta_vehicles.xml, generates object_categories.h

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 $ErrorActionPreference = 'Stop'
 $Bundle = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $Bundle

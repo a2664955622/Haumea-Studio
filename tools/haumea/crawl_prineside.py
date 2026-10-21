@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
 #
 # crawl_prineside.py
 # Crawls the category pages of Prineside's GTA SA / SA-MP model ID list

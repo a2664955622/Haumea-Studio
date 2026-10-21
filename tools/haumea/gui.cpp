@@ -67,6 +67,7 @@ static bool showMapObjectsWindow;
 static bool showTextureBrowserWindow;
 static bool showPawnCodeWindow;
 static bool showToolsWindow = true;
+static bool showLicensesWindow;
 static bool showPreferencesWindow;
 static bool showMapCheckWindow;
 static bool showNodesWindow;
@@ -4499,6 +4500,9 @@ uiHelpWindow(void)
 	// About.
 	ImGui::Text("Haumea Studio %s, %s channel", HaumeaVersionDisplay(), HAUMEA_CHANNEL_DISPLAY);
 	ImGui::TextDisabled("The all-in-one editor for open.mp and SA-MP, by itsneufox.");
+	if(ImGui::SmallButton("Licenses..."))
+		showLicensesWindow = true;
+	ImGui::SetItemTooltip("GNU GPL v2 or later, and the licenses of the components it includes.");
 
 	ImGui::SeparatorText("How do I...");
 	if(uiHelpTopic("Start a map for my server")){
@@ -12173,6 +12177,7 @@ gui(void)
 	}
 
 	if(showToolsWindow) uiToolsWindow();
+	if(showLicensesWindow) DrawLicensesWindow(&showLicensesWindow);
 	if(showMapCheckWindow)
 		uiMapCheckWindow();
 	if(showPreferencesWindow)

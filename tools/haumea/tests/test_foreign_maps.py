@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Open an MTA:SA .map and an IPL text file in the real editor and check the Pawn.
 
 Needs a built editor, a GTA San Andreas directory with SA-MP installed and a

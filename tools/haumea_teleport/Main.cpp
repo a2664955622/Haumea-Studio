@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 #include <plugin.h>
 #include <CPlayerPed.h>
 #include <CWorld.h>

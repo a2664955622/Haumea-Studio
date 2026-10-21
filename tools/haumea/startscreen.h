@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
 // The start screen (startscreen.cpp): workspaces, their maps and the game

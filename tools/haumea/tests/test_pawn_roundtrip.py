@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Open a mixed Pawn map in the real editor, save it twice, and check the result.
 
 Needs a built editor, a GTA San Andreas directory with SA-MP installed and a

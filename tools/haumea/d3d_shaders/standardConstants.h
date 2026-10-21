@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 float4x4	combinedMat	: register(c0);
 float4x4	worldMat	: register(c4);
 float3x3	normalMat	: register(c8);

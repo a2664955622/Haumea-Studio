@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Writes ui_tstudio.db, a two-object Texture Studio map for import_export.uis.
 
 Run it again only to change the map: python3 make_ui_tstudio_db.py

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
 """check_tag.py TAG: a release tag must match the source it points at.
 
 Release tags are v1.41.0.<build>-<channel> (versionutil.h reads them the same

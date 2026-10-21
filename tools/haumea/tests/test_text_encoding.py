@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Text reaches the game as the bytes the SA-MP client draws (Windows-1252).
 
 pawn/maps/hv_text.pwn is a pawno-style Windows-1252 map with "Ação, Coração,

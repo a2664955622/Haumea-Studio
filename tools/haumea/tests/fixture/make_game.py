@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Write a tiny synthetic GTA San Andreas folder for Haumea's tests.
 
 No game files are copied: every model is a coloured box written here in the

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """The showcase map: one of every element, built through the agent.
 
 tests/showcase/showcase.pwn is a Haumea-saved streamer map (Pershing Square)

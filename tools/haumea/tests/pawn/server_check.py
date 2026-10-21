@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
 """server_check.py maps-dir...: run generated maps on the open.mp server, with an
 NPC as the player, and check the per-player code does what it should.
 

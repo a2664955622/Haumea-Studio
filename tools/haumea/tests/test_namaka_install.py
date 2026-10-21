@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Namaka's installer (tools/release/namaka_install.py) with the network cut off.
 
 Builds the wheel from this checkout (make_bundle, also used by namaka.uis), puts it with a wheelhouse and the

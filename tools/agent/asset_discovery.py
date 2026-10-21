@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Auditable, high-recall discovery sessions over the GTA asset catalogue."""
 
 from __future__ import annotations

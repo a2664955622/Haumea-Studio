@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Compile the Nodes tool's editing code from sapaths.cpp against a minimal
 fixture and check that adding, linking and deleting nodes keeps NODES*.DAT
 consistent, the way open.mp reads it."""

@@ -880,6 +880,8 @@ bool UiScriptActive(void);
 bool UiScriptDropsEvent(sk::Event e);
 // Texture Browser (texbrowser.cpp)
 void DrawTextureBrowserWindow(bool *open);
+// Help > About > Licenses (licenses.cpp)
+void DrawLicensesWindow(bool *open);
 struct TextureSearchResult { int model; std::string txd, texture; bool samp, custom; int tstudioIndex; };
 int SearchTextures(const char *query, int limit, std::vector<TextureSearchResult> &out);	// indexes everything first
 void InitObjectPawnProperties(ObjectPawnProperties *properties);

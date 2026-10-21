@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
 set -eu
 
 # Haumea finds the game folder itself (its saved setting, or the folder it is

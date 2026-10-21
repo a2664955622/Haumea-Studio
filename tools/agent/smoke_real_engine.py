@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Opt-in SA runtime acceptance test. Supply an isolated COPY of your game."""
 import argparse
 import asyncio

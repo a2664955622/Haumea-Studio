@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Undo, autosave recovery and safe saving, on a map with every element kind.
 
 Needs a built editor, a GTA San Andreas directory with SA-MP installed and a

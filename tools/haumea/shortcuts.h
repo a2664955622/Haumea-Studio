@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
 // Every rebindable keyboard shortcut, in one table. Each action has up to two

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Small geometric predicates shared by placement and circulation checks."""
 import math
 

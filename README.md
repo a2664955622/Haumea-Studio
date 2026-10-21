@@ -106,7 +106,9 @@ tests, see [Building and testing](docs/BUILDING.md).
 
 ## Lineage and license
 
-Haumea is built on [librw](https://github.com/aap/librw) and [librwgta](https://github.com/aap/librwgta) by aap. The project depends on LZO, so consider the code in this repository dual-licensed as GPL.
+Haumea Studio grew from euryopa, the map viewer in [librwgta](https://github.com/aap/librwgta), and is built on [librw](https://github.com/aap/librw), both by aap.
+
+Licensed under the GNU GPL v2 or later; see [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Haumea Discord: https://discord.gg/yTF8DWQqpP
 

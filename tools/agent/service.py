@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Shared service layer used by Haumea's CLI, daemon, and MCP adapter."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Textdraws in the real editor: an old map's are saved back with it, and a
 textdraw file of their own is written and compiles beside that map.
 

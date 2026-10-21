@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Dimension-aware, deterministic composition builders. All output is reviewable patches."""
 from __future__ import annotations
 

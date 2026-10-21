@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 #define WITH_D3D
 #include "haumea.h"
 

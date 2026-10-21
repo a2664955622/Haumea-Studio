@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """namaka_install.py install|repair|update|uninstall|status --bundle DIR --venv DIR
 
 Namaka's installer, run by the editor's Tools > Namaka panel with the Python

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
 
 #ifdef RW_GL3

@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
 # cc.sh gm.pwn include-dir...: compile with the toolchain's pawncc (output to a temp dir)
 set -eu
 HERE=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)

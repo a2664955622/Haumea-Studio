@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """missing_wheels.py <wheelhouse> <constraints.txt>: the pins this Python has no bundled wheel for.
 
 Run with the Python being installed into (setup-agent): prints one

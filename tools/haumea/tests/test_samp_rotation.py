@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Check the editor's Euler conversion against the basis samp.dll builds."""
 from pathlib import Path
 import os

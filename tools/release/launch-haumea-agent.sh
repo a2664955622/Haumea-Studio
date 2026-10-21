@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
 set -eu
 
 # Starts Haumea with the agent socket. Haumea finds the game folder itself

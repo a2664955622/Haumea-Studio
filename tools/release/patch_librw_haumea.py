@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Prepare a librw checkout for Haumea.
 
 Restores the small skeleton API that Haumea's settings panel uses, and

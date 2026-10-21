@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 #ifdef _WIN32
 #define _CRT_RAND_S	// rand_s: Namaka's per-start token
 #include <winsock2.h>

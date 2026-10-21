@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Measured asset passports and explicitly sourced visual annotations.
 
 No model is required: the calling visual agent annotates canonical previews.

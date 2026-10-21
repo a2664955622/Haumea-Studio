@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Check an installed Namaka bundle: its MCP server starts and lists the expected tools.
 
     .venv-agent/bin/python check_agent_bundle.py <haumea-mcp> --tools N

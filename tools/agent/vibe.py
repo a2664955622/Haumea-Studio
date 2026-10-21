@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Persistent creative context, spatial observation, recipes and review workflow."""
 from __future__ import annotations
 

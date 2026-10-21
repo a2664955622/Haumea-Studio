@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 // Windows/D3D9 adapter for detachable ImGui panels. The other platforms keep
 // librw's existing renderer and input backend.
 #if defined(_WIN32) && defined(RW_D3D9)

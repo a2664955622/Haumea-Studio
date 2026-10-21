@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Prepare genuine prompt-to-map trials and aggregate completed visual reviews.
 
 This does not fabricate maps, reviews or aesthetic scores. The visual agent/human

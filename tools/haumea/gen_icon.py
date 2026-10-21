@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
 #
 # gen_icon.py
 # Renders assets/haumea-mark.svg at the window icon sizes and writes

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Haumea refuses to write into the game folder, however the path is spelled.
 
 Saves a map to the game folder directly, through a symlink to it and through

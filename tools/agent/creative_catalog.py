@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Local, explainable concept retrieval. No claim of learned image embeddings.
 
 Reviewed passports outrank names/tags; unreliable external descriptions are opt-in.

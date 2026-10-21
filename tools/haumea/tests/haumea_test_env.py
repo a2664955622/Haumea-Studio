@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Run the editor from tests without touching the user's own settings.
 
 Haumea keeps settings, recent maps and window state in ~/.config/haumea

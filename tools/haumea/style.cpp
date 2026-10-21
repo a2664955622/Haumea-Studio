@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
 #include "icons.h"
 #include "font_data.h"

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Version numbers: parsing tags old and new, the four-part compare, the
 build info generator, and the agent wheel's version.
 

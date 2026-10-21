@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
 # fetch_toolchain.sh [dir]: the Pawn compiler and include sets the generated
 # maps are checked against, at pinned versions. Nothing is kept in the repo;
 # the default dir is tools/haumea/tests/pawn/.toolchain (git-ignored).

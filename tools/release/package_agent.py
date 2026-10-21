@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Package an agent engine and Python wheel without local/game data."""
 import argparse
 import hashlib

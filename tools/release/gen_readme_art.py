@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
 #
 # gen_readme_art.py
 # Draws the README banner (docs/images/banner.png) and GitHub's social preview

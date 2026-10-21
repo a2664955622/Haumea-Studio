@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Open a map that uses SA-MP 0.3.DL / open.mp custom models in the real editor.
 
 The test builds a server folder with models/artconfig.txt from models in the

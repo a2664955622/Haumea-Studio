@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
 # run_all.sh [--fixture | --quick [--touch path...]] [--update-expected] [--windows]:
 # every Haumea test on this machine.
 #

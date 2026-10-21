@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
 # check_pawn.sh [maps-dir]: compile every generated map as a gamemode with
 # 0 errors and 0 warnings: against open.mp's includes, and against SA-MP
 # 0.3.7's for maps without open.mp-only calls (no <open.mp> include).

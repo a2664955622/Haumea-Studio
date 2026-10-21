@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
 // Haumea's version, as open.mp numbers its own: MAJOR.MINOR.PATCH here, and a

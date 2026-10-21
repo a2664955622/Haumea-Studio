@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
 #
 # gen_anim_ids.py <open.mp>/SDK/include/anim.hpp
 # Writes anim_ids.h: the client's animation index table ("LIB:NAME" per ID,

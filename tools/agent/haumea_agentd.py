@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Private local JSON-lines daemon for persistent Haumea agent integrations."""
 
 from __future__ import annotations

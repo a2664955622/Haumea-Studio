@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
 # tag_release.sh [--create] [channel]: the release tag for HEAD,
 # v1.41.0.<build>-<channel> (channel: master unless given), as open.mp tags
 # its releases. Prints it; --create makes it as a local tag. Never pushes.

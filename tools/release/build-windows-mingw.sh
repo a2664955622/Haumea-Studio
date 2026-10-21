@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
 # Cross-compiles haumea.exe for Windows x64 with MinGW-w64, on Linux.
 #
 #   tools/release/build-windows-mingw.sh [gl3|d3d9]

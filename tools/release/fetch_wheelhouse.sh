@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
 # Downloads Namaka's dependency wheels for setup-agent's offline install.
 #
 #   tools/release/fetch_wheelhouse.sh linux|windows <dest>

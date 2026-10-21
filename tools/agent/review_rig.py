@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Reproducible view rigs for visual A/B review; never moves the user's camera."""
 import hashlib
 import json
