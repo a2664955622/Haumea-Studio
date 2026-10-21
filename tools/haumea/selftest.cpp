@@ -327,7 +327,16 @@ RunUndoSelfTest(FILE *out)
 
 	// The Nodes tool, on the game's own node files.
 	if(SAPaths::NodesLoaded()){
-		SAPaths::Node *a = SAPaths::FindNode(15, 3), *b = SAPaths::FindNode(15, 4);
+		// Two neighbours of one kind (vehicle nodes link only to vehicle nodes):
+		// 15:3 and 15:4 in the game, 15:4 and 15:5 in the test game's synthetic files.
+		SAPaths::Node *a = nil, *b = nil;
+		for(int point = 3; a == nil && point < 40; point++){
+			SAPaths::Node *n = SAPaths::FindNode(15, point), *next = SAPaths::FindNode(15, point + 1);
+			if(n && next && SAPaths::IsVehicleNode(n) == SAPaths::IsVehicleNode(next)){
+				a = n;
+				b = next;
+			}
+		}
 		SAPaths::Node *added = nil;
 		undoTest("nodes: add", [&]{
 			const char *reason = nil;
