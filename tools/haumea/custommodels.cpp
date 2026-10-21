@@ -2,7 +2,7 @@
 #include "haumea.h"
 #include "autocol.h"
 #include "workspace.h"
-#include "object_categories.h"
+#include "categories.h"
 
 #include <regex>
 #include <string>

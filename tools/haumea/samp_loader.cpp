@@ -2,7 +2,7 @@
 #include "haumea.h"
 #include "workspace.h"
 #include "samp_loader.h"
-#include "object_categories.h"
+#include "categories.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -471,22 +471,15 @@ ExtendCategories(void)
 	if(sLoadedIdeFiles.empty())
 		return;
 
-	int uncatIdx = GetSampUncatCategoryIndex();
-	if(uncatIdx < 0)
-		return;
-
+	// SA-MP's own models get the SA-MP branch of the categories.
 	int assigned = 0;
 	for(int id = 0; id < NUMOBJECTDEFS; id++){
-		if(!GetObjectDef(id))
+		if(!GetObjectDef(id) || !isObjectFromSamp(id))
 			continue;
-		if(GetObjectCategory(id) >= 0)
-			continue;
-		if(isObjectFromSamp(id)){
-			SetObjectCategory(id, uncatIdx);
-			assigned++;
-		}
+		SetObjectCategory(id, ClassifyObjectCategory(id, true));
+		assigned++;
 	}
-	log("SampLoader: assigned %d SA-MP objects to 'SA-MP / Uncategorized'\n", assigned);
+	log("SampLoader: filed %d SA-MP objects\n", assigned);
 }
 
 int GetSampRootCategoryIndex(void) { return SAMP_CATEGORY_ROOT; }

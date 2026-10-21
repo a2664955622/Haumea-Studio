@@ -1208,6 +1208,8 @@ struct ObjectDef
 	bool m_isTimed;
 	int m_timeOn, m_timeOff;
 	bool m_isVehicle;
+	char m_vehicleType[16];	// vehicles.ide: car, bike, bmx, boat, plane, heli, train, trailer, ...
+	char m_vehicleClass[16];	// vehicles.ide: normal, executive, worker, motorbike, ...
 	bool m_isPed;	// a skin from peds.ide or SA-MP's IDE
 
 	// clump info

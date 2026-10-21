@@ -9,7 +9,7 @@
 #include "anim.h"
 #include "npcpreview.h"
 #include "modloader.h"
-#include "object_categories.h"
+#include "categories.h"
 #include "sapaths.h"
 #include "samp_loader.h"
 #include "materialtext.h"
@@ -3494,53 +3494,7 @@ GetPrefabPlacePath(void)
 	return prefabPlacePath;
 }
 
-// Object Browser categories
-static int categoryLookup[NUMOBJECTDEFS];
-
-void
-InitObjectCategories(void)
-{
-	memset(categoryLookup, -1, sizeof(categoryLookup));
-	for(int i = 0; objCategoryMap[i][0] >= 0; i++){
-		int id = objCategoryMap[i][0];
-		int cat = objCategoryMap[i][1];
-		if(id < NUMOBJECTDEFS && categoryLookup[id] < 0)
-			categoryLookup[id] = cat;
-	}
-	int vehicleCategory = -1;
-	for(int i = 0; i < NUM_OBJ_CATEGORIES; i++)
-		if(strcmp(objCategories[i].name, "Vehicles") == 0){
-			vehicleCategory = i;
-			break;
-		}
-	int skinCategory = -1;
-	for(int i = 0; i < NUM_OBJ_CATEGORIES; i++)
-		if(strcmp(objCategories[i].name, "Skins") == 0){
-			skinCategory = i;
-			break;
-		}
-	for(int i = 0; i < NUMOBJECTDEFS; i++){
-		ObjectDef *obj = GetObjectDef(i);
-		if(obj && obj->m_isVehicle && vehicleCategory >= 0)
-			categoryLookup[i] = vehicleCategory;
-		else if(obj && obj->m_isPed && skinCategory >= 0)
-			categoryLookup[i] = skinCategory;
-	}
-}
-
-int
-GetObjectCategory(int modelId)
-{
-	if(modelId < 0 || modelId >= NUMOBJECTDEFS) return -1;
-	return categoryLookup[modelId];
-}
-
-void
-SetObjectCategory(int modelId, int category)
-{
-	if(modelId >= 0 && modelId < NUMOBJECTDEFS)
-		categoryLookup[modelId] = category;
-}
+// Object Browser categories: categories.cpp
 
 // Favourites
 static bool favourites[NUMOBJECTDEFS];

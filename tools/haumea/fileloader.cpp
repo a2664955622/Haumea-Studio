@@ -228,8 +228,11 @@ LoadVehicle(char *line)
 	int id;
 	char model[MODELNAMELEN];
 	char txd[MODELNAMELEN];
+	char type[16] = "", handling[32], gxt[32], anims[32], vclass[16] = "";
 	if(sscanf(line, "%d %s %s", &id, model, txd) != 3 || id < 400 || id > 611)
 		return;
+	// The type and class columns, for the Object Browser's categories.
+	sscanf(line, "%*d %*s %*s %15s %31s %31s %31s %15s", type, handling, gxt, anims, vclass);
 	if(GetObjectDef(id)){
 		log("warning: vehicle model %s (%d) conflicts with an object definition; skipping\n", model, id);
 		return;
@@ -240,6 +243,8 @@ LoadVehicle(char *line)
 		return;
 	obj->m_type = ObjectDef::CLUMP;
 	obj->m_isVehicle = true;
+	strncpy(obj->m_vehicleType, type, sizeof(obj->m_vehicleType)-1);
+	strncpy(obj->m_vehicleClass, vclass, sizeof(obj->m_vehicleClass)-1);
 	strncpy(obj->m_name, model, sizeof(obj->m_name)-1);
 	obj->m_name[sizeof(obj->m_name)-1] = '\0';
 	obj->m_txdSlot = AddTxdSlot(txd);

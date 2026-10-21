@@ -242,6 +242,7 @@ SettingsAreReadOnly(void)
 		   strcmp(sk::args.argv[i], "--textdraw-colours") == 0 ||
 		   strcmp(sk::args.argv[i], "--dump-zone-settings") == 0 ||
 		   strcmp(sk::args.argv[i], "--undo-selftest") == 0 ||
+		   strcmp(sk::args.argv[i], "--dump-categories") == 0 ||
 		   strcmp(sk::args.argv[i], "--profile") == 0 ||
 		   strcmp(sk::args.argv[i], "--no-save-settings") == 0)
 			return true;

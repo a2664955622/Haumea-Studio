@@ -7,7 +7,7 @@
 #include "autocol.h"
 #include "modloader.h"
 #include "imgui/imgui_internal.h"
-#include "object_categories.h"
+#include "categories.h"
 #include "updater.h"
 #include "icons.h"
 #include "rec.h"
@@ -10157,10 +10157,9 @@ static void
 uiBrowserStartSuggestions(void)
 {
 	static const char *suggestions[] = {
-		"Trees", "Plants", "Rocks", "Fences, Walls, Gates, and Barriers",
-		"Roads, Bridges, and Tunnels", "Street and Road Items", "Ramps",
-		"Signs, Billboards, and Statues", "Houses and Apartments", "Furniture",
-		"Tables and Chairs", "Crates, Drums, and Racks"
+		"Trees", "Bushes and plants", "Rocks and cliffs", "Fences, walls and barriers",
+		"Roads", "Benches, bins and street furniture", "Building blocks",
+		"Signs and statues", "Houses", "Furniture", "Lights", "Boxes and crates"
 	};
 	ImGui::Spacing();
 	ImGui::TextWrapped("Objects you place show up here. Search above, or start with a category:");
@@ -12422,9 +12421,12 @@ gui(void)
 					profileIn = sk::args.argv[i+1];
 					selftestOut = sk::args.argv[i+2];
 				}
+			const char *categoriesOut = nil;
 			for(int i = 1; i + 1 < sk::args.argc; i++)
 				if(strcmp(sk::args.argv[i], "--open") == 0)
 					openPath = sk::args.argv[i+1];
+				else if(strcmp(sk::args.argv[i], "--dump-categories") == 0)
+					categoriesOut = sk::args.argv[i+1];
 			// --dump-zone-settings out.txt: the zones' start-up population as
 			// read from the game's main.scm (tests).
 			for(int i = 1; i + 1 < sk::args.argc; i++)
@@ -12472,6 +12474,11 @@ gui(void)
 					sk::globals.quit = 1;
 				}
 			if(sk::globals.quit){
+			}else if(categoriesOut){
+				// Developer check: every model with its category, for coverage reports.
+				printf("dump-categories: %d model(s) to %s\n", DumpObjectCategories(categoriesOut), categoriesOut);
+				fflush(stdout);
+				sk::globals.quit = 1;
 			}else if(textDrawsIn){
 				std::string error;
 				bool done = OpenTextDrawFile(textDrawsIn, &error) && SaveTextDrawFile(textDrawsOut, &error);

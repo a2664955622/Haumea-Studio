@@ -61,9 +61,9 @@ game's distances.
 ## Placing objects
 
 1. Open the **Object Browser** (`Ctrl+1`) and pick an object. Search by name, ID, a list or
-   a range (`1337, 19000-19100`). SA-MP objects are filed in the categories of
-   [Prineside's model list](https://dev.prineside.com/en/gtasa_samp_model_id/), and
-   **Favourites** keeps the ones you use often.
+   a range (`1337, 19000-19100`). Every model, the game's and SA-MP's, is filed in a
+   category by what the game's own files say about it (its name, IDE file, collision
+   size), and **Favourites** keeps the ones you use often.
 2. Click **Place**, then click in the world. `Esc` stops placing.
 3. Click an object to select it. Drag the gizmo to move it (`W`) or rotate it (`E`), or type
    exact values in **Object Info** (`Ctrl+2`). `G` drops it to the ground, `F` focuses the
