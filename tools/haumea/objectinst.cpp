@@ -3969,6 +3969,12 @@ ReadPrefabEntries(const char *path, PrefabEntry *entries, int maxEntries, int *n
 					sizeof(entries[objectIndex].properties.areaName));
 				continue;
 			}
+			if(strcmp(type, "interior0") == 0){
+				if(prefabNextToken(&cursor, token, sizeof(token)) && prefabParseIntToken(token, &objectIndex) &&
+				   objectIndex >= 0 && objectIndex < numEntries)
+					entries[objectIndex].properties.interiorZeroOnly = true;
+				continue;
+			}
 			if(strcmp(type, "node") == 0){
 				char values[7][64];
 				bool valid = true;
@@ -6375,6 +6381,9 @@ ExportPrefabEx(const char *path, int origin, const char *tags)
 			pawnWriteQuotedString(f, properties->areaName);
 			fputc('\n', f);
 		}
+		if(properties->interiorZeroOnly)
+			// interior0 <index>: the streamer's interiorid 0, not -1
+			fprintf(f, "interior0 %d\n", i);
 		if(properties->npcPlaysNode){
 			// node <index> <node> <point> <radius> <set angle> <move type> <speed>
 			fprintf(f, "node %d %d %d %.3f %d %d %.4f\n", i, properties->npcNode,
@@ -6990,13 +6999,23 @@ pawnHasArea(const ObjectPawnProperties *properties)
 	return properties->areaName[0] && gPawnAreaHandles.count(properties->areaName);
 }
 
+// The streamer's interiorid for an item: its interior, or -1 (every
+// interior) or 0 (only interior 0) as the map had it.
+static int
+pawnStreamerInterior(const ObjectInst *inst)
+{
+	if(inst->m_area > 0)
+		return inst->m_area;
+	return GetObjectPawnProperties(inst)->interiorZeroOnly ? 0 : -1;
+}
+
 // CreateDynamicCircle .. CreateDynamicPolygon for a dynamic area (streamer only).
 static void
 pawnWriteAreaCall(FILE *f, const ObjectInst *inst, const char *handle)
 {
 	const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
 	const rw::V3d &p = inst->m_translation;
-	int interior = inst->m_area > 0 ? inst->m_area : -1;
+	int interior = pawnStreamerInterior(inst);
 	float r = properties->areaRadius, h = properties->areaHeight;
 	float hx = properties->areaSize.x * 0.5f, hy = properties->areaSize.y * 0.5f;
 	fprintf(f, "\tnew const %s = ", handle);	// as hand-written maps do
@@ -7052,7 +7071,7 @@ pawnWriteElementCall(FILE *f, const ObjectInst *inst, PawnCodeFormat format,
 	}
 	PawnEulerRotation e = pawnGetEulerRotation(inst);
 	const rw::V3d &p = inst->m_translation;
-	int interior = inst->m_area > 0 ? inst->m_area : -1;
+	int interior = pawnStreamerInterior(inst);
 	bool streamer = format == PAWN_CODE_STREAMER;
 	int kind = properties->elementKind;
 
@@ -7264,7 +7283,7 @@ pawnWriteObjectCall(FILE *f, const ObjectInst *inst, PawnCodeFormat format,
 		fputs("\t", f);
 	const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
 	if(format == PAWN_CODE_STREAMER){
-		int interior = inst->m_area > 0 ? inst->m_area : -1;
+		int interior = pawnStreamerInterior(inst);
 		fprintf(f, "CreateDynamicObject(%d, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %d, %d, -1",
 			PawnModelId(inst->m_objectId),
 			inst->m_translation.x, inst->m_translation.y, inst->m_translation.z,
@@ -10591,6 +10610,8 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 					properties = e.element;
 					properties.elementKind = e.elementKind;
 				}
+				// Only native calls and streamer calls without one leave it at -1.
+				properties.interiorZeroOnly = e.interior == 0;
 				// Keep hand-written variable names; generated and temporary
 				// handles are recreated on export.
 				bool generated = strcmp(e.handle, "tmpobjid") == 0 ||

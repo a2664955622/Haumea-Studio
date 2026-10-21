@@ -819,7 +819,8 @@ def clear_object_material(instance_id: int, slot: int = -1) -> dict:
 
 ELEMENT_PROPERTIES_DOC = """Properties by kind (all optional; defaults in brackets):
 	every kind: name (Pawn variable), group, comment, world (-1 every world), interior,
-	  draw_distance, stream_distance (streamer)
+	  interior_zero_only [false; streamer, interior 0: writes interiorid 0, only interior 0,
+	  instead of -1, every interior], draw_distance, stream_distance (streamer)
 	object: attach_to (instance id, -1 detaches), attach_sync_rotation
 	vehicle: color1, color2 [-1 random], respawn_delay [100 seconds; -1 never], paintjob [-1 none],
 	  plate [none], mods [none; component ids, a wrong one lists those that fit]

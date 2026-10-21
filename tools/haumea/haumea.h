@@ -470,6 +470,9 @@ struct ObjectPawnProperties
 	// Any streamer item: shown only to players inside this area (its Pawn
 	// variable), the streamer's areaid. Empty for everywhere.
 	char areaName[PAWN_OBJECT_NAME_LEN];
+	// Streamer items in interior 0 (m_area): written as interiorid 0, only in
+	// interior 0, instead of -1, every interior. Set when a map said 0.
+	bool interiorZeroOnly;
 };
 
 #define LODDISTANCE (300.0f)

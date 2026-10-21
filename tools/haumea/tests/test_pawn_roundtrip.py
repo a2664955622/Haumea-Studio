@@ -97,6 +97,30 @@ class PawnRoundtripTests(unittest.TestCase):
                 os.killpg(editor.pid, signal.SIGKILL)
                 editor.wait()
 
+    def test_streamer_interiors_come_back_as_written(self):
+        # The streamer's interiorid 0 means only interior 0, -1 every interior: both stay as they were.
+        source = (
+            '#include <a_samp>\n#include <streamer>\n\nstock Interiors()\n{\n'
+            '\tCreateDynamicObject(1271, 1600.0, -1900.0, 14.0, 0.0, 0.0, 0.0, -1, 0, -1, 300.00, 300.00);\n'
+            '\tCreateDynamicObject(1271, 1602.0, -1900.0, 14.0, 0.0, 0.0, 0.0, -1, -1, -1, 300.00, 300.00);\n'
+            '\tCreateDynamicObject(1271, 1604.0, -1900.0, 14.0, 0.0, 0.0, 0.0, -1, 5, -1, 300.00, 300.00);\n'
+            '\tCreateDynamicPickup(1240, 2, 1606.0, -1900.0, 14.0, -1, 0);\n'
+            '\tnew const zone = CreateDynamicCube(1590.0, -1910.0, 10.0, 1610.0, -1890.0, 20.0, -1, 0);\n'
+            '\tCreateDynamicObject(1271, 1608.0, -1900.0, 14.0, 0.0, 0.0, 0.0, -1, 0, -1, 300.00, 300.00, zone);\n'
+            '}\n')
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, 'in.pwn').write_text(source)
+            first = self.roundtrip(Path(tmp, 'in.pwn'), Path(tmp, 'map.pwn'))
+            Path(tmp, 'copy.pwn').write_text(first)
+            second = self.roundtrip(Path(tmp, 'copy.pwn'), Path(tmp, 'map.pwn'))
+        self.assertEqual(first, second, 'saving an opened map must not change it')
+        objects = {x: (world, interior) for x, world, interior in re.findall(
+            r'CreateDynamicObject\(1271, (16\d\d)\.000000, [^\n]*?0\.000000, (-?\d+), (-?\d+), -1,', first)}
+        self.assertEqual(objects, {'1600': ('-1', '0'), '1602': ('-1', '-1'), '1604': ('-1', '5'),
+                                   '1608': ('-1', '0')}, first)
+        self.assertRegex(first, r'CreateDynamicPickup\(1240, 2, 1606\.000000, -1900\.000000, 14\.000000, -1, 0, -1,')
+        self.assertRegex(first, r'new const zone = CreateDynamicCube\([^\n]*, -1, 0\);')
+
     def test_open_save_is_faithful_and_stable(self):
         with tempfile.TemporaryDirectory() as tmp:
             first = self.roundtrip(FIXTURE, Path(tmp, 'map.pwn'))

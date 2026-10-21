@@ -6144,6 +6144,23 @@ uiInstInfo(ObjectInst *inst)
 	if(batch)
 		ImGui::SetItemTooltip("Sets the interior of all %d selected.", (int)selected.size());
 	ImGui::SetItemTooltip("Streamer objects and vehicles use it; native CreateObject objects\nshow in every interior.");
+	// The streamer tells interior 0 (only there) from -1 (every interior).
+	if(interior == 0 && !inst->m_isVehicle && gPawnSaveFormat == PAWN_CODE_STREAMER){
+		bool zeroOnly = GetObjectPawnProperties(inst)->interiorZeroOnly;
+		if(ImGui::Checkbox("Only interior 0", &zeroOnly)){
+			UndoBeginGroup();
+			for(ObjectInst *target : selected){
+				if((target != inst && !batch) || target->m_isVehicle || target->m_area != 0)
+					continue;
+				ObjectPawnProperties properties = *GetObjectPawnProperties(target);
+				properties.interiorZeroOnly = zeroOnly;
+				SetObjectPawnProperties(target, properties);
+			}
+			UndoEndGroup();
+		}
+		ImGui::SetItemTooltip("Written as interiorid 0: streamed only to players in interior 0 (outside).\n"
+			"Off: -1, every interior.");
+	}
 	ImGui::EndDisabled();
 }
 

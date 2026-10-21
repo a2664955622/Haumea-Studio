@@ -1502,6 +1502,8 @@ agentPropertiesJson(ObjectInst *inst)
 	if(p.comment[0]) add("comment", str(p.comment));
 	add("world", std::to_string(p.virtualWorld));
 	add("interior", std::to_string(inst->m_area));
+	if(p.interiorZeroOnly && inst->m_area == 0)
+		add("interior_zero_only", "true");
 	if(kind != SAMP_ELEMENT_NPC && kind != SAMP_ELEMENT_CLASS && kind != SAMP_ELEMENT_PATHPOINT &&
 	   kind != SAMP_ELEMENT_SOUND && kind != SAMP_ELEMENT_CHECKPOINT && kind != SAMP_ELEMENT_AREA){
 		add("draw_distance", jsonFloat(p.drawDistance));
@@ -1777,6 +1779,11 @@ applyAgentProperty(ObjectInst *inst, int kind, ObjectPawnProperties &p, AgentIns
 	if(key == "interior"){
 		if(!parseInt(value, &i) || i < 0 || i > 255) return fail("expects 0-255");
 		edit.setArea = true; edit.area = i; return true;
+	}
+	if(key == "interior_zero_only"){
+		if(kind == AGENT_KIND_VEHICLE) return fail("vehicles use interior");
+		if(!parseBoolField(value, &b)) return fail("expects true or false");
+		p.interiorZeroOnly = b; return true;
 	}
 	if(key == "draw_distance" || key == "stream_distance"){
 		if(!parseFloat(value, &f) || f < 0.0f) return fail("expects a distance >= 0 (0: default)");
