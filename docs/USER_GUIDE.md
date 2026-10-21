@@ -247,8 +247,14 @@ log** shows what happened. Namaka goes in the config folder (`~/.config/haumea/n
 - **Uninstall** removes it.
 
 **Copy for Claude Code** puts a `claude mcp add` command on the clipboard, and **Copy for Claude
-Desktop** an entry for `claude_desktop_config.json`, both for this install and this editor's
-socket. Haumea must be listening: start it with `launch-haumea-agent` (or `--agent-socket`).
+Desktop** an entry for `claude_desktop_config.json`, both for this install.
+
+Once Namaka is installed, Haumea listens for it whenever it starts: on Linux and macOS through
+`~/.cache/haumea-agent.sock`, which only you can use, and on Windows on a local port with a new key
+each time, written to `namaka\connection.json` in the config folder. **Let Namaka connect**
+(**Preferences → Namaka**, or the panel) turns this off from the next start. Only one Haumea at a
+time can be reached: if another one already is, the panel says so. Starting Haumea with
+`--agent-socket` still uses that socket instead.
 An Agent Alpha install keeps working; once Namaka is set up, point your MCP client at it and
 delete the old folder. More in [the setup guide](../tools/release/AGENT_README.md).
 
