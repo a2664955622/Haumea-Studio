@@ -38,13 +38,19 @@ OUT=$WORK/win-amd64-$GFX
 mkdir -p "$WORK" "$OUT"
 
 # --- librw, patched like the CI build ---
+# The marker holds a checksum of what patches it (the patch, the patch script
+# and the ImGui it installs): when that changes, librw is cloned and patched again.
 LIBRW=$WORK/librw
-if [ ! -f "$LIBRW/.haumea-patched" ]; then
+PATCHED=$( { cat "$ROOT/patches/librw-haumea.patch" "$ROOT/tools/release/patch_librw_haumea.py"
+	find "$ROOT/vendor/imgui-docking" -type f -print0 | LC_ALL=C sort -z | xargs -0 cat; } | sha256sum | cut -d' ' -f1)
+if [ "$(cat "$LIBRW/.haumea-patched" 2>/dev/null)" != "$PATCHED" ]; then
 	rm -rf "$LIBRW"
 	git clone -q --depth=1 "$LIBRW_GIT" "$LIBRW"
 	(cd "$LIBRW" && git apply "$ROOT/patches/librw-haumea.patch")
 	python3 "$ROOT/tools/release/patch_librw_haumea.py" "$LIBRW"
-	touch "$LIBRW/.haumea-patched"
+	echo "$PATCHED" > "$LIBRW/.haumea-patched"
+	# Objects built against the old librw headers are stale too.
+	rm -rf "$WORK"/win-amd64-*/obj
 fi
 
 # --- GLFW (gl3 only) ---
