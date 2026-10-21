@@ -76,8 +76,8 @@ UpdaterParseSetting(const char *key, const char *value)
 	else if(strcmp(key, "update_download") == 0)
 		gUpdateDownloadAuto = atoi(value) != 0;
 	else if(strcmp(key, "update_channel") == 0)
-		// Only production and beta exist; anything older (master, PE,
-		// agent-alpha) means production.
+		// Only production and beta exist; any older channel name means
+		// production.
 		snprintf(gUpdateChannel, sizeof(gUpdateChannel), "%s", strcmp(value, "beta") == 0 ? "beta" : "production");
 	else if(strcmp(key, "update_skip") == 0)
 		snprintf(gUpdateSkip, sizeof(gUpdateSkip), "%s", value);
