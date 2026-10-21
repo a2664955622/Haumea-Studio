@@ -620,6 +620,7 @@ statusSection(void)
 	std::string bundle = bundleDir();
 	std::string bundled = bundle.empty() ? "" : wheelVersion(wheelIn(bundle));
 	bool installed = NamakaInstalled();
+	ImGui::PushTextWrapPos(0.0f);	// long paths and advice wrap at the panel's edge
 	ImGui::SeparatorText("Status");
 	if(installed){
 		ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.5f, 1.0f), ICON_FA_CHECK " Namaka %s is installed",
@@ -659,6 +660,7 @@ statusSection(void)
 		ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.4f, 1.0f), "No Python 3.10 or newer found.");
 		ImGui::TextUnformatted(pythonAdvice());
 	}
+	ImGui::PopTextWrapPos();
 	if(!gProbing){
 		if(ImGui::SmallButton("Look again"))
 			startPythonProbe();
