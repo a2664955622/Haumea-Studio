@@ -6,7 +6,7 @@ shortcut window_browser
 wait 5
 click_item 'Object Browser' 'SA-MP'
 wait 5
-click_item 'Object Browser' 'Place' 1
+click_item 'Object Browser' '##place Actor'
 wait 3
 click_world 2000 -3000 4
 wait 5

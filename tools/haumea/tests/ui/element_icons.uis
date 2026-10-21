@@ -8,25 +8,25 @@ wait 5
 click_item 'Object Browser' 'SA-MP'
 wait 5
 # Label, gang zone, map icon, path point.
-click_item 'Object Browser' 'Place' 6
+click_item 'Object Browser' '##place 3D text label'
 wait 3
 click_world 1998 -3002 4
 wait 3
-click_item 'Object Browser' 'Place' 7
+click_item 'Object Browser' '##place Gang zone'
 wait 3
 click_world 2002 -2998 4
 wait 3
-click_item 'Object Browser' 'Place' 8
+click_item 'Object Browser' '##place Map icon'
 wait 3
 click_world 1998 -2998 4
 wait 3
-click_item 'Object Browser' 'Place' 4
+click_item 'Object Browser' '##place NPC path point'
 wait 3
 click_world 2001 -3001 4
 wait 3
 # Sound, near the end of the list.
 scroll_until 'Object Browser' 'Race'
-click_item 'Object Browser' 'Place' -3
+click_item 'Object Browser' '##place Sound'
 wait 3
 click_world 2002 -3002 4
 wait 5

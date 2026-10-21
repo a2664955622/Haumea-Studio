@@ -5,7 +5,7 @@ wait 5
 click_item 'Object Browser' 'SA-MP'
 wait 5
 scroll_until 'Object Browser' 'Race'
-click_item 'Object Browser' 'Place' -3
+click_item 'Object Browser' '##place Sound'
 wait 3
 click_world 2003 -3003 4
 wait 5

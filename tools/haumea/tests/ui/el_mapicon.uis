@@ -4,7 +4,7 @@ shortcut window_browser
 wait 5
 click_item 'Object Browser' 'SA-MP'
 wait 5
-click_item 'Object Browser' 'Place' 8
+click_item 'Object Browser' '##place Map icon'
 wait 3
 click_world 2000 -3000 4
 wait 5

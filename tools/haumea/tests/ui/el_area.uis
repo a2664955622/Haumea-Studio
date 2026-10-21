@@ -5,8 +5,8 @@ shortcut window_browser
 wait 5
 click_item 'Object Browser' 'SA-MP'
 wait 5
-scroll_until 'Object Browser' 'Place'
-click_item 'Object Browser' 'Place' -1
+scroll_until 'Object Browser' '##place Dynamic area'
+click_item 'Object Browser' '##place Dynamic area'
 wait 3
 click_world 2000 -3000 4
 wait 5
@@ -27,7 +27,8 @@ click_item 'Map Objects' 'box_c (gunbox)'
 release Ctrl
 wait 3
 assert selected == 3
-shortcut window_object_info
+# Object Info is still open from sizing the area (its shortcut toggles it).
+assert window 'Object Info'
 wait 20
 # Under World & streaming, closed until opened.
 click_item 'Object Info' 'World & streaming'

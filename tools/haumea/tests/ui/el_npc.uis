@@ -4,14 +4,14 @@ shortcut window_browser
 wait 5
 click_item 'Object Browser' 'SA-MP'
 wait 5
-click_item 'Object Browser' 'Place' 4
+click_item 'Object Browser' '##place NPC path point'
 wait 3
 click_world 1997 -3000 4 shift
 wait 5
 click_world 2000 -3003 4
 wait 5
 key Esc
-click_item 'Object Browser' 'Place' 3
+click_item 'Object Browser' '##place NPC'
 wait 3
 click_world 2003 -3000 4
 wait 5

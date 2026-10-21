@@ -10,7 +10,7 @@ set_item '*' 'ID' "1242"
 wait 3
 close_popup
 wait 3
-click_item 'Object Browser' 'Place' 5
+click_item 'Object Browser' '##place Pickup'
 wait 3
 click_world 2000 -3000 4
 wait 5
