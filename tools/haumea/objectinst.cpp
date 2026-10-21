@@ -4467,13 +4467,39 @@ CaptureObjectPreviewPng(int objectId, const char *path, int size, float angle,
 	return ok;
 }
 
+// One object of a thumbnail: a prefab's, or a map's for the start screen.
+struct ThumbnailObject
+{
+	int objectId;
+	float relX, relY, relZ;
+	float rotX, rotY, rotZ, rotW;
+};
+static const int MAX_THUMBNAIL_OBJECTS = 256;
+static bool readMapThumbnailObjects(const char *path, std::vector<ThumbnailObject> &out);
+
+static bool
+isPrefabPath(const char *path)
+{
+	size_t n = strlen(path);
+	return n > 7 && rw::strncmp_ci(path + n - 7, ".haumea", 7) == 0;
+}
+
 static bool
 renderPrefabToRaster(const char *path, rw::Raster *colorRaster, rw::Raster *depthRaster, int size)
 {
-	PrefabEntry entries[256];
-	int numEntries = 0;
-	if(!ReadPrefabEntries(path, entries, 256, &numEntries, false))
+	std::vector<ThumbnailObject> objects;
+	if(isPrefabPath(path)){
+		static PrefabEntry prefab[MAX_THUMBNAIL_OBJECTS];
+		int numPrefab = 0;
+		if(!ReadPrefabEntries(path, prefab, MAX_THUMBNAIL_OBJECTS, &numPrefab, false))
+			return false;
+		for(int i = 0; i < numPrefab; i++)
+			objects.push_back({ prefab[i].objectId, prefab[i].relX, prefab[i].relY, prefab[i].relZ,
+				prefab[i].rotX, prefab[i].rotY, prefab[i].rotZ, prefab[i].rotW });
+	}else if(!readMapThumbnailObjects(path, objects))
 		return false;
+	const ThumbnailObject *entries = objects.data();
+	int numEntries = (int)objects.size();
 
 	rw::V3d minPt = { 1.0e30f, 1.0e30f, 1.0e30f };
 	rw::V3d maxPt = { -1.0e30f, -1.0e30f, -1.0e30f };
@@ -9581,6 +9607,44 @@ ImportPawnCode(const char *path, int *numSkipped)
 		return -1;
 	}
 	return ImportPawnSource(source, path, numSkipped);
+}
+
+// A map's objects for its start-screen thumbnail: its largest ones, as
+// they would be placed. Other tools' maps get no thumbnail.
+static bool
+readMapThumbnailObjects(const char *path, std::vector<ThumbnailObject> &out)
+{
+	size_t n = strlen(path);
+	bool pawn = n > 4 && (rw::strncmp_ci(path + n - 4, ".pwn", 4) == 0 || rw::strncmp_ci(path + n - 4, ".inc", 4) == 0);
+	std::string source;
+	if(!pawn || !pawnReadFile(path, source))
+		return false;
+	std::vector<PawnImportEntry> entries;
+	std::vector<PawnRemoveEntry> removals;
+	std::vector<PawnVehicleInteriorEntry> vehicleInteriors;
+	std::vector<PawnMaterialImportEntry> materials;
+	std::vector<PawnAttachImportEntry> attachments;
+	std::vector<PawnElementSetterEntry> setters;
+	int skipped = 0;
+	pawnParseSource(DecodePawnFileText(source, nil), entries, removals, vehicleInteriors, materials,
+		attachments, setters, &skipped);
+	struct Sized { float radius; ThumbnailObject object; };
+	std::vector<Sized> found;
+	for(const PawnImportEntry &e : entries){
+		ObjectDef *obj = GetObjectDef(e.objectId);
+		if(e.isVehicle || e.elementKind != SAMP_ELEMENT_OBJECT || obj == nil || obj->m_isVehicle)
+			continue;
+		rw::Quat q = pawnMakeStoredQuaternion(e.rx, e.ry, e.rz);
+		float radius = obj->m_colModel ? obj->m_colModel->boundingSphere.radius : 1.0f;
+		found.push_back({ radius, { e.objectId, e.x, e.y, e.z, q.x, q.y, q.z, q.w } });
+	}
+	std::sort(found.begin(), found.end(), [](const Sized &a, const Sized &b){ return a.radius > b.radius; });
+	if(found.size() > (size_t)MAX_THUMBNAIL_OBJECTS)
+		found.resize(MAX_THUMBNAIL_OBJECTS);
+	out.clear();
+	for(const Sized &f : found)
+		out.push_back(f.object);
+	return !out.empty();
 }
 
 static PawnTextEncoding gLastImportTextEncoding = PAWN_TEXT_CP1252;

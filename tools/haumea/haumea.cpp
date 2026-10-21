@@ -2367,7 +2367,7 @@ DrawSplash(float dt)
 
 	// First run: the game folder is chosen on the splash before loading.
 	if(WorkspaceSetupNeeded())
-		DrawWorkspaceSetup();
+		DrawStartScreen(false);
 
 	ImGui::EndFrame();
 	ImGui::Render();

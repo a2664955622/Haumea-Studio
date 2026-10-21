@@ -1,0 +1,26 @@
+# The start screen from File > Switch Workspace: a new workspace around the
+# fixtures folder lists its recent map, which opens from there.
+open "$UI_FIXTURES/ui_map.pwn"
+wait 5
+open "$UI_FIXTURES/ui_old_textdraws.pwn"
+wait 5
+assert objects == 1
+click_item '*' 'File'
+wait 3
+click_item '*' 'Switch Workspace...'
+wait 5
+assert window "Welcome to Haumea Studio"
+click_item 'Welcome to Haumea Studio' 'New workspace...'
+wait 3
+set_item 'Welcome to Haumea Studio' '##parent' "."
+wait 3
+set_item 'Welcome to Haumea Studio' '##name' "fixtures"
+wait 3
+click_item 'Welcome to Haumea Studio' 'Create workspace'
+wait 60
+click_item 'Welcome to Haumea Studio' '##ui_map.pwn'
+wait 3
+click_item 'Welcome to Haumea Studio' 'Open map'
+wait 10
+assert no_window "Welcome to Haumea Studio"
+assert objects == 4

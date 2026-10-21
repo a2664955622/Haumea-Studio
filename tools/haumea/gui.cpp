@@ -2707,6 +2707,9 @@ uiMainmenu(void)
 				ImGui::EndMenu();
 			}
 			ImGui::SetItemTooltip("Opens an autosaved copy. Use Save As to keep it as your map.");
+			if(ImGui::MenuItem(ICON_FA_GLOBE " Switch Workspace..."))
+				ShowStartScreen();
+			ImGui::SetItemTooltip("The start screen: workspaces, their maps and the game folder.");
 			uiWorkspaceMenu();
 			ImGui::Separator();
 			if(ImGui::MenuItem(ICON_FA_FLOPPY_DISK " Save", ShortcutLabel(SC_SAVE_MAP), false, isSA()))
@@ -11728,7 +11731,7 @@ uiStartGuide(void)
 {
 	int objects, removed;
 	countMapContents(&objects, &removed);
-	if(!gShowStartGuide || objects > 0 || removed > 0 || gPlaceMode || gBrushMode ||
+	if(!gShowStartGuide || objects > 0 || removed > 0 || gPlaceMode || gBrushMode || StartScreenOpen() ||
 	   gPrefabPlaceMode || !isSA())
 		return;
 	ImGuiIO &io = ImGui::GetIO();
@@ -12074,6 +12077,8 @@ gui(void)
 					roundtripIn, roundtripOut, saved, skipped);
 				fflush(stdout);
 				sk::globals.quit = 1;
+			}else if(StartScreenWantedAtLaunch()){
+				ShowStartScreen();	// it opens the map the user picks
 			}else if(gReopenLastMap && gNumRecentMaps > 0 && isSA()){
 				if(openPawnMap(gRecentMaps[0]))
 					OfferMoveMapTextDraws(gRecentMaps[0]);
@@ -12116,6 +12121,7 @@ gui(void)
 		uiDrawNpcPaths();
 	}
 	uiUnsavedMapPopup();
+	DrawStartScreen(true);
 	// TODO: restore when the Destroy Entire Map workflow is finished.
 	UpdaterDrawGui();
 	autosaveTick();
@@ -12390,6 +12396,16 @@ bool
 PickPawnFile(char *dst, size_t size, bool save, const char *suggested)
 {
 	return pickPawnFileDialog(dst, size, save, suggested);
+}
+
+const std::vector<std::string>&
+GetRecentMapPaths(void)
+{
+	static std::vector<std::string> paths;
+	paths.clear();
+	for(int i = 0; i < gNumRecentMaps; i++)
+		paths.push_back(gRecentMaps[i]);
+	return paths;
 }
 
 const char*

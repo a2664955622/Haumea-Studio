@@ -38,7 +38,16 @@ bool CheckWorkspaceDir(const char *dir, std::string *warning);
 // applies after a restart.
 bool SetGameDir(const char *dir, std::string *problem);
 void SetWorkspaceDir(const char *dir);	// nil or "" for none
-const std::vector<std::string> &GetRecentWorkspaces(void);
+const std::vector<std::string> &GetRecentWorkspaces(void);	// last opened first
+// The same with when each was last opened (0: unknown, from an older build)
+// and pins, pinned first. Pinned ones never drop off the list.
+struct RecentWorkspace { std::string path; long long lastOpened; bool pinned; };
+std::vector<RecentWorkspace> GetRecentWorkspaceList(void);
+void PinRecentWorkspace(const char *path, bool pinned);
+void RemoveRecentWorkspace(const char *path);
+// "Open the last workspace automatically": no start screen on launch.
+bool GetOpenLastWorkspace(void);
+void SetOpenLastWorkspace(bool open);
 
 // True for --pawn-roundtrip and --no-save-settings: developer and test runs
 // read the settings but never write them (settings, recent maps, window
@@ -51,10 +60,10 @@ bool FileDialogAvailable(void);
 // Native folder picker; false when cancelled.
 bool PickFolderDialog(char *dst, size_t size, const char *title, const char *startDir);
 
-// First-run setup: true while no valid game folder is known. Draw the setup
-// window inside an ImGui frame until it returns false.
+// First-run setup: true while no valid game folder is known. The start
+// screen (startscreen.cpp) asks for one and calls FinishWorkspaceSetup.
 bool WorkspaceSetupNeeded(void);
-void DrawWorkspaceSetup(void);
+void FinishWorkspaceSetup(const char *game, const char *workspace);
 // Preferences / File > Workspace widgets. Returns true when the game folder
 // changed and Haumea needs a restart.
 bool uiWorkspaceSettings(void);

@@ -73,6 +73,7 @@ struct ObjectInst;
 
 #include "sapaths.h"
 #include "textdraws.h"
+#include "startscreen.h"
 
 #ifdef RWHALFPIXEL
 #define HALFPX (0.5f)
@@ -1308,6 +1309,7 @@ int MergeMapFile(const char *path, int *skipped);
 void NewPawnMapDocument(void);
 bool SavePawnMapTo(const char *path, int format);
 const char *GetPawnMapPath(void);	// empty while untitled
+const std::vector<std::string> &GetRecentMapPaths(void);	// File > Open Recent, newest first
 void SaveEditorSettings(void);
 bool PickPawnFile(char *dst, size_t size, bool save, const char *suggested);	// the native dialog
 int GetPawnMapFormat(void);	// PawnCodeFormat

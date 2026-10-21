@@ -124,6 +124,8 @@ class UiScriptTests(unittest.TestCase):
             env.pop('HAUMEA_GAME_DIR', None)	# no game folder known
         else:
             args[1:1] = ['--game', self.game, '--workspace', str(server)]
+        if name == 'startscreen_launch.uis':
+            env['HAUMEA_START_SCREEN'] = '1'	# scripts skip it otherwise
         if name == 'custom_model.uis':
             entries = img_entries(Path(self.game, 'models', 'gta3.img'))
             with open(Path(self.game, 'models', 'gta3.img'), 'rb') as f:

@@ -7,6 +7,8 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <algorithm>
+#include <map>
+#include <time.h>
 #ifdef _WIN32
 #include <direct.h>
 #include <shlobj.h>
@@ -28,6 +30,11 @@ static std::string gWorkspaceDir;
 static std::string gSavedGameDir, gSavedWorkspaceDir;
 static std::string gConfigDir;
 static std::vector<std::string> gRecentWorkspaces;
+// When each was last opened and whether it is pinned: "recent_info" lines,
+// which older builds skip.
+struct RecentInfo { long long lastOpened; bool pinned; };
+static std::map<std::string, RecentInfo> gRecentInfo;
+static bool gOpenLastWorkspace;	// skip the start screen
 static bool gSetupNeeded;
 static bool gInitialized;
 
@@ -229,6 +236,7 @@ SettingsAreReadOnly(void)
 {
 	for(int i = 1; i < sk::args.argc; i++)
 		if(strcmp(sk::args.argv[i], "--pawn-roundtrip") == 0 ||
+		   strcmp(sk::args.argv[i], "--textdraw-roundtrip") == 0 ||
 		   strcmp(sk::args.argv[i], "--undo-selftest") == 0 ||
 		   strcmp(sk::args.argv[i], "--profile") == 0 ||
 		   strcmp(sk::args.argv[i], "--no-save-settings") == 0)
@@ -253,6 +261,11 @@ saveSettings(void)
 		fprintf(f, "workspace %s\n", gSavedWorkspaceDir.c_str());
 	for(const std::string &recent : gRecentWorkspaces)
 		fprintf(f, "recent %s\n", recent.c_str());
+	for(const std::string &recent : gRecentWorkspaces){
+		const RecentInfo &info = gRecentInfo[recent];
+		fprintf(f, "recent_info %lld %d %s\n", info.lastOpened, info.pinned ? 1 : 0, recent.c_str());
+	}
+	fprintf(f, "open_last_workspace %d\n", gOpenLastWorkspace ? 1 : 0);
 	fclose(f);
 }
 
@@ -273,8 +286,15 @@ loadSettings(std::string *game, std::string *workspace)
 		else if(strncmp(line, "workspace ", 10) == 0)
 			*workspace = line + 10;
 		else if(strncmp(line, "recent ", 7) == 0 &&
-		        (int)gRecentWorkspaces.size() < MAX_RECENT_WORKSPACES)
+		        (int)gRecentWorkspaces.size() < MAX_RECENT_WORKSPACES * 2)
 			gRecentWorkspaces.push_back(line + 7);
+		else if(strncmp(line, "recent_info ", 12) == 0){
+			long long when = 0;
+			int pinned = 0, used = 0;
+			if(sscanf(line + 12, "%lld %d %n", &when, &pinned, &used) >= 2 && used > 0)
+				gRecentInfo[line + 12 + used] = { when, pinned != 0 };
+		}else if(strncmp(line, "open_last_workspace ", 20) == 0)
+			gOpenLastWorkspace = atoi(line + 20) != 0;
 	}
 	fclose(f);
 }
@@ -559,8 +579,18 @@ SetWorkspaceDir(const char *dir)
 		gRecentWorkspaces.erase(std::remove(gRecentWorkspaces.begin(), gRecentWorkspaces.end(),
 			gWorkspaceDir), gRecentWorkspaces.end());
 		gRecentWorkspaces.insert(gRecentWorkspaces.begin(), gWorkspaceDir);
-		if((int)gRecentWorkspaces.size() > MAX_RECENT_WORKSPACES)
-			gRecentWorkspaces.resize(MAX_RECENT_WORKSPACES);
+		gRecentInfo[gWorkspaceDir].lastOpened = (long long)time(nil);
+		// Too many: the oldest unpinned one goes. Pinned ones stay.
+		while((int)gRecentWorkspaces.size() > MAX_RECENT_WORKSPACES){
+			int drop = -1;
+			for(int i = (int)gRecentWorkspaces.size() - 1; i > 0 && drop < 0; i--)
+				if(!gRecentInfo[gRecentWorkspaces[i]].pinned)
+					drop = i;
+			if(drop < 0)
+				break;
+			gRecentInfo.erase(gRecentWorkspaces[drop]);
+			gRecentWorkspaces.erase(gRecentWorkspaces.begin() + drop);
+		}
 	}
 	saveSettings();
 }
@@ -569,6 +599,51 @@ const std::vector<std::string>&
 GetRecentWorkspaces(void)
 {
 	return gRecentWorkspaces;
+}
+
+std::vector<RecentWorkspace>
+GetRecentWorkspaceList(void)
+{
+	std::vector<RecentWorkspace> list;
+	for(const std::string &path : gRecentWorkspaces){
+		const RecentInfo &info = gRecentInfo[path];
+		list.push_back({ path, info.lastOpened, info.pinned });
+	}
+	// Pinned first; otherwise the order they were last opened in.
+	std::stable_sort(list.begin(), list.end(), [](const RecentWorkspace &a, const RecentWorkspace &b){
+		return a.pinned && !b.pinned;
+	});
+	return list;
+}
+
+void
+PinRecentWorkspace(const char *path, bool pinned)
+{
+	gRecentInfo[normalizeDir(path)].pinned = pinned;
+	saveSettings();
+}
+
+void
+RemoveRecentWorkspace(const char *path)
+{
+	std::string dir = normalizeDir(path);
+	gRecentWorkspaces.erase(std::remove(gRecentWorkspaces.begin(), gRecentWorkspaces.end(), dir),
+		gRecentWorkspaces.end());
+	gRecentInfo.erase(dir);
+	saveSettings();
+}
+
+bool
+GetOpenLastWorkspace(void)
+{
+	return gOpenLastWorkspace;
+}
+
+void
+SetOpenLastWorkspace(bool open)
+{
+	gOpenLastWorkspace = open;
+	saveSettings();
 }
 
 static const char*
@@ -745,52 +820,15 @@ WorkspaceSetupNeeded(void)
 	return gSetupNeeded;
 }
 
+// The first-run choice from the start screen: the game folder (checked
+// by the caller) and the workspace, then loading can start.
 void
-DrawWorkspaceSetup(void)
+FinishWorkspaceSetup(const char *game, const char *workspace)
 {
-	static char game[1024], workspace[1024];
-	static bool filled;
-	if(!filled){
-		filled = true;
-		snprintf(workspace, sizeof(workspace), "%s", gWorkspaceDir.c_str());
-	}
-	ImGuiIO &io = ImGui::GetIO();
-	ImVec2 size(min(io.DisplaySize.x - 40.0f, 640.0f), 0.0f);
-	ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f),
-		ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-	ImGui::SetNextWindowSize(size, ImGuiCond_Always);
-	ImGui::Begin("Welcome to Haumea Studio", nil, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove |
-		ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings);
-	ImGui::PushTextWrapPos(0.0f);
-	ImGui::TextUnformatted("Haumea draws the world from your GTA San Andreas folder and only reads it. "
-		"Your maps belong to a workspace: the SA-MP or open.mp server you are mapping for.");
-	ImGui::PopTextWrapPos();
-	ImGui::Spacing();
-
-	folderField("GTA San Andreas folder", "game", game, sizeof(game), "GTA San Andreas folder");
-	std::string problem;
-	bool gameOk = CheckGameDir(game, &problem);
-	statusLine(gameOk, gameOk ? "GTA San Andreas found." : problem, false);
-	ImGui::Spacing();
-
-	folderField("Workspace (server folder, optional)", "workspace", workspace, sizeof(workspace),
-		"Server folder");
-	std::string warning;
-	bool serverOk = CheckWorkspaceDir(workspace, &warning);
-	statusLine(serverOk, serverOk ? "Server folder found." : warning, true);
-	ImGui::Spacing();
-
-	ImGui::BeginDisabled(!gameOk);
-	if(ImGui::Button("Continue", ImVec2(140, 0))){
-		SetGameDir(game, nil);
-		SetWorkspaceDir(workspace);
-		migrateOldData();
-		gSetupNeeded = false;
-	}
-	ImGui::EndDisabled();
-	ImGui::SameLine();
-	ImGui::TextDisabled("Both can be changed later in File > Workspace.");
-	ImGui::End();
+	SetGameDir(game, nil);
+	SetWorkspaceDir(workspace);
+	migrateOldData();
+	gSetupNeeded = false;
 }
 
 bool
