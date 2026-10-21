@@ -173,6 +173,7 @@ GENERATED += $(OBJDIR)/nodes_ui.o
 GENERATED += $(OBJDIR)/sapaths.o
 GENERATED += $(OBJDIR)/uiscript.o
 GENERATED += $(OBJDIR)/vehiclemods.o
+GENERATED += $(OBJDIR)/versionutil.o
 GENERATED += $(OBJDIR)/sdl2.o
 GENERATED += $(OBJDIR)/sdl3.o
 GENERATED += $(OBJDIR)/selftest.o
@@ -253,6 +254,7 @@ OBJECTS += $(OBJDIR)/nodes_ui.o
 OBJECTS += $(OBJDIR)/sapaths.o
 OBJECTS += $(OBJDIR)/uiscript.o
 OBJECTS += $(OBJDIR)/vehiclemods.o
+OBJECTS += $(OBJDIR)/versionutil.o
 OBJECTS += $(OBJDIR)/sdl2.o
 OBJECTS += $(OBJDIR)/sdl3.o
 OBJECTS += $(OBJDIR)/selftest.o
@@ -549,6 +551,17 @@ $(OBJDIR)/uiscript.o: ../tools/haumea/uiscript.cpp
 $(OBJDIR)/vehiclemods.o: ../tools/haumea/vehiclemods.cpp
 	@echo "$(notdir $<)"
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/versionutil.o: ../tools/haumea/versionutil.cpp
+	@echo "$(notdir $<)"
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+
+# The build number and commit (tools/release/gen_buildinfo.py). Remade every
+# build, but only rewritten when they change, so only versionutil.o follows.
+../tools/haumea/haumea_buildinfo.h: FORCE
+	$(SILENT) python3 ../tools/release/gen_buildinfo.py --header $@
+$(OBJDIR)/versionutil.o: ../tools/haumea/haumea_buildinfo.h
+.PHONY: FORCE
+FORCE:
 $(OBJDIR)/texbrowser.o: ../tools/haumea/texbrowser.cpp
 	@echo "$(notdir $<)"
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"

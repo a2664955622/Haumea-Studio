@@ -1,5 +1,6 @@
 #include "haumea.h"
 #include "version.h"
+#include "versionutil.h"
 #include "telemetry.h"
 
 #ifdef _WIN32
@@ -220,7 +221,7 @@ TelemetryThread(void *arg)
 	char body[512];
 	snprintf(body, sizeof(body),
 		"{\"uid\":\"%s\",\"version\":\"%s\",\"channel\":\"%s\"}",
-		uid, HAUMEA_VERSION, HAUMEA_CHANNEL);
+		uid, HaumeaFullVersion(), HAUMEA_CHANNEL);
 
 	HttpPost(TELEMETRY_HOST, TELEMETRY_PATH, body, (int)strlen(body));
 	return 0;

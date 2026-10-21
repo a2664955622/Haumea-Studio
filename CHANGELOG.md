@@ -3,7 +3,7 @@
 ## 1.41.0 (Beta 1): Haumea Studio
 
 Everything since 1.40.11. Haumea is now **Haumea Studio, the all-in-one editor
-for SA-MP and open.mp**: it edits whole SA-MP and open.mp maps, not just
+for open.mp and SA-MP**: it edits whole open.mp and SA-MP maps, not just
 objects: NPCs and their routes, vehicles with their
 tuning, pickups, labels, sounds, checkpoints and textdraws, all saved as Pawn
 that compiles cleanly. It runs from its own folder, tests your map on a real
@@ -96,9 +96,13 @@ run Map Check and Test in game, and grab frames with the panels.
   move the view. It works with the mouse on the gizmo too, and a hold spent
   flying doesn't open the right-click menu. (The button is the look button in
   **Preferences → Camera**.)
-- **The name is Haumea Studio**, the all-in-one editor for SA-MP and open.mp.
+- **The name is Haumea Studio**, the all-in-one editor for open.mp and SA-MP.
   Only the name you see changes: the program is still `haumea` (`haumea.exe`),
   and settings stay in the same folders.
+- **Version numbers as open.mp has them**: 1.41.0 plus a build number, e.g.
+  1.41.0.57 (the commit count), with the commit next to it in About, the
+  title bar and `haumea --version`. Releases are tagged
+  `v1.41.0.57-<channel>`, and the updater compares all four numbers.
 - **Haumea runs from its own folder.** The first start asks for the **game
   folder** (GTA San Andreas, only ever read) and an optional **workspace**
   (the server you map for). Haumea never writes into the game folder. The old

@@ -1,5 +1,6 @@
 #include "haumea.h"
 #include "version.h"
+#include "versionutil.h"
 #include "updater.h"
 
 #ifdef _WIN32
@@ -17,8 +18,9 @@
 // all preceding stores (string buffers etc.) are visible to any core reading that flag.
 // Not portable to ARM or non-MSVC compilers; fine for this D3D9-only Windows app.
 //
-// Update policy: only HAUMEA_VERSION bumps trigger user-visible updates.
-// SHA-suffixed release tags (v1.0.0-PE-abc1234) are CI bookkeeping only.
+// Update policy: a release of this channel with a higher version, all four
+// parts compared (versionutil.h). Tags are v1.41.0.<build>-<channel>; older
+// ones v1.41.0-<channel>-<sha> count as build 0.
 
 static volatile long gUpdateCheckDone = 0;
 static volatile long gUpdateAvailable = 0;
@@ -145,20 +147,6 @@ ApplyPendingUpdate(void)
 	}
 	exit(0);
 	return true; // not reached
-}
-
-// Simple version compare: returns true if remote > local
-// Expects format "X.Y.Z"
-static bool
-IsNewerVersion(const char *remote, const char *local)
-{
-	int rmaj = 0, rmin = 0, rpat = 0;
-	int lmaj = 0, lmin = 0, lpat = 0;
-	sscanf(remote, "%d.%d.%d", &rmaj, &rmin, &rpat);
-	sscanf(local, "%d.%d.%d", &lmaj, &lmin, &lpat);
-	if(rmaj != lmaj) return rmaj > lmaj;
-	if(rmin != lmin) return rmin > lmin;
-	return rpat > lpat;
 }
 
 // Extract a JSON string value for a given key (very simple, no nesting)
@@ -339,8 +327,8 @@ HttpDownloadFile(const char *url, const char *outPath)
 static unsigned __stdcall
 CheckThread(void *arg)
 {
-	// Query GitHub API for the latest release matching our channel
-	// Releases are tagged as: v1.0.0-master or v1.0.0-PE
+	// Query GitHub API for the latest release matching our channel:
+	// v1.41.0.<build>-<channel>, or an older v1.41.0-<channel>-<sha>.
 	wchar_t path[512];
 	swprintf(path, 512, L"/repos/itsneufox/haumea/releases?per_page=20");
 
@@ -352,10 +340,7 @@ CheckThread(void *arg)
 		return 0;
 	}
 
-	// Find the first release whose tag_name ends with our channel suffix
-	char suffix[64];
-	snprintf(suffix, sizeof(suffix), "-%s", HAUMEA_CHANNEL);
-
+	// Releases of our channel with a higher version, newest first.
 	const char *p = json;
 	bool found = false;
 	int changelogLen = 0;
@@ -369,14 +354,17 @@ CheckThread(void *arg)
 		while(*cursor && *cursor != '"' && i < 127) tag[i++] = *cursor++;
 		tag[i] = '\0';
 
-		if(strstr(tag, suffix)){
+		char channel[64];
+		HaumeaVersion remote;
+		if(HaumeaTagChannel(tag, channel, sizeof(channel)) && strcmp(channel, HAUMEA_CHANNEL) == 0 &&
+		   ParseHaumeaVersion(tag, &remote)){
 			const char *ver = tag;
 			if(*ver == 'v') ver++;
 			char verClean[64] = {};
 			for(int j = 0; ver[j] && ver[j] != '-' && j < 63; j++)
 				verClean[j] = ver[j];
 
-			if(IsNewerVersion(verClean, HAUMEA_VERSION)){
+			if(CompareHaumeaVersion(remote, HaumeaCurrentVersion()) > 0){
 				// Only grab version + download URL from the latest release
 				if(!found){
 					strncpy(gNewVersion, verClean, sizeof(gNewVersion) - 1);
@@ -503,7 +491,7 @@ UpdaterDrawGui(void)
 
 	if(ImGui::Begin(title, nil, flags)){
 		ImGui::Text("New version: %s", gNewVersion);
-		ImGui::Text("Current: %s", HAUMEA_VERSION);
+		ImGui::Text("Current: %s", HaumeaFullVersion());
 		ImGui::Text("Channel: %s", HAUMEA_CHANNEL_DISPLAY);
 
 		if(gChangelog[0]){

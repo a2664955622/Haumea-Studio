@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
 Name=Haumea Studio
-GenericName=SA-MP and open.mp Editor
-Comment=The all-in-one editor for SA-MP and open.mp
+GenericName=open.mp and SA-MP Editor
+Comment=The all-in-one editor for open.mp and SA-MP
 Icon=haumea
 Exec=haumea
 Terminal=false

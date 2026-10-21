@@ -130,12 +130,18 @@ if [ "$GFX" = d3d9 ]; then
 	HAUMEA_SOURCES=$(echo "$HAUMEA_SOURCES" | grep -v 'imgui_impl_rw.cpp')
 	HAUMEA_SOURCES="$HAUMEA_SOURCES $LIBRW/skeleton/imgui/backends/imgui_impl_win32.cpp $LIBRW/skeleton/imgui/backends/imgui_impl_dx9.cpp"
 fi
+# The build number and commit (versionutil.cpp, haumea.rc), as the makefile does.
+python3 "$ROOT/tools/release/gen_buildinfo.py" --header "$ROOT/tools/haumea/haumea_buildinfo.h"
+# compile() follows sources, not headers: a new build number rebuilds versionutil.
+[ "$ROOT/tools/haumea/haumea_buildinfo.h" -nt "$OUT/obj/haumea/haumea_versionutil.o" ] &&
+	rm -f "$OUT/obj/haumea/haumea_versionutil.o"
 compile "$OUT/obj/haumea" "$COMMON -I$LIBRW -I$ROOT/src -I$LIBRW/skeleton -I$ROOT -I$ROOT/tools/haumea -DHAUMEA_CHANNEL=\"$CHANNEL\" -D_MBCS $HAUMEA_DEFINES" \
 	$HAUMEA_SOURCES "$ROOT/tools/haumea/minilzo/minilzo.c"
-# The manifest (UTF-8 code page) goes in as a resource; MSVC embeds it itself.
+# The manifest (UTF-8 code page) goes in as a resource, as MSVC embeds it
+# itself, and the version info (haumea.rc).
 WINDRES=${WINDRES:-x86_64-w64-mingw32-windres}
-printf '1 24 "%s"\n' "$ROOT/tools/haumea/haumea.exe.manifest" > "$OUT/haumea.rc"
-$WINDRES "$OUT/haumea.rc" -O coff -o "$OUT/haumea_res.o"
+printf '1 24 "%s"\n#include "haumea.rc"\n' "$ROOT/tools/haumea/haumea.exe.manifest" > "$OUT/haumea.rc"
+$WINDRES -I "$ROOT/tools/haumea" "$OUT/haumea.rc" -O coff -o "$OUT/haumea_res.o"
 $CXX -o "$OUT/haumea.exe" "$OUT"/obj/haumea/*.o "$OUT/haumea_res.o" "$OUT/librwgta.a" "$OUT/librw.a" \
 	$GFXLIBS -lwinhttp -lws2_32 -lgdi32 -lcomdlg32 -lshell32 -lole32 -luuid -lpsapi -ldwmapi -lshlwapi \
 	-static -static-libgcc -static-libstdc++ -mwindows

@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #endif
 #include "version.h"
+#include "versionutil.h"
 #include "haumea_icon.h"
 #include "updater.h"
 #include "telemetry.h"
@@ -619,6 +620,13 @@ plUpdatePad(CControllerState *state)
 void
 Init(void)
 {
+	// --version: the version, commit and channel, before anything opens.
+	for(int i = 1; i < sk::args.argc; i++)
+		if(strcmp(sk::args.argv[i], "--version") == 0){
+			printf("Haumea Studio %s %s\n", HaumeaVersionDisplay(), HAUMEA_CHANNEL);
+			fflush(stdout);
+			exit(0);
+		}
 #ifdef _WIN32
 	// A restarted copy is created before the current process exits, but waits
 	// here before any window or RenderWare resources are initialized.
@@ -631,8 +639,8 @@ Init(void)
 	static char windowTitle[256];
 	static bool saveHookRegistered;
 	snprintf(windowTitle, sizeof(windowTitle),
-		"Haumea Studio %s [%s] - The all-in-one editor for SA-MP and open.mp",
-		HAUMEA_RELEASE_NAME, HAUMEA_CHANNEL_DISPLAY);
+		"Haumea Studio %s %s [%s] - The all-in-one editor for open.mp and SA-MP",
+		HaumeaVersionDisplay(), HAUMEA_RELEASE_NAME, HAUMEA_CHANNEL_DISPLAY);
 	sk::globals.windowtitle = windowTitle;
 	sk::globals.width = 1280;
 	sk::globals.height = 800;

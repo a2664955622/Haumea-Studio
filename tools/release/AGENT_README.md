@@ -1,7 +1,7 @@
 # Haumea Studio with Namaka
 
-This Linux x86_64 bundle contains Haumea Studio (the all-in-one editor for SA-MP
-and open.mp), Namaka's Python wheel,
+This Linux x86_64 bundle contains Haumea Studio (the all-in-one editor for open.mp
+and SA-MP), Namaka's Python wheel,
 fonts, and Python dependency wheels for offline setup. It does not include GTA
 files. Namaka's MCP server runs as a separate process and connects to the
 editor over a private local socket. The editor needs the same system libraries

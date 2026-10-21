@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "haumea-namaka"
-version = "0.1.0a1"
+dynamic = ["version"]
 description = "Namaka: the CLI and MCP companion that lets AI assistants work in Haumea Studio"
 readme = "tools/agent/README.md"
 requires-python = ">=3.10"
@@ -20,6 +20,11 @@ haumea-agentd = "haumea_agent_tools.haumea_agentd:main"
 
 [tool.setuptools]
 packages = ["haumea_agent_tools"]
+
+# The editor's version with its build number: tools/agent/_version.py, which
+# builds write with tools/release/gen_buildinfo.py --python.
+[tool.setuptools.dynamic]
+version = {attr = "haumea_agent_tools._version.__version__"}
 
 [tool.setuptools.package-dir]
 haumea_agent_tools = "tools/agent"

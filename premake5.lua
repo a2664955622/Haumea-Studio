@@ -323,6 +323,21 @@ project "haumea"
 	filter {}
 	includedirs { "tools/haumea" }
 	files { "tools/haumea/minilzo/minilzo.c" }
+	-- The build number and commit, as open.mp does it (tools/release/gen_buildinfo.py):
+	-- remade every build, rewritten only when they change, so only versionutil follows.
+	filter { "action:gmake*" }
+		makesettings {
+			".DEFAULT_GOAL := all",
+			"$(OBJDIR)/versionutil.o: ../tools/haumea/haumea_buildinfo.h",
+			"../tools/haumea/haumea_buildinfo.h: FORCE",
+			"\t$(SILENT) python3 ../tools/release/gen_buildinfo.py --header $@",
+			".PHONY: FORCE",
+			"FORCE:",
+		}
+	filter { "action:vs*" }
+		prebuildcommands { 'python "$(SolutionDir)..\\tools\\release\\gen_buildinfo.py" --header "$(SolutionDir)..\\tools\\haumea\\haumea_buildinfo.h"' }
+		files { "tools/haumea/haumea.rc" }
+	filter {}
 	filter { "system:linux" }
 		links { "pthread" }
 	filter {}

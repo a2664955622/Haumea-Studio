@@ -4,6 +4,8 @@ name: Build Haumea Studio
 on:
   push:
     branches: [main, master, PE]
+    # A pushed release tag is checked against version.h (check-tag).
+    tags: ['v*']
   pull_request:
     branches: [main, master, PE]
   workflow_dispatch:
@@ -29,6 +31,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: haumea
+          fetch-depth: 0
 
       - name: Checkout librw
         run: git clone --depth=1 https://github.com/aap/librw.git librw
@@ -61,17 +64,13 @@ jobs:
         id: version
         shell: pwsh
         working-directory: haumea
+        # 1.41.0.<build>, the build being the commit count (as open.mp does).
         run: |
-          $content = Get-Content "tools/haumea/version.h" -Raw
-          if ($content -match '#define\s+HAUMEA_VERSION\s+"([^"]+)"') {
-            $ver = $Matches[1]
-          } else {
-            $ver = "0.0.0"
-          }
+          $ver, $commit = (python tools/release/gen_buildinfo.py --print).Split(" ")
           $branch = "${{ env.CHANNEL }}"
-          $shortsha = "${{ github.sha }}".Substring(0, 7)
           echo "version=$ver" >> $env:GITHUB_OUTPUT
-          echo "tag=v${ver}-${branch}-${shortsha}" >> $env:GITHUB_OUTPUT
+          echo "commit=$commit" >> $env:GITHUB_OUTPUT
+          echo "tag=v${ver}-${branch}" >> $env:GITHUB_OUTPUT
           echo "channel=$branch" >> $env:GITHUB_OUTPUT
 
       - name: Generate librw project files
@@ -123,6 +122,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: haumea
+          fetch-depth: 0
 
       - name: Checkout librw
         run: git clone --depth=1 https://github.com/aap/librw.git librw
@@ -178,6 +178,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: haumea
+          fetch-depth: 0
 
       - name: Checkout librw
         run: git clone --depth=1 https://github.com/aap/librw.git librw
@@ -228,6 +229,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: haumea
+          fetch-depth: 0
 
       - name: Checkout librw
         run: git clone --depth=1 https://github.com/aap/librw.git librw
@@ -325,6 +327,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: haumea
+          fetch-depth: 0
 
       - name: Download the Linux editor
         uses: actions/download-artifact@v4
@@ -405,6 +408,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: haumea
+          fetch-depth: 0
 
       - name: Download the Linux editor
         uses: actions/download-artifact@v4
@@ -419,6 +423,7 @@ jobs:
 
       - name: Build the wheel and the wheelhouse
         run: |
+          python3 haumea/tools/release/gen_buildinfo.py --python haumea/tools/agent/_version.py
           uv build --wheel -o dist/wheel haumea
           haumea/tools/release/fetch_wheelhouse.sh linux dist/wheelhouse
 
@@ -506,6 +511,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: haumea
+          fetch-depth: 0
 
       - name: Install MinGW-w64
         run: |
@@ -526,6 +532,7 @@ jobs:
 
       - name: Build the wheel and the wheelhouse
         run: |
+          python3 haumea/tools/release/gen_buildinfo.py --python haumea/tools/agent/_version.py
           uv build --wheel -o dist/wheel haumea
           haumea/tools/release/fetch_wheelhouse.sh windows dist/wheelhouse
 
@@ -550,6 +557,21 @@ jobs:
         with:
           name: haumea-namaka-windows-x86_64
           path: dist/agent/${{ env.BUNDLE }}.zip
+
+  check-tag:
+    # A pushed v1.41.0.<build>-<channel> tag must match version.h's 1.41.0 and
+    # the commit count of the commit it points at.
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Haumea Studio
+        uses: actions/checkout@v4
+        with:
+          path: haumea
+          fetch-depth: 0
+      - name: Check the tag against version.h
+        working-directory: haumea
+        run: python3 tools/release/check_tag.py "${{ github.ref_name }}"
 
   release:
     # Releases come only from the release channels.

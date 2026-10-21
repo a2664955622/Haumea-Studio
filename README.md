@@ -1,8 +1,8 @@
-<p align="center"><img src="docs/images/banner.png" alt="Haumea, by itsneufox: map editor for SA-MP and open.mp" width="100%"></p>
+<p align="center"><img src="docs/images/banner.png" alt="Haumea, by itsneufox: map editor for open.mp and SA-MP" width="100%"></p>
 
 # Haumea Studio
 
-**The all-in-one editor for SA-MP and open.mp.** Haumea Studio builds whole
+**The all-in-one editor for open.mp and SA-MP.** Haumea Studio builds whole
 server worlds on GTA San Andreas: objects and removed buildings, vehicles,
 pickups, labels, sounds, checkpoints, open.mp NPCs with their routes and
 recordings, textdraws and custom models, saved as Pawn your gamemode

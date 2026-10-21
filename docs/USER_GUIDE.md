@@ -1,6 +1,6 @@
 # Haumea Studio user guide
 
-Haumea Studio is the all-in-one editor for SA-MP and open.mp, built on GTA San Andreas.
+Haumea Studio is the all-in-one editor for open.mp and SA-MP, built on GTA San Andreas.
 You place objects, vehicles, NPCs and every other server element in the game world, design
 textdraws, check the map against the server's limits and test it in game, and Haumea saves
 it all as a Pawn file your gamemode includes.

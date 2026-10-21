@@ -11,6 +11,7 @@
 #include "shortcuts.h"
 #include "playerview.h"
 #include "version.h"
+#include "versionutil.h"
 #ifdef LIBRW_GLFW
 #include <GLFW/glfw3.h>
 #endif
@@ -2309,7 +2310,7 @@ DrawSplash(float dt)
 	dl->AddText(font, bySize, ImVec2(left + 3.0f, y), SplashColor(ar, ag, ab, 1.0f), "by itsneufox");
 	y += bySize + fontSize * 1.1f;
 	dl->AddText(font, fontSize, ImVec2(left + 3.0f, y), IM_COL32(170, 172, 195, 230),
-		"The all-in-one editor for SA-MP and open.mp");
+		"The all-in-one editor for open.mp and SA-MP");
 
 	// Progress: a glowing bar with a light sweeping along it.
 	float barWidth = floorf(min(W * 0.4f, 420.0f));
@@ -2353,7 +2354,7 @@ DrawSplash(float dt)
 	snprintf(tipText, sizeof(tipText), "Tip: %s", tipBody);
 	dl->AddText(font, fontSize, ImVec2(left, H - fontSize * 2.6f), IM_COL32(170, 172, 195, 210), tipText);
 	char version[64];
-	snprintf(version, sizeof(version), "%s  \xC2\xB7  %s", HAUMEA_RELEASE_NAME, HAUMEA_VERSION);
+	snprintf(version, sizeof(version), "%s  \xC2\xB7  %s", HAUMEA_RELEASE_NAME, HaumeaFullVersion());
 	ImVec2 versionSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, version);
 	dl->AddText(font, fontSize, ImVec2(W - versionSize.x - left * 0.5f, H - fontSize * 2.6f),
 		IM_COL32(150, 152, 175, 190), version);

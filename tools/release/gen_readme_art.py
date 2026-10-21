@@ -109,7 +109,7 @@ def render(svg, path, w, h):
 
 def main():
 	os.makedirs(OUT, exist_ok=True)
-	tagline = 'The all-in-one editor for SA-MP and open.mp'
+	tagline = 'The all-in-one editor for open.mp and SA-MP'
 	render(art(1600, 520, 7, 112, 110, 270, 1170, 260, 150, tagline),
 		os.path.join(OUT, 'banner.png'), 1600, 520)
 	# GitHub social preview: 1280x640, important content away from the edges.

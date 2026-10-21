@@ -18,6 +18,7 @@
 #include "encoding.h"
 #include "shortcuts.h"
 #include "version.h"
+#include "versionutil.h"
 #include "mapcheck.h"
 #include "playerview.h"
 #include "selftest.h"
@@ -4496,8 +4497,8 @@ uiHelpWindow(void)
 	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 30.0f, 0.0f), ImGuiCond_FirstUseEver);
 	ImGui::Begin(ICON_FA_CIRCLE_QUESTION " Help", &showHelpWindow);
 	// About.
-	ImGui::Text("Haumea Studio %s (%s)", HAUMEA_VERSION, HAUMEA_RELEASE_NAME);
-	ImGui::TextDisabled("The all-in-one editor for SA-MP and open.mp, by itsneufox.");
+	ImGui::Text("Haumea Studio %s, %s", HaumeaVersionDisplay(), HAUMEA_RELEASE_NAME);
+	ImGui::TextDisabled("The all-in-one editor for open.mp and SA-MP, by itsneufox.");
 
 	ImGui::SeparatorText("How do I...");
 	if(uiHelpTopic("Start a map for my server")){

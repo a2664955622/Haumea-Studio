@@ -5,9 +5,9 @@ import hashlib
 import json
 from pathlib import Path
 import platform
-import re
 import shutil
 import subprocess
+import sys
 import zipfile
 
 p = argparse.ArgumentParser()
@@ -38,12 +38,16 @@ if engine.suffix.lower() != '.exe':
     shutil.copy2(root / 'tools/release/launch-haumea-agent.sh', stage / 'launch-haumea-agent.sh')
 shutil.copy2(root / 'tools/haumea/minilzo/COPYING', stage / 'COPYING-LZO')
 commit = subprocess.check_output(['git', '-C', str(root), 'rev-parse', 'HEAD'], text=True).strip()
-# The editor and Namaka are built from the same commit and version.
-version_h = (root / 'tools/haumea/version.h').read_text()
-version = re.search(r'#define\s+HAUMEA_VERSION\s+"([^"]+)"', version_h).group(1)
+# The editor and Namaka are built from the same commit and version:
+# 1.41.0.<build>, as gen_buildinfo.py numbers it.
+sys.path.insert(0, str(root / 'tools/release'))
+import gen_buildinfo
+major, minor, patch = gen_buildinfo.base_version(root)
+build, short_commit = gen_buildinfo.build_info(root)
+version = f'{major}.{minor}.{patch}.{build}'
 (stage / 'BUILD_INFO.json').write_text(json.dumps({'source_commit': commit,
     'project': 'Haumea', 'agent': 'Namaka',
-    'haumea_version': version,
+    'haumea_version': version, 'version': version, 'build': build, 'commit': short_commit,
     'agent_alpha_release': f'v{version}-agent-alpha',
     'platform': platform.platform(), 'python_wheel': a.wheel.name}, indent=2) + '\n')
 if a.wheelhouse:

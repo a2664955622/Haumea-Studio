@@ -11,3 +11,4 @@ librw_toolfolder.props
 CLAUDE.md
 build/windows-mingw/
 *.egg-info/
+tools/haumea/haumea_buildinfo.h
