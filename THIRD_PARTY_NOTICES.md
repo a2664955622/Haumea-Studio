@@ -60,16 +60,11 @@ carries its full license text in its `.dist-info` folder.
 | `typing-inspection` | MIT | Victorien Plot | https://github.com/pydantic/typing-inspection |
 | `uvicorn` | BSD-3-Clause | Tom Christie | https://github.com/Kludex/uvicorn |
 
-## Data compiled into the editor from other projects
-
-These tables were generated from other projects' files. Their sources don't
-state a license for that data; listed here so they're credited.
+## Data from other projects
 
 | Data | Source |
 |---|---|
-| Object Browser categories (`object_categories.h`) | MTA:SA Map Editor's object catalogue (https://github.com/multitheftauto/mtasa-resources), and SA-MP model categories from https://dev.prineside.com/en/gtasa_samp_model_id/ |
-| Texture Studio's texture list (`tstudio_textures.h`) | Texture Studio's `alltextures.pwn` (https://github.com/Pottus/Texture-Studio) |
-| LOD pairs (`lod_associations.h`) | gtastuff's `models.json` (`associatedLod`) |
+| Texture Studio's index list (`tstudio_textures.h`), kept exact so Texture Studio maps (`.db`) open with the right textures | Texture Studio's `alltextures.pwn` (https://github.com/Pottus/Texture-Studio) |
 
 ## License texts
 
