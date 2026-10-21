@@ -186,6 +186,9 @@ GENERATED += $(OBJDIR)/checkpoints.o
 GENERATED += $(OBJDIR)/childprocess.o
 GENERATED += $(OBJDIR)/areas.o
 GENERATED += $(OBJDIR)/categories.o
+GENERATED += $(OBJDIR)/modelmeta.o
+GENERATED += $(OBJDIR)/gxt.o
+GENERATED += $(OBJDIR)/objfilters.o
 GENERATED += $(OBJDIR)/textdraws_ui.o
 GENERATED += $(OBJDIR)/texbrowser.o
 GENERATED += $(OBJDIR)/textdraws.o
@@ -274,6 +277,9 @@ OBJECTS += $(OBJDIR)/checkpoints.o
 OBJECTS += $(OBJDIR)/childprocess.o
 OBJECTS += $(OBJDIR)/areas.o
 OBJECTS += $(OBJDIR)/categories.o
+OBJECTS += $(OBJDIR)/modelmeta.o
+OBJECTS += $(OBJDIR)/gxt.o
+OBJECTS += $(OBJDIR)/objfilters.o
 OBJECTS += $(OBJDIR)/textdraws_ui.o
 OBJECTS += $(OBJDIR)/texbrowser.o
 OBJECTS += $(OBJDIR)/textdraws.o
@@ -604,6 +610,15 @@ $(OBJDIR)/areas.o: ../tools/haumea/areas.cpp
 	@echo "$(notdir $<)"
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/categories.o: ../tools/haumea/categories.cpp
+	@echo "$(notdir $<)"
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/modelmeta.o: ../tools/haumea/modelmeta.cpp
+	@echo "$(notdir $<)"
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/gxt.o: ../tools/haumea/gxt.cpp
+	@echo "$(notdir $<)"
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/objfilters.o: ../tools/haumea/objfilters.cpp
 	@echo "$(notdir $<)"
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/textdraws_ui.o: ../tools/haumea/textdraws_ui.cpp

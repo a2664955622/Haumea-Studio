@@ -31,6 +31,7 @@
 #define ICON_FA_DROPLET         "\xef\x81\x83"  // f043
 #define ICON_FA_STAR            "\xef\x80\x85"  // f005
 #define ICON_FA_XMARK           "\xef\x80\x8d"  // f00d
+#define ICON_FA_FILTER          "\xef\x82\xb0"  // f0b0
 #define ICON_FA_PLUS            "\x2b"           // 002b
 #define ICON_FA_TRASH           "\xef\x87\xb8"  // f1f8
 #define ICON_FA_COPY            "\xef\x83\x85"  // f0c5

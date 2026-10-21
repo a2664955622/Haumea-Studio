@@ -1,5 +1,6 @@
 #include "haumea.h"
 #include "workspace.h"
+#include "modelmeta.h"
 #ifdef LIBRW_GLFW
 #include <GLFW/glfw3.h>
 #endif
@@ -1186,6 +1187,7 @@ AppEventHandler(sk::Event e, void *param)
 	}
 	case IDLE:
 		UiScriptTick();	// --ui-script: this frame's scripted input
+		ModelMetaTick();	// the browser filters' polygons and textures, a little a frame
 		SyncEditorInputState();
 		UpdateEditorWindowState();
 		// A UI script counts frames, so it gets the same time per frame

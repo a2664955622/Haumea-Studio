@@ -507,6 +507,13 @@ void AddMirrorAttribZone(rw::V3d pos, float s1x, float s1y,
 	int flags, rw::Plane mirror);
 void RenderAttribZones(void);
 void RenderCullZones(void);
+// SA's navigation zones (info.zon): the smallest one around a point, or -1,
+// and a zone's GXT key (several zones share one name).
+int FindNavigZone(rw::V3d p);
+const char *GetNavigZoneText(int zone);
+// The map zone (map.zon) level at a point: 1 Los Santos, 2 San Fierro,
+// 3 Las Venturas, 0 elsewhere.
+int GetMapZoneLevel(rw::V3d p);
 }
 
 // Game

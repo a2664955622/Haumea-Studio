@@ -190,6 +190,48 @@ CreateZone(const char *name, int type, CBox box, int level, const char *text)
 	z->level = level;
 }
 
+static bool
+zoneContains(const Zone &z, rw::V3d p)
+{
+	return p.x >= z.box.min.x && p.x <= z.box.max.x && p.y >= z.box.min.y && p.y <= z.box.max.y &&
+		p.z >= z.box.min.z && p.z <= z.box.max.z;
+}
+
+int
+FindNavigZone(rw::V3d p)
+{
+	int best = -1;
+	float bestArea = 0.0f;
+	for(int i = 0; i < numNavigZones; i++){
+		const Zone &z = navigZones[i];
+		if(!zoneContains(z, p))
+			continue;
+		float area = (z.box.max.x - z.box.min.x) * (z.box.max.y - z.box.min.y);
+		if(best < 0 || area < bestArea){
+			best = i;
+			bestArea = area;
+		}
+	}
+	return best;
+}
+
+const char*
+GetNavigZoneText(int zone)
+{
+	if(zone < 0 || zone >= numNavigZones)
+		return "";
+	return navigZones[zone].text[0] ? navigZones[zone].text : navigZones[zone].name;
+}
+
+int
+GetMapZoneLevel(rw::V3d p)
+{
+	for(int i = 0; i < numMapZones; i++)
+		if(zoneContains(mapZones[i], p))
+			return mapZones[i].level;
+	return 0;
+}
+
 void
 RenderZones(Zone *zones, int n)
 {

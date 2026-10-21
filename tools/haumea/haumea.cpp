@@ -1,5 +1,6 @@
 #include "haumea.h"
 #include "telemetry.h"
+#include "modelmeta.h"
 #include "editoricons.h"
 #include "trains.h"
 #include "anim.h"
@@ -2632,6 +2633,7 @@ LoadGame(void)
 	SampLoader::ExtendCategories();
 	if(isSA())
 		LoadTrainTracks();
+	BuildModelMeta();	// the filters' facts, now every model and the world are in
 	LoadFavourites();
 	LoadRecentObjects();
 	// InitPreviewRenderer called lazily on first use

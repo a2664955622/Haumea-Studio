@@ -11,6 +11,9 @@ void LoadDefinitions(void);
 
 void ExtendCategories(void);
 
+// One of SA-MP's own models (from SAMP.ide and its IMG).
+bool IsSampModel(int id);
+
 
 int GetSampRootCategoryIndex(void);
 

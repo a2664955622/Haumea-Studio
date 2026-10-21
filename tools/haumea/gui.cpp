@@ -11,6 +11,8 @@
 #include "categories.h"
 #include "updater.h"
 #include "icons.h"
+#include "modelmeta.h"
+#include "objfilters.h"
 #include "rec.h"
 #include "anim.h"
 #include "npcpreview.h"
@@ -6592,6 +6594,10 @@ loadSaveSettings(void)
 			char buf[256];
 			if(parseQuotedStringValue(value, buf, sizeof(buf)))
 				setTextFilterValue(gBrowserIdeFilter, buf);
+		}else if(strcmp(key, "browser_filter_preset") == 0){
+			char buf[1024];
+			if(parseQuotedStringValue(value, buf, sizeof(buf)))
+				AddObjectFilterPresetLine(buf);
 		}else if(strcmp(key, "browser_search_filter") == 0){
 			char buf[256];
 			if(parseQuotedStringValue(value, buf, sizeof(buf)))
@@ -6831,6 +6837,8 @@ saveSaveSettings(void)
 	writeQuotedSetting(f, "browser_category_filter", gBrowserCategoryFilter.InputBuf);
 	writeQuotedSetting(f, "browser_ide_filter", gBrowserIdeFilter.InputBuf);
 	writeQuotedSetting(f, "browser_search_filter", gBrowserSearchFilter.InputBuf);
+	for(int i = 0; i < NumObjectFilterPresets(); i++)
+		writeQuotedSetting(f, "browser_filter_preset", GetObjectFilterPresetLine(i).c_str());
 	writeQuotedSetting(f, "browser_favourites_filter", gBrowserFavFilter.InputBuf);
 	writeQuotedSetting(f, "browser_prefab_filter", gBrowserPrefabFilter.InputBuf);
 	fprintf(f, "browser_selected_prefab %d\n", gBrowserSelectedPrefab);
@@ -10455,6 +10463,7 @@ uiBrowserWindow(void)
 				}
 				ImGui::EndCombo();
 			}
+			uiObjectFiltersPanel();
 
 			// Searching from the recent list searches everything.
 			bool showRecent = gBrowserSelectedCategory == BROWSER_CATEGORY_RECENT &&
@@ -10464,7 +10473,7 @@ uiBrowserWindow(void)
 				const int *recent;
 				int numRecent = GetRecentObjects(&recent);
 				for(int i = 0; i < numRecent; i++)
-					if(GetObjectDef(recent[i]))
+					if(GetObjectDef(recent[i]) && ObjectPassesFilters(recent[i]))
 						filtered[numFiltered++] = recent[i];
 			}else for(int i = 0; i < NUMOBJECTDEFS; i++){
 				ObjectDef *obj = GetObjectDef(i);
@@ -10476,9 +10485,12 @@ uiBrowserWindow(void)
 						continue;
 				}
 				if(!uiBrowserMatches(gBrowserCategoryFilter, obj)) continue;
+				if(!ObjectPassesFilters(i)) continue;
 				filtered[numFiltered++] = i;
 			}
-			if(showRecent && numFiltered == 0)
+			if(!showRecent)
+				SortObjectResults(filtered, numFiltered);
+			if(showRecent && numFiltered == 0 && !ObjectFiltersActive())
 				uiBrowserStartSuggestions();
 			else{
 				ImGui::TextDisabled("%d objects", numFiltered);
@@ -12430,12 +12442,14 @@ gui(void)
 					profileIn = sk::args.argv[i+1];
 					selftestOut = sk::args.argv[i+2];
 				}
-			const char *categoriesOut = nil;
+			const char *categoriesOut = nil, *metaOut = nil;
 			for(int i = 1; i + 1 < sk::args.argc; i++)
 				if(strcmp(sk::args.argv[i], "--open") == 0)
 					openPath = sk::args.argv[i+1];
 				else if(strcmp(sk::args.argv[i], "--dump-categories") == 0)
 					categoriesOut = sk::args.argv[i+1];
+				else if(strcmp(sk::args.argv[i], "--dump-model-meta") == 0)
+					metaOut = sk::args.argv[i+1];
 			// --dump-zone-settings out.txt: the zones' start-up population as
 			// read from the game's main.scm (tests).
 			for(int i = 1; i + 1 < sk::args.argc; i++)
@@ -12483,6 +12497,12 @@ gui(void)
 					sk::globals.quit = 1;
 				}
 			if(sk::globals.quit){
+			}else if(metaOut){
+				// Every model's facts, for the agent's index and coverage checks.
+				ReadAllModelMetaDetails();
+				printf("dump-model-meta: %d model(s) to %s\n", DumpModelMeta(metaOut), metaOut);
+				fflush(stdout);
+				sk::globals.quit = 1;
 			}else if(categoriesOut){
 				// Developer check: every model with its category, for coverage reports.
 				printf("dump-categories: %d model(s) to %s\n", DumpObjectCategories(categoriesOut), categoriesOut);

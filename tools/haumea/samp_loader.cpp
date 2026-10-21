@@ -214,6 +214,12 @@ isObjectFromSamp(int id)
 	return sSampObjectIds[id];
 }
 
+bool
+IsSampModel(int id)
+{
+	return isObjectFromSamp(id);
+}
+
 static const char *kImgNames[] = {
 	"SAMP.img",
 	"samp.img",
