@@ -10330,7 +10330,10 @@ uiBrowserSampTab(void)
 			ImGui::SetItemTooltip("Select them all, to edit them together in Object Info.");
 		}
 		bool placing = gPlaceMode && GetSpawnElementKind() == r.kind;
-		const char *button = placing ? "Stop" : ICON_FA_PLUS " Place";
+		// "##place <kind>" names the row's button for UI scripts, wherever the row is.
+		char button[96];
+		snprintf(button, sizeof(button), "%s##place %s", placing ? "Stop" : ICON_FA_PLUS " Place",
+			GetSampElementKindName(r.kind));
 		ImGui::SameLine(ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize(ICON_FA_PLUS " Place").x -
 			ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetCursorStartPos().x);
 		if(ImGui::Button(button)){
