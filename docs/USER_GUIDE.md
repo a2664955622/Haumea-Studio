@@ -110,6 +110,16 @@ keep them in the map, they show on the canvas but are read-only and are saved ba
 offsets), and **Along a line** (lay objects along a path you click). Exact moves and turns
 are in Object Info's Delta mode.
 
+**Radar art from objects** (in Tools) draws your objects on the radar as gang zones. It takes
+every object, the selection or one group, rasterises their footprints from above into cells,
+and merges cells of one colour into rectangles, one gang zone each, in the group "radar art".
+Colour them with one colour, by group or from their textures, with an outline and lighter
+higher surfaces. The counter shows how many zones it takes; **Fit to this many zones** picks
+the cell size. **Shown as** decides how they reach players: **global zones** (at most 1024 on
+the server), **per-player zones** (1024 for each player), or **streamed per-player zones**,
+made only around each player as they move (streamer areas), for larger maps. The last two are
+open.mp only. **Apply** makes them in one undo step.
+
 ## Checking the map
 
 - **Map Check** (`F6`) lists what will break in game: limits, unknown models, elements outside

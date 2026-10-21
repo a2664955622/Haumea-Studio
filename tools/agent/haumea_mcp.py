@@ -792,7 +792,8 @@ ELEMENT_PROPERTIES_DOC = """Properties by kind (all optional; defaults in bracke
 	  draw_distance [20], test_los [false]
 	actor: skin [0], health [100], invulnerable [true], plus the animation keys below
 	class: skin [0], team [-1 none], weapons [w1,w2,w3; none], ammo [a1,a2,a3]
-	gangzone: size_x, size_y [50 each; extent around the position], color [0xFF000088]
+	gangzone: size_x, size_y [50 each; extent around the position], color [0xFF000088],
+	  zone_mode [global; player, streamed: per-player zones, open.mp only]
 	mapicon: icon [56, the red dot; 0-63], color [0xFFFFFFFF], style [0 MAPICON_LOCAL]
 	npc: npc_name [npc, npc_2...; unique, 3-24 chars], skin [0], health [100], armour [0],
 	  invulnerable [false], weapon [0 fists], ammo, world [0],
@@ -933,7 +934,7 @@ def set_element_properties(instance_id: int, properties: dict) -> dict:
 
 @mcp.tool()
 def map_tool(op: Literal["array", "mirror", "align", "distribute", "snap_rotations",
-                         "drop", "relative", "lay_along"],
+                         "drop", "relative", "lay_along", "radar_art"],
              ids: list[int] | None = None, count: int | None = None, radial: bool | None = None,
              offset: list[float] | None = None, rotate: list[float] | None = None,
              centre: list[float] | None = None, angle: float | None = None,
@@ -944,7 +945,8 @@ def map_tool(op: Literal["array", "mirror", "align", "distribute", "snap_rotatio
              points: list[list[float]] | None = None,
              model: int | None = None, spacing: float | None = None,
              heading: float | None = None, along_length: bool | None = None,
-             follow_slope: bool | None = None, on_ground: bool | None = None) -> dict:
+             follow_slope: bool | None = None, on_ground: bool | None = None,
+             radar_art: dict | None = None) -> dict:
 	"""Run one of the Tools window's transform tools on ids (the first is the reference); one undo step.
 
 	array: count copies; linear (offset [x,y,z] m and rotate [x,y,z] degrees per copy,
@@ -964,6 +966,16 @@ def map_tool(op: Literal["array", "mirror", "align", "distribute", "snap_rotatio
 	  length) along points [[x,y,z], ...], facing along the line (+heading degrees);
 	  along_length (default true) turns models longer in X, like fences, to run along
 	  it; follow_slope tilts them, on_ground (default true) drops them.
+	radar_art (ids optional): gang zones drawn from the objects' top-down collision
+	  footprints, grouped "radar art", one undo step. The objects are ids, else
+	  radar_art.group, else every scripted object. radar_art keys: cell [4 m] or fit
+	  (the smallest cell needing at most that many zones), colours [texture; one, group],
+	  colour [0x8C8C8C00; one colour, or the fallback], num_colours [6], alpha [200],
+	  outline [false], outline_colour [0x20202000], height_shading [true],
+	  height_levels [3], zone_mode [global (1024 on the server); player or streamed:
+	  per-player zones, open.mp only], out_group ["radar art"], replace [true: delete
+	  that group's zones first], apply [true; false only counts]. Returns zones,
+	  created, cell, objects and cells.
 	model is a Pawn model id (custom models are negative). Returns the objects afterwards
 	(with copies or new objects) as ids, or the Pawn; the selection is left empty."""
 	return service.map_tool(op, ids, count=count, radial=radial, offset=offset, rotate=rotate,
@@ -971,7 +983,7 @@ def map_tool(op: Literal["array", "mirror", "align", "distribute", "snap_rotatio
 	                        step=step, attach=attach, copy=copy, points=points, model=model,
 	                        spacing=spacing, heading=heading, along_length=along_length,
 	                        follow_slope=follow_slope,
-	                        on_ground=on_ground)
+	                        on_ground=on_ground, radar_art=radar_art)
 
 
 @mcp.tool()

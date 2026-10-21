@@ -13,6 +13,7 @@
 #include "testserver.h"
 #include "interiors.h"
 #include "maptools.h"
+#include "radarart.h"
 #include "encoding.h"
 #include "shortcuts.h"
 #include "version.h"
@@ -7192,6 +7193,7 @@ uiToolsWindow(void)
 
 	ImGui::Spacing();
 	MapToolsPanel();
+	RadarArtPanel();
 	if(ImGui::CollapsingHeader(ICON_FA_PAINTBRUSH " Brush", gBrushMode ? ImGuiTreeNodeFlags_DefaultOpen : 0)){
 		int brushObjId = GetSpawnObjectId();
 		ObjectDef *brushObj = brushObjId >= 0 ? GetObjectDef(brushObjId) : nil;
@@ -8608,6 +8610,20 @@ uiSampElementSettings(ObjectInst *inst, ObjectPawnProperties &edited)
 	case SAMP_ELEMENT_GANGZONE:
 		if(ImGui::DragFloat2("Size (X, Y)", &edited.zoneSizeX, 0.5f, 1.0f, 12000.0f, "%.1f")) changed = true;
 		if(uiPawnColorEdit("Colour", &edited.zoneColor)) changed = true;
+		{
+			static const char *zoneModes[] = { "Global", "Per player", "Streamed per player" };
+			if(ImGui::Combo("Shown as", &edited.zoneMode, zoneModes, IM_ARRAYSIZE(zoneModes))) changed = true;
+			ImGui::SetItemTooltip("Global: GangZoneCreate, 1024 on the whole server.\n"
+				"Per player: CreatePlayerGangZone for every player, 1024 each.\n"
+				"Streamed: per-player zones made around each player as they move (streamer areas).");
+			if(edited.zoneMode != SAMP_ZONE_GLOBAL){
+				UiBadge("open.mp only", "CreatePlayerGangZone is an open.mp native; SA-MP 0.3.7 has no per-player zones.");
+				if(edited.zoneMode == SAMP_ZONE_STREAMED){
+					ImGui::SameLine();
+					UiBadge("streamer", "The map includes the streamer for its areas.");
+				}
+			}
+		}
 		break;
 	case SAMP_ELEMENT_MAPICON:
 		if(uiNameListCombo("Icon", &edited.mapIconType, uiMapIconNames, IM_ARRAYSIZE(uiMapIconNames)))
@@ -8639,7 +8655,7 @@ static const UiBatchField uiBatchFields[] = {
 	UI_BATCH_FIELD(classWeapons[2], true), UI_BATCH_FIELD(classAmmo[0], true),
 	UI_BATCH_FIELD(classAmmo[1], true), UI_BATCH_FIELD(classAmmo[2], true),
 	UI_BATCH_FIELD(zoneSizeX, true), UI_BATCH_FIELD(zoneSizeY, true),
-	UI_BATCH_FIELD(zoneColor, true), UI_BATCH_FIELD(mapIconType, true),
+	UI_BATCH_FIELD(zoneColor, true), UI_BATCH_FIELD(zoneMode, true), UI_BATCH_FIELD(mapIconType, true),
 	UI_BATCH_FIELD(mapIconColor, true), UI_BATCH_FIELD(mapIconStyle, true),
 	UI_BATCH_FIELD(npcArmour, true), UI_BATCH_FIELD(npcWeapon, true),
 	UI_BATCH_FIELD(npcAmmo, true), UI_BATCH_FIELD(pathName, true),
@@ -10318,6 +10334,11 @@ uiDrawSampElementOverlays(void)
 	std::sort(elements.begin(), elements.end(), [](const ObjectInst *a, const ObjectInst *b){
 		return a->m_id < b->m_id;
 	});
+	// Radar art makes hundreds of zones: then only selected ones get a tag.
+	int numZones = 0;
+	for(size_t i = 0; i < elements.size(); i++)
+		if(GetObjectPawnProperties(elements[i])->elementKind == SAMP_ELEMENT_GANGZONE)
+			numZones++;
 	for(size_t i = 0; i < elements.size(); i++){
 		ObjectInst *inst = elements[i];
 		const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
@@ -10363,7 +10384,7 @@ uiDrawSampElementOverlays(void)
 				rw::V3d b = { minX + max(0.0f, d - (maxY - minY)), minY + min(d, maxY - minY), z };
 				RenderLine(a, b, hatch, hatch);
 			}
-			if(dist < 400.0f && uiWorldToScreen(inst->m_translation, &screen)){
+			if((selected || numZones <= 64) && dist < 400.0f && uiWorldToScreen(inst->m_translation, &screen)){
 				snprintf(tag, sizeof(tag), "Gang zone %.0f x %.0f", properties->zoneSizeX, properties->zoneSizeY);
 				uiDrawWorldTag(drawList, screen, tag, tagColor);
 			}

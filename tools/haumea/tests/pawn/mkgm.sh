@@ -25,6 +25,26 @@ grep -q "${prefix}_RemoveWorldObjectsForPlayer" "$map" && echo "	${prefix}_Remov
 grep -q "${prefix}_ShowForPlayer" "$map" && echo "	${prefix}_ShowForPlayer(playerid);"
 echo "	return 1;"
 echo "}"
+if grep -q "${prefix}_ZoneArea" "$map"; then
+	echo
+	echo "public OnPlayerSpawn(playerid)"
+	echo "{"
+	echo "	${prefix}_ZoneUpdate(playerid);"
+	echo "	return 1;"
+	echo "}"
+	echo
+	echo "public OnPlayerEnterDynamicArea(playerid, STREAMER_TAG_AREA:areaid)"
+	echo "{"
+	echo "	${prefix}_ZoneArea(playerid, areaid);"
+	echo "	return 1;"
+	echo "}"
+	echo
+	echo "public OnPlayerLeaveDynamicArea(playerid, STREAMER_TAG_AREA:areaid)"
+	echo "{"
+	echo "	${prefix}_ZoneArea(playerid, areaid);"
+	echo "	return 1;"
+	echo "}"
+fi
 if grep -q "${prefix}_OnNPCFinishMovePath" "$map"; then
 	echo
 	echo "public OnNPCFinishMovePath(npcid, pathid)"

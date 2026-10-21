@@ -400,16 +400,20 @@ class HaumeaService:
 			                     "save_map(format='streamer') keeps them")
 		return result
 
-	# Tools > Array, Mirror, Align & distribute, Drop & copy as Pawn and Along a line.
+	# Tools > Array, Mirror, Align & distribute, Drop & copy as Pawn, Along a line
+	# and Radar art from objects.
 	MAP_TOOL_OPS = ("array", "mirror", "align", "distribute", "snap_rotations",
-	                "drop", "relative", "lay_along")
+	                "drop", "relative", "lay_along", "radar_art")
 
 	def map_tool(self, op: str, ids: list[int] | None = None, **params) -> dict:
 		op = str(op).strip().lower()
 		if op not in self.MAP_TOOL_OPS:
 			raise ValueError(f"op must be one of {', '.join(self.MAP_TOOL_OPS)}")
 		ids = [int(i) for i in (ids or [])]
-		if op != "lay_along":
+		radar = params.pop("radar_art", None) or {}
+		if op == "radar_art":
+			params.update(radar)
+		elif op != "lay_along":
 			if not ids:
 				raise ValueError("ids: the objects to work on; the first is the reference")
 			if op != "relative":

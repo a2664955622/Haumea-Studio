@@ -62,6 +62,10 @@ game.
 - **Transform tools** in the Tools window: array (linear or around a centre),
   mirror, align and distribute, exact moves and turns, and objects laid along
   a line, each one undo step.
+- **Radar art from objects**: gang zones drawn from the objects' footprints,
+  coloured from their textures, by group or in one colour, with a zone
+  counter and "fit to N". Gang zones can be global, per-player or streamed
+  around each player (open.mp only).
 - **Hide and isolate** for busy areas: H hides the selection, Shift+H hides
   everything else, Alt+H shows it all. Only the editor hides them; the map
   keeps them.

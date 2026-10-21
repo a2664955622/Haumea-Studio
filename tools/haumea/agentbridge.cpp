@@ -7,6 +7,7 @@
 #include "materialtext.h"
 #include "mapcheck.h"
 #include "maptools.h"
+#include "radarart.h"
 #include "testserver.h"
 #include "encoding.h"
 #ifdef RW_GL3
@@ -1334,6 +1335,8 @@ agentPropertiesJson(ObjectInst *inst)
 		add("size_x", jsonFloat(p.zoneSizeX));
 		add("size_y", jsonFloat(p.zoneSizeY));
 		add("color", jsonColor(p.zoneColor));
+		add("zone_mode", std::string("\"") + (p.zoneMode == SAMP_ZONE_PLAYER ? "player" :
+			p.zoneMode == SAMP_ZONE_STREAMED ? "streamed" : "global") + "\"");
 		break;
 	case SAMP_ELEMENT_MAPICON:
 		add("icon", std::to_string(p.mapIconType));
@@ -1658,6 +1661,15 @@ applyAgentProperty(ObjectInst *inst, int kind, ObjectPawnProperties &p, AgentIns
 		if(!only({ SAMP_ELEMENT_GANGZONE })) return false;
 		if(!parseFloat(value, &f) || f <= 0.0f) return fail("expects a size > 0");
 		(key == "size_x" ? p.zoneSizeX : p.zoneSizeY) = f; return true;
+	}
+	if(key == "zone_mode"){
+		if(!only({ SAMP_ELEMENT_GANGZONE })) return false;
+		std::string name = lowercase(value.c_str());
+		if(name == "global") p.zoneMode = SAMP_ZONE_GLOBAL;
+		else if(name == "player") p.zoneMode = SAMP_ZONE_PLAYER;
+		else if(name == "streamed") p.zoneMode = SAMP_ZONE_STREAMED;
+		else return fail("expects global, player or streamed");
+		return true;
 	}
 	if(key == "icon" || key == "style"){
 		if(!only({ SAMP_ELEMENT_MAPICON })) return false;
@@ -2092,6 +2104,100 @@ parseAgentVector(const std::string &text, rw::V3d *out)
 
 // maptool <op>, then key=value lines: the transform tools of Tools on the
 // objects in ids (which become the selection), one undo step each.
+// maptool radar_art: Tools > Radar art from objects. The objects are ids,
+// a group, or all; apply=0 only counts the zones.
+static void
+handleRadarArt(const std::string &requestId, std::map<std::string, std::string> &f)
+{
+	RadarArtParams params;
+	RadarArtDefaults(&params);
+	auto text = [&](const char *key){ return f.count(key) ? lowercase(f[key].c_str()) : std::string(); };
+	auto colour = [&](const char *key, uint32 *out){
+		uint32 c;
+		if(!f.count(key)) return true;
+		if(!parseRgbaField(f[key], &c)) return false;
+		*out = c & 0xFFFFFF00;	// 0xRRGGBBAA; the alpha is opacity
+		return true;
+	};
+	float value;
+	bool b;
+	std::string error;
+	if(f.count("cell") && parseFloat(f["cell"], &value))
+		params.cellSize = value;
+	std::string colours = text("colours");
+	if(colours == "one") params.colourMode = RADAR_COLOUR_ONE;
+	else if(colours == "group") params.colourMode = RADAR_COLOUR_GROUP;
+	else if(colours == "texture" || colours.empty()) params.colourMode = RADAR_COLOUR_TEXTURE;
+	else error = "colours: one, group or texture";
+	if(!colour("colour", &params.colour) || !colour("outline_colour", &params.outlineColour))
+		error = "colour and outline_colour are 0xRRGGBBAA (the alpha is ignored; use alpha)";
+	if(f.count("num_colours") && parseFloat(f["num_colours"], &value)) params.numColours = clamp((int)value, 1, 64);
+	if(f.count("alpha") && parseFloat(f["alpha"], &value)) params.alpha = clamp((int)value, 0, 255);
+	if(f.count("outline") && parseBoolField(f["outline"], &b)) params.outline = b;
+	if(f.count("height_shading") && parseBoolField(f["height_shading"], &b)) params.heightShading = b;
+	if(f.count("height_levels") && parseFloat(f["height_levels"], &value)) params.heightLevels = clamp((int)value, 2, 16);
+	if(f.count("replace") && parseBoolField(f["replace"], &b)) params.replace = b;
+	std::string mode = text("zone_mode");
+	if(mode == "player") params.zoneMode = SAMP_ZONE_PLAYER;
+	else if(mode == "streamed") params.zoneMode = SAMP_ZONE_STREAMED;
+	else if(!mode.empty() && mode != "global") error = "zone_mode: global, player or streamed";
+	if(f.count("out_group"))
+		snprintf(params.outGroup, sizeof(params.outGroup), "%s", decodeAgentText(f["out_group"]).c_str());
+	if(f.count("group")){
+		params.source = RADAR_SOURCE_GROUP;
+		snprintf(params.group, sizeof(params.group), "%s", decodeAgentText(f["group"]).c_str());
+	}
+	std::vector<ObjectInst*> objs;
+	std::string ids = f.count("ids") ? f["ids"] : "";
+	for(size_t at = 0; at < ids.size() && error.empty();){
+		size_t end = ids.find(',', at);
+		if(end == std::string::npos) end = ids.size();
+		int id;
+		ObjectInst *inst = parseInt(ids.substr(at, end - at), &id) ? GetInstanceByID(id) : nil;
+		if(!isAgentSceneInstance(inst) || inst->m_isDeleted)
+			error = "ids must be instances of the active agent scene, separated by commas";
+		else
+			objs.push_back(inst);
+		at = end + 1;
+	}
+	if(!error.empty()){
+		writeError(requestId, error.c_str());
+		return;
+	}
+	if(!objs.empty()){
+		params.source = RADAR_SOURCE_SELECTION;
+		ClearSelection();
+		for(size_t i = 0; i < objs.size(); i++)
+			objs[i]->Select();
+	}
+	if(f.count("fit") && parseFloat(f["fit"], &value) &&
+	   !RadarArtFitCellSize(params, (int)value, &params.cellSize, &error)){
+		ClearSelection();
+		writeError(requestId, error.c_str());
+		return;
+	}
+	RadarArtResult result;
+	bool apply = !(f.count("apply") && parseBoolField(f["apply"], &b)) || b;
+	bool ok = RadarArtBuild(params, &result, &error);
+	int made = 0;
+	if(ok && apply){
+		made = RadarArtApply(params, &error);	// clears the selection
+		ok = made >= 0;
+	}
+	ClearSelection();
+	if(!ok){
+		writeError(requestId, error.c_str());
+		return;
+	}
+	if(made > 0)
+		gAgentSceneRevision++;
+	char body[256];
+	snprintf(body, sizeof(body), "\"result\":\"radar_art\",\"zones\":%d,\"created\":%d,\"cell\":%s,"
+		"\"objects\":%d,\"cells\":%d,\"group\":\"", (int)result.zones.size(), made,
+		jsonFloat(params.cellSize).c_str(), result.objects, result.cells);
+	writeResponse(requestId, true, body + jsonEscapeBytes(params.outGroup) + "\"");
+}
+
 static void
 handleMapTool(const std::string &requestId, const std::vector<std::string> &lines)
 {
@@ -2128,6 +2234,10 @@ handleMapTool(const std::string &requestId, const std::vector<std::string> &line
 		return a == "x" || a == "0" ? 0 : a == "y" || a == "1" ? 1 : a == "z" || a == "2" ? 2 : -1;
 	};
 
+	if(op == "radar_art"){
+		handleRadarArt(requestId, f);
+		return;
+	}
 	if(op != "lay_along"){
 		// The objects, in the order given (the first is the reference).
 		std::vector<ObjectInst*> objs;
@@ -2217,7 +2327,7 @@ handleMapTool(const std::string &requestId, const std::vector<std::string> &line
 			flag("on_ground", true), &error);
 	}else{
 		writeError(requestId, "unknown maptool operation (array, mirror, align, distribute, "
-			"snap_rotations, move, rotate, drop, relative, lay_along)");
+			"snap_rotations, move, rotate, drop, relative, lay_along, radar_art)");
 		return;
 	}
 	if(result < 0){

@@ -7059,8 +7059,8 @@ pawnWriteStreamedZoneHelpers(FILE *f, const char *prefix, int count, const Strea
 	fprintf(f, "\t%s_numLive[playerid] = 0;\n}\n\n", p);
 	fprintf(f, "stock %s_ZoneUpdate(playerid)\n{\n", p);
 	fprintf(f, "\tnew Float:x, Float:y, Float:z;\n\tGetPlayerPos(playerid, x, y, z);\n");
-	fprintf(f, "\tnew col = floatround((x - %.1f) / %.1f, floatround_floor), row = floatround((y - %.1f) / %.1f, floatround_floor);\n",
-		grid.x0, cell, grid.y0, cell);
+	fprintf(f, "\tnew col = floatround((x %c %.1f) / %.1f, floatround_floor), row = floatround((y %c %.1f) / %.1f, floatround_floor);\n",
+		grid.x0 < 0.0f ? '+' : '-', fabsf(grid.x0), cell, grid.y0 < 0.0f ? '+' : '-', fabsf(grid.y0), cell);
 	// Unload first, so the zones a player leaves make room for the new ones.
 	fprintf(f, "\tfor(new pass = 0; pass < 2; pass++){\n");
 	fprintf(f, "\t\tfor(new c = 0; c < sizeof %s_cellArea; c++){\n", p);

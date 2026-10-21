@@ -4,6 +4,7 @@
 #include "workspace.h"
 #include "textdraws.h"
 #include "encoding.h"
+#include "radarart.h"
 
 #include <ctype.h>
 #include <math.h>
@@ -288,6 +289,37 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 				"shows at most %d at once, so the streamer will leave some out there.",
 				worst, STREAMER_OBJECT_SD, CLIENT_OBJECTS);
 	}
+	// Gang zones by how they are shown: only global ones share the server's
+	// pool; every player has their own 1024, global ones included.
+	std::vector<ObjectInst*> zonesBy[NUM_SAMP_ZONE_MODES];
+	for(ObjectInst *inst : byKind[SAMP_ELEMENT_GANGZONE])
+		zonesBy[GetObjectPawnProperties(inst)->zoneMode].push_back(inst);
+	byKind[SAMP_ELEMENT_GANGZONE] = zonesBy[SAMP_ZONE_GLOBAL];
+	int globalZones = (int)zonesBy[SAMP_ZONE_GLOBAL].size();
+	int playerZones = globalZones + (int)zonesBy[SAMP_ZONE_PLAYER].size();
+	if(!zonesBy[SAMP_ZONE_PLAYER].empty() && playerZones > GANG_ZONES)
+		c.add(MAPCHECK_ERROR, LIMITS, ids(zonesBy[SAMP_ZONE_PLAYER]), "%d gang zones for every player (%d per-player, "
+			"%d global), over the %d a player can have; the extra ones are not shown.", playerZones,
+			(int)zonesBy[SAMP_ZONE_PLAYER].size(), globalZones, GANG_ZONES);
+	if(!zonesBy[SAMP_ZONE_STREAMED].empty()){
+		std::vector<float> bounds;
+		for(ObjectInst *inst : zonesBy[SAMP_ZONE_STREAMED]){
+			const ObjectPawnProperties *p = GetObjectPawnProperties(inst);
+			bounds.push_back(inst->m_translation.x - p->zoneSizeX * 0.5f);
+			bounds.push_back(inst->m_translation.y - p->zoneSizeY * 0.5f);
+			bounds.push_back(inst->m_translation.x + p->zoneSizeX * 0.5f);
+			bounds.push_back(inst->m_translation.y + p->zoneSizeY * 0.5f);
+		}
+		StreamedZoneGrid grid;
+		GetStreamedZoneGrid(bounds, &grid);
+		if(grid.capacity + playerZones > GANG_ZONES)
+			c.add(MAPCHECK_WARNING, LIMITS, ids(zonesBy[SAMP_ZONE_STREAMED]), "Up to %d streamed gang zones around "
+				"one spot, plus %d shown to everyone: a player can have %d, so some near there are left out. "
+				"Use bigger cells or fewer colours in the radar art.", grid.capacity, playerZones, GANG_ZONES);
+	}
+	if(!zonesBy[SAMP_ZONE_PLAYER].empty() || !zonesBy[SAMP_ZONE_STREAMED].empty())
+		c.add(MAPCHECK_INFO, LIMITS, std::vector<int>(), "Per-player and streamed gang zones need open.mp: "
+			"SA-MP 0.3.7 has no CreatePlayerGangZone.");
 	struct { int kind; int limit; bool streamerFree; const char *what; } pools[] = {
 		{ SAMP_ELEMENT_PICKUP, PICKUPS, true, "pickups" },
 		{ SAMP_ELEMENT_LABEL, LABELS, true, "3D text labels" },

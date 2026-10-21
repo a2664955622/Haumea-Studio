@@ -1,0 +1,37 @@
+# Radar art from objects: gang zones from the map's footprints, Apply as one
+# undo step, then streamed per-player zones saved and reopened.
+open "$UI_FIXTURES/ui_radar.pwn"
+wait 10
+assert objects == 6
+click_item 'Tools' 'Radar art from objects'
+wait 30
+scroll_until 'Tools' '##radar_apply'
+wait 3
+click_item 'Tools' '##radar_apply'
+wait 10
+assert objects > 6
+key Esc
+move 640 400
+key Ctrl+Z
+wait 5
+assert objects == 6
+scroll_until 'Tools' 'Shown as'
+wait 3
+click_item 'Tools' 'Shown as'
+wait 3
+click_item '*' 'Streamed per-player zones'
+wait 30
+scroll_until 'Tools' '##radar_apply'
+wait 3
+click_item 'Tools' '##radar_apply'
+wait 10
+assert objects > 6
+key Ctrl+S
+wait 5
+assert pawn_contains "_AddStreamedZone("
+assert pawn_contains "radar art"
+assert pawn_contains "CreateDynamicRectangle("
+reopen
+wait 10
+assert objects > 6
+assert pawn_contains "_AddStreamedZone("
