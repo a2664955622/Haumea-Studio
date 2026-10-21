@@ -571,6 +571,11 @@ SyncEditorInputState(void)
 {
 	static bool hadFocus = true;
 
+	// A UI script's buttons and modifiers are the input: the physical ones
+	// (up, under Wine and in tests) would undo every scripted press.
+	if(UiScriptActive())
+		return;
+
 	if(!isEditorWindowActive()){
 		if(hadFocus)
 			ClearEditorInputState();

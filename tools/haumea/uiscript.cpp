@@ -56,6 +56,7 @@
 //   drag_item_to 'Window' 'Label' 'Window' 'Label'   drops one item on another
 //   type "text"
 //   open <map.pwn>              opens a map as File > Open would
+//   $NAME / ${NAME} in arguments: environment variables, and $UI_CONFIG_DIR (the config folder)
 //   grab <file.png>
 //   assert <what> [op value]    see uiAssert below
 //   log "text" / fail "text" / exit
@@ -409,9 +410,8 @@ expand(const std::string &in)
 }
 
 static std::vector<std::string>
-tokens(const std::string &rawLine)
+tokens(const std::string &line)
 {
-	std::string line = expand(rawLine);
 	std::vector<std::string> out;
 	size_t i = 0;
 	while(i < line.size()){
@@ -427,7 +427,8 @@ tokens(const std::string &rawLine)
 			i++;
 		}else
 			while(i < line.size() && !isspace((unsigned char)line[i])) t += line[i++];
-		out.push_back(t);
+		// Variables after the quotes: a Windows path's backslashes stay as they are.
+		out.push_back(expand(t));
 	}
 	return out;
 }
@@ -1122,6 +1123,12 @@ UiScriptInit(void)
 	// The log goes to the current folder, not next to the script in the source tree.
 	const char *base = strrchr(path, '/');
 	gLog = fopen((std::string(base ? base + 1 : path) + ".log").c_str(), "w");
+	// $UI_CONFIG_DIR: the editor's own config folder, wherever the platform keeps it.
+#ifdef _WIN32
+	_putenv_s("UI_CONFIG_DIR", GetConfigDir());
+#else
+	setenv("UI_CONFIG_DIR", GetConfigDir(), 1);
+#endif
 	gActive = true;
 	say("running %s (%d lines)", path, (int)gLines.size());
 }
