@@ -320,6 +320,7 @@ enum SampElementKind {
 	SAMP_ELEMENT_PATHPOINT,	// NPC_AddPointToPath: one point of an NPC path (open.mp only)
 	SAMP_ELEMENT_SOUND,	// PlayAudioStreamForPlayer / PlayerPlaySound near a place
 	SAMP_ELEMENT_CHECKPOINT,	// CreateDynamicCP / CreateDynamicRaceCP (streamer only)
+	SAMP_ELEMENT_AREA,	// CreateDynamicCircle .. CreateDynamicPolygon (streamer only)
 	NUM_SAMP_ELEMENT_KINDS
 };
 
@@ -333,6 +334,19 @@ enum {
 	PAWN_NPC_RECORDING_LEN = 64,
 	PAWN_ANIM_NAME_LEN = 36,
 	PAWN_SOUND_URL_LEN = 256,
+	PAWN_AREA_POINTS = 32,	// polygon corners of a dynamic area
+};
+
+// A dynamic area's shape (ObjectPawnProperties::areaShape), around its position.
+enum {
+	SAMP_AREA_CIRCLE,	// CreateDynamicCircle: areaRadius, every height
+	SAMP_AREA_CYLINDER,	// CreateDynamicCylinder: areaRadius, areaHeight up from the position
+	SAMP_AREA_SPHERE,	// CreateDynamicSphere: areaRadius
+	SAMP_AREA_RECTANGLE,	// CreateDynamicRectangle: areaSize x and y, every height
+	SAMP_AREA_CUBOID,	// CreateDynamicCuboid: areaSize, z up from the position
+	SAMP_AREA_CUBE,	// CreateDynamicCube: the same box, the other name
+	SAMP_AREA_POLYGON,	// CreateDynamicPolygon: areaPoints (offsets), areaHeight up (0: every height)
+	NUM_SAMP_AREA_SHAPES
 };
 
 // Checkpoints: a plain one, or one of a race that points at the next.
@@ -444,6 +458,18 @@ struct ObjectPawnProperties
 	int cpRaceType;	// CreateDynamicRaceCP type: 0 normal .. 8
 	char cpRace[PAWN_OBJECT_NAME_LEN];
 	int cpOrder;
+	// Dynamic areas (streamer only). The shape sits around the position;
+	// a rectangle or cuboid is areaSize wide, centred in x and y, its z
+	// going up from the position.
+	int areaShape;	// SAMP_AREA_CIRCLE ..
+	float areaRadius;
+	rw::V3d areaSize;
+	float areaHeight;
+	int areaPointCount;
+	float areaPoints[PAWN_AREA_POINTS][2];	// polygon corners, x and y from the position
+	// Any streamer item: shown only to players inside this area (its Pawn
+	// variable), the streamer's areaid. Empty for everywhere.
+	char areaName[PAWN_OBJECT_NAME_LEN];
 };
 
 #define LODDISTANCE (300.0f)
@@ -924,6 +950,11 @@ bool IsValidPawnObjectName(const char *name);
 bool IsValidNpcName(const char *name);
 ObjectInst *FindNpcByName(const char *name, const ObjectInst *except = nil);
 void MakeUniqueNpcName(const char *base, char *out, size_t outSize);
+// Dynamic areas (streamer only): the area with that Pawn variable, a free
+// area variable name, and the kinds that can be limited to an area (areaid).
+ObjectInst *FindAreaByName(const char *name);
+void MakeUniqueAreaName(const char *base, char *out, size_t outSize);
+bool SampElementTakesArea(int kind);
 void ApplyInstanceAnimation(ObjectInst *inst);	// from its actor/NPC properties
 ObjectInst *FindObjectByPawnName(const char *name, const ObjectInst *except = nil);
 // Attaches keeping the child's current world transform; false on a cycle.

@@ -1591,6 +1591,52 @@ MakeUniqueNpcName(const char *base, char *out, size_t outSize)
 	snprintf(out, outSize, "%s", candidate);
 }
 
+// The dynamic area whose Pawn variable is name, or nil.
+ObjectInst*
+FindAreaByName(const char *name)
+{
+	if(name == nil || name[0] == '\0')
+		return nil;
+	for(CPtrNode *p = instances.first; p; p = p->next){
+		ObjectInst *inst = (ObjectInst*)p->item;
+		if(!inst->m_isDeleted && inst->m_pawnProperties &&
+		   inst->m_pawnProperties->elementKind == SAMP_ELEMENT_AREA &&
+		   strcmp(inst->m_pawnProperties->name, name) == 0)
+			return inst;
+	}
+	return nil;
+}
+
+// base (or "area"), then base_2, base_3... used by no instance's variable yet.
+void
+MakeUniqueAreaName(const char *base, char *out, size_t outSize)
+{
+	char stem[PAWN_OBJECT_NAME_LEN - 8];
+	snprintf(stem, sizeof(stem), "%s", base && base[0] && IsValidPawnObjectName(base) ? base : "area");
+	char candidate[PAWN_OBJECT_NAME_LEN];
+	snprintf(candidate, sizeof(candidate), "%s", stem);
+	for(int n = 2; n < 100000; n++){
+		bool used = false;
+		for(CPtrNode *p = instances.first; p && !used; p = p->next){
+			ObjectInst *inst = (ObjectInst*)p->item;
+			used = !inst->m_isDeleted && inst->m_pawnProperties &&
+				strcmp(inst->m_pawnProperties->name, candidate) == 0;
+		}
+		if(!used)
+			break;
+		snprintf(candidate, sizeof(candidate), "%s_%d", stem, n);
+	}
+	snprintf(out, outSize, "%s", candidate);
+}
+
+// Kinds the streamer can show only inside a dynamic area (they take areaid).
+bool
+SampElementTakesArea(int kind)
+{
+	return kind == SAMP_ELEMENT_OBJECT || kind == SAMP_ELEMENT_PICKUP || kind == SAMP_ELEMENT_LABEL ||
+		kind == SAMP_ELEMENT_ACTOR || kind == SAMP_ELEMENT_MAPICON || kind == SAMP_ELEMENT_CHECKPOINT;
+}
+
 static char spawnPathName[PAWN_OBJECT_NAME_LEN] = "patrol";
 
 void
@@ -1796,6 +1842,24 @@ normalizeObjectPawnProperties(ObjectPawnProperties *properties)
 	properties->cpSize = clamp(properties->cpSize, 0.0f, 1000.0f);
 	properties->cpRaceType = clamp(properties->cpRaceType, 0, 8);
 	properties->cpOrder = max(properties->cpOrder, 0);
+	if(properties->elementKind != SAMP_ELEMENT_AREA){
+		properties->areaShape = SAMP_AREA_CIRCLE;
+		properties->areaRadius = properties->areaHeight = 0.0f;
+		properties->areaSize = { 0.0f, 0.0f, 0.0f };
+		properties->areaPointCount = 0;
+		memset(properties->areaPoints, 0, sizeof(properties->areaPoints));
+	}
+	properties->areaShape = clamp(properties->areaShape, 0, NUM_SAMP_AREA_SHAPES - 1);
+	properties->areaRadius = clamp(properties->areaRadius, 0.0f, 20000.0f);
+	properties->areaHeight = clamp(properties->areaHeight, 0.0f, 20000.0f);
+	properties->areaSize.x = clamp(properties->areaSize.x, 0.0f, 40000.0f);
+	properties->areaSize.y = clamp(properties->areaSize.y, 0.0f, 40000.0f);
+	properties->areaSize.z = clamp(properties->areaSize.z, 0.0f, 40000.0f);
+	properties->areaPointCount = clamp(properties->areaPointCount, 0, (int)PAWN_AREA_POINTS);
+	properties->areaName[sizeof(properties->areaName)-1] = '\0';
+	if(!SampElementTakesArea(properties->elementKind) ||
+	   (properties->areaName[0] && !IsValidPawnObjectName(properties->areaName)))
+		properties->areaName[0] = '\0';
 	properties->npcNode = clamp(properties->npcNode, 0, 63);
 	properties->npcNodePoint = clamp(properties->npcNodePoint, 0, 65535);
 	properties->npcNodeRadius = clamp(properties->npcNodeRadius, 0.0f, 100.0f);
@@ -2852,6 +2916,7 @@ GetSampElementProxyModel(int kind)
 	case SAMP_ELEMENT_PATHPOINT: return 1559;	// diamond_3, the yellow marker
 	case SAMP_ELEMENT_SOUND: return 2232;	// MED_SPEAKER_4
 	case SAMP_ELEMENT_CHECKPOINT: return 1317;	// Cylinder, the game's marker
+	case SAMP_ELEMENT_AREA: return 1313;	// drawn as its outline; the marker is where to grab it
 	}
 	return -1;
 }
@@ -2870,6 +2935,7 @@ GetSampElementKindName(int kind)
 	case SAMP_ELEMENT_PATHPOINT: return "NPC path point";
 	case SAMP_ELEMENT_SOUND: return "Sound";
 	case SAMP_ELEMENT_CHECKPOINT: return "Checkpoint";
+	case SAMP_ELEMENT_AREA: return "Dynamic area";
 	}
 	return "Object";
 }
@@ -3008,6 +3074,19 @@ InitSampElementProperties(ObjectPawnProperties *properties, int kind)
 				strcpy(properties->cpRace, "race");
 			properties->cpOrder = nextRaceOrder(properties->cpRace);
 		}
+		break;
+	case SAMP_ELEMENT_AREA:
+		// A 10 m box, 5 m tall, named so items can be shown only inside it.
+		if(properties->areaRadius <= 0.0f)
+			properties->areaRadius = 10.0f;
+		if(properties->areaSize.x <= 0.0f || properties->areaSize.y <= 0.0f || properties->areaSize.z <= 0.0f){
+			properties->areaShape = SAMP_AREA_CUBOID;
+			properties->areaSize = { 10.0f, 10.0f, 5.0f };
+		}
+		if(properties->areaHeight <= 0.0f)
+			properties->areaHeight = 5.0f;
+		if(properties->name[0] == '\0')
+			MakeUniqueAreaName(nil, properties->name, sizeof(properties->name));
 		break;
 	}
 }
@@ -3842,6 +3921,41 @@ ReadPrefabEntries(const char *path, PrefabEntry *entries, int maxEntries, int *n
 				prefabParseIntToken(values[3], &el.cpRaceType);
 				prefabParseIntToken(values[4], &el.cpOrder);
 				prefabNextToken(&cursor, el.cpRace, sizeof(el.cpRace));
+				continue;
+			}
+			if(strcmp(type, "area") == 0){
+				char values[8][64];
+				bool valid = true;
+				for(int v = 0; valid && v < 8; v++)
+					valid = prefabNextToken(&cursor, values[v], sizeof(values[v]));
+				if(!valid || !prefabParseIntToken(values[0], &objectIndex) ||
+				   objectIndex < 0 || objectIndex >= numEntries)
+					continue;
+				ObjectPawnProperties &el = entries[objectIndex].properties;
+				prefabParseIntToken(values[1], &el.areaShape);
+				el.areaRadius = (float)atof(values[2]);
+				el.areaSize = { (float)atof(values[3]), (float)atof(values[4]), (float)atof(values[5]) };
+				el.areaHeight = (float)atof(values[6]);
+				int count = 0;
+				prefabParseIntToken(values[7], &count);
+				count = clamp(count, 0, (int)PAWN_AREA_POINTS);
+				el.areaPointCount = 0;
+				for(int p = 0; p < count; p++){
+					char x[64], y[64];
+					if(!prefabNextToken(&cursor, x, sizeof(x)) || !prefabNextToken(&cursor, y, sizeof(y)))
+						break;
+					el.areaPoints[p][0] = (float)atof(x);
+					el.areaPoints[p][1] = (float)atof(y);
+					el.areaPointCount = p + 1;
+				}
+				continue;
+			}
+			if(strcmp(type, "inarea") == 0){
+				if(!prefabNextToken(&cursor, token, sizeof(token)) || !prefabParseIntToken(token, &objectIndex) ||
+				   objectIndex < 0 || objectIndex >= numEntries)
+					continue;
+				prefabNextToken(&cursor, entries[objectIndex].properties.areaName,
+					sizeof(entries[objectIndex].properties.areaName));
 				continue;
 			}
 			if(strcmp(type, "node") == 0){
@@ -5591,6 +5705,9 @@ cloneInstanceWithObjectId(ObjectInst *src, GameFile *dstFile, int iplIndex, rw::
 			copy.pathOrder = nextPathOrder(copy.pathName);
 		if(copy.elementKind == SAMP_ELEMENT_CHECKPOINT && copy.cpKind == SAMP_CHECKPOINT_RACE)
 			copy.cpOrder = nextRaceOrder(copy.cpRace);
+		// Items name their area by its variable, so an area always has one.
+		if(copy.elementKind == SAMP_ELEMENT_AREA)
+			MakeUniqueAreaName(src->m_pawnProperties->name, copy.name, sizeof(copy.name));
 		if(!ObjectPawnPropertiesAreDefault(copy))
 			inst->m_pawnProperties = new ObjectPawnProperties(copy);
 	}
@@ -6232,6 +6349,21 @@ ExportPrefabEx(const char *path, int origin, const char *tags)
 			pawnWriteQuotedString(f, properties->cpRace);
 			fputc('\n', f);
 		}
+		if(properties->elementKind == SAMP_ELEMENT_AREA){
+			// area <index> <shape> <radius> <size x> <size y> <size z> <height> <points> x y ...
+			fprintf(f, "area %d %d %.4f %.4f %.4f %.4f %.4f %d", i, properties->areaShape,
+				properties->areaRadius, properties->areaSize.x, properties->areaSize.y,
+				properties->areaSize.z, properties->areaHeight, properties->areaPointCount);
+			for(int p = 0; p < properties->areaPointCount; p++)
+				fprintf(f, " %.4f %.4f", properties->areaPoints[p][0], properties->areaPoints[p][1]);
+			fputc('\n', f);
+		}
+		if(properties->areaName[0]){
+			// inarea <index> "area": shown only inside that dynamic area
+			fprintf(f, "inarea %d ", i);
+			pawnWriteQuotedString(f, properties->areaName);
+			fputc('\n', f);
+		}
 		if(properties->npcPlaysNode){
 			// node <index> <node> <point> <radius> <set angle> <move type> <speed>
 			fprintf(f, "node %d %d %d %.3f %d %d %.4f\n", i, properties->npcNode,
@@ -6826,6 +6958,71 @@ pawnWriteAnimationArgs(FILE *f, const ObjectPawnProperties *properties, bool boo
 
 // SA-MP elements other than objects and vehicles. Gang zones and native map
 // icons are per player, so their show calls go to <prefix>_ShowForPlayer.
+// Dynamic areas in the map being written: area variable name -> its handle.
+static std::unordered_map<std::string, std::string> gPawnAreaHandles;
+
+// ", <area handle>" for a streamer item limited to an area that the map has
+// (its areaid argument), else nothing.
+static void
+pawnWriteAreaArg(FILE *f, const ObjectPawnProperties *properties)
+{
+	if(properties->areaName[0] == '\0')
+		return;
+	std::unordered_map<std::string, std::string>::iterator it = gPawnAreaHandles.find(properties->areaName);
+	if(it != gPawnAreaHandles.end())
+		fprintf(f, ", %s", it->second.c_str());
+}
+
+static bool
+pawnHasArea(const ObjectPawnProperties *properties)
+{
+	return properties->areaName[0] && gPawnAreaHandles.count(properties->areaName);
+}
+
+// CreateDynamicCircle .. CreateDynamicPolygon for a dynamic area (streamer only).
+static void
+pawnWriteAreaCall(FILE *f, const ObjectInst *inst, const char *handle)
+{
+	const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+	const rw::V3d &p = inst->m_translation;
+	int interior = inst->m_area > 0 ? inst->m_area : -1;
+	float r = properties->areaRadius, h = properties->areaHeight;
+	float hx = properties->areaSize.x * 0.5f, hy = properties->areaSize.y * 0.5f;
+	fprintf(f, "\tnew const %s = ", handle);	// as hand-written maps do
+	switch(properties->areaShape){
+	case SAMP_AREA_CIRCLE:
+		fprintf(f, "CreateDynamicCircle(%.6f, %.6f, %.6f", p.x, p.y, r);
+		break;
+	case SAMP_AREA_CYLINDER:
+		fprintf(f, "CreateDynamicCylinder(%.6f, %.6f, %.6f, %.6f, %.6f", p.x, p.y, p.z, p.z + h, r);
+		break;
+	case SAMP_AREA_SPHERE:
+		fprintf(f, "CreateDynamicSphere(%.6f, %.6f, %.6f, %.6f", p.x, p.y, p.z, r);
+		break;
+	case SAMP_AREA_RECTANGLE:
+		fprintf(f, "CreateDynamicRectangle(%.6f, %.6f, %.6f, %.6f", p.x - hx, p.y - hy, p.x + hx, p.y + hy);
+		break;
+	case SAMP_AREA_CUBOID:
+	case SAMP_AREA_CUBE:
+		fprintf(f, "%s(%.6f, %.6f, %.6f, %.6f, %.6f, %.6f",
+			properties->areaShape == SAMP_AREA_CUBE ? "CreateDynamicCube" : "CreateDynamicCuboid",
+			p.x - hx, p.y - hy, p.z, p.x + hx, p.y + hy, p.z + properties->areaSize.z);
+		break;
+	case SAMP_AREA_POLYGON:
+		fputs("CreateDynamicPolygon(Float:{", f);
+		for(int i = 0; i < properties->areaPointCount; i++)
+			fprintf(f, "%s%.6f, %.6f", i ? ", " : "", p.x + properties->areaPoints[i][0],
+				p.y + properties->areaPoints[i][1]);
+		if(h > 0.0f)
+			fprintf(f, "}, %.6f, %.6f, %d", p.z, p.z + h, properties->areaPointCount * 2);
+		else
+			fprintf(f, "}, -FLOAT_INFINITY, FLOAT_INFINITY, %d", properties->areaPointCount * 2);
+		break;
+	}
+	fprintf(f, ", %d, %d);", properties->virtualWorld, interior);
+	pawnWriteTrailingTags(f, "area", " [dynamic area]", properties);
+}
+
 static void
 pawnWriteElementCall(FILE *f, const ObjectInst *inst, PawnCodeFormat format,
 	const char *handle)
@@ -6858,6 +7055,7 @@ pawnWriteElementCall(FILE *f, const ObjectInst *inst, PawnCodeFormat format,
 				properties->elementModel, properties->pickupType, p.x, p.y, p.z,
 				properties->virtualWorld, interior);
 			pawnWriteDistance(f, properties->streamDistance, "STREAMER_PICKUP_SD");
+			pawnWriteAreaArg(f, properties);
 			fputs(");", f);
 		}else
 			fprintf(f, "CreatePickup(%d, %d, %.6f, %.6f, %.6f, %d);",
@@ -6874,6 +7072,7 @@ pawnWriteElementCall(FILE *f, const ObjectInst *inst, PawnCodeFormat format,
 			fprintf(f, "INVALID_PLAYER_ID, INVALID_VEHICLE_ID, %s, %d, %d, -1, ",
 				properties->labelTestLOS ? "true" : "false", properties->virtualWorld, interior);
 			pawnWriteDistance(f, properties->streamDistance, "STREAMER_3D_TEXT_LABEL_SD");
+			pawnWriteAreaArg(f, properties);
 			fputs(");", f);
 		}else
 			// Native labels have no "every world" value; world 0 is the default.
@@ -6887,6 +7086,7 @@ pawnWriteElementCall(FILE *f, const ObjectInst *inst, PawnCodeFormat format,
 				properties->elementModel, p.x, p.y, p.z, e.z, properties->actorInvulnerable ? 1 : 0,
 				properties->actorHealth, properties->virtualWorld, interior);
 			pawnWriteDistance(f, properties->streamDistance, "STREAMER_ACTOR_SD");
+			pawnWriteAreaArg(f, properties);
 			fputs(");", f);
 			pawnWriteTrailingTags(f, name, " [actor]", properties);
 			if(handle && handle[0] && properties->animName[0]){
@@ -6937,6 +7137,7 @@ pawnWriteElementCall(FILE *f, const ObjectInst *inst, PawnCodeFormat format,
 		fprintf(f, "CreateDynamicCP(%.6f, %.6f, %.6f, %.2f, %d, %d, -1, ", p.x, p.y, p.z,
 			properties->cpSize, properties->virtualWorld, interior);
 		pawnWriteDistance(f, properties->streamDistance, "STREAMER_CP_SD");
+		pawnWriteAreaArg(f, properties);
 		fputs(");", f);
 		pawnWriteTrailingTags(f, "checkpoint", "", properties);
 		break;
@@ -6948,6 +7149,7 @@ pawnWriteElementCall(FILE *f, const ObjectInst *inst, PawnCodeFormat format,
 		pawnWriteDistance(f, properties->streamDistance, "STREAMER_MAP_ICON_SD");
 		fputs(", ", f);
 		pawnWriteMapIconStyle(f, properties->mapIconStyle);
+		pawnWriteAreaArg(f, properties);
 		fputs(");", f);
 		pawnWriteTrailingTags(f, "mapicon", " [map icon]", properties);
 		break;
@@ -7056,7 +7258,8 @@ pawnWriteObjectCall(FILE *f, const ObjectInst *inst, PawnCodeFormat format,
 			PawnModelId(inst->m_objectId),
 			inst->m_translation.x, inst->m_translation.y, inst->m_translation.z,
 			e.x, e.y, e.z, properties->virtualWorld, interior);
-		if(properties->streamDistance > 0.0f || properties->drawDistance > 0.0f){
+		// areaid comes after both distances, so an area writes them out.
+		if(properties->streamDistance > 0.0f || properties->drawDistance > 0.0f || pawnHasArea(properties)){
 			if(properties->streamDistance > 0.0f)
 				fprintf(f, ", %.2f", properties->streamDistance);
 			else
@@ -7065,6 +7268,7 @@ pawnWriteObjectCall(FILE *f, const ObjectInst *inst, PawnCodeFormat format,
 				fprintf(f, ", %.2f", properties->drawDistance);
 			else
 				fputs(", STREAMER_OBJECT_DD", f);
+			pawnWriteAreaArg(f, properties);
 		}
 		fputs(");", f);
 	}else{
@@ -7490,6 +7694,7 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 			char handle[128];
 			handle[0] = '\0';
 			if(kind == SAMP_ELEMENT_CLASS || kind == SAMP_ELEMENT_PATHPOINT || kind == SAMP_ELEMENT_SOUND ||
+			   kind == SAMP_ELEMENT_AREA ||
 			   (kind == SAMP_ELEMENT_GANGZONE && properties->zoneMode != SAMP_ZONE_GLOBAL) ||
 			   (kind == SAMP_ELEMENT_CHECKPOINT &&
 			    (format != PAWN_CODE_STREAMER || properties->cpKind == SAMP_CHECKPOINT_RACE)) ||
@@ -7573,6 +7778,34 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 		pawnWriteStreamedZoneHelpers(f, prefix, (int)streamedZones.size(), zoneGrid);
 
 	fprintf(f, "stock %s_CreateObjects()\n{\n", prefix);
+	// Dynamic areas first (streamer only): items name them as their areaid.
+	gPawnAreaHandles.clear();
+	std::vector<ObjectInst*> areas;
+	for(size_t i = 0; i < insts.size() && format == PAWN_CODE_STREAMER; i++)
+		if(!insts[i]->m_isDeleted && GetSampElementKind(insts[i]) == SAMP_ELEMENT_AREA)
+			areas.push_back(insts[i]);
+	if(!areas.empty()){
+		std::unordered_set<std::string> usedAreas;
+		for(size_t i = 0; i < insts.size(); i++){
+			const ObjectPawnProperties *properties = GetObjectPawnProperties(insts[i]);
+			if(!insts[i]->m_isDeleted && properties->areaName[0] && !insts[i]->m_isVehicle)
+				usedAreas.insert(properties->areaName);
+		}
+		fputs("\t// ---- dynamic areas (streamer) ----\n", f);
+		for(size_t i = 0; i < areas.size(); i++){
+			const ObjectPawnProperties *properties = GetObjectPawnProperties(areas[i]);
+			std::string handle = properties->name;
+			if(handle.empty() || usedHandles.count(handle) || gPawnAreaHandles.count(handle))
+				handle = std::string(prefix) + "_area_" + std::to_string(generatedHandles++);
+			usedHandles.insert(handle);
+			if(properties->name[0])
+				gPawnAreaHandles[properties->name] = handle;
+			pawnWriteAreaCall(f, areas[i], handle.c_str());
+			if(!properties->name[0] || !usedAreas.count(properties->name))
+				fprintf(f, "\t#pragma unused %s\n", handle.c_str());
+		}
+		fputc('\n', f);
+	}
 	if(!pathNames.empty()){
 		fputs("\t// ---- NPC paths (open.mp) ----\n", f);
 		for(size_t i = 0; i < pathNames.size(); i++){
@@ -7621,6 +7854,7 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 					properties->cpRaceType, p.x, p.y, p.z, next.x, next.y, next.z, properties->cpSize,
 					properties->virtualWorld, race[j]->m_area > 0 ? race[j]->m_area : -1);
 				pawnWriteDistance(f, properties->streamDistance, "STREAMER_RACE_CP_SD");
+				pawnWriteAreaArg(f, properties);
 				fputs(");", f);
 				pawnWriteTrailingTags(f, "checkpoint", tag, properties);
 			}
@@ -7638,7 +7872,8 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 				  GetObjectPawnProperties(insts[i])->cpKind == SAMP_CHECKPOINT_RACE)) &&
 				!(kind == SAMP_ELEMENT_SOUND &&
 				  GetObjectPawnProperties(insts[i])->soundKind == SAMP_SOUND_STREAM) &&
-				!(kind == SAMP_ELEMENT_MAPICON && format != PAWN_CODE_STREAMER);
+				!(kind == SAMP_ELEMENT_MAPICON && format != PAWN_CODE_STREAMER) &&
+				kind != SAMP_ELEMENT_AREA;
 		}
 		if(!groups[g].empty() && groupHasCalls)
 			fprintf(f, "%s\t// ---- %s ----\n", g > 0 ? "\n" : "", groups[g].c_str());
@@ -7650,8 +7885,8 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 			int kind = GetSampElementKind(inst);
 			if(kind == SAMP_ELEMENT_MAPICON && format != PAWN_CODE_STREAMER)
 				continue;	// written to _ShowForPlayer
-			if(kind == SAMP_ELEMENT_PATHPOINT)
-				continue;	// written with its path above
+			if(kind == SAMP_ELEMENT_PATHPOINT || kind == SAMP_ELEMENT_AREA)
+				continue;	// written with its path, or with the areas, above
 			if(kind == SAMP_ELEMENT_CHECKPOINT &&
 			   (format != PAWN_CODE_STREAMER || properties->cpKind == SAMP_CHECKPOINT_RACE))
 				continue;	// streamer only; races are written above
@@ -7958,7 +8193,45 @@ struct PawnImportEntry
 	// NPC_PutInVehicle: the vehicle's create entry plus one; 0 on foot, so a
 	// zeroed entry is on foot.
 	int npcVehicleEntry;
+	// A streamer item's areaid: the dynamic area's create entry plus one (the
+	// latest area with that variable before the item), 0 for none.
+	int areaEntry;
 };
+
+static std::string pawnTrimString(const std::string &value);
+static bool pawnCharIsIdentifier(char c);
+
+// A streamer item's areaid: the argument at index (or a named ".areaid = x"),
+// when it names a dynamic area created before it: that entry plus one, else 0.
+// A name used for several areas means the latest one, as in the script.
+static int
+pawnAreaEntryFor(const std::vector<std::string> &args, int index,
+	const std::map<std::string, int> &handleEntries, const std::vector<PawnImportEntry> &entries)
+{
+	std::string value;
+	for(const std::string &a : args){
+		std::string t = pawnTrimString(a);
+		if(t.compare(0, 7, ".areaid") == 0 && t.find('=') != std::string::npos){
+			value = pawnTrimString(t.substr(t.find('=') + 1));
+			break;
+		}
+	}
+	if(value.empty() && index >= 0 && index < (int)args.size() && pawnTrimString(args[index])[0] != '.')
+		value = pawnTrimString(args[index]);
+	size_t tag = value.find(':');	// STREAMER_TAG_AREA:areaid
+	if(tag != std::string::npos)
+		value = pawnTrimString(value.substr(tag + 1));
+	if(value.empty() || !(isalpha((unsigned char)value[0]) || value[0] == '_'))
+		return 0;
+	for(char c : value)
+		if(!pawnCharIsIdentifier(c))
+			return 0;
+	std::map<std::string, int>::const_iterator it = handleEntries.find(value);
+	if(it == handleEntries.end() || it->second < 0 || it->second >= (int)entries.size() ||
+	   entries[it->second].elementKind != SAMP_ELEMENT_AREA)
+		return 0;
+	return it->second + 1;
+}
 
 // Calls that change an element after it was created, by its variable:
 // SetActorVirtualWorld/Invulnerable/Health and GangZoneShowFor*'s colour.
@@ -8527,8 +8800,15 @@ pawnCaptureAssignment(const std::string &source, size_t callPosition, char *out,
 	if(equals == std::string::npos)
 		return;
 	lhs = pawnTrimString(lhs.substr(0, equals));
-	if(lhs.size() >= 4 && lhs.compare(0, 4, "new ") == 0)
-		lhs = pawnTrimString(lhs.substr(4));
+	// new, static and const in any order: "new const areaid = ...", "static x = ..."
+	for(bool again = true; again;){
+		again = false;
+		for(const char *word : { "new ", "static ", "const " })
+			if(lhs.compare(0, strlen(word), word) == 0){
+				lhs = pawnTrimString(lhs.substr(strlen(word)));
+				again = true;
+			}
+	}
 	size_t tag = lhs.find(':');	// new STREAMER_TAG_OBJECT:name = ...
 	if(tag != std::string::npos)
 		lhs = pawnTrimString(lhs.substr(tag + 1));
@@ -8539,6 +8819,60 @@ pawnCaptureAssignment(const std::string &source, size_t callPosition, char *out,
 			return;
 	strncpy(out, lhs.c_str(), outSize-1);
 	out[outSize-1] = '\0';
+}
+
+// CreateDynamicPolygon's points: a literal "Float:{x, y, ...}", or an array
+// variable declared with one before the call. Returns x, y pairs.
+static bool
+pawnParsePolygonPoints(const std::string &arg, const std::string &source, size_t before,
+	std::vector<float> &out)
+{
+	out.clear();
+	std::string text = pawnTrimString(pawnStripTag(arg));
+	if(text.empty())
+		return false;
+	if(text[0] != '{'){
+		// An array variable: its last "name[...] = {...}" before the call.
+		std::string name = text;
+		for(char c : name)
+			if(!pawnCharIsIdentifier(c))
+				return false;
+		size_t at = std::string::npos;
+		for(size_t p = source.rfind(name, before); p != std::string::npos && p > 0; p = source.rfind(name, p - 1)){
+			size_t q = p + name.size();
+			while(q < source.size() && isspace((unsigned char)source[q])) q++;
+			if((p == 0 || !pawnCharIsIdentifier(source[p-1])) && q < source.size() && source[q] == '['){
+				at = q;
+				break;
+			}
+			if(p == 0)
+				break;
+		}
+		if(at == std::string::npos)
+			return false;
+		size_t open = source.find('{', at), close = open == std::string::npos ? open : source.find('}', open);
+		if(open == std::string::npos || close == std::string::npos || open > before)
+			return false;
+		text = source.substr(open, close - open + 1);
+	}
+	if(text.size() < 2 || text[0] != '{' || text[text.size()-1] != '}')
+		return false;
+	std::string body = text.substr(1, text.size() - 2);
+	size_t start = 0;
+	while(start <= body.size()){
+		size_t comma = body.find(',', start);
+		std::string part = pawnTrimString(body.substr(start, comma == std::string::npos ? std::string::npos : comma - start));
+		if(!part.empty()){
+			float value;
+			if(!pawnParseFloat(pawnStripTag(part), &value))
+				return false;
+			out.push_back(value);
+		}
+		if(comma == std::string::npos)
+			break;
+		start = comma + 1;
+	}
+	return out.size() >= 6 && out.size() % 2 == 0;
 }
 
 static PawnMaterialImportEntry*
@@ -8823,6 +9157,7 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 		PAWN_CALL_MAPICON,
 		PAWN_CALL_CHECKPOINT,
 		PAWN_CALL_RACE_CHECKPOINT,
+		PAWN_CALL_AREA,	// CreateDynamicCircle .. CreateDynamicPolygon
 		PAWN_CALL_NPC,
 		PAWN_CALL_NPC_SPAWN,
 		PAWN_CALL_NPC_SKIN,
@@ -8891,6 +9226,13 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 		{ "GangZoneShowForAll", 0, false, PAWN_CALL_GANGZONE_SHOW },
 		{ "CreateDynamicMapIcon", 0, true, PAWN_CALL_MAPICON },
 		{ "CreateDynamicRaceCP", 0, true, PAWN_CALL_RACE_CHECKPOINT },
+		{ "CreateDynamicCircle", 0, true, PAWN_CALL_AREA },
+		{ "CreateDynamicCylinder", 0, true, PAWN_CALL_AREA },
+		{ "CreateDynamicSphere", 0, true, PAWN_CALL_AREA },
+		{ "CreateDynamicRectangle", 0, true, PAWN_CALL_AREA },
+		{ "CreateDynamicCuboid", 0, true, PAWN_CALL_AREA },
+		{ "CreateDynamicCube", 0, true, PAWN_CALL_AREA },
+		{ "CreateDynamicPolygon", 0, true, PAWN_CALL_AREA },
 		{ "CreateDynamicCP", 0, true, PAWN_CALL_CHECKPOINT },
 		{ "SetPlayerMapIcon", 2, false, PAWN_CALL_MAPICON },	// playerid, iconid
 		// open.mp NPCs: NPC_Create gives the name, the setters the rest.
@@ -9481,7 +9823,7 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 		   call->kind == PAWN_CALL_MAPICON || call->kind == PAWN_CALL_AUDIO_STREAM ||
 		   call->kind == PAWN_CALL_ADD_SOUND || call->kind == PAWN_CALL_CHECKPOINT ||
 		   call->kind == PAWN_CALL_ADD_PLAYER_ZONE || call->kind == PAWN_CALL_ADD_STREAMED_ZONE ||
-		   call->kind == PAWN_CALL_RACE_CHECKPOINT){
+		   call->kind == PAWN_CALL_RACE_CHECKPOINT || call->kind == PAWN_CALL_AREA){
 			PawnImportEntry entry = {};
 			entry.interior = -1;
 			entry.world = -1;
@@ -9720,12 +10062,94 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 				optInt(9, &entry.interior);
 				optDistance(11, &entry.streamDistance);
 				break;
+			case PAWN_CALL_AREA: {
+				// CreateDynamicCircle(x, y, size, ...), Cylinder(x, y, minz, maxz, size, ...),
+				// Sphere(x, y, z, size, ...), Rectangle(minx, miny, maxx, maxy, ...),
+				// Cuboid/Cube(minx, miny, minz, maxx, maxy, maxz, ...),
+				// Polygon(points[], minz, maxz, maxpoints, ...); then worldid, interiorid.
+				entry.elementKind = SAMP_ELEMENT_AREA;
+				std::string shape = call->name + strlen("CreateDynamic");
+				float v[6] = {};
+				auto floats = [&](int count){
+					if(n < o + count)
+						return false;
+					for(int i = 0; i < count; i++)
+						if(!pawnParseFloat(pawnStripTag(arg(i)), &v[i]))
+							return false;
+					return true;
+				};
+				int worldAt = -1;
+				if(shape == "Circle" && (valid = floats(3))){
+					el.areaShape = SAMP_AREA_CIRCLE;
+					entry.x = v[0]; entry.y = v[1]; el.areaRadius = v[2];
+					worldAt = 3;
+				}else if(shape == "Cylinder" && (valid = floats(5))){
+					el.areaShape = SAMP_AREA_CYLINDER;
+					entry.x = v[0]; entry.y = v[1]; entry.z = v[2];
+					el.areaHeight = v[3] - v[2]; el.areaRadius = v[4];
+					worldAt = 5;
+				}else if(shape == "Sphere" && (valid = floats(4))){
+					el.areaShape = SAMP_AREA_SPHERE;
+					entry.x = v[0]; entry.y = v[1]; entry.z = v[2]; el.areaRadius = v[3];
+					worldAt = 4;
+				}else if(shape == "Rectangle" && (valid = floats(4))){
+					el.areaShape = SAMP_AREA_RECTANGLE;
+					entry.x = (v[0] + v[2]) * 0.5f; entry.y = (v[1] + v[3]) * 0.5f;
+					el.areaSize = { fabsf(v[2] - v[0]), fabsf(v[3] - v[1]), 0.0f };
+					worldAt = 4;
+				}else if((shape == "Cuboid" || shape == "Cube") && (valid = floats(6))){
+					el.areaShape = shape == "Cube" ? SAMP_AREA_CUBE : SAMP_AREA_CUBOID;
+					entry.x = (v[0] + v[3]) * 0.5f; entry.y = (v[1] + v[4]) * 0.5f;
+					entry.z = v[2] < v[5] ? v[2] : v[5];
+					el.areaSize = { fabsf(v[3] - v[0]), fabsf(v[4] - v[1]), fabsf(v[5] - v[2]) };
+					worldAt = 6;
+				}else if(shape == "Polygon" && n >= o + 1){
+					std::vector<float> points;
+					valid = pawnParsePolygonPoints(arg(0), source, found, points);
+					if(valid){
+						int count = std::min((int)points.size() / 2, (int)PAWN_AREA_POINTS);
+						float minX = points[0], maxX = points[0], minY = points[1], maxY = points[1];
+						for(int i = 1; i < count; i++){
+							minX = std::min(minX, points[2*i]); maxX = std::max(maxX, points[2*i]);
+							minY = std::min(minY, points[2*i+1]); maxY = std::max(maxY, points[2*i+1]);
+						}
+						el.areaShape = SAMP_AREA_POLYGON;
+						entry.x = (minX + maxX) * 0.5f; entry.y = (minY + maxY) * 0.5f;
+						el.areaPointCount = count;
+						for(int i = 0; i < count; i++){
+							el.areaPoints[i][0] = points[2*i] - entry.x;
+							el.areaPoints[i][1] = points[2*i+1] - entry.y;
+						}
+						// minz, maxz: absent or +-FLOAT_INFINITY for every height.
+						float minZ, maxZ;
+						if(n > o + 2 && pawnParseFloat(pawnStripTag(arg(1)), &minZ) &&
+						   pawnParseFloat(pawnStripTag(arg(2)), &maxZ)){
+							entry.z = minZ;
+							el.areaHeight = maxZ - minZ;
+						}
+						worldAt = 4;
+					}
+				}
+				if(valid && worldAt >= 0){
+					optInt(worldAt, &entry.world);
+					optInt(worldAt + 1, &entry.interior);
+				}
+				break;
+			}
 			default:
 				break;
 			}
 			if(!valid){
 				if(numSkipped) (*numSkipped)++;
 				continue;
+			}
+			// The item's areaid, by where it is in each streamer call.
+			if(call->streamer){
+				int areaAt = call->kind == PAWN_CALL_PICKUP ? 9 : call->kind == PAWN_CALL_LABEL ? 13 :
+					call->kind == PAWN_CALL_ACTOR ? 11 : call->kind == PAWN_CALL_CHECKPOINT ? 8 :
+					call->kind == PAWN_CALL_RACE_CHECKPOINT ? 12 : call->kind == PAWN_CALL_MAPICON ? 10 : -1;
+				if(areaAt >= 0)
+					entry.areaEntry = pawnAreaEntryFor(args, o + areaAt, handleEntries, entries);
 			}
 			if(entry.elementKind == SAMP_ELEMENT_PICKUP)
 				el.elementModel = entry.objectId;
@@ -9824,6 +10248,9 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 		}
 		if(entry.streamDistance == 300.0f)
 			entry.streamDistance = 0.0f;	// STREAMER_OBJECT_SD
+		if(call->streamer && call->kind == PAWN_CALL_CREATE)
+			// ..., streamdistance, drawdistance, areaid, priority
+			entry.areaEntry = pawnAreaEntryFor(args, offset + 12, handleEntries, entries);
 		pawnCaptureAssignment(source, found, entry.handle, sizeof(entry.handle));
 		pawnReadObjectTags(rawSource, afterCall, &entry);
 		entries.push_back(entry);
@@ -10158,7 +10585,7 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 				bool generated = strcmp(e.handle, "tmpobjid") == 0 ||
 					(strncmp(e.handle, "Haumea_", 7) == 0 &&
 					 (strstr(e.handle, "_obj_") || strstr(e.handle, "_zone_") ||
-					  strstr(e.handle, "_actor_") || strstr(e.handle, "_npc_")));
+					  strstr(e.handle, "_actor_") || strstr(e.handle, "_npc_") || strstr(e.handle, "_area_")));
 				if(!generated && IsValidPawnObjectName(e.handle) &&
 				   FindObjectByPawnName(e.handle) == nil)
 					strncpy(properties.name, e.handle, sizeof(properties.name)-1);
@@ -10172,6 +10599,27 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 			createdForEntry[i] = inst;
 			created.push_back(inst);
 		}
+	}
+	// Dynamic areas: each keeps its variable name, or gets one from it when an
+	// earlier area of the map took it (scripts reuse "areaid" in each block);
+	// items limited to an area then name their own area.
+	for(size_t i = 0; i < entries.size(); i++){
+		ObjectInst *area = createdForEntry[i];
+		if(area == nil || entries[i].elementKind != SAMP_ELEMENT_AREA || GetObjectPawnProperties(area)->name[0])
+			continue;
+		ObjectPawnProperties properties = *GetObjectPawnProperties(area);
+		MakeUniqueAreaName(entries[i].handle, properties.name, sizeof(properties.name));
+		SetObjectPawnProperties(area, properties, false);
+	}
+	for(size_t i = 0; i < entries.size(); i++){
+		int areaEntry = entries[i].areaEntry - 1;
+		ObjectInst *item = createdForEntry[i];
+		if(areaEntry < 0 || item == nil || item->m_isVehicle || createdForEntry[areaEntry] == nil)
+			continue;
+		ObjectPawnProperties properties = *GetObjectPawnProperties(item);
+		snprintf(properties.areaName, sizeof(properties.areaName), "%s",
+			GetObjectPawnProperties(createdForEntry[areaEntry])->name);
+		SetObjectPawnProperties(item, properties, false);
 	}
 	// NPCs in vehicles, once both exist.
 	for(size_t i = 0; i < entries.size(); i++){
@@ -10496,6 +10944,24 @@ ImportPrefabAtEx(const char *path, rw::V3d spawnPos, float heading, const char *
 			pasted[numPasted++] = inst;
 	}
 
+	// A dynamic area whose name the map already uses gets a new one, and the
+	// prefab's own items follow it there.
+	std::map<std::string, std::string> renamedAreas;
+	for(int i = 0; i < numEntries; i++){
+		ObjectPawnProperties &properties = entries[i].properties;
+		if(created[i] == nil || properties.elementKind != SAMP_ELEMENT_AREA || !properties.name[0] ||
+		   !FindObjectByPawnName(properties.name, created[i]))
+			continue;
+		char renamed[PAWN_OBJECT_NAME_LEN];
+		MakeUniqueAreaName(properties.name, renamed, sizeof(renamed));
+		renamedAreas[properties.name] = renamed;
+		snprintf(properties.name, sizeof(properties.name), "%s", renamed);
+	}
+	for(int i = 0; i < numEntries && !renamedAreas.empty(); i++){
+		std::map<std::string, std::string>::iterator it = renamedAreas.find(entries[i].properties.areaName);
+		if(it != renamedAreas.end())
+			snprintf(entries[i].properties.areaName, sizeof(entries[i].properties.areaName), "%s", it->second.c_str());
+	}
 	// SA-MP properties and attachments within the prefab. Names stay unique,
 	// so a second copy of a named prefab gets automatic handles instead.
 	for(int i = 0; i < numEntries; i++){
