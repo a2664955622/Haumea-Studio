@@ -181,7 +181,8 @@ static int gSavedWindowHeight = 800;
 static bool gSavedWindowMaximized;
 static float gSettingsAutosaveSeconds;
 static bool gPersistentSettingsLoaded;
-static bool gConfirmReloadGame = true;
+// Off: Reload Game Files asks only when there are unsaved changes.
+static bool gConfirmReloadGame = false;
 static const int SAVE_SETTINGS_VERSION = 3;
 
 static void loadSaveSettings(void);
@@ -6704,12 +6705,37 @@ uiEditorWindow(void)
 			CamSetting *cam = &camSettings[i];
 			ImGui::PushID(i);
 			sprintf(buf, "%-20s", cam->name);
-			bool del = ImGui::Button("Delete");
+			// Saved views have no undo, so Delete and Replace ask first.
+			bool del = false;
+			if(ImGui::Button("Delete"))
+				ImGui::OpenPopup("##delete_view");
+			if(ImGui::BeginPopup("##delete_view")){
+				ImGui::Text("Delete the view \"%s\"?", cam->name);
+				if(ImGui::Button("Delete##confirm")){
+					del = true;
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::SameLine();
+				if(ImGui::Button("Cancel"))
+					ImGui::CloseCurrentPopup();
+				ImGui::EndPopup();
+			}
 			ImGui::SameLine();
-			if(ImGui::Button("Replace")){
-				strncpy(cam->name, gEditorCameraName, sizeof(cam->name));
-				getCurrentCamSetting(cam);
-				saveCamSettings();
+			if(ImGui::Button("Replace"))
+				ImGui::OpenPopup("##replace_view");
+			ImGui::SetItemTooltip("Saves the current view over this one, named as in the field above.");
+			if(ImGui::BeginPopup("##replace_view")){
+				ImGui::Text("Replace \"%s\" with the current view?", cam->name);
+				if(ImGui::Button("Replace##confirm")){
+					strncpy(cam->name, gEditorCameraName, sizeof(cam->name));
+					getCurrentCamSetting(cam);
+					saveCamSettings();
+					ImGui::CloseCurrentPopup();
+				}
+				ImGui::SameLine();
+				if(ImGui::Button("Cancel"))
+					ImGui::CloseCurrentPopup();
+				ImGui::EndPopup();
 			}
 			ImGui::SameLine();
 			if(ImGui::Selectable(buf)){
