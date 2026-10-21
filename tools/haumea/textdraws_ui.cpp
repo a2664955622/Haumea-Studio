@@ -220,7 +220,7 @@ charAdvance(const TextDraw &td, unsigned char c)
 
 // ---- Layout ----
 
-struct Glyph { float x, y; int index; ImU32 colour; };
+struct Glyph { float x, y; int index; ImU32 colour; unsigned int rgba; int line; };
 
 static ImU32
 rgbaToImU32(unsigned int c)
@@ -228,33 +228,48 @@ rgbaToImU32(unsigned int c)
 	return IM_COL32(c >> 24 & 0xFF, c >> 16 & 0xFF, c >> 8 & 0xFF, c & 0xFF);
 }
 
-// ~r~ and friends: the game's text colours.
+// A token's letter applied to the colour, as CFont::ParseToken (0x718F00)
+// does: the colour letters set a HUD colour keeping the alpha, ~h~ multiplies
+// by 1.5. Only these letters are remembered as the line's tag.
 static bool
-styleColour(char code, unsigned int base, unsigned int *out)
+applyColourToken(char code, unsigned int *colour)
 {
-	unsigned int alpha = base & 0xFF;
-	switch(tolower((unsigned char)code)){
-	case 'r': *out = 0xB4191D00 | alpha; return true;
-	case 'g': *out = 0x36682C00 | alpha; return true;
-	case 'b': *out = 0x323C7F00 | alpha; return true;
-	case 'y': *out = 0xE2C06300 | alpha; return true;
-	case 'p': *out = 0xA86EFC00 | alpha; return true;
-	case 'w': *out = 0xE1E1E100 | alpha; return true;
-	case 'l': *out = 0x00000000 | alpha; return true;
+	unsigned int alpha = *colour & 0xFF;
+	switch(code){
+	case 'R': case 'r': *colour = 0xB4191D00 | alpha; return true;
+	case 'G': case 'g': *colour = 0x36682C00 | alpha; return true;
+	case 'B': case 'b': *colour = 0x323C7F00 | alpha; return true;
+	case 'Y': case 'y': *colour = 0xE2C06300 | alpha; return true;
+	case 'P': case 'p': *colour = 0xA86EFC00 | alpha; return true;
+	case 'W': case 'w': case 'S': case 's': *colour = 0xE1E1E100 | alpha; return true;
+	case 'l': *colour = 0x00000000 | alpha; return true;	// lower case only
+	case 'H': case 'h':{
+		unsigned int out = alpha;
+		for(int shift = 8; shift <= 24; shift += 8)
+			out |= (unsigned int)std::min(255.0f, ((*colour >> shift) & 0xFF) * 1.5f) << shift;
+		*colour = out;
+		return true;
+	}
 	}
 	return false;
 }
 
-static unsigned int
-lighten(unsigned int c)
+// The token at s[i] ('~'): its letter, and where the text goes on. The game
+// reads only the first letter and skips to the closing '~' (~red~ is ~r~);
+// an unclosed one hides the rest.
+static char
+readToken(const std::string &s, size_t i, size_t *next)
 {
-	unsigned int out = c & 0xFF;
-	for(int shift = 8; shift <= 24; shift += 8){
-		unsigned int v = (c >> shift) & 0xFF;
-		v = std::min(255u, v + 40u);
-		out |= v << shift;
+	size_t end = s.find('~', i + 1);
+	*next = end == std::string::npos ? s.size() : end + 1;
+	char code = i + 1 < s.size() ? s[i + 1] : '\0';
+	// ~k~~ACTION~ is a key name, put in before any token is read
+	// (CMessages::InsertPlayerControlKeysInString): its action isn't a colour.
+	if((code == 'k' || code == 'K') && *next < s.size() && s[*next] == '~'){
+		end = s.find('~', *next + 1);
+		*next = end == std::string::npos ? s.size() : end + 1;
 	}
-	return out;
+	return code;
 }
 
 static float
@@ -263,7 +278,11 @@ lineHeight(const TextDraw &td)
 	return 16.0f * td.letterY + 2.0f * td.outline;
 }
 
-// Glyphs in canvas units, and the text's bounds.
+// Glyphs in canvas units, and the text's bounds. Like CFont::ProcessCurrentString
+// (0x71A220): a word that doesn't fit starts a new line, and every line starts
+// in the textdraw's colour plus the last colour token before it, which the game
+// copies to the line's start ("~%c~"). So ~y~a~n~b is yellow twice, but
+// ~w~~h~a~n~b's second line is TextDrawColor highlighted, not white.
 static void
 layoutText(const TextDraw &td, std::vector<Glyph> &glyphs, float *minX, float *maxX, int *numLines)
 {
@@ -273,59 +292,62 @@ layoutText(const TextDraw &td, std::vector<Glyph> &glyphs, float *minX, float *m
 	lines[0].width = 0.0f;
 	float wrap = td.alignment == 2 ? td.sizeY : td.alignment == 3 ? td.x - td.sizeX : td.sizeX - td.x;
 	unsigned int colour = td.colour;
+	char tag = '\0';
+	auto newLine = [&](){
+		lines.push_back(Line());
+		lines.back().width = 0.0f;
+		colour = td.colour;
+		if(tag)
+			applyColourToken(tag, &colour);
+	};
 	const std::string &s = td.text;
+	bool inWord = false;
 	for(size_t i = 0; i < s.size(); i++){
 		char c = s[i];
 		if(c == '~'){
-			size_t end = s.find('~', i + 1);
-			if(end != std::string::npos){
-				std::string code = s.substr(i + 1, end - i - 1);
-				unsigned int styled;
-				if(code == "n"){
-					lines.push_back(Line());
-					lines.back().width = 0.0f;
-				}else if(code == "h")
-					colour = lighten(colour);
-				else if(code.size() == 1 && styleColour(code[0], td.colour, &styled))
-					colour = styled;
-				i = end;
-				continue;
-			}
+			size_t next;
+			char code = readToken(s, i, &next);
+			if(code == 'n' || code == 'N'){
+				newLine();
+				inWord = false;
+			}else if(applyColourToken(code, &colour))
+				tag = code;
+			i = next - 1;
+			continue;
 		}
 		if(c == '\n'){
-			lines.push_back(Line());
-			lines.back().width = 0.0f;
+			newLine();
+			inWord = false;
 			continue;
 		}
 		float advance = charAdvance(td, (unsigned char)c);
-		Line *line = &lines.back();
-		// Word wrap at the text size, like the client.
-		if(wrap > 0.0f && line->width + advance > wrap && c != ' ' && !line->glyphs.empty()){
-			size_t cut = line->glyphs.size();
-			while(cut > 0 && line->glyphs[cut-1].index != 0) cut--;
-			Line next;
-			next.width = 0.0f;
-			if(cut > 0){
-				for(size_t g = cut; g < line->glyphs.size(); g++){
-					Glyph moved = line->glyphs[g];
-					moved.x = next.width;
-					next.width += line->glyphs[g].y;	// advance kept in y for now
-					next.glyphs.push_back(moved);
+		if(c == ' ')
+			inWord = false;
+		else if(!inWord){
+			// Word wrap at the text size: the whole word moves, like the client.
+			inWord = true;
+			float word = 0.0f;
+			for(size_t k = i; k < s.size() && s[k] != ' ' && s[k] != '\n'; k++){
+				if(s[k] == '~'){
+					size_t next;
+					char code = readToken(s, k, &next);
+					if(code == 'n' || code == 'N')
+						break;
+					k = next - 1;
+					continue;
 				}
-				line->glyphs.resize(cut);
-				line->width = 0.0f;
-				for(size_t g = 0; g < line->glyphs.size(); g++)
-					line->width += line->glyphs[g].y;
+				word += charAdvance(td, (unsigned char)s[k]);
 			}
-			lines.push_back(next);
-			line = &lines.back();
+			if(wrap > 0.0f && !lines.back().glyphs.empty() && lines.back().width + word > wrap)
+				newLine();
 		}
+		Line *line = &lines.back();
 		Glyph g;
 		g.x = line->width;
-		g.y = advance;
 		// '_' is the usual invisible character in textdraws.
 		g.index = c == '_' ? 0 : glyphIndex(td.font, (unsigned char)c);
 		g.colour = rgbaToImU32(colour);
+		g.rgba = colour;
 		line->glyphs.push_back(g);
 		line->width += advance;
 	}
@@ -340,10 +362,36 @@ layoutText(const TextDraw &td, std::vector<Glyph> &glyphs, float *minX, float *m
 			Glyph glyph = lines[l].glyphs[g];
 			glyph.x += start;
 			glyph.y = td.y + l * lineHeight(td);
+			glyph.line = (int)l;
 			glyphs.push_back(glyph);
 		}
 	}
 	*numLines = (int)lines.size();
+}
+
+std::string
+DescribeTextDrawColours(const TextDraw &td)
+{
+	std::vector<Glyph> glyphs;
+	float minX, maxX;
+	int lines;
+	layoutText(td, glyphs, &minX, &maxX, &lines);
+	std::string out;
+	char buf[32];
+	for(int l = 0; l < lines; l++){
+		snprintf(buf, sizeof(buf), "%sline %d:", l ? "\n" : "", l + 1);
+		out += buf;
+		unsigned int last = 0;
+		bool any = false;
+		for(const Glyph &g : glyphs)
+			if(g.line == l && (!any || g.rgba != last)){
+				snprintf(buf, sizeof(buf), " %08X", g.rgba);
+				out += buf;
+				last = g.rgba;
+				any = true;
+			}
+	}
+	return out;
 }
 
 // The area a textdraw covers on the canvas: its box, sprite or text.

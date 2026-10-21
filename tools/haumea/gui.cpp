@@ -12451,6 +12451,17 @@ gui(void)
 					fflush(stdout);
 					sk::globals.quit = 1;
 				}
+			// --textdraw-colours text RRGGBBAA: each line's colours (tests).
+			for(int i = 1; i + 2 < sk::args.argc; i++)
+				if(strcmp(sk::args.argv[i], "--textdraw-colours") == 0){
+					TextDraw td;
+					InitTextDraw(&td);
+					td.text = sk::args.argv[i+1];
+					td.colour = (unsigned int)strtoul(sk::args.argv[i+2], nil, 16);
+					printf("textdraw-colours:\n%s\n", DescribeTextDrawColours(td).c_str());
+					fflush(stdout);
+					sk::globals.quit = 1;
+				}
 			if(sk::globals.quit){
 			}else if(textDrawsIn){
 				std::string error;

@@ -182,6 +182,24 @@ keep them in the map, they show on the canvas but are read-only and are saved ba
 
 ![The TextDraw designer](images/textdraws.png)
 
+### TextDraw colour tokens
+
+The canvas follows the game's rules for the tokens in a textdraw's text:
+
+- `~r~` red, `~g~` green, `~b~` blue, `~y~` yellow, `~p~` purple, `~w~` and `~s~` light grey,
+  `~l~` black (lower case only). Only the first letter counts: `~red~` is `~r~`.
+- `~h~` makes the current colour 1.5 times brighter, and stacks: `~h~~h~` is brighter still.
+- `~n~` starts a new line. The new line starts in the textdraw's own colour (TextDrawColor)
+  plus the **last** colour token before it, and nothing else. Lines wrapped at the text size
+  work the same way.
+  - `~y~test~n~test`: both lines are yellow.
+  - `test~n~test` (no token): both lines are TextDrawColor.
+  - `~w~~h~test~n~test`: the first line is bright white, the second is TextDrawColor brightened
+    once (`~h~` was the last token), not white.
+  - `~r~~h~test~n~test`: the second line is also TextDrawColor brightened, not light red.
+  - `test~n~~w~test`: a token after `~n~` applies as usual.
+- `~k~~PED_FIREWEAPON~` shows a key name in game; Haumea leaves it out.
+
 ## Prefabs
 
 A prefab is a group of objects saved to place again. Select the objects and use **File → Export

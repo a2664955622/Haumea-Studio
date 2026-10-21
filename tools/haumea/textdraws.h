@@ -85,6 +85,9 @@ void EnterTextDrawMode(void);
 void ExitTextDrawMode(void);
 void DrawTextDrawsWindow(void);	// the mode's panel, banner and popups
 void DrawTextDrawsOverlay(void);	// the canvas
+// Each line's text colours as RRGGBBAA, after the ~colour~, ~h~ and ~n~
+// tokens (tests: --textdraw-colours).
+std::string DescribeTextDrawColours(const TextDraw &td);
 void TextDrawsBeforeWorldRender(void);	// model previews, offscreen
 void TextDrawsAfterWorldRender(void);	// takes the still frame
 bool TextDrawModeShortcut(int action);	// true when the mode handled it
