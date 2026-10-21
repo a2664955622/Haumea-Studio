@@ -707,34 +707,113 @@ bannerBegin(const char *id)
 
 // After an update or a roll back: once, until dismissed.
 static void
-noticeBanner(void)
+noticeContents(void)
 {
-	if(gNoticeKind.empty())
-		return;
-	if(bannerBegin("##updater_notice")){
-		if(gNoticeKind == "updated"){
-			ImGui::Text(ICON_FA_CHECK " Updated to Haumea Studio %s", gNoticeVersion.c_str());
-			for(const std::string &p : gNoticeLocal)
-				ImGui::TextWrapped("You had changed %s: your copy is %s.local.", p.c_str(), p.c_str());
-			if(ImGui::Button("What's new"))
-				gShowWhatsNew = true;
-			ImGui::SameLine();
-		}else if(gNoticeKind == "rolledback"){
-			ImGui::Text(ICON_FA_ROTATE_LEFT " Back to Haumea Studio %s", gNoticeOther.c_str());
-			ImGui::TextDisabled("%s won't be offered again.", gNoticeVersion.c_str());
-		}else{
-			ImGui::TextWrapped(ICON_FA_TRIANGLE_EXCLAMATION " The update wasn't installed: %s", gNoticeError.c_str());
-		}
-		if(ImGui::Button("OK"))
-			gNoticeKind.clear();
+	if(gNoticeKind == "updated"){
+		ImGui::Text(ICON_FA_CHECK " Updated to Haumea Studio %s", gNoticeVersion.c_str());
+		for(const std::string &p : gNoticeLocal)
+			ImGui::TextWrapped("You had changed %s: your copy is %s.local.", p.c_str(), p.c_str());
+		if(ImGui::Button("What's new"))
+			gShowWhatsNew = true;
+		ImGui::SameLine();
+	}else if(gNoticeKind == "rolledback"){
+		ImGui::Text(ICON_FA_ROTATE_LEFT " Back to Haumea Studio %s", gNoticeOther.c_str());
+		ImGui::TextDisabled("%s won't be offered again.", gNoticeVersion.c_str());
+	}else{
+		ImGui::TextWrapped(ICON_FA_TRIANGLE_EXCLAMATION " The update wasn't installed: %s", gNoticeError.c_str());
 	}
-	ImGui::End();
+	if(ImGui::Button("OK##updater_notice"))
+		gNoticeKind.clear();
+}
+
+// The banner's text and buttons, in the floating banner or the start screen.
+static void
+bannerContents(int status)
+{
+	ImGui::Text(ICON_FA_BELL " Haumea Studio %s %s", gRelease.version.c_str(),
+		status == UPD_DOWNLOADING ? "is downloading" : status == UPD_READY ? "is ready to install" : "is available");
+	if(status == UPD_AVAILABLE){
+		if(!gNotifyOnly.empty())
+			ImGui::TextDisabled("%s", gNotifyOnly.c_str());
+		if(ImGui::Button("What's new"))
+			gShowWhatsNew = true;
+		ImGui::SameLine();
+		if(gNotifyOnly.empty()){
+			if(ImGui::Button("Update now"))
+				startDownload();
+			ImGui::SetItemTooltip("Downloads it in the background; it installs when Haumea restarts.");
+		}else if(!gRelease.pageUrl.empty())
+			ImGui::TextLinkOpenURL("Release page", gRelease.pageUrl.c_str());
+		ImGui::SameLine();
+		if(ImGui::Button("Later"))
+			gBannerHidden = true;
+		ImGui::SameLine();
+		if(ImGui::Button("Skip this version")){
+			snprintf(gUpdateSkip, sizeof(gUpdateSkip), "%s", gRelease.version.c_str());
+			SaveEditorSettingsNow();
+			gBannerHidden = true;
+		}
+	}else if(status == UPD_DOWNLOADING){
+		const UpdateAsset *asset = UpdateBundleName() ? gRelease.Find(UpdateBundleName()) : nil;
+		long long total = asset ? asset->size : 0;
+		if(total > 0)
+			ImGui::ProgressBar((float)((double)gDownloadedBytes / total));
+		else
+			ImGui::ProgressBar(-1.0f * (float)ImGui::GetTime());
+		if(ImGui::Button("Hide"))
+			gBannerHidden = true;
+		ImGui::SetItemTooltip("The download goes on; the update installs when Haumea restarts.");
+	}else if(status == UPD_READY){
+		const char *blocker = restartBlocker();
+		ImGui::BeginDisabled(blocker != nil);
+		if(ImGui::Button("Restart now") && !RestartHaumeaKeepingArgs())
+			Toast(TOAST_SELECTION, "Couldn't restart: the update installs next time");
+		ImGui::EndDisabled();
+		if(blocker)
+			ImGui::SetItemTooltip("%s The update installs the next time Haumea starts.", blocker);
+		ImGui::SameLine();
+		if(ImGui::Button("Later"))
+			gBannerHidden = true;
+		ImGui::SetItemTooltip("It installs the next time Haumea starts.");
+	}else{
+		ImGui::TextWrapped("The update failed: %s", gError.c_str());
+		if(ImGui::Button("Try again"))
+			startDownload();
+		ImGui::SameLine();
+		if(ImGui::Button("Dismiss"))
+			gBannerHidden = true;
+	}
+}
+
+// The release banner is up: a newer version is available, downloading,
+// ready, or failed to download.
+static bool
+releaseNews(int status)
+{
+	return !gBannerHidden && (status == UPD_AVAILABLE || status == UPD_DOWNLOADING || status == UPD_READY ||
+		(status == UPD_FAILED && !gRelease.version.empty()));
+}
+
+bool
+UpdaterHasNews(void)
+{
+	return !gNoticeKind.empty() || releaseNews(gStatus);
+}
+
+void
+UpdaterDrawInline(void)
+{
+	ImGui::PushID("updater_inline");
+	if(!gNoticeKind.empty())
+		noticeContents();
+	else if(releaseNews(gStatus))
+		bannerContents(gStatus);
+	ImGui::PopID();
 }
 
 void
 UpdaterDrawGui(void)
 {
-	noticeBanner();
 	whatsNewWindow();
 	int status = gStatus;
 	if(gManualCheck && (status == UPD_UP_TO_DATE || status == UPD_OFFLINE || status == UPD_FAILED)){
@@ -746,64 +825,18 @@ UpdaterDrawGui(void)
 		gStatus = UPD_IDLE;
 		return;
 	}
-	if(gBannerHidden || !(status == UPD_AVAILABLE || status == UPD_DOWNLOADING || status == UPD_READY ||
-	   (status == UPD_FAILED && !gRelease.version.empty())))
+	// TODO(startscreen): skip the floating banner while StartScreenOpen(); the
+	// start screen draws UpdaterDrawInline() instead.
+	if(!gNoticeKind.empty()){
+		if(bannerBegin("##updater_notice"))
+			noticeContents();
+		ImGui::End();
 		return;
-	if(bannerBegin("##updater")){
-		ImGui::Text(ICON_FA_BELL " Haumea Studio %s %s", gRelease.version.c_str(),
-			status == UPD_DOWNLOADING ? "is downloading" : status == UPD_READY ? "is ready to install" : "is available");
-		if(status == UPD_AVAILABLE){
-			if(!gNotifyOnly.empty())
-				ImGui::TextDisabled("%s", gNotifyOnly.c_str());
-			if(ImGui::Button("What's new"))
-				gShowWhatsNew = true;
-			ImGui::SameLine();
-			if(gNotifyOnly.empty()){
-				if(ImGui::Button("Update now"))
-					startDownload();
-				ImGui::SetItemTooltip("Downloads it in the background; it installs when Haumea restarts.");
-			}else if(!gRelease.pageUrl.empty())
-				ImGui::TextLinkOpenURL("Release page", gRelease.pageUrl.c_str());
-			ImGui::SameLine();
-			if(ImGui::Button("Later"))
-				gBannerHidden = true;
-			ImGui::SameLine();
-			if(ImGui::Button("Skip this version")){
-				snprintf(gUpdateSkip, sizeof(gUpdateSkip), "%s", gRelease.version.c_str());
-				SaveEditorSettingsNow();
-				gBannerHidden = true;
-			}
-		}else if(status == UPD_DOWNLOADING){
-			const UpdateAsset *asset = UpdateBundleName() ? gRelease.Find(UpdateBundleName()) : nil;
-			long long total = asset ? asset->size : 0;
-			if(total > 0)
-				ImGui::ProgressBar((float)((double)gDownloadedBytes / total));
-			else
-				ImGui::ProgressBar(-1.0f * (float)ImGui::GetTime());
-			if(ImGui::Button("Hide"))
-				gBannerHidden = true;
-			ImGui::SetItemTooltip("The download goes on; the update installs when Haumea restarts.");
-		}else if(status == UPD_READY){
-			const char *blocker = restartBlocker();
-			ImGui::BeginDisabled(blocker != nil);
-			if(ImGui::Button("Restart now") && !RestartHaumeaKeepingArgs())
-				Toast(TOAST_SELECTION, "Couldn't restart: the update installs next time");
-			ImGui::EndDisabled();
-			if(blocker)
-				ImGui::SetItemTooltip("%s The update installs the next time Haumea starts.", blocker);
-			ImGui::SameLine();
-			if(ImGui::Button("Later"))
-				gBannerHidden = true;
-			ImGui::SetItemTooltip("It installs the next time Haumea starts.");
-		}else{
-			ImGui::TextWrapped("The update failed: %s", gError.c_str());
-			if(ImGui::Button("Try again"))
-				startDownload();
-			ImGui::SameLine();
-			if(ImGui::Button("Dismiss"))
-				gBannerHidden = true;
-		}
 	}
+	if(!releaseNews(status))
+		return;
+	if(bannerBegin("##updater"))
+		bannerContents(status);
 	ImGui::End();
 }
 

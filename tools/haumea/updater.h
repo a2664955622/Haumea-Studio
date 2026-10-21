@@ -22,6 +22,10 @@ void UpdaterCheckForUpdate(void);
 void UpdaterCheckNow(void);
 // Every frame: the banner and What's new.
 void UpdaterDrawGui(void);
+// Something to show (an update, or what the last one did), and the same
+// text and buttons drawn in the caller's layout (the start screen).
+bool UpdaterHasNews(void);
+void UpdaterDrawInline(void);
 // Help menu: Check for updates, Roll back.
 void UpdaterHelpMenuItems(void);
 // Preferences > Updates.
