@@ -73,6 +73,7 @@ struct ObjectInst;
 
 #include "sapaths.h"
 #include "textdraws.h"
+#include "checkpoints.h"
 #include "startscreen.h"
 
 #ifdef RWHALFPIXEL

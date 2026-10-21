@@ -10440,45 +10440,12 @@ uiDrawSampElementOverlays(void)
 			break;
 		}
 		case SAMP_ELEMENT_CHECKPOINT: {
-			// The game's red cylinder; a race checkpoint gets an arrow to the next.
+			// The marker itself is a mesh (checkpoints.cpp); this is its tag.
 			if(dist > 400.0f && !selected)
 				break;
 			bool race = properties->cpKind == SAMP_CHECKPOINT_RACE;
-			rw::RGBA col = selected ? rw::RGBA{ 255, 220, 90, 255 } :
-				race ? rw::RGBA{ 255, 200, 40, 230 } : rw::RGBA{ 230, 50, 50, 230 };
 			const rw::V3d &c = inst->m_translation;
-			float r = max(properties->cpSize * 0.5f, 0.25f);
-			float h = race ? 0.2f : 1.5f;
-			const int segments = 48;
-			for(int k = 0; k < segments; k++){
-				float a0 = (float)k / segments * 2.0f * (float)M_PI;
-				float a1 = (float)(k + 1) / segments * 2.0f * (float)M_PI;
-				rw::V3d p0 = { c.x + r * cosf(a0), c.y + r * sinf(a0), c.z };
-				rw::V3d p1 = { c.x + r * cosf(a1), c.y + r * sinf(a1), c.z };
-				RenderLine(p0, p1, col, col);
-				RenderLine({ p0.x, p0.y, p0.z + h }, { p1.x, p1.y, p1.z + h }, col, col);
-				if(k % 6 == 0)
-					RenderLine(p0, { p0.x, p0.y, p0.z + h }, col, col);
-			}
-			ObjectInst *next = race ? GetNextRaceCheckpoint(inst) : nil;
-			if(next){
-				// The race line, and an arrow over the checkpoint pointing along it.
-				rw::V3d n = next->m_translation;
-				rw::RGBA faint = { col.red, col.green, col.blue, 120 };
-				RenderLine({ c.x, c.y, c.z + 0.3f }, { n.x, n.y, n.z + 0.3f }, faint, faint);
-				rw::V3d d = { n.x - c.x, n.y - c.y, n.z - c.z };
-				float len = sqrtf(d.x*d.x + d.y*d.y + d.z*d.z);
-				if(len > 0.01f){
-					d = { d.x / len, d.y / len, d.z / len };
-					rw::V3d base = { c.x, c.y, c.z + 2.5f };
-					rw::V3d tip = { base.x + d.x * 2.0f, base.y + d.y * 2.0f, base.z + d.z * 2.0f };
-					rw::V3d side = { -d.y * 0.6f, d.x * 0.6f, 0.0f };
-					rw::V3d back = { tip.x - d.x * 0.8f, tip.y - d.y * 0.8f, tip.z - d.z * 0.8f };
-					RenderLine(base, tip, col, col);
-					RenderLine(tip, { back.x + side.x, back.y + side.y, back.z }, col, col);
-					RenderLine(tip, { back.x - side.x, back.y - side.y, back.z }, col, col);
-				}
-			}
+			float h = max(1.0f, properties->cpSize * 0.75f);
 			rw::V3d above = c;
 			above.z += race ? 3.5f : h + 0.5f;
 			if((dist > 120.0f && !selected) || !(ElementKindUsesIcon(kind) ? toScreen(inst->m_translation, &screen) : uiWorldToScreen(above, &screen)))
