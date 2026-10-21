@@ -8,7 +8,7 @@ has open.mp's server (they get a free port in UI_SERVER_PORT; a server still
 running from the test's folder afterwards fails it and is stopped). Every run
 has its own config folder. A failing script prints its log.
 
-Scripts run several at once (UI_JOBS, default min(4, CPUs/4)): when the module
+Scripts run several at once (UI_JOBS, default CPUs/8, at least 1): when the module
 is loaded as a whole (run_all.sh, discover, `-m unittest test_ui_scripts`),
 every selected script starts on a worker pool and each test then takes its
 own result; a single test named on the command line runs by itself. A summary
@@ -225,7 +225,7 @@ def ui_jobs():
     try:
         return max(1, int(os.environ['UI_JOBS']))
     except (KeyError, ValueError):
-        return max(1, min(4, (os.cpu_count() or 4) // 4))
+        return max(1, (os.cpu_count() or 8) // 8)
 
 
 @unittest.skipUnless(BINARY and XVFB, 'needs the editor and Xvfb')

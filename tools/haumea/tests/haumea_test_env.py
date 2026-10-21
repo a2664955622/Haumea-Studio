@@ -15,6 +15,11 @@ import tempfile
 # For any editor a test starts on Linux: no Wayland compositor to find.
 NO_WAYLAND = {'WAYLAND_DISPLAY': '/nonexistent/haumea-test', 'XDG_SESSION_TYPE': 'x11'}
 
+# Mesa's software renderer starts one render thread per CPU in every editor: with
+# many test editors at once that is hundreds of threads. Two each (LP_NUM_THREADS,
+# unless set), no GL thread, and always llvmpipe, so runs behave the same.
+SOFTWARE_GL = {'MESA_GLTHREAD': 'false', 'GALLIUM_DRIVER': 'llvmpipe'}
+
 
 def check_virtual_display():
     """Raise unless an editor started now would open on a virtual display
@@ -45,6 +50,8 @@ def editor_env(scratch, virtual_display=False):
     env['APPDATA'] = config
     # Start empty: never inherit the user's old <GTA>/haumea_data.
     env['HAUMEA_NO_MIGRATE'] = '1'
+    env.update(SOFTWARE_GL)
+    env.setdefault('LP_NUM_THREADS', '2')
     if sys.platform == 'darwin':
         env['HOME'] = config
     return env

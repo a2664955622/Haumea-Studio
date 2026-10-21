@@ -5,7 +5,7 @@ The editor (HAUMEA_BINARY, with HAUMEA_GAME_DIR) opens and saves each map
 (--pawn-roundtrip) into work-dir/v1, then saves that output again into
 work-dir/v2. Both saves must match, and v1 must match expected/ (--update
 copies v1 there instead). Maps run several at once (TEST_JOBS, default the
-CPU count); results print in map order. Exit status 1 when any map fails.
+CPUs/8, at least 1); results print in map order. Exit status 1 when any map fails.
 """
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -22,7 +22,7 @@ def jobs():
 	try:
 		return max(1, int(os.environ['TEST_JOBS']))
 	except (KeyError, ValueError):
-		return os.cpu_count() or 4
+		return max(1, (os.cpu_count() or 8) // 8)
 
 
 def diff(a, b, limit):

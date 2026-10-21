@@ -3,7 +3,7 @@
 # 0 errors and 0 warnings: against open.mp's includes, and against SA-MP
 # 0.3.7's for maps without open.mp-only calls (no <open.mp> include).
 # The default maps are the expected exporter output in expected/.
-# Compiles run several at once (TEST_JOBS, default the CPU count); results
+# Compiles run several at once (TEST_JOBS, default CPUs/8, at least 1); results
 # print in map order.
 set -eu
 HERE=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
@@ -38,7 +38,8 @@ MAPS=${1:-$HERE/expected}
 "$HERE/fetch_toolchain.sh" "$DIR"
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
-JOBS=${TEST_JOBS:-$(nproc 2>/dev/null || echo 4)}
+JOBS=${TEST_JOBS:-$(( $(nproc 2>/dev/null || echo 8) / 8 ))}
+[ "$JOBS" -ge 1 ] || JOBS=1
 for map in "$MAPS"/*.pwn; do
 	printf '%s\n%s\n' "$map" openmp
 	grep -q '#include <open.mp>' "$map" || printf '%s\n%s\n' "$map" samp037

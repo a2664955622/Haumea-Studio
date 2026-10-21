@@ -19,7 +19,7 @@ Uses the Pawn toolchain (PAWN_TOOLCHAIN: open.mp's Linux server and pawncc,
 the streamer include and plugin) and, when HAUMEA_GAME_DIR is set, the game's
 path node files for NPC_PlayNode and gta3.img for the showcase's custom model.
 Exit status 0 when every map passes; 2 when it can't run (no server).
-Maps run several at once (TEST_JOBS, default the CPU count, at most 8), each
+Maps run several at once (TEST_JOBS, default CPUs/8, at least 1), each
 in its own server folder on its own free port; results print in map order.
 """
 import json
@@ -414,7 +414,7 @@ def jobs():
 	try:
 		return max(1, int(os.environ['TEST_JOBS']))
 	except (KeyError, ValueError):
-		return min(8, os.cpu_count() or 4)
+		return max(1, (os.cpu_count() or 8) // 8)
 
 
 def main():

@@ -7,8 +7,10 @@
 # `git diff main...HEAD` and uncommitted changes, or the paths after --touch).
 # It prints what it picked and why. Full runs stay for release candidates.
 #
-# Parts run in parallel: UI scripts (UI_JOBS, default min(4, CPUs/4)), the round
-# trips, the compiles and the server checks (TEST_JOBS, default the CPU count).
+# Parts run in parallel: UI scripts (UI_JOBS), the round trips, the compiles and
+# the server checks (TEST_JOBS); both default to CPUs/8, at least 1. Every editor
+# gets LP_NUM_THREADS=2 (unless set): Mesa's software renderer otherwise starts a
+# render thread per CPU in each one.
 #
 #  1. The unit tests in this folder (python3 -m unittest). Tests that need the
 #     editor binary, the game, a display or a built librw skip with a reason.
@@ -77,6 +79,11 @@ if [ "$(uname -s)" = Linux ] && [ "${HAUMEA_TEST_XVFB:-}" != 1 ]; then
 fi
 status=0
 SYNTHETIC=0
+# Mesa's software renderer: two render threads per editor, no GL thread.
+LP_NUM_THREADS=${LP_NUM_THREADS:-2}
+MESA_GLTHREAD=false
+GALLIUM_DRIVER=${GALLIUM_DRIVER:-llvmpipe}
+export LP_NUM_THREADS MESA_GLTHREAD GALLIUM_DRIVER
 # "== name": each part's title, and how long the one before took.
 RUN_START=$(date +%s)
 PHASE_START=$RUN_START
