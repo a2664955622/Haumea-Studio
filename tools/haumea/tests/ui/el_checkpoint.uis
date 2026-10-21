@@ -1,0 +1,39 @@
+# Race checkpoints: name a race in the SA-MP tab, shift+click three points, make the last a Finish; save, reopen.
+open "$UI_FIXTURES/ui_floor_streamer.pwn"
+shortcut window_browser
+wait 5
+click_item 'Object Browser' 'SA-MP'
+wait 5
+scroll_until 'Object Browser' 'Race'
+set_item 'Object Browser' 'Race' "rally" tab
+wait 3
+# Tab scrolled the panel back up.
+scroll_until 'Object Browser' 'Race'
+click_item 'Object Browser' 'Place' -1
+wait 3
+click_world 1997 -3000 4 shift
+wait 5
+click_world 2000 -3000 4 shift
+wait 5
+click_world 2003 -3000 4
+wait 5
+key Esc
+assert objects == 4
+shortcut window_object_info
+wait 5
+set_item 'Object Info' 'Size' "6"
+wait 3
+click_item 'Object Info' 'Type'
+wait 3
+click_item '*' '1  Finish'
+wait 3
+key Ctrl+S
+wait 5
+reopen
+wait 10
+assert objects == 4
+# Each points at the next; the last is a Finish that points at none.
+assert pawn_contains "CreateDynamicRaceCP(0, 199" streamer
+assert pawn_contains "CreateDynamicRaceCP(1, 200" streamer
+assert pawn_lacks "CreateDynamicCP(" streamer
+assert pawn_contains ", 0.000000, 0.000000, 0.000000, 6.00, -1, -1, -1, STREAMER_RACE_CP_SD); // checkpoint @race(\"rally\")" streamer
