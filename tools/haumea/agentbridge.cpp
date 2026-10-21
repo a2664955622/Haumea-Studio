@@ -538,10 +538,11 @@ startNamakaTcp(void)
 	}
 	int oldPort = 0;
 	char oldToken[300] = "";
+	// {"port": N, "token": "..."}, as written below (spaces allowed).
 	const char *portAt = strstr(old.c_str(), "\"port\":");
-	const char *tokenAt = strstr(old.c_str(), "\"token\":\"");
+	const char *tokenAt = strstr(old.c_str(), "\"token\":");
 	if(portAt && tokenAt && sscanf(portAt + 7, "%d", &oldPort) == 1 &&
-	   sscanf(tokenAt + 9, "%299[^\"]", oldToken) == 1 && namakaConnectionAnswers(oldPort, oldToken)){
+	   sscanf(tokenAt + 8, " \"%299[^\"]", oldToken) == 1 && namakaConnectionAnswers(oldPort, oldToken)){
 		gAgentSocketBusy = true;
 		log("Agent: another Haumea is listening for Namaka (127.0.0.1:%d); not listening\n", oldPort);
 		return false;
