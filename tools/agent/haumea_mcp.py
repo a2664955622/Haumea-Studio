@@ -61,7 +61,10 @@ mcp = MCPServer(
 		"Find models with search_assets. For larger scenes: survey the area, build a palette with "
 		"propose_asset_palette and render_palette_board, use stable keys in apply_scene_patch, block "
 		"out large forms before details, review the images and fix concrete findings. Preserve "
-		"locked objects and the user's selection and camera."
+		"locked objects and the user's selection. Move the user's camera with move_camera only "
+		"when they ask to see or go somewhere, or to show a result you just made; otherwise look "
+		"with capture_from_pose, which leaves it alone. Whenever you move it, say so and that "
+		"camera_back returns."
 	),
 )
 
@@ -310,6 +313,30 @@ def begin_edit_session(name: str = "agent-proposal") -> dict:
 def camera_context() -> dict:
 	"""Read the exact live camera pose, basis, FOV, aspect ratio, and viewport."""
 	return service.engine("camera_context")
+
+
+@mcp.tool()
+def move_camera(look_at: int | str | list[float] | None = None,
+	            position: list[float] | None = None, target: list[float] | None = None,
+	            distance: float | None = None, pitch: float = 30.0) -> dict:
+	"""Fly the user's live view (a 0.3 s move) when they ask to see or go somewhere, or to
+	show them a result you just made; to only look, use capture_from_pose instead.
+
+	Either position and target ([x, y, z] each), or look_at: an instance id, "selection",
+	a scene group, a project zone's name, an element's name (its name or npc_name
+	property) or [x, y, z]. look_at keeps the user's heading, looks pitch degrees down
+	and backs off distance metres (default: enough to fit it). Returns the new camera
+	and camera_revision. Refused with "busy" while the user drags the gizmo, places or
+	looks around: wait and try again. Always tell the user you moved the view and that
+	camera_back returns."""
+	return service.move_camera(position=position, target=target, look_at=look_at,
+	                           distance=distance, pitch=pitch)
+
+
+@mcp.tool()
+def camera_back() -> dict:
+	"""Fly the live view back to where it was before the last move_camera (up to 10 moves)."""
+	return service.camera_back()
 
 
 @mcp.tool()

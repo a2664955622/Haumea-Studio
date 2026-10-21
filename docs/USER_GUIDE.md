@@ -62,6 +62,11 @@ look button can be changed in **Preferences → Camera**.
    exact values in **Object Info** (`Ctrl+2`). `G` drops it to the ground, `F` focuses the
    camera on it, and `Ctrl+D` duplicates it.
 
+**Edit → Go to Coordinates** (`Ctrl+J`) points the camera at a position you paste: `x, y, z`,
+`x y z` with an angle after it, or a whole `SetPlayerPos(playerid, x, y, z);` line. It only
+moves the view, so there's nothing to undo. **Edit → Copy Camera Position** copies where the
+camera is as `x, y, z`.
+
 The toolbar switches step snapping (the magnet), object snap (`N`) and ground following on
 and off. **Tools** holds their settings, plus the brush for scattering objects.
 
@@ -260,6 +265,10 @@ each time, written to `namaka\connection.json` in the config folder. **Let Namak
 (**Preferences → Namaka**, or the panel) turns this off from the next start. Only one Haumea at a
 time can be reached: if another one already is, the panel says so. Starting Haumea with
 `--agent-socket` still uses that socket instead.
+The assistant usually looks at the map without moving your view. When you ask it to show you
+something or take you somewhere, it flies the camera there (`move_camera`) and tells you;
+`camera_back` returns to where you were. It never moves the camera while you're dragging the
+gizmo, placing or looking around with the right mouse button.
 An Agent Alpha install keeps working; once Namaka is set up, point your MCP client at it and
 delete the old folder. More in [the setup guide](../tools/release/AGENT_README.md).
 

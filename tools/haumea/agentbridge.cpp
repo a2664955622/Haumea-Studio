@@ -102,6 +102,15 @@ static bool gAgentCaptureRestore;
 static uint32 gAgentCaptureCameraRevision;
 static std::string gAgentCaptureLabel;
 
+// camera_move flies the user's live camera; camera_back undoes the last moves.
+static const float AGENT_CAMERA_FLY_SECONDS = 0.3f;
+static const int AGENT_CAMERA_BACK_POSES = 10;
+static std::vector<AgentCameraPose> gAgentCameraBack;
+static bool gAgentCameraFlyPending;
+static AgentCameraPose gAgentCameraFlyFrom, gAgentCameraFlyTo;
+static float gAgentCameraFlyTime;
+static std::string gAgentCameraFlyRequestId;
+
 #ifdef _WIN32
 typedef SOCKET AgentSocket;
 static const AgentSocket INVALID_AGENT_SOCKET = INVALID_SOCKET;
@@ -264,6 +273,28 @@ cameraPoseJson(const AgentCameraPose &pose)
 		pose.target.x, pose.target.y, pose.target.z,
 		forward.x, forward.y, forward.z, right.x, right.y, right.z,
 		viewUp.x, viewUp.y, viewUp.z, pose.up.x, pose.up.y, pose.up.z, pose.fov);
+	return body;
+}
+
+static std::string
+cameraContextBody(void)
+{
+	rw::V3d forward = rw::normalize(rw::sub(TheCamera.m_target, TheCamera.m_position));
+	rw::V3d right = rw::normalize(rw::cross(forward, TheCamera.m_up));
+	rw::V3d up = rw::normalize(rw::cross(right, forward));
+	char body[1024];
+	snprintf(body, sizeof(body),
+		"\"camera\":{\"position\":[%.5f,%.5f,%.5f],\"target\":[%.5f,%.5f,%.5f],"
+		"\"forward\":[%.6f,%.6f,%.6f],\"right\":[%.6f,%.6f,%.6f],"
+		"\"up\":[%.6f,%.6f,%.6f],\"fov\":%.3f,\"aspect_ratio\":%.6f,"
+		"\"viewport\":[%d,%d],\"near_plane\":%.4f,\"far_plane\":%.4f,"
+		"\"projection\":\"perspective\",\"camera_revision\":%u}",
+		TheCamera.m_position.x, TheCamera.m_position.y, TheCamera.m_position.z,
+		TheCamera.m_target.x, TheCamera.m_target.y, TheCamera.m_target.z,
+		forward.x, forward.y, forward.z, right.x, right.y, right.z,
+		up.x, up.y, up.z, TheCamera.m_fov, TheCamera.m_aspectRatio,
+		sk::globals.width, sk::globals.height, TheCamera.m_rwcam->nearPlane,
+		TheCamera.m_rwcam->farPlane, gAgentCameraRevision);
 	return body;
 }
 
@@ -3904,23 +3935,7 @@ handleRequest(const std::vector<std::string> &lines)
 		writeResponse(requestId, true, body + "]"); return;
 	}
 	if(command == "camera_context"){
-		rw::V3d forward = rw::normalize(rw::sub(TheCamera.m_target, TheCamera.m_position));
-		rw::V3d right = rw::normalize(rw::cross(forward, TheCamera.m_up));
-		rw::V3d up = rw::normalize(rw::cross(right, forward));
-		char body[1024];
-		snprintf(body, sizeof(body),
-			"\"camera\":{\"position\":[%.5f,%.5f,%.5f],\"target\":[%.5f,%.5f,%.5f],"
-			"\"forward\":[%.6f,%.6f,%.6f],\"right\":[%.6f,%.6f,%.6f],"
-			"\"up\":[%.6f,%.6f,%.6f],\"fov\":%.3f,\"aspect_ratio\":%.6f,"
-			"\"viewport\":[%d,%d],\"near_plane\":%.4f,\"far_plane\":%.4f,"
-			"\"projection\":\"perspective\",\"camera_revision\":%u}",
-			TheCamera.m_position.x, TheCamera.m_position.y, TheCamera.m_position.z,
-			TheCamera.m_target.x, TheCamera.m_target.y, TheCamera.m_target.z,
-			forward.x, forward.y, forward.z, right.x, right.y, right.z,
-			up.x, up.y, up.z, TheCamera.m_fov, TheCamera.m_aspectRatio,
-			sk::globals.width, sk::globals.height, TheCamera.m_rwcam->nearPlane,
-			TheCamera.m_rwcam->farPlane, gAgentCameraRevision);
-		writeResponse(requestId, true, body);
+		writeResponse(requestId, true, cameraContextBody());
 		return;
 	}
 	if(command == "raycast_segment"){
@@ -4406,6 +4421,131 @@ handleRequest(const std::vector<std::string> &lines)
 			supportIssues + "," + overlaps + "," + duplicates + "," + propOverlaps);
 		return;
 	}
+	if(command == "camera_move" || command == "camera_back"){
+		// Never while the user is steering: they would fight over the camera.
+		const char *busy = gGizmoUsing ? "dragging the gizmo" : gCameraLooking ? "looking around (right mouse button)" :
+			gPlaceMode || gPrefabPlaceMode ? "placing" : gBrushMode ? "painting with the brush" : nil;
+		if(busy){
+			std::string message = std::string("busy: the user is ") + busy + ", try again in a moment";
+			writeError(requestId, message.c_str());
+			return;
+		}
+		AgentCameraPose from = currentCameraPose();
+		AgentCameraPose to = from;
+		if(command == "camera_back"){
+			if(gAgentCameraBack.empty()){
+				writeError(requestId, "no earlier camera to go back to: the agent hasn't moved it");
+				return;
+			}
+			to = gAgentCameraBack.back();
+			gAgentCameraBack.pop_back();
+		}else{
+			// camera_move pose PX PY PZ TX TY TZ
+			// camera_move frame CX CY CZ RADIUS DISTANCE PITCH
+			// camera_move instances DISTANCE PITCH ID...
+			// camera_move selection DISTANCE PITCH
+			// DISTANCE 0 fits the sphere in the view; PITCH is degrees down.
+			std::string mode = lines.size() > 2 ? lines[2] : "";
+			std::vector<float> v;
+			size_t firstId = mode == "instances" ? 5 : lines.size();
+			for(size_t i = 3; i < lines.size() && i < firstId; i++){
+				float f;
+				if(!parseFloat(lines[i], &f)){
+					writeError(requestId, "invalid camera_move field");
+					return;
+				}
+				v.push_back(f);
+			}
+			rw::V3d center = { 0.0f, 0.0f, 0.0f };
+			float radius = 0.0f, distance = 0.0f, pitch = 30.0f;
+			if(mode == "pose" && v.size() == 6){
+				to.position = { v[0], v[1], v[2] };
+				to.target = { v[3], v[4], v[5] };
+			}else if(mode == "frame" && v.size() == 6){
+				center = { v[0], v[1], v[2] };
+				radius = v[3]; distance = v[4]; pitch = v[5];
+			}else if((mode == "instances" || mode == "selection") && v.size() == 2){
+				distance = v[0]; pitch = v[1];
+				std::vector<int> ids;
+				for(size_t i = firstId; i < lines.size(); i++){
+					int id;
+					if(!parseInt(lines[i], &id)){
+						writeError(requestId, "invalid instance id");
+						return;
+					}
+					ids.push_back(id);
+				}
+				rw::V3d lo = center, hi = center;
+				int found = 0;
+				for(CPtrNode *p = instances.first; p; p = p->next){
+					ObjectInst *inst = (ObjectInst*)p->item;
+					if(inst->m_isDeleted)
+						continue;
+					if(mode == "selection" ? !inst->m_selected :
+					   std::find(ids.begin(), ids.end(), (int)inst->m_id) == ids.end())
+						continue;
+					rw::V3d c = inst->m_translation;
+					float r = 1.0f;
+					ObjectDef *obj = GetObjectDef(inst->m_objectId);
+					if(obj && obj->m_colModel){
+						rw::V3d::transformPoints(&c, &obj->m_colModel->boundingSphere.center, 1, &inst->m_matrix);
+						r = obj->m_colModel->boundingSphere.radius;
+					}
+					rw::V3d a = { c.x - r, c.y - r, c.z - r }, b = { c.x + r, c.y + r, c.z + r };
+					if(found++ == 0){
+						lo = a; hi = b;
+					}else{
+						lo = { std::min(lo.x, a.x), std::min(lo.y, a.y), std::min(lo.z, a.z) };
+						hi = { std::max(hi.x, b.x), std::max(hi.y, b.y), std::max(hi.z, b.z) };
+					}
+				}
+				if(found == 0){
+					writeError(requestId, mode == "selection" ? "nothing is selected" : "no such instance in the map");
+					return;
+				}
+				center = rw::scale(rw::add(lo, hi), 0.5f);
+				radius = rw::length(rw::sub(hi, lo)) * 0.5f;
+			}else{
+				writeError(requestId, "camera_move takes pose, frame, instances or selection");
+				return;
+			}
+			if(mode != "pose"){
+				if(!(radius >= 0.0f) || !(distance >= 0.0f) || !(pitch >= -89.0f && pitch <= 89.0f)){
+					writeError(requestId, "invalid radius, distance or pitch");
+					return;
+				}
+				if(distance <= 0.0f){
+					float half = std::max(5.0f, std::min(TheCamera.m_fov, 120.0f)) * 0.5f * (float)M_PI / 180.0f;
+					distance = std::max(8.0f, std::max(radius, 1.0f) * 1.3f / sinf(half));
+				}
+				// Keep the user's heading; tilt PITCH degrees down at the point.
+				rw::V3d heading = rw::sub(from.target, from.position);
+				heading.z = 0.0f;
+				if(rw::length(heading) < 0.001f)
+					heading = { 0.0f, 1.0f, 0.0f };
+				heading = rw::normalize(heading);
+				float pr = pitch * (float)M_PI / 180.0f;
+				rw::V3d dir = { heading.x * cosf(pr), heading.y * cosf(pr), -sinf(pr) };
+				to.target = center;
+				to.position = rw::sub(center, rw::scale(dir, distance));
+			}
+			if(rw::length(rw::sub(to.target, to.position)) < 0.001f){
+				writeError(requestId, "camera position and target must differ");
+				return;
+			}
+			gAgentCameraBack.push_back(from);
+			if((int)gAgentCameraBack.size() > AGENT_CAMERA_BACK_POSES)
+				gAgentCameraBack.erase(gAgentCameraBack.begin());
+		}
+		rw::V3d direction = rw::normalize(rw::sub(to.target, to.position));
+		to.up = fabsf(direction.z) > 0.995f ? rw::V3d{ 0.0f, 1.0f, 0.0f } : rw::V3d{ 0.0f, 0.0f, 1.0f };
+		gAgentCameraFlyFrom = from;
+		gAgentCameraFlyTo = to;
+		gAgentCameraFlyTime = 0.0f;
+		gAgentCameraFlyRequestId = requestId;
+		gAgentCameraFlyPending = true;
+		return;
+	}
 	if(command == "camera"){
 		if(lines.size() < 9){
 			writeError(requestId, "camera requires position xyz, target xyz and fov");
@@ -4634,13 +4774,47 @@ handleRequest(const std::vector<std::string> &lines)
 	writeError(requestId, "unknown command");
 }
 
+// One frame of a camera_move fly-to, answered when it lands. The user taking
+// the camera (RMB look or the gizmo) ends it where it is.
+static void
+updateCameraFly(void)
+{
+	gAgentCameraFlyTime += std::max(0.0f, std::min(timeStep, 0.1f));
+	bool interrupted = gCameraLooking || gGizmoUsing;
+	float t = std::min(1.0f, gAgentCameraFlyTime / AGENT_CAMERA_FLY_SECONDS);
+	if(!interrupted){
+		float s = t * t * (3.0f - 2.0f * t);
+		AgentCameraPose pose = gAgentCameraFlyTo;
+		pose.position = rw::add(gAgentCameraFlyFrom.position,
+			rw::scale(rw::sub(gAgentCameraFlyTo.position, gAgentCameraFlyFrom.position), s));
+		pose.target = rw::add(gAgentCameraFlyFrom.target,
+			rw::scale(rw::sub(gAgentCameraFlyTo.target, gAgentCameraFlyFrom.target), s));
+		if(rw::length(rw::sub(pose.target, pose.position)) < 0.001f)
+			pose.target = gAgentCameraFlyTo.target;
+		rw::V3d d = rw::normalize(rw::sub(pose.target, pose.position));
+		pose.up = fabsf(d.z) > 0.995f ? rw::V3d{ 0.0f, 1.0f, 0.0f } : rw::V3d{ 0.0f, 0.0f, 1.0f };
+		applyCameraPose(pose);
+		if(t < 1.0f)
+			return;
+	}
+	gAgentCameraRevision++;
+	gAgentCameraFlyPending = false;
+	writeResponse(gAgentCameraFlyRequestId, true, cameraContextBody() +
+		",\"camera_revision\":" + std::to_string(gAgentCameraRevision) +
+		",\"interrupted\":" + (interrupted ? "true" : "false") +
+		",\"back_poses\":" + std::to_string(gAgentCameraBack.size()));
+	gAgentCameraFlyRequestId.clear();
+}
+
 void
 AgentBridgeUpdate(void)
 {
 	if(!gAgentBridgeInitialized)
 		initializeBridge();
 	trackLiveCamera();
-	if(!gAgentBridgeEnabled || gAgentCapturePending)
+	if(gAgentCameraFlyPending)
+		updateCameraFly();
+	if(!gAgentBridgeEnabled || gAgentCapturePending || gAgentCameraFlyPending)
 		return;
 	std::vector<std::string> lines;
 	if(readRequest(lines))

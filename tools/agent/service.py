@@ -1461,6 +1461,68 @@ class HaumeaService:
 		self._save_composition(path, state)
 		return {"ok": True, "group": group, "member_count": len(resolved), "members": resolved}
 
+	def move_camera(self, *, position: list[float] | None = None, target: list[float] | None = None,
+	                look_at: int | str | list[float] | None = None, distance: float | None = None,
+	                pitch: float = 30.0) -> dict:
+		"""Fly the user's live camera (about 0.3 s): to position+target, or to frame look_at, an
+		instance id, "selection", a scene group, a project zone's name, an element's name or
+		[x, y, z]. camera_back returns to the pose before."""
+		frame = [float(distance or 0.0), float(pitch)]
+		if position is not None or target is not None:
+			if position is None or target is None or look_at is not None:
+				raise ValueError("give position and target together, or look_at alone")
+			return self.engine("camera_move", ["pose", *self._point(position), *self._point(target)])
+		if look_at is None:
+			raise ValueError("give position and target, or look_at")
+		if isinstance(look_at, (list, tuple)):
+			return self.engine("camera_move", ["frame", *self._point(look_at), 5.0, *frame])
+		if isinstance(look_at, int) or (isinstance(look_at, str) and look_at.strip().isdigit()):
+			return self.engine("camera_move", ["instances", *frame, int(look_at)])
+		name = str(look_at).strip()
+		if name.lower() in {"selection", "the selection"}:
+			return self.engine("camera_move", ["selection", *frame])
+		try:
+			state, _, _ = self._load_composition()
+		except RuntimeError:
+			state = {"groups": {}, "objects": {}}
+		if name in state["groups"]:
+			ids = [state["objects"][key]["instance_id"] for key in state["groups"][name]
+			       if state["objects"].get(key, {}).get("instance_id") is not None]
+			if not ids:
+				raise ValueError(f"group {name} has no objects in the map")
+			return self.engine("camera_move", ["instances", *frame, *ids])
+		for zone in self.vibe.project().get("zones", []):
+			if zone.get("name") != name:
+				continue
+			x, y = float(zone["x"]), float(zone["y"])
+			radius = (float(zone["radius"]) if zone["shape"] == "circle"
+			          else math.hypot(float(zone["width"]), float(zone["depth"])) / 2)
+			heights = [item["position"][2] for item in self.enumerate_scene(x=x, y=y, radius=radius)]
+			if heights:
+				z = sum(heights) / len(heights)
+			elif zone.get("z_min") is not None:
+				z = float(zone["z_min"])
+			else:
+				z = float(self.engine("camera_context")["camera"]["target"][2])
+			return self.engine("camera_move", ["frame", x, y, z, radius, *frame])
+		ids = [item["instance_id"] for item in self.enumerate_scene()
+		       if name in (item.get("object_key"), (item.get("properties") or {}).get("name"),
+		                   (item.get("properties") or {}).get("npc_name"))]
+		if not ids:
+			raise ValueError(f"nothing called {name}: give an instance id, \"selection\", a group, "
+			                 "a zone name, an element name or [x, y, z]")
+		return self.engine("camera_move", ["instances", *frame, *ids])
+
+	def camera_back(self) -> dict:
+		return self.engine("camera_back")
+
+	@staticmethod
+	def _point(values) -> list[float]:
+		point = [float(v) for v in values]
+		if len(point) != 3 or not all(math.isfinite(v) for v in point):
+			raise ValueError("a point is three finite numbers [x, y, z]")
+		return point
+
 	def list_groups(self) -> dict:
 		state, _, _ = self._load_composition()
 		return {"groups": [{"group": key, "member_count": len(members)}

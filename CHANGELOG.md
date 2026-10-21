@@ -78,6 +78,8 @@ the Haumea map editor; what changed for its users is in
 - **Edit → Go to Coordinates** (Ctrl+J) takes a pasted position (`x, y, z`,
   `x y z` with an angle after it, or a `SetPlayerPos` line) and points the
   camera there; **Copy Camera Position** copies it back as `x, y, z`.
+- Namaka can move your view when you ask it to show you something (`move_camera`, a short
+  fly-to; `camera_back` returns), never while you're dragging, placing or looking around.
 - Every keyboard shortcut can be rebound in **Preferences → Shortcuts**, and
   every mouse-wheel action has keys: Ctrl+= / Ctrl+- / Ctrl+0 for zoom (and
   numpad + / -), Ctrl+Shift+= / - for fly speed, Ctrl+wheel or
