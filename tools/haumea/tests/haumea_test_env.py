@@ -39,6 +39,8 @@ def editor_env(scratch, virtual_display=False):
     # libwayland then tries the session's default socket. Point it nowhere.
     env.update(NO_WAYLAND)
     env.pop('WAYLAND_SOCKET', None)
+    # And no session runtime folder, where the desktop's sockets live.
+    env['XDG_RUNTIME_DIR'] = tempfile.mkdtemp(prefix='haumea-runtime-', dir=scratch)	# 0700
     env['XDG_CONFIG_HOME'] = config
     env['APPDATA'] = config
     # Start empty: never inherit the user's old <GTA>/haumea_data.
