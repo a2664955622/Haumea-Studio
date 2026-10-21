@@ -552,7 +552,10 @@ RenderInst(ObjectInst *inst)
 //	if(!inst->m_isUnimportant && !inst->m_isUnderWater && !inst->m_isTunnel && !inst->m_isTunnelTransition)
 //		return;
 	obj = GetObjectDef(inst->m_objectId);
-	if(obj == nil) return;
+	// The render list is built before the UI runs, and a model swap there
+	// (a skin or pickup model change) replaces the RW object; when the new
+	// model can't be built (a missing or broken DFF) there is none left.
+	if(obj == nil || inst->m_rwObject == nil) return;
 	obj->m_hasPreRendered = false;
 
 	uint32 cull;
