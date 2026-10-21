@@ -2844,6 +2844,9 @@ uiMainmenu(void)
 			ImGui::SetItemTooltip("Shows the first-steps card while the map is empty.");
 			if(ImGui::MenuItem(ICON_FA_LIST " Keyboard Shortcuts", ShortcutLabel(SC_WINDOW_SHORTCUTS), showShortcutsWindow)) { showShortcutsWindow ^= 1; }
 			if(ImGui::MenuItem(ICON_FA_CIRCLE_QUESTION " Help", nil, showHelpWindow)) { showHelpWindow ^= 1; }
+			ImGui::Separator();
+			if(ImGui::MenuItem(ICON_FA_BOLT " Namaka (AI assistant)...")) showNamakaWindow = true;
+			ImGui::SetItemTooltip("Install Namaka and connect Claude, like Windows > Namaka.");
 			ImGui::EndMenu();
 		}
 

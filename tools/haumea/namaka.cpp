@@ -1,6 +1,6 @@
 #include "haumea.h"
 #include "namaka.h"
-#include "process.h"
+#include "childprocess.h"
 #include "workspace.h"
 #include "agentbridge.h"
 #include "icons.h"

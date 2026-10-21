@@ -181,7 +181,7 @@ GENERATED += $(OBJDIR)/skeleton.o
 GENERATED += $(OBJDIR)/style.o
 GENERATED += $(OBJDIR)/startscreen.o
 GENERATED += $(OBJDIR)/namaka.o
-GENERATED += $(OBJDIR)/process.o
+GENERATED += $(OBJDIR)/childprocess.o
 GENERATED += $(OBJDIR)/textdraws_ui.o
 GENERATED += $(OBJDIR)/texbrowser.o
 GENERATED += $(OBJDIR)/textdraws.o
@@ -261,7 +261,7 @@ OBJECTS += $(OBJDIR)/skeleton.o
 OBJECTS += $(OBJDIR)/style.o
 OBJECTS += $(OBJDIR)/startscreen.o
 OBJECTS += $(OBJDIR)/namaka.o
-OBJECTS += $(OBJDIR)/process.o
+OBJECTS += $(OBJDIR)/childprocess.o
 OBJECTS += $(OBJDIR)/textdraws_ui.o
 OBJECTS += $(OBJDIR)/texbrowser.o
 OBJECTS += $(OBJDIR)/textdraws.o
@@ -561,7 +561,7 @@ $(OBJDIR)/startscreen.o: ../tools/haumea/startscreen.cpp
 $(OBJDIR)/namaka.o: ../tools/haumea/namaka.cpp
 	@echo "$(notdir $<)"
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/process.o: ../tools/haumea/process.cpp
+$(OBJDIR)/childprocess.o: ../tools/haumea/childprocess.cpp
 	@echo "$(notdir $<)"
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/textdraws_ui.o: ../tools/haumea/textdraws_ui.cpp

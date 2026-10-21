@@ -10,7 +10,7 @@
 #endif
 
 // A child process with stdout and stderr piped together and stdin open
-// (process.cpp): the test server and its compiler, Namaka's installer.
+// (childprocess.cpp): the test server and its compiler, Namaka's installer.
 struct Process {
 #ifdef _WIN32
 	HANDLE process = nullptr, out = nullptr, in = nullptr;

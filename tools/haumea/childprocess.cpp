@@ -1,5 +1,5 @@
 #include "haumea.h"
-#include "process.h"
+#include "childprocess.h"
 
 #include <string.h>
 #ifdef _WIN32

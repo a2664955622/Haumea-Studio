@@ -3,7 +3,7 @@
 #include "testserver.h"
 #include "workspace.h"
 #include "encoding.h"
-#include "process.h"
+#include "childprocess.h"
 
 #include <math.h>
 #include <stdarg.h>
@@ -330,7 +330,7 @@ tsLogf(const char *fmt, ...)
 	log("TestServer: %s\n", buf);
 }
 
-// ---- processes (process.cpp) ---------------------------------------------
+// ---- processes (childprocess.cpp) ---------------------------------------------
 
 typedef Process TsProcess;
 #ifndef _WIN32
