@@ -1,6 +1,6 @@
 """Run the UI scripts in ui/ through the editor's own input driver.
 
-Each script (ui/*.uis) is played with --ui-script under xvfb-run, against
+Each script (ui/*.uis) is played with --ui-script in its own Xvfb, against
 the real game when HAUMEA_GAME_DIR names one (not a synthetic one), else against the synthetic
 game from fixture/make_game.py; scripts with a "# needs: game" line only run
 against the real game, and those with "# needs: server" only when PAWN_TOOLCHAIN
@@ -12,12 +12,14 @@ from pathlib import Path
 import glob
 import os
 import shutil
+import random
 import signal
 import socket
 import struct
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -28,7 +30,7 @@ ROOT = HERE.parents[2]
 UI = HERE / 'ui'
 BINARY = os.environ.get('HAUMEA_BINARY') or next(iter(sorted(
     glob.glob(str(ROOT / 'bin' / '*' / 'Release' / 'haumea')))), None)
-XVFB = shutil.which('xvfb-run')
+XVFB = shutil.which('Xvfb')
 
 
 def img_entries(path):
@@ -80,6 +82,34 @@ def servers_in(folder):
     return pids
 
 
+def start_xvfb():
+    """A private Xvfb and its DISPLAY. Not xvfb-run -a: its -displayfd takes no
+    lock file, so two runs starting at once (parallel sessions) can pick the
+    same display; the loser's Xvfb exits, its editor runs on the other test's
+    server, and xvfb-run then fails a passing script. Here a random display is
+    asked for by number, which X locks, and used only once its lock holds this
+    Xvfb's PID and its socket is up."""
+    for attempt in range(20):
+        number = random.randint(400, 9999)
+        lock, sock = Path(f'/tmp/.X{number}-lock'), Path(f'/tmp/.X11-unix/X{number}')
+        if lock.exists() or sock.exists():
+            continue
+        proc = subprocess.Popen([XVFB, f':{number}', '-screen', '0', '1600x1000x24', '-nolisten', 'tcp'],
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        for _ in range(100):
+            if proc.poll() is not None:
+                break
+            try:
+                if int(lock.read_text().strip()) == proc.pid and sock.exists():
+                    return proc, f':{number}'
+            except (OSError, ValueError):
+                pass
+            time.sleep(0.1)
+        proc.kill()
+        proc.wait()
+    raise RuntimeError('could not start Xvfb')
+
+
 def needs(script):
     for line in script.read_text().splitlines():
         if line.startswith('# needs:'):
@@ -87,7 +117,7 @@ def needs(script):
     return []
 
 
-@unittest.skipUnless(BINARY and XVFB, 'needs the editor and xvfb-run')
+@unittest.skipUnless(BINARY and XVFB, 'needs the editor and Xvfb')
 class UiScriptTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -109,7 +139,7 @@ class UiScriptTests(unittest.TestCase):
         if 'server' in needs(script) and not server_package():
             self.skipTest('needs the Pawn toolchain\'s open.mp server (PAWN_TOOLCHAIN)')
         work = tempfile.mkdtemp(dir=self.tmp)
-        env = editor_env(work, virtual_display=True)	# xvfb-run below
+        env = editor_env(work, virtual_display=True)	# start_xvfb below
         # A copy, so scripts can save over the maps they open.
         shutil.copytree(UI / 'fixtures', Path(work, 'fixtures'))
         env['UI_FIXTURES'] = str(Path(work, 'fixtures'))
@@ -143,8 +173,17 @@ class UiScriptTests(unittest.TestCase):
                     Path(work, target).write_bytes(f.read(size))
             env['DFF'] = str(Path(work, 'ui_barrel.dff'))
             env['TXD'] = str(Path(work, 'ui_barrel.txd'))
-        result = subprocess.run([XVFB, '-a', '-s', '-screen 0 1600x1000x24'] + args, cwd=work, env=env,
-                                capture_output=True, text=True, timeout=600)
+        xvfb, env['DISPLAY'] = start_xvfb()
+        env.pop('XAUTHORITY', None)
+        try:
+            result = subprocess.run(args, cwd=work, env=env, capture_output=True, text=True, timeout=600)
+        finally:
+            xvfb.terminate()	# so it removes its lock and socket
+            try:
+                xvfb.wait(10)
+            except subprocess.TimeoutExpired:
+                xvfb.kill()
+                xvfb.wait()
         log = '\n'.join(line for line in result.stdout.splitlines() if line.startswith('[ui-script]'))
         left = servers_in(Path(work).resolve())
         for pid in left:
@@ -152,7 +191,7 @@ class UiScriptTests(unittest.TestCase):
         self.assertEqual(left, [], 'a test server was still running after the script')
         self.assertEqual(result.returncode, 0, log or result.stdout[-3000:] + result.stderr[-2000:])
         if sys.platform.startswith('linux') and 'GLFW platform:' in result.stdout:
-            # The editor must have been in xvfb-run's X server, not on the desktop's Wayland.
+            # The editor must have been in its Xvfb, not on the desktop's Wayland.
             self.assertIn('GLFW platform: X11', result.stdout)
 
 
