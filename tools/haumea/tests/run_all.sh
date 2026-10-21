@@ -1,6 +1,14 @@
 #!/bin/sh
-# run_all.sh [--fixture] [--update-expected] [--windows]: every Haumea test on
-# this machine.
+# run_all.sh [--fixture | --quick [--touch path...]] [--update-expected] [--windows]:
+# every Haumea test on this machine.
+#
+# --quick: everything on the synthetic game (as --fixture), then only the
+# real-game tests the changed files touch (quick_select.py: the files of
+# `git diff main...HEAD` and uncommitted changes, or the paths after --touch).
+# It prints what it picked and why. Full runs stay for release candidates.
+#
+# Parts run in parallel: UI scripts (UI_JOBS, default min(4, CPUs/4)), the round
+# trips, the compiles and the server checks (TEST_JOBS, default the CPU count).
 #
 #  1. The unit tests in this folder (python3 -m unittest). Tests that need the
 #     editor binary, the game, a display or a built librw skip with a reason.
@@ -31,14 +39,27 @@ ROOT=$(CDPATH='' cd -- "$HERE/../../.." && pwd)
 UPDATE=0
 FIXTURE=0
 WINDOWS=0
+QUICK=0
+TOUCH=
+TOUCHING=0
 for arg in "$@"; do
+	if [ "$TOUCHING" = 1 ]; then
+		TOUCH="$TOUCH $arg"
+		continue
+	fi
 	case $arg in
 	--update-expected) UPDATE=1 ;;
 	--fixture) FIXTURE=1 ;;
+	--quick) QUICK=1 ;;
+	--touch) TOUCHING=1 ;;
 	--windows) WINDOWS=1 ;;
-	*) echo "usage: run_all.sh [--fixture] [--update-expected] [--windows]" >&2; exit 2 ;;
+	*) echo "usage: run_all.sh [--fixture | --quick [--touch path...]] [--update-expected] [--windows]" >&2; exit 2 ;;
 	esac
 done
+if [ "$TOUCHING" = 1 ] && [ "$QUICK" = 0 ]; then
+	echo "--touch goes with --quick" >&2
+	exit 2
+fi
 # The editors these tests start (and Wine with --windows) open windows: on
 # Linux they only ever go to an Xvfb of this run's own, never the user's
 # display, where they would take focus and the user's keys would reach them.
@@ -56,12 +77,33 @@ if [ "$(uname -s)" = Linux ] && [ "${HAUMEA_TEST_XVFB:-}" != 1 ]; then
 fi
 status=0
 SYNTHETIC=0
+# "== name": each part's title, and how long the one before took.
+RUN_START=$(date +%s)
+PHASE_START=$RUN_START
+PHASE_NAME=
+phase() {
+	now=$(date +%s)
+	[ -n "$PHASE_NAME" ] && echo "   ($PHASE_NAME: $((now - PHASE_START)) s)"
+	PHASE_START=$now
+	PHASE_NAME=$1
+	if [ "$1" = done ]; then
+		echo "== total: $((now - RUN_START)) s"
+	else
+		echo "== $1"
+	fi
+}
 
-[ "$FIXTURE" = 1 ] && HAUMEA_GAME_DIR=
 if [ -z "${HAUMEA_GAME_DIR:-}" ] && [ "$FIXTURE" = 0 ]; then
 	CFG=${XDG_CONFIG_HOME:-$HOME/.config}/haumea/workspace.cfg
 	[ -f "$CFG" ] && HAUMEA_GAME_DIR=$(sed -n 's/^game //p' "$CFG" | head -n 1)
 fi
+# --quick: the synthetic game first; the real one only for its own part at the end.
+REAL_GAME_DIR=
+if [ "$QUICK" = 1 ]; then
+	REAL_GAME_DIR=${HAUMEA_GAME_DIR:-}
+	FIXTURE=1
+fi
+[ "$FIXTURE" = 1 ] && HAUMEA_GAME_DIR=
 if [ -z "${HAUMEA_BINARY:-}" ]; then
 	for b in "$ROOT"/bin/*/Release/haumea; do [ -x "$b" ] && HAUMEA_BINARY=$b && break; done
 fi
@@ -124,8 +166,8 @@ if [ -z "${NAMAKA_WHEELHOUSE:-}" ]; then
 fi
 export NAMAKA_WHEELHOUSE
 
-echo "== unit tests"
-{ (cd "$HERE" && python3 -m unittest discover -v -p "test_*.py") 2>&1; echo $? > "$WORK/unit.status"; } |
+phase "unit tests"
+{ (cd "$HERE" && python3 -m unittest discover -v --durations 8 -p "test_*.py") 2>&1; echo $? > "$WORK/unit.status"; } |
 	tee "$WORK/unit.log"
 [ "$(cat "$WORK/unit.status")" = 0 ] || status=1
 # Skips this mode expects: scripts that need the real game, the showcase's
@@ -141,48 +183,19 @@ if [ -n "$UNEXPECTED" ]; then
 	echo "$UNEXPECTED"
 fi
 
-echo "== Pawn exporter round trip"
+phase "Pawn exporter round trip"
 GENERATED=$HERE/pawn/expected
 if [ -z "${HAUMEA_GAME_DIR:-}" ] || [ ! -d "$HAUMEA_GAME_DIR" ] || [ -z "${HAUMEA_BINARY:-}" ]; then
 	echo "skipped: needs the game folder (HAUMEA_GAME_DIR) and a built editor; compiling pawn/expected instead"
 else
-	mkdir -p "$WORK/v1" "$WORK/v2"
-	for map in "$HERE"/pawn/maps/*.pwn; do
-		name=$(basename "$map")
-		for pass in v1 v2; do
-			src=$map
-			[ "$pass" = v2 ] && src=$WORK/v1/$name
-			"$HAUMEA_BINARY" --game "$HAUMEA_GAME_DIR" \
-				--pawn-roundtrip "$src" "$WORK/$pass/$name" > "$WORK/$pass-$name.log" 2>&1
-			if [ ! -f "$WORK/$pass/$name" ]; then
-				echo "FAIL $name: the editor wrote no output ($pass)"
-				tail -5 "$WORK/$pass-$name.log"
-				status=1
-			fi
-		done
-		[ -f "$WORK/v2/$name" ] || continue
-		if ! cmp -s "$WORK/v1/$name" "$WORK/v2/$name"; then
-			echo "FAIL $name: saving the saved map changes it"
-			diff "$WORK/v1/$name" "$WORK/v2/$name" | head -10
-			status=1
-		elif [ "$UPDATE" = 1 ]; then
-			cp "$WORK/v1/$name" "$HERE/pawn/expected/$name"
-			echo "updated expected/$name"
-		elif ! cmp -s "$WORK/v1/$name" "$HERE/pawn/expected/$name"; then
-			echo "FAIL $name: the output differs from pawn/expected (run with --update-expected if intended)"
-			diff "$HERE/pawn/expected/$name" "$WORK/v1/$name" | head -20
-			status=1
-		else
-			echo "ok   $name"
-		fi
-	done
+	python3 "$HERE/pawn/roundtrip_all.py" "$HERE/pawn/maps" "$WORK" $([ "$UPDATE" = 1 ] && echo --update) || status=1
 	GENERATED=$WORK/v1
 fi
 
-echo "== Pawn compile"
+phase "Pawn compile"
 "$HERE/pawn/check_pawn.sh" "$GENERATED" || status=1
 
-echo "== Pawn on the server (an NPC as the player)"
+phase "Pawn on the server (an NPC as the player)"
 python3 "$HERE/pawn/server_check.py" "$GENERATED" "$HERE/showcase"
 case $? in
 	0) ;;
@@ -190,8 +203,33 @@ case $? in
 	*) status=1 ;;
 esac
 
+if [ "$QUICK" = 1 ]; then
+	phase "real game: only what the changes touch"
+	SELECT=$(python3 "$HERE/quick_select.py" $TOUCH)
+	echo "$SELECT" | grep '^#' | sed 's/^# /   /'
+	UI_ONLY=; ROUNDTRIP=0; SHOWCASE=0
+	eval "$(echo "$SELECT" | grep -v '^#')"
+	if [ -z "$REAL_GAME_DIR" ] || [ ! -d "$REAL_GAME_DIR" ]; then
+		echo "skipped: no real game folder (HAUMEA_GAME_DIR, or the one Haumea has saved)"
+	else
+		echo "   selected: UI scripts: ${UI_ONLY:-none}; round trip: $([ "$ROUNDTRIP" = 1 ] && echo yes || echo no); showcase: $([ "$SHOWCASE" = 1 ] && echo yes || echo no)"
+		if [ -n "$UI_ONLY" ]; then
+			(cd "$HERE" && HAUMEA_GAME_DIR=$REAL_GAME_DIR UI_ONLY=$UI_ONLY \
+				python3 -m unittest -v test_ui_scripts) > "$WORK/real-ui.log" 2>&1 || status=1
+			grep -E ' \.\.\. |^UI scripts:|^Ran |^OK|^FAILED|^FAIL:|^ERROR:|ui-script\].*FAIL' "$WORK/real-ui.log"
+		fi
+		if [ "$SHOWCASE" = 1 ]; then
+			(cd "$HERE" && HAUMEA_GAME_DIR=$REAL_GAME_DIR python3 -m unittest test_showcase 2>&1) || status=1
+		fi
+		if [ "$ROUNDTRIP" = 1 ]; then
+			HAUMEA_GAME_DIR=$REAL_GAME_DIR python3 "$HERE/pawn/roundtrip_all.py" "$HERE/pawn/maps" "$WORK/real" || status=1
+			"$HERE/pawn/check_pawn.sh" "$WORK/real/v1" || status=1
+		fi
+	fi
+fi
+
 if [ "$WINDOWS" = 1 ]; then
-	echo "== Windows build under Wine"
+	phase "Windows build under Wine"
 	python3 "$HERE/windows_check.py"
 	case $? in
 		0) ;;
@@ -200,5 +238,6 @@ if [ "$WINDOWS" = 1 ]; then
 	esac
 fi
 
+phase done
 [ "$status" = 0 ] && echo "All tests passed." || echo "Some tests failed."
 exit $status

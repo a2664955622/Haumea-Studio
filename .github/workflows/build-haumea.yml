@@ -284,6 +284,10 @@ jobs:
         env:
           XDG_CONFIG_HOME: ${{ runner.temp }}/haumea-config
           LIBGL_ALWAYS_SOFTWARE: "1"
+          # The runner has 4 CPUs: two UI scripts at once, and the round
+          # trips, compiles and server checks four at a time.
+          UI_JOBS: "2"
+          TEST_JOBS: "4"
         run: xvfb-run -a -s "-screen 0 1280x800x24" tools/haumea/tests/run_all.sh --fixture
 
   pawn:

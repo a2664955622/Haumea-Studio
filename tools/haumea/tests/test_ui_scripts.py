@@ -7,6 +7,12 @@ against the real game, and those with "# needs: server" only when PAWN_TOOLCHAIN
 has open.mp's server (they get a free port in UI_SERVER_PORT; a server still
 running from the test's folder afterwards fails it and is stopped). Every run
 has its own config folder. A failing script prints its log.
+
+Scripts run several at once (UI_JOBS, default min(4, CPUs/4)): when the module
+is loaded as a whole (run_all.sh, discover, `-m unittest test_ui_scripts`),
+every selected script starts on a worker pool and each test then takes its
+own result; a single test named on the command line runs by itself. A summary
+of the times follows the run.
 """
 from pathlib import Path
 import glob
@@ -19,8 +25,10 @@ import struct
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from haumea_test_env import editor_env
@@ -63,10 +71,20 @@ def server_package():
     return package if package and (package / 'omp-server').is_file() else None
 
 
+_ports_lock = threading.Lock()
+_ports_given = set()
+
+
 def free_port():
-    with socket.socket() as s:
-        s.bind(('127.0.0.1', 0))
-        return s.getsockname()[1]
+    """A free TCP port, never the same one twice in this run (scripts run at once)."""
+    with _ports_lock:
+        while True:
+            with socket.socket() as s:
+                s.bind(('127.0.0.1', 0))
+                port = s.getsockname()[1]
+            if port not in _ports_given:
+                _ports_given.add(port)
+                return port
 
 
 def servers_in(folder):
@@ -117,82 +135,174 @@ def needs(script):
     return []
 
 
+_shared_lock = threading.Lock()
+_shared = {}
+
+
+def shared():
+    """The run's temp folder and game folder (the synthetic one made once)."""
+    with _shared_lock:
+        if not _shared:
+            tmp = tempfile.mkdtemp(prefix='haumea-ui-')
+            game = REAL_GAME
+            if not game:
+                game = os.path.join(tmp, 'game')
+                subprocess.run([sys.executable, str(HERE / 'fixture' / 'make_game.py'), game],
+                               check=True, capture_output=True)
+            _shared.update(tmp=tmp, game=game)
+        return _shared['tmp'], _shared['game']
+
+
+def run_script(name):
+    """Play ui/<name> in its own Xvfb, config and workspace: {'skip': why}, or the
+    editor's result, the test servers it left running (stopped) and its time.
+    Safe to run several at once."""
+    script = UI / name
+    script = UI / name
+    if 'game' in needs(script) and not REAL_GAME:
+        return {'skip': 'needs the real game (HAUMEA_GAME_DIR)'}
+    if 'server' in needs(script) and not server_package():
+        return {'skip': 'needs the Pawn toolchain\'s open.mp server (PAWN_TOOLCHAIN)'}
+    tmp, game = shared()
+    started = time.monotonic()
+    work = tempfile.mkdtemp(dir=tmp)
+    env = editor_env(work, virtual_display=True)	# start_xvfb below
+    # A copy, so scripts can save over the maps they open.
+    shutil.copytree(UI / 'fixtures', Path(work, 'fixtures'))
+    env['UI_FIXTURES'] = str(Path(work, 'fixtures'))
+    server = Path(work, 'server')
+    (server / 'gamemodes').mkdir(parents=True)
+    (server / 'models').mkdir()
+    env['SERVER'] = str(server)
+    env['UI_SERVER_PORT'] = str(free_port())	# Test in game, beside other sessions' servers
+    args = [BINARY, '--ui-script', str(script)]
+    if name == 'first_run.uis':
+        env.pop('HAUMEA_GAME_DIR', None)	# no game folder known
+    else:
+        args[1:1] = ['--game', game, '--workspace', str(server)]
+    if name == 'startscreen_launch.uis':
+        # Scripts skip it otherwise. It only shows the screen; settings still go to
+        # editor_env's private config, like every script's.
+        env['HAUMEA_START_SCREEN'] = '1'
+    if name == 'namaka.uis':
+        from test_namaka_install import make_bundle, python314
+        bundle = make_bundle(Path(work, 'namaka'))
+        if bundle is None:
+            return {'skip': 'needs NAMAKA_WHEELHOUSE and CPython 3.14'}
+        env['HAUMEA_NAMAKA_BUNDLE'] = str(bundle)
+        env['HAUMEA_NAMAKA_PYTHON'] = python314()
+    if name == 'custom_model.uis':
+        entries = img_entries(Path(game, 'models', 'gta3.img'))
+        with open(Path(game, 'models', 'gta3.img'), 'rb') as f:
+            for source, target in (('barrel4.dff', 'ui_barrel.dff'), ('dynbarrels.txd', 'ui_barrel.txd')):
+                offset, size = entries[source]
+                f.seek(offset)
+                Path(work, target).write_bytes(f.read(size))
+        env['DFF'] = str(Path(work, 'ui_barrel.dff'))
+        env['TXD'] = str(Path(work, 'ui_barrel.txd'))
+    xvfb, env['DISPLAY'] = start_xvfb()
+    env.pop('XAUTHORITY', None)
+    try:
+        result = subprocess.run(args, cwd=work, env=env, capture_output=True, text=True, timeout=600)
+    finally:
+        xvfb.terminate()	# so it removes its lock and socket
+        try:
+            xvfb.wait(10)
+        except subprocess.TimeoutExpired:
+            xvfb.kill()
+            xvfb.wait()
+    left = servers_in(Path(work).resolve())
+    for pid in left:
+        os.kill(pid, signal.SIGKILL)
+    return {'result': result, 'left': left, 'seconds': time.monotonic() - started}
+
+
+_futures = {}	# script name -> the pool's run of it (ParallelUiSuite)
+_times = {}
+
+
+def ui_jobs():
+    try:
+        return max(1, int(os.environ['UI_JOBS']))
+    except (KeyError, ValueError):
+        return max(1, min(4, (os.cpu_count() or 4) // 4))
+
+
 @unittest.skipUnless(BINARY and XVFB, 'needs the editor and Xvfb')
 class UiScriptTests(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
-        cls.tmp = tempfile.mkdtemp(prefix='haumea-ui-')
-        cls.game = REAL_GAME
-        if not cls.game:
-            cls.game = os.path.join(cls.tmp, 'game')
-            subprocess.run([sys.executable, str(HERE / 'fixture' / 'make_game.py'), cls.game],
-                           check=True, capture_output=True)
-
-    @classmethod
     def tearDownClass(cls):
-        shutil.rmtree(cls.tmp, ignore_errors=True)
+        with _shared_lock:
+            if _shared:
+                shutil.rmtree(_shared['tmp'], ignore_errors=True)
+                _shared.clear()
 
     def play(self, name):
-        script = UI / name
-        if 'game' in needs(script) and not REAL_GAME:
-            self.skipTest('needs the real game (HAUMEA_GAME_DIR)')
-        if 'server' in needs(script) and not server_package():
-            self.skipTest('needs the Pawn toolchain\'s open.mp server (PAWN_TOOLCHAIN)')
-        work = tempfile.mkdtemp(dir=self.tmp)
-        env = editor_env(work, virtual_display=True)	# start_xvfb below
-        # A copy, so scripts can save over the maps they open.
-        shutil.copytree(UI / 'fixtures', Path(work, 'fixtures'))
-        env['UI_FIXTURES'] = str(Path(work, 'fixtures'))
-        server = Path(work, 'server')
-        (server / 'gamemodes').mkdir(parents=True)
-        (server / 'models').mkdir()
-        env['SERVER'] = str(server)
-        env['UI_SERVER_PORT'] = str(free_port())	# Test in game, beside other sessions' servers
-        args = [BINARY, '--ui-script', str(script)]
-        if name == 'first_run.uis':
-            env.pop('HAUMEA_GAME_DIR', None)	# no game folder known
-        else:
-            args[1:1] = ['--game', self.game, '--workspace', str(server)]
-        if name == 'startscreen_launch.uis':
-            # Scripts skip it otherwise. It only shows the screen; settings still go to
-            # editor_env's private config, like every script's.
-            env['HAUMEA_START_SCREEN'] = '1'
-        if name == 'namaka.uis':
-            from test_namaka_install import make_bundle, python314
-            bundle = make_bundle(Path(work, 'namaka'))
-            if bundle is None:
-                self.skipTest('needs NAMAKA_WHEELHOUSE and CPython 3.14')
-            env['HAUMEA_NAMAKA_BUNDLE'] = str(bundle)
-            env['HAUMEA_NAMAKA_PYTHON'] = python314()
-        if name == 'custom_model.uis':
-            entries = img_entries(Path(self.game, 'models', 'gta3.img'))
-            with open(Path(self.game, 'models', 'gta3.img'), 'rb') as f:
-                for source, target in (('barrel4.dff', 'ui_barrel.dff'), ('dynbarrels.txd', 'ui_barrel.txd')):
-                    offset, size = entries[source]
-                    f.seek(offset)
-                    Path(work, target).write_bytes(f.read(size))
-            env['DFF'] = str(Path(work, 'ui_barrel.dff'))
-            env['TXD'] = str(Path(work, 'ui_barrel.txd'))
-        xvfb, env['DISPLAY'] = start_xvfb()
-        env.pop('XAUTHORITY', None)
-        try:
-            result = subprocess.run(args, cwd=work, env=env, capture_output=True, text=True, timeout=600)
-        finally:
-            xvfb.terminate()	# so it removes its lock and socket
-            try:
-                xvfb.wait(10)
-            except subprocess.TimeoutExpired:
-                xvfb.kill()
-                xvfb.wait()
+        future = _futures.pop(name, None)
+        outcome = future.result() if future else run_script(name)
+        if 'skip' in outcome:
+            self.skipTest(outcome['skip'])
+        _times[name] = outcome['seconds']
+        result, left = outcome['result'], outcome['left']
         log = '\n'.join(line for line in result.stdout.splitlines() if line.startswith('[ui-script]'))
-        left = servers_in(Path(work).resolve())
-        for pid in left:
-            os.kill(pid, signal.SIGKILL)
         self.assertEqual(left, [], 'a test server was still running after the script')
         self.assertEqual(result.returncode, 0, log or result.stdout[-3000:] + result.stderr[-2000:])
         if sys.platform.startswith('linux') and 'GLFW platform:' in result.stdout:
             # The editor must have been in its Xvfb, not on the desktop's Wayland.
             self.assertIn('GLFW platform: X11', result.stdout)
+
+
+# Scripts that take longest start first, so they don't finish last alone.
+SLOW_FIRST = ['namaka.uis', 'workspace.uis', 'test_in_game.uis', 'ctrl_keys.uis', 'el_sound.uis']
+_pool = None
+
+
+def start_pool(suite):
+    """Start every UI script in suite on a pool now: when the module is loaded
+    with others (run_all.sh's discover), they run while the other modules'
+    tests do."""
+    global _pool
+    def flatten(s):
+        for test in s:
+            if isinstance(test, unittest.TestSuite):
+                yield from flatten(test)
+            else:
+                yield test
+    names = [t._testMethodName[len('test_'):] + '.uis' for t in flatten(suite) if isinstance(t, UiScriptTests)]
+    names.sort(key=lambda n: SLOW_FIRST.index(n) if n in SLOW_FIRST else len(SLOW_FIRST))
+    jobs = ui_jobs()
+    if _pool is None and BINARY and XVFB and jobs > 1 and len(names) > 1:
+        _pool = ThreadPoolExecutor(jobs)
+        for name in names:
+            _futures[name] = _pool.submit(run_script, name)
+
+
+class ParallelUiSuite(unittest.TestSuite):
+    """Takes the pool's results; prints a summary of the times at the end."""
+
+    def run(self, result, debug=False):
+        global _pool
+        started = time.monotonic()
+        try:
+            return super().run(result, debug)
+        finally:
+            jobs = ui_jobs() if _pool else 1
+            if _pool:
+                _pool.shutdown(wait=True, cancel_futures=True)
+                _pool = None
+            if _times:
+                wall = time.monotonic() - started
+                slow = sorted(_times.items(), key=lambda kv: -kv[1])[:3]
+                print(f'\nUI scripts: {len(_times)} ran with {jobs} at once ({sum(_times.values()):.0f} s of scripts, '
+                      f'{wall:.0f} s after the other tests); slowest: ' +
+                      ', '.join(f'{n} {t:.0f} s' for n, t in slow), file=sys.stderr)
+                _times.clear()
+
+
+def load_tests(loader, tests, pattern):
+    suite = ParallelUiSuite(tests)
+    start_pool(suite)
+    return suite
 
 
 def add_script_test(path):
@@ -201,8 +311,11 @@ def add_script_test(path):
     setattr(UiScriptTests, 'test_' + path.stem, test)
 
 
+# UI_ONLY='a.uis b.uis' plays only those (run_all.sh --quick); unset or ALL, every one.
+_only = os.environ.get('UI_ONLY', 'ALL').split()
 for path in sorted(UI.glob('*.uis')):
-    add_script_test(path)
+    if 'ALL' in _only or path.name in _only:
+        add_script_test(path)
 
 
 if __name__ == '__main__':

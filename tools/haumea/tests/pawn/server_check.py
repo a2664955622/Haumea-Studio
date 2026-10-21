@@ -19,16 +19,21 @@ Uses the Pawn toolchain (PAWN_TOOLCHAIN: open.mp's Linux server and pawncc,
 the streamer include and plugin) and, when HAUMEA_GAME_DIR is set, the game's
 path node files for NPC_PlayNode and gta3.img for the showcase's custom model.
 Exit status 0 when every map passes; 2 when it can't run (no server).
+Maps run several at once (TEST_JOBS, default the CPU count, at most 8), each
+in its own server folder on its own free port; results print in map order.
 """
 import json
 import os
 import re
 import shutil
+import socket
 import struct
 import subprocess
 import sys
 import tempfile
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -383,19 +388,53 @@ def check_map(work, map_path, port):
 	return ok, notes + checks + [f'log: {p}' for p in problems] + details
 
 
+_ports_lock = threading.Lock()
+_ports_given = set()
+
+
+def free_port():
+	"""A port free for UDP (the server) and TCP (its artwork web server), never
+	given twice in this run, and away from other sessions' servers."""
+	with _ports_lock:
+		while True:
+			with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp:
+				udp.bind(('127.0.0.1', 0))
+				port = udp.getsockname()[1]
+				try:
+					with socket.socket() as tcp:
+						tcp.bind(('127.0.0.1', port))
+				except OSError:
+					continue
+			if port not in _ports_given:
+				_ports_given.add(port)
+				return port
+
+
+def jobs():
+	try:
+		return max(1, int(os.environ['TEST_JOBS']))
+	except (KeyError, ValueError):
+		return min(8, os.cpu_count() or 4)
+
+
 def main():
 	if not (SERVER / 'omp-server').exists() or not (STREAMER / 'streamer.so').exists():
 		print(f'skipped: no open.mp server or streamer plugin in {TOOLCHAIN} (fetch_toolchain.sh)')
 		return 2
 	maps = [p for d in sys.argv[1:] for p in sorted(Path(d).glob('*.pwn'))]
-	failed = 0
 	with tempfile.TemporaryDirectory() as work:
-		for i, map_path in enumerate(maps):
-			ok, lines = check_map(work, map_path, 7900 + i)
-			print(('ok   ' if ok else 'FAIL ') + map_path.stem)
-			for line in lines:
-				print('     ' + line)
-			failed += not ok
+		def one(i):
+			case = Path(work, str(i))	# its own folder: two maps may share a name
+			case.mkdir()
+			return check_map(case, maps[i], free_port())
+		with ThreadPoolExecutor(jobs()) as pool:
+			results = list(pool.map(one, range(len(maps))))
+	failed = 0
+	for map_path, (ok, lines) in zip(maps, results):
+		print(('ok   ' if ok else 'FAIL ') + map_path.stem)
+		for line in lines:
+			print('     ' + line)
+		failed += not ok
 	return 1 if failed else 0
 
 
