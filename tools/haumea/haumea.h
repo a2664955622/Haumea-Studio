@@ -884,6 +884,7 @@ void UiScriptNoteToast(const char *text);
 bool UiScriptActive(void);
 // Real input events are dropped while a UI script drives the editor.
 bool UiScriptDropsEvent(sk::Event e);
+void UiScriptRestateMouse(void);	// d3d9: the script's pointer over the backend's
 // Texture Browser (texbrowser.cpp)
 void DrawTextureBrowserWindow(bool *open);
 // Help > About > Licenses (licenses.cpp)

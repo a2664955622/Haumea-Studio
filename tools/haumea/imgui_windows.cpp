@@ -54,7 +54,11 @@ EditorWindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	// Win32 owns ImGui input, while the skeleton still supplies client-local
 	// coordinates and events to the 3D editor. Do not feed ImGui twice.
-	LRESULT handled = ImGui_ImplWin32_WndProcHandler(hwnd, message, wparam, lparam);
+	// A UI script drives ImGui's mouse itself (uiscript.cpp); the real
+	// pointer's messages would move it back.
+	bool scriptedMouse = UiScriptActive() && ((message >= WM_MOUSEFIRST && message <= WM_MOUSELAST) ||
+		message == WM_MOUSELEAVE || message == WM_NCMOUSEMOVE || message == WM_NCMOUSELEAVE);
+	LRESULT handled = scriptedMouse ? 0 : ImGui_ImplWin32_WndProcHandler(hwnd, message, wparam, lparam);
 	if(handled)
 		return handled;
 	return CallWindowProc(previousWindowProc, hwnd, message, wparam, lparam);
@@ -139,6 +143,7 @@ ImGui_ImplRW_NewFrame(float timeDelta)
 	RestorePanelPositions();
 	ImGui_ImplDX9_NewFrame();
 	ImGui_ImplWin32_NewFrame();
+	UiScriptRestateMouse();	// after the backend's own cursor poll
 	ImGui::GetIO().DeltaTime = timeDelta > 0.0f ? timeDelta : 1.0f/60.0f;
 	ImGui::NewFrame();
 	deviceInvalidatedAfterNewFrame = false;

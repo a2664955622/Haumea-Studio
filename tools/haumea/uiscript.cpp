@@ -335,6 +335,70 @@ keyFromName(std::string name)
 	return -1;
 }
 
+#if defined(_WIN32) && defined(RW_D3D9)
+// d3d9: ImGui takes its input from Win32 messages, not from sk events, so the
+// script's keys and mouse go to ImGui directly as well.
+#define UI_FEED_IMGUI
+static ImGuiKey
+imguiKey(int key)
+{
+	if(key >= 'A' && key <= 'Z') return (ImGuiKey)(ImGuiKey_A + key - 'A');
+	if(key >= '0' && key <= '9') return (ImGuiKey)(ImGuiKey_0 + key - '0');
+	if(key >= sk::KEY_F1 && key <= sk::KEY_F12) return (ImGuiKey)(ImGuiKey_F1 + key - sk::KEY_F1);
+	if(key >= sk::KEY_PAD0 && key <= sk::KEY_PAD9) return (ImGuiKey)(ImGuiKey_Keypad0 + key - sk::KEY_PAD0);
+	static const struct { int sk; ImGuiKey imgui; } keys[] = {
+		{ ' ', ImGuiKey_Space }, { '\'', ImGuiKey_Apostrophe }, { ',', ImGuiKey_Comma },
+		{ '-', ImGuiKey_Minus }, { '.', ImGuiKey_Period }, { '/', ImGuiKey_Slash },
+		{ ';', ImGuiKey_Semicolon }, { '=', ImGuiKey_Equal }, { '[', ImGuiKey_LeftBracket },
+		{ '\\', ImGuiKey_Backslash }, { ']', ImGuiKey_RightBracket }, { '`', ImGuiKey_GraveAccent },
+		{ sk::KEY_ESC, ImGuiKey_Escape }, { sk::KEY_ENTER, ImGuiKey_Enter }, { sk::KEY_TAB, ImGuiKey_Tab },
+		{ sk::KEY_BACKSP, ImGuiKey_Backspace }, { sk::KEY_INS, ImGuiKey_Insert }, { sk::KEY_DEL, ImGuiKey_Delete },
+		{ sk::KEY_RIGHT, ImGuiKey_RightArrow }, { sk::KEY_LEFT, ImGuiKey_LeftArrow },
+		{ sk::KEY_DOWN, ImGuiKey_DownArrow }, { sk::KEY_UP, ImGuiKey_UpArrow },
+		{ sk::KEY_PGUP, ImGuiKey_PageUp }, { sk::KEY_PGDN, ImGuiKey_PageDown },
+		{ sk::KEY_HOME, ImGuiKey_Home }, { sk::KEY_END, ImGuiKey_End },
+		{ sk::KEY_LSHIFT, ImGuiKey_LeftShift }, { sk::KEY_RSHIFT, ImGuiKey_RightShift },
+		{ sk::KEY_LCTRL, ImGuiKey_LeftCtrl }, { sk::KEY_RCTRL, ImGuiKey_RightCtrl },
+		{ sk::KEY_LALT, ImGuiKey_LeftAlt }, { sk::KEY_RALT, ImGuiKey_RightAlt },
+		{ sk::KEY_PADDECIMAL, ImGuiKey_KeypadDecimal }, { sk::KEY_PADDIVIDE, ImGuiKey_KeypadDivide },
+		{ sk::KEY_PADMULTIPLY, ImGuiKey_KeypadMultiply }, { sk::KEY_PADSUBTRACT, ImGuiKey_KeypadSubtract },
+		{ sk::KEY_PADADD, ImGuiKey_KeypadAdd }, { sk::KEY_PADENTER, ImGuiKey_KeypadEnter },
+	};
+	for(const auto &k : keys)
+		if(k.sk == key)
+			return k.imgui;
+	return ImGuiKey_None;
+}
+
+static void
+feedImGui(sk::Event e, void *param)
+{
+	ImGuiIO &io = ImGui::GetIO();
+	if(e == sk::KEYDOWN || e == sk::KEYUP){
+		int key = *(int*)param;
+		bool down = e == sk::KEYDOWN;
+		ImGuiKey k = imguiKey(key);
+		if(k != ImGuiKey_None)
+			io.AddKeyEvent(k, down);
+		if(key == sk::KEY_LCTRL || key == sk::KEY_RCTRL) io.AddKeyEvent(ImGuiMod_Ctrl, down);
+		if(key == sk::KEY_LSHIFT || key == sk::KEY_RSHIFT) io.AddKeyEvent(ImGuiMod_Shift, down);
+		if(key == sk::KEY_LALT || key == sk::KEY_RALT) io.AddKeyEvent(ImGuiMod_Alt, down);
+	}else if(e == sk::CHARINPUT)
+		io.AddInputCharacter((unsigned)(uintptr)param);
+	else if(e == sk::MOUSEMOVE || e == sk::MOUSEBTN || e == sk::MOUSEWHEEL){
+		sk::MouseState *ms = (sk::MouseState*)param;
+		if(e == sk::MOUSEMOVE)
+			io.AddMousePosEvent((float)ms->posx, (float)ms->posy);
+		else if(e == sk::MOUSEBTN){
+			io.AddMouseButtonEvent(ImGuiMouseButton_Left, (ms->buttons & 1) != 0);
+			io.AddMouseButtonEvent(ImGuiMouseButton_Middle, (ms->buttons & 2) != 0);
+			io.AddMouseButtonEvent(ImGuiMouseButton_Right, (ms->buttons & 4) != 0);
+		}else
+			io.AddMouseWheelEvent(0.0f, ms->wheelDelta);
+	}
+}
+#endif
+
 // While a script runs, input comes only from it: the X server still sends
 // pointer events (a window mapping under the pointer, at times that vary
 // with load), and one landing between a hover and an assert moved the mouse
@@ -347,6 +411,9 @@ send(sk::Event e, void *param)
 	gSending = true;
 	sk::EventHandler(e, param);
 	gSending = false;
+#ifdef UI_FEED_IMGUI
+	feedImGui(e, param);
+#endif
 }
 
 bool
@@ -1092,6 +1159,17 @@ bool
 UiScriptActive(void)
 {
 	return gActive;
+}
+
+void
+UiScriptRestateMouse(void)
+{
+#ifdef UI_FEED_IMGUI
+	// Win32's backend polls the real cursor each frame when it gets no mouse
+	// messages; the last position given wins.
+	if(gActive)
+		ImGui::GetIO().AddMousePosEvent((float)gMouseX, (float)gMouseY);
+#endif
 }
 
 void
