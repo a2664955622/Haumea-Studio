@@ -33,14 +33,18 @@ BINARY = os.environ.get('HAUMEA_BINARY') or next(iter(sorted(
 BUNDLE = 'haumea-linux-amd64.tar.gz'
 
 
-def headless(env):
-    """Never the user's desktop: no X display, and a Wayland socket that can't
-    exist (libwayland would otherwise fall back to wayland-0 in
-    XDG_RUNTIME_DIR, and GLFW prefers Wayland). xvfb-run then sets DISPLAY."""
+def headless(env, scratch):
+    """Never the user's desktop: no X display, a Wayland socket that can't
+    exist and a private runtime folder (libwayland would otherwise fall back
+    to wayland-0 in the user's XDG_RUNTIME_DIR, and GLFW prefers Wayland), and
+    HAUMEA_TEST_XVFB=1 so the editor forces GLFW to X11. xvfb-run then sets
+    DISPLAY."""
     for var in ('DISPLAY', 'XAUTHORITY', 'WAYLAND_SOCKET'):
         env.pop(var, None)
     env['WAYLAND_DISPLAY'] = '/nonexistent/haumea-test'
     env['XDG_SESSION_TYPE'] = 'x11'
+    env['XDG_RUNTIME_DIR'] = tempfile.mkdtemp(prefix='runtime-', dir=scratch)	# 0700
+    env['HAUMEA_TEST_XVFB'] = '1'
     return env
 
 
@@ -135,7 +139,7 @@ class UpdaterTests(unittest.TestCase):
     def run_editor(self, *args, current='1.41.0.10', url=None, skip=None):
         env = editor_env(str(self.tmp))
         env.pop('HAUMEA_NO_UPDATE', None)
-        headless(env)
+        headless(env, str(self.tmp))
         env['HAUMEA_UPDATE_URL'] = url or self.github.url
         env['HAUMEA_UPDATE_CHANNEL'] = 'master'
         env['HAUMEA_UPDATE_CURRENT'] = current
@@ -286,7 +290,7 @@ class UpdaterTests(unittest.TestCase):
         (server / 'gamemodes').mkdir(parents=True)
         env = editor_env(str(self.tmp))
         env.pop('HAUMEA_NO_UPDATE', None)
-        headless(env)
+        headless(env, str(self.tmp))
         env['HAUMEA_UPDATE_URL'] = self.github.url
         env['UPDATE_SHOT'] = str(self.tmp / 'banner.png')
         result = subprocess.run(['xvfb-run', '-a', '-s', '-screen 0 1600x1000x24', BINARY, '--game', str(game),
