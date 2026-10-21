@@ -32,11 +32,15 @@ struct UpdateRelease {
 	const UpdateAsset *Find(const char *name) const;
 };
 
-// The newest release of channel that is newer than current and not
-// skipVersion ("" for none), from GitHub's release list. False with no
-// error when there is none; false with *error set when the JSON is bad.
-bool UpdatePickRelease(const std::string &json, const char *channel, const HaumeaVersion &current,
-	const char *skipVersion, UpdateRelease *out, std::string *error);
+// The newest release on one of channels (beta follows "beta" and
+// "production", production only "production") that is newer than current and
+// not skipVersion ("" for none), from GitHub's release list. With
+// allowOlder, the newest one even if it isn't newer (going back from beta to
+// production on request). False with no error when there is none; false
+// with *error set when the JSON is bad.
+bool UpdatePickRelease(const std::string &json, const std::vector<std::string> &channels,
+	const HaumeaVersion &current, const char *skipVersion, bool allowOlder, UpdateRelease *out,
+	std::string *error);
 
 // "<hex>  <name>" lines (sha256sum's format) -> the hex for name, lowercase.
 bool UpdateSumFor(const std::string &sums, const char *name, std::string *hex);

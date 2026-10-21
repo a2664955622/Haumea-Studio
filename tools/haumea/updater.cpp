@@ -37,7 +37,33 @@
 
 static bool gUpdateCheckAuto = true;
 static bool gUpdateDownloadAuto = false;
-static char gUpdateChannel[32] = HAUMEA_CHANNEL;
+// Which releases to follow: "production" (everyone) or "beta" (opt-in: the
+// newest of beta and production). A beta build starts on beta; every other
+// build (production, a local or CI "dev" one) on production.
+static char gUpdateChannel[32];
+
+static void
+defaultChannel(void)
+{
+	if(gUpdateChannel[0] == '\0')
+		snprintf(gUpdateChannel, sizeof(gUpdateChannel), "%s",
+			strcmp(HAUMEA_CHANNEL, "beta") == 0 ? "beta" : "production");
+}
+
+static bool
+followsBeta(void)
+{
+	defaultChannel();
+	return strcmp(gUpdateChannel, "beta") == 0;
+}
+
+static std::vector<std::string>
+followedChannels(bool beta)
+{
+	if(beta)
+		return { "beta", "production" };
+	return { "production" };
+}
 static char gUpdateSkip[32];	// "Skip this version"
 
 bool
@@ -48,7 +74,9 @@ UpdaterParseSetting(const char *key, const char *value)
 	else if(strcmp(key, "update_download") == 0)
 		gUpdateDownloadAuto = atoi(value) != 0;
 	else if(strcmp(key, "update_channel") == 0)
-		snprintf(gUpdateChannel, sizeof(gUpdateChannel), "%s", value);
+		// Only production and beta exist; anything older (master, PE,
+		// agent-alpha) means production.
+		snprintf(gUpdateChannel, sizeof(gUpdateChannel), "%s", strcmp(value, "beta") == 0 ? "beta" : "production");
 	else if(strcmp(key, "update_skip") == 0)
 		snprintf(gUpdateSkip, sizeof(gUpdateSkip), "%s", value);
 	else
@@ -61,8 +89,8 @@ UpdaterWriteSettings(FILE *f)
 {
 	fprintf(f, "update_check %d\n", gUpdateCheckAuto ? 1 : 0);
 	fprintf(f, "update_download %d\n", gUpdateDownloadAuto ? 1 : 0);
-	if(gUpdateChannel[0] && strcmp(gUpdateChannel, HAUMEA_CHANNEL) != 0)
-		fprintf(f, "update_channel %s\n", gUpdateChannel);
+	defaultChannel();
+	fprintf(f, "update_channel %s\n", gUpdateChannel);
 	if(gUpdateSkip[0])
 		fprintf(f, "update_skip %s\n", gUpdateSkip);
 }
@@ -312,14 +340,15 @@ enum UpdateStatus {
 static const size_t MAX_UNPACKED_BYTES = (size_t)1024 * 1024 * 1024;
 
 static int
-checkReleases(const std::string &work, const char *channel, const HaumeaVersion &current, const char *skip,
+checkReleases(const std::string &work, const std::vector<std::string> &channels, const HaumeaVersion &current,
+	const char *skip, bool allowOlder,
 	UpdateRelease *rel, std::string *error)
 {
 	std::string json;
 	if(!UpdateMakeDirs(work) || !httpGetString(releaseListUrl(), work + "/releases.json", &json, error))
 		return UPD_OFFLINE;
 	error->clear();
-	if(UpdatePickRelease(json, channel, current, skip, rel, error))
+	if(UpdatePickRelease(json, channels, current, skip, allowOlder, rel, error))
 		return UPD_AVAILABLE;
 	return error->empty() ? UPD_UP_TO_DATE : UPD_FAILED;
 }
@@ -337,7 +366,8 @@ moveDir(const std::string &src, const std::string &dst)
 // Download this platform's bundle, check it against SHA256SUMS, unpack it
 // and check it against its MANIFEST, then make it work/staged.
 static bool
-downloadAndStage(const std::string &work, const UpdateRelease &rel, std::string *error, bool *badChecksum)
+downloadAndStage(const std::string &work, const UpdateRelease &rel, bool goBack, std::string *error,
+	bool *badChecksum)
 {
 	*badChecksum = false;
 	const char *bundle = UpdateBundleName();
@@ -392,7 +422,10 @@ downloadAndStage(const std::string &work, const UpdateRelease &rel, std::string 
 		}
 	}
 	// What the next start needs to know: the version and its notes.
-	if(!UpdateWriteFile(unpacked + "/.haumea-release", rel.version + "\n" + rel.pageUrl + "\n") ||
+	// What the next start needs to know: the version, its page, and whether
+	// it may be older than the running one (Go back to Production).
+	if(!UpdateWriteFile(unpacked + "/.haumea-release",
+			rel.version + "\n" + rel.pageUrl + "\n" + (goBack ? "go-back\n" : "")) ||
 	   !UpdateWriteFile(unpacked + "/.haumea-notes", rel.body)){
 		UpdateRemoveTree(unpacked);
 		*error = "can't write the staged update";
@@ -408,11 +441,13 @@ downloadAndStage(const std::string &work, const UpdateRelease &rel, std::string 
 }
 
 static std::string
-stagedVersion(const std::string &staged)
+stagedVersion(const std::string &staged, bool *goBack = nil)
 {
 	std::string text;
 	if(!UpdateReadFile(staged + "/.haumea-release", &text))
 		return std::string();
+	if(goBack)
+		*goBack = text.find("\ngo-back\n") != std::string::npos;
 	return text.substr(0, text.find('\n'));
 }
 
@@ -519,9 +554,12 @@ UpdaterInstallStaged(void)
 	std::string staged = updateDir() + "/staged";
 	if(!UpdateIsDirectory(staged))
 		return;
-	std::string version = stagedVersion(staged);
+	bool goBack = false;
+	std::string version = stagedVersion(staged, &goBack);
 	HaumeaVersion v;
-	if(!ParseHaumeaVersion(version.c_str(), &v) || CompareHaumeaVersion(v, HaumeaCurrentVersion()) <= 0){
+	// Never older than this one, unless the user asked to go back to Production.
+	int cmp = ParseHaumeaVersion(version.c_str(), &v) ? CompareHaumeaVersion(v, HaumeaCurrentVersion()) : 0;
+	if(cmp == 0 || (cmp < 0 && !goBack)){
 		UpdateRemoveTree(staged);
 		return;
 	}
@@ -575,6 +613,7 @@ static std::string gError, gNotifyOnly;
 static bool gManualCheck;		// Help > Check for updates: also say "up to date"
 static bool gBannerHidden;		// Later
 static bool gShowWhatsNew;
+static bool gGoingBack;			// Go back to the latest Production: may be older
 static bool gDrawingInline;			// inside UpdaterDrawInline
 static bool gWhatsNewInline;		// its What's new, for the caller to draw
 
@@ -583,7 +622,7 @@ downloadWorker(void)
 {
 	std::string error;
 	bool badChecksum;
-	bool ok = downloadAndStage(updateDir(), gRelease, &error, &badChecksum);
+	bool ok = downloadAndStage(updateDir(), gRelease, gGoingBack, &error, &badChecksum);
 	gError = error;
 	// Free for the next job before the GUI can see this status and act on it.
 	gWorking = false;
@@ -595,7 +634,11 @@ checkWorker(void)
 {
 	UpdateRelease rel;
 	std::string error;
-	int status = checkReleases(updateDir(), gUpdateChannel, HaumeaCurrentVersion(), gUpdateSkip, &rel, &error);
+	// Going back takes the newest production release, even an older one.
+	int status = gGoingBack ?
+		checkReleases(updateDir(), followedChannels(false), HaumeaCurrentVersion(), "", true, &rel, &error) :
+		checkReleases(updateDir(), followedChannels(followsBeta()), HaumeaCurrentVersion(), gUpdateSkip, false,
+			&rel, &error);
 	gRelease = rel;
 	gError = error;
 	gNotifyOnly = status == UPD_AVAILABLE ? notifyOnlyReason(installDir()) : std::string();
@@ -607,7 +650,7 @@ checkWorker(void)
 		gStatus = UPD_READY;
 		return;
 	}
-	if(status == UPD_AVAILABLE && gNotifyOnly.empty() && gUpdateDownloadAuto && !gManualCheck){
+	if(status == UPD_AVAILABLE && gNotifyOnly.empty() && (gGoingBack || (gUpdateDownloadAuto && !gManualCheck))){
 		gStatus = UPD_DOWNLOADING;
 		downloadWorker();
 		return;
@@ -621,7 +664,22 @@ startCheck(bool manual)
 {
 	if(gWorking.exchange(true))
 		return;
+	gGoingBack = false;
 	gManualCheck = manual;
+	gBannerHidden = false;
+	gStatus = UPD_CHECKING;
+	startThread(checkWorker);
+}
+
+// Preferences > Updates: a beta build switched back to Production gets the
+// newest production release now, older or not.
+static void
+startGoBack(void)
+{
+	if(gWorking.exchange(true))
+		return;
+	gGoingBack = true;
+	gManualCheck = true;
 	gBannerHidden = false;
 	gStatus = UPD_CHECKING;
 	startThread(checkWorker);
@@ -899,16 +957,28 @@ UpdaterPreferences(void)
 	changed |= ImGui::Checkbox("Check for updates when Haumea starts", &gUpdateCheckAuto);
 	changed |= ImGui::Checkbox("Download updates automatically", &gUpdateDownloadAuto);
 	ImGui::SetItemTooltip("Downloads in the background; the update still installs only when Haumea restarts.");
-	static const char *channels[] = { "master", "PE", "agent-alpha" };
-	if(ImGui::BeginCombo("Channel", gUpdateChannel)){
-		for(const char *c : channels)
-			if(ImGui::Selectable(c, strcmp(c, gUpdateChannel) == 0)){
-				snprintf(gUpdateChannel, sizeof(gUpdateChannel), "%s", c);
-				changed = true;
-			}
-		ImGui::EndCombo();
+	defaultChannel();
+	int beta = followsBeta() ? 1 : 0;
+	ImGui::TextUnformatted("Channel");
+	ImGui::SameLine();
+	changed |= ImGui::RadioButton("Production", &beta, 0);
+	ImGui::SetItemTooltip("The tested releases everyone gets.");
+	ImGui::SameLine();
+	changed |= ImGui::RadioButton("Beta", &beta, 1);
+	ImGui::SetItemTooltip("New features before everyone else, and sometimes new bugs.\n"
+		"You get the newest of Beta and Production.");
+	snprintf(gUpdateChannel, sizeof(gUpdateChannel), "%s", beta ? "beta" : "production");
+	// A beta build back on Production is never downgraded on its own.
+	if(!beta && strcmp(HAUMEA_CHANNEL, "beta") == 0){
+		ImGui::TextWrapped("You'll move to Production with the next production release newer than %s.",
+			HaumeaFullVersion());
+		ImGui::BeginDisabled(gWorking);
+		if(ImGui::Button("Go back to the latest Production now"))
+			startGoBack();
+		ImGui::EndDisabled();
+		ImGui::SetItemTooltip("Downloads the newest Production release, even if it's older than this beta;\n"
+			"it installs the next time Haumea starts. Your maps and settings stay.");
 	}
-	ImGui::SetItemTooltip("Which releases to follow. This build is %s.", HAUMEA_CHANNEL);
 	if(gUpdateSkip[0]){
 		ImGui::TextDisabled("Skipping %s", gUpdateSkip);
 		ImGui::SameLine();
@@ -955,8 +1025,9 @@ writeReport(const char *path, const std::string &result, const std::string &fiel
 //       Check HAUMEA_UPDATE_URL (else GitHub) and, for a newer release,
 //       download, verify and stage it in <work dir>/staged. The version to
 //       compare with, the channel and the skipped version come from
-//       HAUMEA_UPDATE_CURRENT, HAUMEA_UPDATE_CHANNEL and HAUMEA_UPDATE_SKIP
-//       when set. result: up_to_date, offline, staged, bad_checksum, error.
+//       HAUMEA_UPDATE_CURRENT, HAUMEA_UPDATE_CHANNEL (production or beta) and
+//       HAUMEA_UPDATE_SKIP when set; HAUMEA_UPDATE_GO_BACK=1 takes the newest
+//       production release even if it's older (Go back to Production). result: up_to_date, offline, staged, bad_checksum, error.
 //   --update-install <staged dir> <install dir> <report.json>
 //   --update-rollback <install dir> <report.json>
 int
@@ -973,14 +1044,17 @@ UpdaterCommandLine(int argc, char **argv)
 			const char *skip = getenv("HAUMEA_UPDATE_SKIP");
 			UpdateRelease rel;
 			std::string error;
-			int status = checkReleases(work, channel ? channel : HAUMEA_CHANNEL, current, skip ? skip : "",
+			const char *goBackEnv = getenv("HAUMEA_UPDATE_GO_BACK");
+			bool goBack = goBackEnv && strcmp(goBackEnv, "1") == 0;
+			bool beta = !goBack && (channel ? strcmp(channel, "beta") == 0 : strcmp(HAUMEA_CHANNEL, "beta") == 0);
+			int status = checkReleases(work, followedChannels(beta), current, goBack || !skip ? "" : skip, goBack,
 				&rel, &error);
 			if(status != UPD_AVAILABLE)
 				return writeReport(report, status == UPD_UP_TO_DATE ? "up_to_date" :
 					status == UPD_OFFLINE ? "offline" : "error", ", \"error\": " + jsonString(error));
 			bool badChecksum;
 			std::string fields = ", \"version\": " + jsonString(rel.version);
-			if(!downloadAndStage(work, rel, &error, &badChecksum))
+			if(!downloadAndStage(work, rel, goBack, &error, &badChecksum))
 				return writeReport(report, badChecksum ? "bad_checksum" : "error",
 					fields + ", \"error\": " + jsonString(error));
 			return writeReport(report, "staged", fields + ", \"staged\": " + jsonString(work + "/staged"));

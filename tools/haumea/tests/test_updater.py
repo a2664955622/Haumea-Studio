@@ -136,15 +136,17 @@ class UpdaterTests(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
-    def run_editor(self, *args, current='1.41.0.10', url=None, skip=None):
+    def run_editor(self, *args, current='1.0.0.10', url=None, skip=None, channel='production', go_back=False):
         env = editor_env(str(self.tmp))
         env.pop('HAUMEA_NO_UPDATE', None)
         headless(env, str(self.tmp))
         env['HAUMEA_UPDATE_URL'] = url or self.github.url
-        env['HAUMEA_UPDATE_CHANNEL'] = 'master'
+        env['HAUMEA_UPDATE_CHANNEL'] = channel
         env['HAUMEA_UPDATE_CURRENT'] = current
         if skip:
             env['HAUMEA_UPDATE_SKIP'] = skip
+        if go_back:
+            env['HAUMEA_UPDATE_GO_BACK'] = '1'
         report = self.tmp / 'report.json'
         report.unlink(missing_ok=True)
         result = subprocess.run([BINARY, *args, str(report)], env=env, capture_output=True, text=True,
@@ -161,25 +163,63 @@ class UpdaterTests(unittest.TestCase):
     # ---- Checking ----
 
     def test_newer_release_is_downloaded_verified_and_staged(self):
-        self.github.publish([self.github.release('v1.41.0.20-master', NEW),
-                             self.github.release('v1.41.0.15-master', NEW)])
+        self.github.publish([self.github.release('v1.0.0.20-production', NEW),
+                             self.github.release('v1.0.0.15-production', NEW)])
         report = self.check()
         self.assertEqual(report['result'], 'staged', report)
-        self.assertEqual(report['version'], '1.41.0.20')
+        self.assertEqual(report['version'], '1.0.0.20')
         self.assertEqual((self.staged() / 'haumea').read_bytes(), b'new editor')
         self.assertTrue((self.staged() / 'MANIFEST').exists())
-        self.assertEqual((self.staged() / '.haumea-notes').read_text(), 'Notes for v1.41.0.20-master')
+        self.assertEqual((self.staged() / '.haumea-notes').read_text(), 'Notes for v1.0.0.20-production')
 
     def test_same_older_skipped_and_other_channel_are_up_to_date(self):
-        self.github.publish([self.github.release('v1.41.0.20-master', NEW),
-                             self.github.release('v1.42.0.30-PE', NEW)])
-        for current, skip in (('1.41.0.20', None), ('1.42.0.0', None), ('1.41.0.10', '1.41.0.20')):
+        self.github.publish([self.github.release('v1.0.0.20-production', NEW),
+                             self.github.release('v1.1.0.30-beta', NEW)])
+        for current, skip in (('1.0.0.20', None), ('1.1.0.0', None), ('1.0.0.10', '1.0.0.20')):
             report = self.check(current=current, skip=skip)
             self.assertEqual(report['result'], 'up_to_date', (current, skip, report))
         self.assertFalse(self.staged().exists())
 
+    def staged_release(self):
+        return (self.staged() / '.haumea-release').read_text().splitlines()
+
+    def test_production_ignores_beta_and_beta_takes_the_newest_of_both(self):
+        self.github.publish([self.github.release('v1.0.0.30-beta', NEW),
+                             self.github.release('v1.0.0.20-production', NEW),
+                             self.github.release('v1.0.0.25-master', NEW)])	# a retired channel
+        report = self.check(channel='production')
+        self.assertEqual((report['result'], report.get('version')), ('staged', '1.0.0.20'), report)
+        shutil.rmtree(self.tmp / 'work')
+        report = self.check(channel='beta')
+        self.assertEqual((report['result'], report.get('version')), ('staged', '1.0.0.30'), report)
+        # A production release newer than every beta: beta takes it too.
+        self.github.publish([self.github.release('v1.0.0.40-production', NEW),
+                             self.github.release('v1.0.0.30-beta', NEW)])
+        shutil.rmtree(self.tmp / 'work')
+        report = self.check(channel='beta')
+        self.assertEqual((report['result'], report.get('version')), ('staged', '1.0.0.40'), report)
+
+    def test_back_on_production_never_downgrades_unless_asked(self):
+        # A beta build (1.0.0.30) whose user switched back to Production.
+        self.github.publish([self.github.release('v1.0.0.30-beta', NEW),
+                             self.github.release('v1.0.0.20-production', NEW)])
+        report = self.check(channel='production', current='1.0.0.30')
+        self.assertEqual(report['result'], 'up_to_date', report)
+        self.assertFalse(self.staged().exists())
+        # "Go back to the latest Production now": the older production release,
+        # staged as a go-back so the next start may install it.
+        report = self.check(current='1.0.0.30', go_back=True)
+        self.assertEqual((report['result'], report.get('version')), ('staged', '1.0.0.20'), report)
+        self.assertIn('go-back', self.staged_release())
+        # A plain newer update is not a go-back.
+        self.github.publish([self.github.release('v1.0.0.50-production', NEW)])
+        shutil.rmtree(self.tmp / 'work')
+        report = self.check(current='1.0.0.30')
+        self.assertEqual((report['result'], report.get('version')), ('staged', '1.0.0.50'), report)
+        self.assertNotIn('go-back', self.staged_release())
+
     def test_bad_checksum_stages_nothing(self):
-        self.github.publish([self.github.release('v1.41.0.20-master', NEW, sums='0' * 64 + f'  {BUNDLE}\n')])
+        self.github.publish([self.github.release('v1.0.0.20-production', NEW, sums='0' * 64 + f'  {BUNDLE}\n')])
         report = self.check()
         self.assertEqual(report['result'], 'bad_checksum', report)
         self.assertFalse(self.staged().exists())
@@ -192,7 +232,7 @@ class UpdaterTests(unittest.TestCase):
         self.assertEqual(report['result'], 'offline', report)
 
     def test_plain_http_outside_the_test_server_is_refused(self):
-        tag, assets = self.github.release('v1.41.0.20-master', NEW)
+        tag, assets = self.github.release('v1.0.0.20-production', NEW)
         self.github.publish([(tag, assets)])
         listing = json.loads(self.github.files['/releases'])
         for asset in listing[0]['assets']:
@@ -218,7 +258,7 @@ class UpdaterTests(unittest.TestCase):
         cases = {'escape': bundle(NEW, escape), 'symlink': bundle(NEW, symlink),
                  'truncated': good[:len(good) // 2], 'not gzip': b'PK\x03\x04 not a tarball'}
         for name, archive in cases.items():
-            self.github.publish([self.github.release('v1.41.0.20-master', NEW, archive=archive)])
+            self.github.publish([self.github.release('v1.0.0.20-production', NEW, archive=archive)])
             report = self.check()
             self.assertEqual(report['result'], 'error', (name, report))
             self.assertFalse(self.staged().exists(), name)
@@ -232,7 +272,7 @@ class UpdaterTests(unittest.TestCase):
         return {str(p.relative_to(folder)): p.read_bytes() for p in sorted(folder.rglob('*')) if p.is_file()}
 
     def test_install_by_manifest_keeps_local_edits_and_user_files_then_rolls_back(self):
-        self.github.publish([self.github.release('v1.41.0.20-master', NEW)])
+        self.github.publish([self.github.release('v1.0.0.20-production', NEW)])
         self.assertEqual(self.check()['result'], 'staged')
         install = self.tmp / 'install'
         (install / 'fonts').mkdir(parents=True)
@@ -266,7 +306,7 @@ class UpdaterTests(unittest.TestCase):
         self.assertEqual(report['result'], 'error', report)
 
     def test_install_refuses_a_staged_file_that_does_not_match(self):
-        self.github.publish([self.github.release('v1.41.0.20-master', NEW)])
+        self.github.publish([self.github.release('v1.0.0.20-production', NEW)])
         self.assertEqual(self.check()['result'], 'staged')
         (self.staged() / 'fonts' / 'a.ttf').write_bytes(b'tampered')
         install = self.tmp / 'install'
@@ -280,9 +320,9 @@ class UpdaterTests(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which('xvfb-run'), 'needs xvfb-run')
     def test_banner_downloads_and_offers_restart(self):
-        # The editor's own channel and a version far above it.
-        channel = subprocess.run([BINARY, '--version'], capture_output=True, text=True).stdout.split()[-1]
-        self.github.publish([self.github.release(f'v99.0.0.1-{channel}', NEW)])
+        # A version far above this one, on Production (what every build but a
+        # beta one follows by default).
+        self.github.publish([self.github.release('v99.0.0.1-production', NEW)])
         game = self.tmp / 'game'
         subprocess.run([sys.executable, str(Path(__file__).parent / 'fixture' / 'make_game.py'), str(game)],
                        check=True, capture_output=True)

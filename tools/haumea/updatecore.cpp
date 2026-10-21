@@ -283,8 +283,9 @@ UpdateRelease::Find(const char *name) const
 }
 
 bool
-UpdatePickRelease(const std::string &json, const char *channel, const HaumeaVersion &current,
-	const char *skipVersion, UpdateRelease *out, std::string *error)
+UpdatePickRelease(const std::string &json, const std::vector<std::string> &channels,
+	const HaumeaVersion &current, const char *skipVersion, bool allowOlder, UpdateRelease *out,
+	std::string *error)
 {
 	Json root;
 	JsonParser parser = { json.data(), json.data() + json.size() };
@@ -299,8 +300,10 @@ UpdatePickRelease(const std::string &json, const char *channel, const HaumeaVers
 		std::string tag = r.text("tag_name");
 		char tagChannel[64];
 		HaumeaVersion v;
-		if(!HaumeaTagChannel(tag.c_str(), tagChannel, sizeof(tagChannel)) || strcmp(tagChannel, channel) != 0 ||
-		   !ParseHaumeaVersion(tag.c_str(), &v) || CompareHaumeaVersion(v, current) <= 0)
+		if(!HaumeaTagChannel(tag.c_str(), tagChannel, sizeof(tagChannel)) ||
+		   std::find(channels.begin(), channels.end(), std::string(tagChannel)) == channels.end() ||
+		   !ParseHaumeaVersion(tag.c_str(), &v) || (!allowOlder && CompareHaumeaVersion(v, current) <= 0) ||
+		   CompareHaumeaVersion(v, current) == 0)
 			continue;
 		char version[64];
 		snprintf(version, sizeof(version), "%d.%d.%d.%d", v.part[0], v.part[1], v.part[2], v.part[3]);
