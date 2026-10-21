@@ -12,8 +12,6 @@ click_item 'Map Objects' 'wall_c (wall001)'
 release Ctrl
 wait 3
 assert selected == 3
-# Map Objects docks under Object Info and would cover the Materials section.
-shortcut window_map_objects
 shortcut window_object_info
 wait 20
 assert pawn_count "\"white\"" == 3

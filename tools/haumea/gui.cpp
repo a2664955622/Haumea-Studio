@@ -6909,8 +6909,10 @@ uiResetPanelLayout(void)
 }
 
 #ifdef IMGUI_HAS_DOCK
-// Default arrangement: Object Info over Map Objects on the left, the Object
-// Browser over Tools on the right, and the 3D view in between.
+// Default arrangement: Object Info down the left (it is long: materials and
+// element settings must not start below the fold), the Object Browser with
+// Tools as a second tab over Map Objects on the right, and the 3D view in
+// between.
 static void
 uiBuildDefaultDockLayout(ImGuiID dockspace)
 {
@@ -6922,13 +6924,12 @@ uiBuildDefaultDockLayout(ImGuiID dockspace)
 	ImGuiID center = dockspace;
 	ImGuiID left = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, side, nil, &center);
 	ImGuiID right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, side / (1.0f - side), nil, &center);
-	ImGuiID leftBottom, rightBottom;
-	ImGuiID leftTop = ImGui::DockBuilderSplitNode(left, ImGuiDir_Up, 0.62f, nil, &leftBottom);
+	ImGuiID rightBottom;
 	ImGuiID rightTop = ImGui::DockBuilderSplitNode(right, ImGuiDir_Up, 0.62f, nil, &rightBottom);
-	ImGui::DockBuilderDockWindow(ICON_FA_CIRCLE_INFO " Object Info", leftTop);
-	ImGui::DockBuilderDockWindow(ICON_FA_LAYER_GROUP " Map Objects", leftBottom);
+	ImGui::DockBuilderDockWindow(ICON_FA_CIRCLE_INFO " Object Info", left);
 	ImGui::DockBuilderDockWindow(ICON_FA_MAGNIFYING_GLASS " Object Browser", rightTop);
-	ImGui::DockBuilderDockWindow(ICON_FA_WRENCH " Tools", rightBottom);
+	ImGui::DockBuilderDockWindow(ICON_FA_WRENCH " Tools", rightTop);
+	ImGui::DockBuilderDockWindow(ICON_FA_LAYER_GROUP " Map Objects", rightBottom);
 	ImGui::DockBuilderFinish(dockspace);
 }
 

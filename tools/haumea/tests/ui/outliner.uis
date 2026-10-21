@@ -2,6 +2,9 @@
 # rename, grouping by drag and by menu, and hiding from the context menu.
 open "$UI_FIXTURES/ui_outliner.pwn"
 wait 5
+# Close Tools (open in a fresh config) so Map Objects has the whole right
+# column: the list is longer than its default share.
+shortcut window_tools
 shortcut window_map_objects
 wait 5
 assert window "Map Objects"
