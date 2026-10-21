@@ -15,9 +15,9 @@ if __package__:
 else:
 	from haumea_ipc import HaumeaClient, HaumeaError, DEFAULT_ENGINE_SOCKET
 if __package__:
-	from .asset_index import AssetIndex, DEFAULT_DATABASE, DEFAULT_GTASTUFF, build_index
+	from .asset_index import AssetIndex, DEFAULT_DATABASE, GEOMETRY_UNAVAILABLE, build_index
 else:
-	from asset_index import AssetIndex, DEFAULT_DATABASE, DEFAULT_GTASTUFF, build_index
+	from asset_index import AssetIndex, DEFAULT_DATABASE, GEOMETRY_UNAVAILABLE, build_index
 if __package__:
 	from .asset_discovery import AssetDiscovery, DEFAULT_SESSION_DIR
 else:
@@ -208,9 +208,8 @@ def main(argv: list[str] | None = None) -> int:
 	assets = sub.add_parser("assets")
 	asset_sub = assets.add_subparsers(dest="asset_command", required=True)
 	index = asset_sub.add_parser("index")
-	sources = index.add_mutually_exclusive_group()
-	sources.add_argument("--gtastuff", type=Path, default=DEFAULT_GTASTUFF)
-	sources.add_argument("--gta-dir", type=Path, help="build a basic catalogue from your GTA data/*.ide files")
+	index.add_argument("--gta-dir", type=Path, required=True,
+	                   help="your GTA San Andreas folder: the catalogue comes from its data/*.ide files")
 	index.add_argument("--semantic-assets", type=Path,
 	                   help="optional AI-enriched asset JSON; kept external when its license is unknown")
 	search = asset_sub.add_parser("search")
@@ -320,7 +319,7 @@ def main(argv: list[str] | None = None) -> int:
 				payload = service.environment(**settings)
 		elif args.command == "assets":
 			if args.asset_command == "index": payload = build_index(
-				args.gtastuff, args.db, semantic_assets=args.semantic_assets, gta_dir=args.gta_dir)
+				args.db, semantic_assets=args.semantic_assets, gta_dir=args.gta_dir)
 			elif args.asset_command == "search":
 				service = HaumeaService(args.socket, args.db, args.timeout,
 				                        args.discovery_dir, args.state_dir)
@@ -334,6 +333,9 @@ def main(argv: list[str] | None = None) -> int:
 						args.query, category=args.category, max_width=args.max_width,
 						max_depth=args.max_depth, has_collision=True if args.has_collision else None,
 						exclude_lod=not args.include_lod, limit=args.limit)}
+				if (args.max_width is not None or args.max_depth is not None or args.has_collision) \
+				   and not AssetIndex(args.db).geometry_available():
+					payload["note"] = GEOMETRY_UNAVAILABLE
 			elif args.asset_command == "inspect":
 				if args.ensure_renderable:
 					payload = {"asset": HaumeaService(args.socket, args.db, args.timeout,

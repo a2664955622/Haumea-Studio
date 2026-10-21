@@ -43,23 +43,19 @@ The basic catalogue is built offline from object definitions in your game's
 draw distances. Names supply weak search hints. Dimensions, collision availability,
 native IPL usage and thumbnails are not extracted by this basic importer;
 use live `assets inspect ID --ensure-renderable` and `assets preview ID` for
-runtime checks. `--has-collision` and dimension filters need an enriched index.
+runtime checks. `--has-collision` and the dimension filters need sizes and
+collision in the index, which it doesn't have yet: until the editor provides
+them, they are ignored and the result carries a `note` saying so.
 All IDE files under `data` are scanned, so `--defined-only` checks which entries
 are actually defined in the running editor. Rebuild when changing games or mods;
 use a separate `--db` for each installation because model IDs overlap.
 
-An optional existing gtastuff checkout supplies richer geometry, collision,
-IPL and thumbnail metadata:
-
-```sh
-.venv-agent/bin/haumeactl assets index --gtastuff "/absolute/path/to/gtastuff"
-```
-
-It is not needed for the basic installation. Optional `--semantic-assets`
+The index comes only from your own game files (`--gta-dir`). Optional `--semantic-assets`
 accepts an external caption dataset; no such dataset is bundled. Captions remain
 recall hints, never authoritative functional labels. `HAUMEA_ASSET_DB` overrides
 the default `~/.cache/haumea-agent/assets-v1.sqlite3`; `--db` takes precedence.
-`HAUMEA_GTASTUFF` optionally supplies the enriched catalogue source.
+Thumbnails for atlases and contact sheets come from a folder of `<id>.png` images
+(`--thumbnail-dir`), such as the editor's own renders from `assets preview ID`.
 
 There is deliberately no Ollama, embedding daemon, or local model dependency.
 Codex observes the scene, turns the request into explicit roles/styles/negative
@@ -82,7 +78,7 @@ $PY $CLI discovery start "outdoor guest area at a desert motel" \
 $PY $CLI discovery coverage DISCOVERY_ID
 $PY $CLI discovery atlas DISCOVERY_ID \
   --output agent-output/desert-palette.png --family-limit 32 \
-  --thumbnail-dir /path/to/gtastuff/thumbnails
+  --thumbnail-dir /path/to/thumbnails
 $PY $CLI discovery families DISCOVERY_ID --limit 100
 $PY $CLI discovery open DISCOVERY_ID FAMILY_NAME
 $PY $CLI discovery residuals DISCOVERY_ID --limit 64
@@ -101,7 +97,7 @@ Run the repeatable closed-loop recall/stability benchmark with:
 $PY tools/agent/discovery_harness.py \
   --output agent-output/discovery-harness \
   --iterations 5 --pool-limit 2500 --render-atlases \
-  --thumbnail-dir /path/to/gtastuff/thumbnails
+  --thumbnail-dir /path/to/thumbnails
 $PY -m unittest discover -s tools/agent/tests -v
 ```
 

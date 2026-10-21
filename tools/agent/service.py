@@ -20,9 +20,9 @@ if __package__:
 else:
 	from haumea_ipc import HaumeaClient, HaumeaError, DEFAULT_ENGINE_SOCKET
 if __package__:
-	from .asset_index import AssetIndex, DEFAULT_DATABASE
+	from .asset_index import AssetIndex, DEFAULT_DATABASE, GEOMETRY_UNAVAILABLE
 else:
-	from asset_index import AssetIndex, DEFAULT_DATABASE
+	from asset_index import AssetIndex, DEFAULT_DATABASE, GEOMETRY_UNAVAILABLE
 if __package__:
 	from .asset_discovery import AssetDiscovery, DEFAULT_SESSION_DIR
 else:
@@ -687,6 +687,8 @@ class HaumeaService:
 	                  max_width: float | None = None, max_depth: float | None = None,
 	                  has_collision: bool | None = None, defined_only: bool = False,
 	                  limit: int = 30) -> list[dict]:
+		if not self.assets.geometry_available():
+			max_width = max_depth = has_collision = None	# see geometry_note()
 		candidate_limit = min(3000, max(limit, limit * 8 if defined_only else limit))
 		candidates = self.assets.search(query, category=category, max_width=max_width,
 		                                max_depth=max_depth, has_collision=has_collision,
@@ -713,6 +715,13 @@ class HaumeaService:
 			if len(results) >= limit:
 				break
 		return results
+
+	def geometry_note(self, **filters) -> str | None:
+		"""The note to give when size or collision filters were asked for but the
+		asset index has no sizes or collision yet (they are then ignored)."""
+		if any(value is not None for value in filters.values()) and not self.assets.geometry_available():
+			return GEOMETRY_UNAVAILABLE
+		return None
 
 	def probe_asset(self, model: int | str, *, ensure_renderable: bool = False) -> dict:
 		return self.engine("asset_probe", [model, int(ensure_renderable)])["asset"]
@@ -754,7 +763,6 @@ class HaumeaService:
 		compact = {
 			"id": asset.get("id"), "name": asset.get("name"),
 			"category": asset.get("category"),
-			"prineside_category": asset.get("prineside_category"),
 			"semantic_role": asset.get("semantic_role"),
 			"dimensions": [asset.get("width"), asset.get("depth"), asset.get("height")],
 			"max_dim": asset.get("max_dim"), "size_class": asset.get("size_class"),

@@ -10,13 +10,13 @@ from pathlib import Path
 import re
 import sqlite3
 from typing import Any
-from urllib.request import Request, urlopen
 
 from PIL import Image, ImageDraw
 
 
-SCHEMA_VERSION = 3
-DEFAULT_GTASTUFF = Path(os.environ["HAUMEA_GTASTUFF"]).expanduser() if os.environ.get("HAUMEA_GTASTUFF") else None
+SCHEMA_VERSION = 4
+GEOMETRY_UNAVAILABLE = ("size and collision filters (max_width, max_depth, has_collision) are not available "
+                        "yet: the asset index has no sizes or collision; they were ignored")
 DEFAULT_DATABASE = Path(os.environ.get("HAUMEA_ASSET_DB", str(Path.home() / ".cache" / "haumea-agent" / "assets-v1.sqlite3"))).expanduser()
 
 
@@ -109,21 +109,20 @@ def _decorate_asset(asset: dict) -> dict:
 	)):
 		warnings.append("semantic_scale_conflict")
 	catalog_roles = _role_hits(" ".join(str(asset.get(field) or "") for field in (
-		"category", "prineside_category", "semantic_role",
+		"category", "semantic_role",
 	)))
 	semantic_roles = _role_hits(semantic)
 	if catalog_roles and semantic_roles and catalog_roles.isdisjoint(semantic_roles):
 		warnings.append("semantic_role_conflict")
 	asset["metadata_warnings"] = sorted(set(warnings))
 	asset["metadata_provenance"] = {
-		"geometry": "gtastuff_model_sizes" if asset.get("width") is not None else "unavailable",
-		"legacy_description": "prineside",
+		"geometry": "unavailable" if asset.get("width") is None else "index",
 		"semantic_description": "optional_external_dataset",
 	}
 	return asset
 
 
-def classify_asset(model: dict, pine: dict, size: dict, description: str) -> tuple[str, str, str, str, str]:
+def classify_asset(model: dict, size: dict, description: str) -> tuple[str, str, str, str, str]:
 	"""Derive weak labels without pretending legacy names are ground truth.
 
 	The labels are retrieval hints only. Discovery treats them as scoring channels,
@@ -132,7 +131,7 @@ def classify_asset(model: dict, pine: dict, size: dict, description: str) -> tup
 	parts = [
 		model.get("name", ""), model.get("dff", ""), model.get("txd", ""),
 		model.get("category", ""), model.get("source", ""),
-		pine.get("category", ""), description, " ".join(pine.get("tags") or model.get("tags") or []),
+		description, " ".join(model.get("tags") or []),
 	]
 	haystack = " ".join(str(part).lower().replace("_", " ") for part in parts if part)
 	roles = [role for role, words in ROLE_KEYWORDS.items() if _matches(haystack, words)]
@@ -152,8 +151,7 @@ def classify_asset(model: dict, pine: dict, size: dict, description: str) -> tup
 		placements.append("lod")
 	size_class = _size_class(size.get("maxDim"))
 	primary_role = roles[0] if roles else (category or "unknown")
-	pine_category = str(pine.get("category", ""))
-	leaf = pine_category.rsplit(">", 1)[-1].strip().lower() if pine_category else category or "unknown"
+	leaf = category or "unknown"
 	leaf = re.sub(r"[^a-z0-9]+", "_", leaf).strip("_") or "unknown"
 	family_key = f"{primary_role}:{leaf}:{size_class}"
 	return " ".join(roles), " ".join(styles), " ".join(placements), family_key, size_class
@@ -216,26 +214,18 @@ def _gta_models(gta_dir: Path) -> list[dict]:
 	return list(models.values())
 
 
-def build_index(gtastuff: Path | None = DEFAULT_GTASTUFF, database: Path = DEFAULT_DATABASE,
-				semantic_assets: Path | None = None, *, gta_dir: Path | None = None) -> dict:
+def build_index(database: Path = DEFAULT_DATABASE, semantic_assets: Path | None = None, *,
+				gta_dir: Path) -> dict:
+	"""Index the object definitions of the game in gta_dir (its data/*.ide files).
+	Sizes, collision and world locations are not in this index yet: the editor
+	will provide them, and until then those filters say they are unavailable."""
 	database = Path(database).expanduser().resolve()
-	if gta_dir is not None:
-		gta_dir = Path(gta_dir).expanduser().resolve()
-		models = _gta_models(gta_dir)
-		models_path = gta_dir / "data"
-		sizes, locations, collisions, prineside = {}, {}, {}, {}
-	elif gtastuff is not None:
-		gtastuff = Path(gtastuff).expanduser().resolve()
-		models_path = gtastuff / "models" / "data" / "models.json"
-		if not models_path.exists():
-			raise FileNotFoundError(f"gtastuff model database not found: {models_path}")
-		models = _load(models_path, {}).get("models", [])
-		sizes = _load(gtastuff / "models" / "data" / "model-sizes.json", {})
-		locations = _load(gtastuff / "models" / "data" / "locations.json", {}).get("locations", {})
-		collisions = _load(gtastuff / "models" / "data" / "collisions.min.json", {})
-		prineside = _load(gtastuff / "scripts" / "prineside-data.json", {}).get("models", {})
-	else:
-		raise ValueError("Specify --gta-dir /path/to/GTA for a local catalogue, or --gtastuff /path/to/gtastuff for enriched metadata")
+	if gta_dir is None:
+		raise ValueError("Specify --gta-dir /path/to/GTA San Andreas")
+	gta_dir = Path(gta_dir).expanduser().resolve()
+	models = _gta_models(gta_dir)
+	models_path = gta_dir / "data"
+	sizes, locations, collisions = {}, {}, {}
 	semantic_by_id = _load_semantic_assets(semantic_assets)
 
 	database.parent.mkdir(parents=True, exist_ok=True)
@@ -249,7 +239,7 @@ def build_index(gtastuff: Path | None = DEFAULT_GTASTUFF, database: Path = DEFAU
 			CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 			CREATE TABLE assets (
 				id INTEGER PRIMARY KEY, name TEXT NOT NULL, dff TEXT, txd TEXT,
-				category TEXT, prineside_category TEXT, description TEXT, tags TEXT,
+				category TEXT, description TEXT, tags TEXT,
 				source TEXT, draw_distance REAL, flags INTEGER, lod_id INTEGER,
 				parent_id INTEGER, is_road INTEGER NOT NULL, is_vegetation INTEGER NOT NULL,
 				has_collision INTEGER NOT NULL, width REAL, height REAL, depth REAL,
@@ -260,7 +250,7 @@ def build_index(gtastuff: Path | None = DEFAULT_GTASTUFF, database: Path = DEFAU
 				semantic_description TEXT, semantic_category TEXT, semantic_biomes TEXT
 			);
 			CREATE VIRTUAL TABLE asset_search USING fts5(
-				name, description, tags, category, prineside_category, txd, source,
+				name, description, tags, category, txd, source,
 				role_tags, style_tags, placement_tags, semantic_description,
 				content='assets', content_rowid='id'
 			);
@@ -282,29 +272,26 @@ def build_index(gtastuff: Path | None = DEFAULT_GTASTUFF, database: Path = DEFAU
 			asset_id = int(model["id"])
 			size = sizes.get(str(asset_id), {})
 			location = locations.get(str(asset_id), {})
-			pine = prineside.get(str(asset_id), {})
 			semantic = semantic_by_id.get(asset_id, {})
-			pine_name = pine.get("name", "") if pine.get("exists") else ""
-			description = pine_name if pine_name and pine_name.lower() != model["name"].lower() else ""
+			description = ""
 			semantic_description = semantic.get("AiDescription", "")
 			lod = model.get("associatedLod") or {}
 			parent = model.get("parentModel") or {}
 			# External captions and tags are valuable recall hints but are not
-			# reliable enough to define functional families. Keep them in FTS while
-			# deriving role/style labels only from stable GTAStuff/Prineside metadata.
+			# reliable enough to define functional families: they stay in FTS only.
 			role_tags, style_tags, placement_tags, family_key, size_class = classify_asset(
-				model, pine, size, description)
+				model, size, description)
 			asset_ipls = location.get("ipls", [])
 			rows.append((
 				asset_id, model["name"], model.get("dff"), model.get("txd"),
-				model.get("category"), pine.get("category", ""), description,
-				" ".join(pine.get("tags") or model.get("tags") or []), model.get("source"),
+				model.get("category"), description,
+				" ".join(model.get("tags") or []), model.get("source"),
 				model.get("drawDist"), model.get("flags"), lod.get("id"), parent.get("id"),
 				int(bool(model.get("isRoad"))), int(bool(model.get("isVegetation"))),
 				int(str(asset_id) in collisions), size.get("width"), size.get("height"),
 				size.get("depth"), size.get("maxDim"), size.get("volume"), size.get("radius"),
 				len(location.get("locs", [])), json.dumps(asset_ipls, separators=(",", ":")),
-				"" if gta_dir is not None else f"https://gtastuff.namecdsl.xyz/thumbnails/{asset_id}.png",
+				"",
 				role_tags, style_tags, placement_tags, family_key, size_class,
 				semantic_description, semantic.get("Category", ""),
 				" ".join(semantic.get("BiomeAffinity") or []),
@@ -315,14 +302,15 @@ def build_index(gtastuff: Path | None = DEFAULT_GTASTUFF, database: Path = DEFAU
 			for item in location.get("interiorLocs", []):
 				location_rows.append((asset_id, item["x"], item["y"], item["z"], item.get("int", item.get("i", 0))))
 		connection.executemany("""
-			INSERT INTO assets VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+			INSERT INTO assets VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		""", rows)
 		connection.executemany("INSERT INTO asset_ipls VALUES (?,?)", ipl_rows)
 		connection.executemany("INSERT INTO asset_locations VALUES (?,?,?,?,?)", location_rows)
 		connection.execute("INSERT INTO asset_search(asset_search) VALUES('rebuild')")
 		connection.executemany("INSERT INTO metadata VALUES (?,?)", [
 			("schema_version", str(SCHEMA_VERSION)),
-			("source_kind", "gta_ide" if gta_dir is not None else "gtastuff"),
+			("source_kind", "gta_ide"),
+			("geometry", "yes" if sizes else "no"),
 			("source_path", str(models_path)),
 			("asset_count", str(len(rows))),
 			("semantic_asset_count", str(len(semantic_by_id))),
@@ -346,6 +334,12 @@ class AssetIndex:
 		connection = sqlite3.connect(self.database)
 		connection.row_factory = sqlite3.Row
 		return connection
+
+	def geometry_available(self) -> bool:
+		"""Whether the index has sizes and collision (for max_width, max_depth, has_collision)."""
+		with closing(self._connect()) as connection:
+			row = connection.execute("SELECT value FROM metadata WHERE key = 'geometry'").fetchone()
+		return bool(row) and row[0] == "yes"
 
 	def inspect(self, asset_id: int) -> dict | None:
 		with closing(self._connect()) as connection:
@@ -372,8 +366,10 @@ class AssetIndex:
 			values.append(" OR ".join(f'"{token}"*' for token in tokens))
 			order = "bm25(asset_search), a.native_count DESC"
 		if category:
-			clauses.append("(a.category = ? OR lower(a.prineside_category) LIKE ?)")
-			values.extend([category, f"%{category.lower()}%"])
+			clauses.append("a.category = ?")
+			values.append(category)
+		if not self.geometry_available():
+			max_width = max_depth = has_collision = None	# not in this index yet (see GEOMETRY_UNAVAILABLE)
 		if max_width is not None:
 			clauses.append("a.width <= ?")
 			values.append(max_width)
@@ -400,11 +396,10 @@ class AssetIndex:
 				SELECT *,
 					(CASE WHEN category = ? THEN 3 ELSE 0 END) +
 					(CASE WHEN txd = ? THEN 2 ELSE 0 END) +
-					(CASE WHEN prineside_category = ? THEN 2 ELSE 0 END) -
 					(abs(coalesce(max_dim, 0) - coalesce(?, 0)) / max(coalesce(?, 1), 1)) AS score
 				FROM assets WHERE id != ? AND category != 'lod'
 				ORDER BY score DESC, native_count DESC LIMIT ?
-			""", (asset["category"], asset["txd"], asset["prineside_category"],
+			""", (asset["category"], asset["txd"],
 			      asset["max_dim"], asset["max_dim"], asset_id, limit)).fetchall()
 		return [_decorate_asset(dict(row)) for row in rows]
 
@@ -445,7 +440,7 @@ class AssetIndex:
 	def contact_sheet(self, asset_ids: list[int], output: Path, *,
 	                  columns: int = 5, tile_size: int = 220,
 	                  thumbnail_dir: Path | None = None) -> dict:
-		"""Render labeled gtastuff thumbnails for an agent's visual shortlist."""
+		"""Render labeled thumbnails from thumbnail_dir (the editor's own asset renders) for a shortlist."""
 		assets = [asset for asset_id in asset_ids if (asset := self.inspect(asset_id))]
 		if not assets:
 			raise ValueError("contact sheet has no valid asset ids")
@@ -465,13 +460,7 @@ class AssetIndex:
 				if candidate.exists():
 					thumbnail = Image.open(candidate)
 			if thumbnail is None:
-				try:
-					request = Request(asset["thumbnail_url"], headers={"User-Agent": "haumea-agent/1"})
-					with urlopen(request, timeout=10) as response:
-						from io import BytesIO
-						thumbnail = Image.open(BytesIO(response.read()))
-				except (OSError, ValueError):
-					missing.append(asset["id"])
+				missing.append(asset["id"])
 			if thumbnail is not None:
 				thumbnail = thumbnail.convert("RGBA")
 				thumbnail.thumbnail((tile_size - 8, tile_size - 8), Image.Resampling.LANCZOS)
@@ -481,7 +470,7 @@ class AssetIndex:
 				loaded += 1
 			draw.rectangle((x, y + tile_size, x + tile_size, y + tile_size + label_height), fill="#111215")
 			draw.text((x + 7, y + tile_size + 5), f"{asset['id']}  {asset['name']}", fill="white")
-			draw.text((x + 7, y + tile_size + 23), asset.get("prineside_category") or asset.get("category") or "", fill="#aeb6c2")
+			draw.text((x + 7, y + tile_size + 23), asset.get("category") or "", fill="#aeb6c2")
 		output = Path(output).resolve()
 		output.parent.mkdir(parents=True, exist_ok=True)
 		sheet.save(output)

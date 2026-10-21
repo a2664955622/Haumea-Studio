@@ -192,12 +192,16 @@ def search_assets(query: str, category: str | None = None,
 
 	Compact results: id (the model for place_element), name, txd, size [w, d, h]
 	in metres and draw_distance; detail="full" adds the whole catalogue record.
-	Try a few short words: names are the game's, like "petrolpump" or "nt_bench"."""
+	Try a few short words: names are the game's, like "petrolpump" or "nt_bench".
+	max_width, max_depth and has_collision need sizes and collision in the asset
+	index, which it doesn't have yet: until then they are ignored and the result
+	has a "note" saying so."""
+	note = service.geometry_note(max_width=max_width, max_depth=max_depth, has_collision=has_collision)
 	results = service.search_assets(query, category=category, max_width=max_width,
 	                                max_depth=max_depth, has_collision=has_collision,
 	                                defined_only=defined_only, limit=limit)
 	if detail == "full":
-		return {"results": results}
+		return {"results": results, **({"note": note} if note else {})}
 	compact = []
 	for asset in results:
 		bounds = (asset.get("runtime") or {}).get("collision_bounds")
@@ -205,7 +209,7 @@ def search_assets(query: str, category: str | None = None,
 		compact.append({key: value for key, value in {
 			"id": asset.get("id"), "name": asset.get("name"), "txd": asset.get("txd"),
 			"size": size, "draw_distance": asset.get("draw_distance")}.items() if value is not None})
-	return {"results": compact, "count": len(compact)}
+	return {"results": compact, "count": len(compact), **({"note": note} if note else {})}
 
 
 @mcp.tool()

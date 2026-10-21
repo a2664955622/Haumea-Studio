@@ -13,9 +13,9 @@ import uuid
 from typing import Any
 
 if __package__:
-	from .asset_index import AssetIndex, ROLE_KEYWORDS, STYLE_KEYWORDS
+	from .asset_index import AssetIndex, GEOMETRY_UNAVAILABLE, ROLE_KEYWORDS, STYLE_KEYWORDS
 else:
-	from asset_index import AssetIndex, ROLE_KEYWORDS, STYLE_KEYWORDS
+	from asset_index import AssetIndex, GEOMETRY_UNAVAILABLE, ROLE_KEYWORDS, STYLE_KEYWORDS
 
 
 DEFAULT_SESSION_DIR = Path.home() / ".cache" / "haumea-agent" / "discoveries"
@@ -113,7 +113,13 @@ class AssetDiscovery:
 			explicit_roles, explicit_styles, avoid = [], [], []
 		if not brief_text:
 			raise ValueError("discovery brief cannot be empty")
-		constraints = constraints or {}
+		constraints = dict(constraints or {})
+		ignored = [key for key in ("max_width", "max_depth", "has_collision") if constraints.get(key) is not None]
+		note = None
+		if ignored and not self.index.geometry_available():
+			for key in ignored:
+				constraints.pop(key)
+			note = GEOMETRY_UNAVAILABLE
 		context_asset_ids = sorted({int(item) for item in (context_asset_ids or [])})
 		assets = self.index.catalog()
 		eligible = []
@@ -223,7 +229,7 @@ class AssetDiscovery:
 			"created_at": datetime.now(timezone.utc).isoformat(),
 			"brief": brief, "brief_text": brief_text, "roles": roles, "styles": styles,
 			"avoid": avoid,
-			"constraints": constraints, "context_asset_ids": context_asset_ids,
+			"constraints": constraints, "context_asset_ids": context_asset_ids, "note": note,
 			"eligible_total": len(eligible), "considered_total": len(eligible),
 			"catalog_family_count": len(families), "candidate_pool_count": len(candidates),
 			"channels": {name: len(values) for name, values in channel_ranks.items()},
@@ -239,6 +245,7 @@ class AssetDiscovery:
 		reviewed = set(session["reviewed_families"])
 		return {
 			"session_id": session_id, "brief": session["brief"], "roles": session["roles"],
+			**({"note": session["note"]} if session.get("note") else {}),
 			"styles": session["styles"], "avoid": session.get("avoid", []),
 			"eligible_total": session["eligible_total"],
 			"considered_total": session["considered_total"],
