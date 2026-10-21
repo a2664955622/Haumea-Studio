@@ -8,7 +8,6 @@
 #include "rec.h"
 #include "anim.h"
 #include "npcpreview.h"
-#include "lod_associations.h"
 #include "modloader.h"
 #include "object_categories.h"
 #include "sapaths.h"
@@ -2891,17 +2890,38 @@ static bool currentCustomIplAppendToDat = false;
 #define LOD_LOOKUP_SIZE 20000
 static int lodLookup[LOD_LOOKUP_SIZE];
 
+// Which LOD model goes with a building model, for placing and copying
+// buildings: read from the loaded world's own LOD links (the IPLs' LOD
+// indices), so it follows the user's game files. A model whose placements
+// use different LODs gets the one most of them use, or none without a
+// majority (the derricks, each with its own LOD).
 void
 InitLodLookup(void)
 {
 	memset(lodLookup, -1, sizeof(lodLookup));
 	if(!isSA()) return;
-	for(int i = 0; saLodAssociations[i][0] >= 0; i++){
-		int hd = saLodAssociations[i][0];
-		int lod = saLodAssociations[i][1];
-		if(hd < LOD_LOOKUP_SIZE)
-			lodLookup[hd] = lod;
+	std::map<int, std::map<int, int>> uses;	// building -> LOD -> placements
+	for(CPtrNode *p = instances.first; p; p = p->next){
+		ObjectInst *inst = (ObjectInst*)p->item;
+		if(inst->m_lod && inst->m_objectId >= 0 && inst->m_objectId < LOD_LOOKUP_SIZE)
+			uses[inst->m_objectId][inst->m_lod->m_objectId]++;
 	}
+	int linked = 0;
+	for(const auto &model : uses){
+		int total = 0, best = -1, bestCount = 0;
+		for(const auto &lod : model.second){
+			total += lod.second;
+			if(lod.second > bestCount){
+				best = lod.first;
+				bestCount = lod.second;
+			}
+		}
+		if(bestCount * 2 > total){
+			lodLookup[model.first] = best;
+			linked++;
+		}
+	}
+	log("LOD links: %d building models from the world's IPLs\n", linked);
 }
 
 int

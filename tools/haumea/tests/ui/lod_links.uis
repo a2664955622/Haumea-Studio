@@ -1,0 +1,22 @@
+# LOD links come from the game's own IPLs: placing building 3555 also places its LOD 3563, linked there.
+open "$UI_FIXTURES/ui_floor.pwn"
+shortcut window_browser
+wait 5
+click_item 'Object Browser' 'Objects'
+wait 3
+click_item 'Object Browser' '##search_objects'
+type "3555"
+wait 10
+click_item 'Object Browser' '##tile'
+wait 3
+click_item 'Object Browser' 'Place'
+wait 3
+click_world 2000 -3000 4
+wait 10
+key Esc
+assert objects == 3
+assert selected.model == 3555
+key Ctrl+S
+wait 5
+assert pawn_contains "CreateObject(3555, "
+assert pawn_contains "CreateObject(3563, "
