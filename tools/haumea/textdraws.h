@@ -37,23 +37,60 @@ struct TextDraw
 };
 
 void InitTextDraw(TextDraw *td);	// the client's defaults
-std::vector<TextDraw> &GetTextDraws(void);
-void TextDrawsChanged(void);	// after an edit: marks the map unsaved and makes an undo step
-bool TextDrawsEditPending(void);
-bool TakeTextDrawsEdit(void);	// true once per finished edit
-void ResetTextDraws(void);
 
-// Pawn: the globals, the two functions and the header line.
+// The textdraw file: textdraws live in their own .pwn/.inc, apart from the map.
+std::vector<TextDraw> &GetTextDraws(void);
+void TextDrawsChanged(void);	// after an edit: marks the file unsaved; an undo step follows
+const char *GetTextDrawFilePath(void);	// "" while untitled
+const char *GetTextDrawFileName(void);	// the file name, or "Untitled textdraws"
+bool TextDrawFileHasUnsavedChanges(void);
+void NewTextDrawFile(void);
+bool OpenTextDrawFile(const char *path, std::string *error);
+bool SaveTextDrawFile(const char *path, std::string *error);	// nil or "": its own path
+// The file's code (UTF-8), with the function prefix its path gives.
+std::string BuildTextDrawFileCode(const char *path);
+std::string TextDrawFilePrefix(const char *path);	// Haumea_<name>
+
+// Undo for the textdraw file, apart from the map's.
+void UpdateTextDrawsUndo(void);	// every frame: a finished edit becomes one step
+bool UndoTextDraws(void);
+bool RedoTextDraws(void);
+
+// Textdraws read from a map made before they had their own file. They are
+// read-only and saved back with the map until moved to a textdraw file.
+std::vector<TextDraw> &GetMapTextDraws(void);
+void ResetMapTextDraws(void);
+std::string SuggestedTextDrawFilePath(const char *mapPath);
+// Appends them to the textdraw file and saves it (to path when it is untitled);
+// the map then saves without them. Returns how many moved, or -1.
+int MoveMapTextDrawsToFile(const char *path, std::string *error);
+
+// Pawn for the map's own (read-only) textdraws: the header line, the globals, the two functions.
 bool HasTextDraws(void);
 void WriteTextDrawsPawnHeader(FILE *f, const char *prefix);
 void WriteTextDrawsPawnGlobals(FILE *f, const char *prefix);
 void WriteTextDrawsPawnFunctions(FILE *f, const char *prefix);
-// Reads TextDrawCreate / CreatePlayerTextDraw and their setters. Returns
-// how many textdraws were added.
-int ImportTextDrawsFromSource(const std::string &source);
+// Reads TextDrawCreate / CreatePlayerTextDraw and their setters into out.
+// Returns how many textdraws were added.
+int ImportTextDrawsFromSource(const std::string &source, std::vector<TextDraw> &out);
 
-// textdraws_ui.cpp
-void DrawTextDrawsWindow(bool *open);
-void DrawTextDrawsOverlay(void);	// also records undo steps for edits
-void RenderTextDrawPreviews(void);	// model previews, offscreen before the world is drawn
-void SelectTextDraw(int index);	// in the TextDraws window, e.g. from Map Check
+// textdraws_ui.cpp: TextDraw mode, where the textdraw file is edited on a
+// canvas instead of the world and map editing is off.
+bool InTextDrawMode(void);
+bool TextDrawModeHidesWorld(void);	// false for the frame the still frame is taken in
+void EnterTextDrawMode(void);
+void ExitTextDrawMode(void);
+void DrawTextDrawsWindow(void);	// the mode's panel, banner and popups
+void DrawTextDrawsOverlay(void);	// the canvas
+void TextDrawsBeforeWorldRender(void);	// model previews, offscreen
+void TextDrawsAfterWorldRender(void);	// takes the still frame
+bool TextDrawModeShortcut(int action);	// true when the mode handled it
+void SelectTextDraw(int index);	// enters TextDraw mode with it selected, e.g. from Map Check
+// Asks about unsaved textdraws, then runs then (or not, on Cancel).
+void RequestTextDrawFileClose(void (*then)(void));
+void OfferMoveMapTextDraws(const char *mapPath);	// after a map with textdraws is opened
+// Settings, kept with the editor's own: recent files (quoted by the caller) and numbers.
+const std::vector<std::string> &GetRecentTextDrawFiles(void);
+void AddRecentTextDrawFile(const char *path);	// on top
+bool LoadTextDrawSetting(const char *key, const char *value);	// false: not a textdraw setting
+void SaveTextDrawSettings(FILE *f);

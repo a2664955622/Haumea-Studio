@@ -232,27 +232,27 @@ RunUndoSelfTest(FILE *out)
 	undoTest("label text", [&]{ return editProperties(label, [](ObjectPawnProperties &p){
 		snprintf(p.labelText, sizeof(p.labelText), "Changed {FF0000}text");
 	}); });
-	undoTest("textdraw edit", [&]{
-		std::vector<TextDraw> before = GetTextDraws();
-		if(before.empty())
-			return false;
-		GetTextDraws()[0].text = "Undo me";
-		GetTextDraws()[0].x += 10.0f;
-		TextDrawsChanged();
-		UndoRecordTextDraws(before);
-		return true;
-	});
-	undoTest("textdraw added", [&]{
-		std::vector<TextDraw> before = GetTextDraws();
+	{
+		// The textdraw file has its own undo; the map's is not touched.
+		int position = GetUndoPosition();
+		NewTextDrawFile();
 		TextDraw td;
 		InitTextDraw(&td);
-		snprintf(td.name, sizeof(td.name), "Added");
 		td.text = "New";
 		GetTextDraws().push_back(td);
 		TextDrawsChanged();
-		UndoRecordTextDraws(before);
-		return true;
-	});
+		UpdateTextDrawsUndo();
+		GetTextDraws()[0].text = "Undo me";
+		GetTextDraws()[0].x += 10.0f;
+		TextDrawsChanged();
+		UpdateTextDrawsUndo();
+		bool ok = UndoTextDraws() && GetTextDraws().size() == 1 && GetTextDraws()[0].text == "New" &&
+			UndoTextDraws() && GetTextDraws().empty() &&
+			RedoTextDraws() && RedoTextDraws() && GetTextDraws()[0].text == "Undo me" &&
+			GetUndoPosition() == position;
+		report(ok, "textdraw file undo", "the textdraw steps did not undo and redo on their own");
+		NewTextDrawFile();
+	}
 	undoTest("material", [&]{
 		if(object == nil)
 			return false;

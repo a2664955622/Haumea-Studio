@@ -628,7 +628,6 @@ enum UndoType {
 	UNDO_TRANSFORM_BATCH,
 	UNDO_MATERIAL,
 	UNDO_PROPERTIES,
-	UNDO_TEXTDRAWS,
 	UNDO_VEHICLE,
 	UNDO_NODES,
 };
@@ -690,9 +689,6 @@ struct UndoAction {
 	// For one object-properties edit
 	ObjectPawnProperties oldProperties;
 	ObjectPawnProperties newProperties;
-	// For a textdraw edit: the whole list before and after
-	std::vector<TextDraw> oldTextDraws;
-	std::vector<TextDraw> newTextDraws;
 	// For a vehicle edit (colours, plate, paintjob, parts)
 	VehicleState oldVehicle;
 	VehicleState newVehicle;
@@ -709,7 +705,6 @@ void UndoRecordPaste(ObjectInst **insts, int num);
 void UndoRecordTransformBatch(UndoTransform *transforms, int num);
 void UndoRecordMaterial(ObjectInst *inst, int slot, const ObjectMaterialOverride &oldMaterial);
 void UndoRecordProperties(ObjectInst *inst, const ObjectPawnProperties &oldProperties);
-void UndoRecordTextDraws(const std::vector<TextDraw> &before);	// after is the current list
 void UndoRecordVehicle(ObjectInst *inst, const VehicleState &before);	// after is the vehicle now
 int GetUndoPosition(void);	// undo steps recorded so far, for tests
 void UndoRecordNodes(const std::vector<int> &areas, const std::vector<std::shared_ptr<void>> &before,
@@ -1297,6 +1292,8 @@ int MergeMapFile(const char *path, int *skipped);
 void NewPawnMapDocument(void);
 bool SavePawnMapTo(const char *path, int format);
 const char *GetPawnMapPath(void);	// empty while untitled
+void SaveEditorSettings(void);
+bool PickPawnFile(char *dst, size_t size, bool save, const char *suggested);	// the native dialog
 int GetPawnMapFormat(void);	// PawnCodeFormat
 bool PawnMapHasUnsavedChanges(void);
 

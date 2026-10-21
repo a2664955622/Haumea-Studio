@@ -3174,116 +3174,10 @@ updateFPS(void)
 	avgTimeStep = total / n;
 }
 
-void
-Draw(void)
+// The sky, the world and the editor's markers in it.
+static void
+renderWorld(void)
 {
-	static rw::RGBA clearcol = { 0x80, 0x80, 0x80, 0xFF };
-
-	SyncEditorWindowSize();
-
-	CPad *pad = CPad::GetPad(0);
-	if(pad->NewState.start && pad->NewState.select){
-		sk::globals.quit = 1;
-		return;
-	}
-
-	// HACK: we load a lot in the first frame
-	// which messes up the average
-	if(frameCounter == 0)
-		timeStep = 1/30.0f;
-
-	if(!gOverrideBlurAmb)
-		gUseBlurAmb = gRenderPostFX;
-
-	updateFPS();
-
-	Weather::Update();
-	Timecycle::Update();
-	Timecycle::SetLights();
-
-	UpdateDayNightBalance();
-
-	TheCamera.m_rwcam->setFarPlane(max(Timecycle::currentColours.farClp, 500.0f));
-	TheCamera.m_rwcam->fogPlane = Timecycle::currentColours.fogSt;
-	TheCamera.m_rwcam_viewer->setFarPlane(5000.0f);
-	TheCamera.m_rwcam_viewer->fogPlane = Timecycle::currentColours.fogSt;
-
-	CPad::UpdatePads();
-	updateRectSelectEarly();
-	TheCamera.Process();
-	AgentBridgeUpdate();
-	TheCamera.update();
-	if(gUseViewerCam)
-		Scene.camera = TheCamera.m_rwcam_viewer;
-	else
-		Scene.camera = TheCamera.m_rwcam;
-	// Keep PS2's framebuffer-only alpha emulation out of the offscreen browser
-	// passes. It performs an extra depth-mask pass for blended materials and is
-	// intended for the visible world, not thumbnails or the selected preview.
-	int previewGsAlphaTest = rw::GetRenderState(rw::GSALPHATEST);
-	rw::SetRenderState(rw::GSALPHATEST, 0);
-	if(GetSpawnObjectId() >= 0)
-		RenderPreviewObject(GetSpawnObjectId());
-	RenderRequestedObjectThumbnails();
-	RenderRequestedPrefabThumbnails();
-	RenderTextDrawPreviews();
-	rw::SetRenderState(rw::GSALPHATEST, previewGsAlphaTest);
-
-	Scene.camera->beginUpdate();
-
-	DefinedState();
-
-	ImGui_ImplRW_NewFrame(timeStep);
-	ImGuizmo::BeginFrame();
-
-	// Mouse wheel over the 3D viewport adjusts FOV, Ctrl+wheel anywhere the
-	// interface size. Both have keys in the shortcut table too.
-	// Must run after NewFrame: AddMouseWheelEvent() only queues the event, and
-	// io.MouseWheel is populated by NewFrame and cleared by EndFrame.
-	{
-		ImGuiIO &io = ImGui::GetIO();
-		// Placing a prefab: Q/E (or , and .) and the wheel turn it, 15 degrees
-		// a step, 5 with Shift.
-		if(gPrefabPlaceMode && !io.WantTextInput){
-			float step = io.KeyShift ? 5.0f : 15.0f;
-			if(ImGui::IsKeyPressed(ImGuiKey_Q) || ImGui::IsKeyPressed(ImGuiKey_Comma))
-				gPrefabPlaceHeading += step;
-			if(ImGui::IsKeyPressed(ImGuiKey_E) || ImGui::IsKeyPressed(ImGuiKey_Period))
-				gPrefabPlaceHeading -= step;
-		}
-		if(io.MouseWheel != 0.0f && io.KeyMods == ImGuiMod_Ctrl)
-			StepUiScale(io.MouseWheel > 0.0f ? 1.0f : -1.0f);
-		else if(gPrefabPlaceMode && !io.WantCaptureMouse && io.MouseWheel != 0.0f)
-			gPrefabPlaceHeading += (io.MouseWheel > 0.0f ? 1.0f : -1.0f) * (io.KeyShift ? 5.0f : 15.0f);
-		else if(!io.WantCaptureMouse && io.MouseWheel != 0.0f){
-			TheCamera.m_fov = ClampCameraFov(TheCamera.m_fov - io.MouseWheel * gFovWheelStep);
-		}
-	}
-
-	LoadAllRequestedObjects();
-	// Attached objects follow last frame's edits before the scene is listed.
-	UpdateObjectAttachments();
-	// .rec playback poses its elements for this frame.
-	RecPlayerUpdate();
-	UpdateNpcVehicleSeats();
-	NpcPreviewUpdate(timeStep);
-	TestServerUpdate();
-	AnimUpdate(timeStep);
-	PlayerViewUpdate();
-	BuildRenderList();
-
-	// Has to be called for highlighting some objects
-	// but also can mess with timecycle mid frame :/
-	gui();
-
-	dogizmo();
-
-	handleTool();
-
-	handleRectSelect();
-
-	DefinedState();
-	Scene.camera->clear(&clearcol, rw::Camera::CLEARIMAGE|rw::Camera::CLEARZ);
 	if(gRenderBackground){
 		SetRenderState(rw::ALPHATESTREF, 0);
 		SetRenderState(rw::CULLMODE, rw::CULLNONE);
@@ -3377,6 +3271,128 @@ Draw(void)
 	RenderObjectOutlines();
 	// This fucks up the z buffer, but what else can we do?
 	RenderDebugLines();
+}
+
+void
+Draw(void)
+{
+	static rw::RGBA clearcol = { 0x80, 0x80, 0x80, 0xFF };
+
+	SyncEditorWindowSize();
+
+	CPad *pad = CPad::GetPad(0);
+	if(pad->NewState.start && pad->NewState.select){
+		sk::globals.quit = 1;
+		return;
+	}
+
+	// HACK: we load a lot in the first frame
+	// which messes up the average
+	if(frameCounter == 0)
+		timeStep = 1/30.0f;
+
+	if(!gOverrideBlurAmb)
+		gUseBlurAmb = gRenderPostFX;
+
+	updateFPS();
+
+	Weather::Update();
+	Timecycle::Update();
+	Timecycle::SetLights();
+
+	UpdateDayNightBalance();
+
+	TheCamera.m_rwcam->setFarPlane(max(Timecycle::currentColours.farClp, 500.0f));
+	TheCamera.m_rwcam->fogPlane = Timecycle::currentColours.fogSt;
+	TheCamera.m_rwcam_viewer->setFarPlane(5000.0f);
+	TheCamera.m_rwcam_viewer->fogPlane = Timecycle::currentColours.fogSt;
+
+	CPad::UpdatePads();
+	// TextDraw mode: no world, no camera moves, no map editing.
+	bool noWorld = TextDrawModeHidesWorld();
+	bool noMapEditing = InTextDrawMode();
+	if(!noMapEditing){
+		updateRectSelectEarly();
+		TheCamera.Process();
+	}
+	AgentBridgeUpdate();
+	TheCamera.update();
+	if(gUseViewerCam)
+		Scene.camera = TheCamera.m_rwcam_viewer;
+	else
+		Scene.camera = TheCamera.m_rwcam;
+	// Keep PS2's framebuffer-only alpha emulation out of the offscreen browser
+	// passes. It performs an extra depth-mask pass for blended materials and is
+	// intended for the visible world, not thumbnails or the selected preview.
+	int previewGsAlphaTest = rw::GetRenderState(rw::GSALPHATEST);
+	rw::SetRenderState(rw::GSALPHATEST, 0);
+	if(GetSpawnObjectId() >= 0)
+		RenderPreviewObject(GetSpawnObjectId());
+	RenderRequestedObjectThumbnails();
+	RenderRequestedPrefabThumbnails();
+	TextDrawsBeforeWorldRender();
+	rw::SetRenderState(rw::GSALPHATEST, previewGsAlphaTest);
+
+	Scene.camera->beginUpdate();
+
+	DefinedState();
+
+	ImGui_ImplRW_NewFrame(timeStep);
+	ImGuizmo::BeginFrame();
+
+	// Mouse wheel over the 3D viewport adjusts FOV, Ctrl+wheel anywhere the
+	// interface size. Both have keys in the shortcut table too.
+	// Must run after NewFrame: AddMouseWheelEvent() only queues the event, and
+	// io.MouseWheel is populated by NewFrame and cleared by EndFrame.
+	{
+		ImGuiIO &io = ImGui::GetIO();
+		// Placing a prefab: Q/E (or , and .) and the wheel turn it, 15 degrees
+		// a step, 5 with Shift.
+		if(gPrefabPlaceMode && !io.WantTextInput){
+			float step = io.KeyShift ? 5.0f : 15.0f;
+			if(ImGui::IsKeyPressed(ImGuiKey_Q) || ImGui::IsKeyPressed(ImGuiKey_Comma))
+				gPrefabPlaceHeading += step;
+			if(ImGui::IsKeyPressed(ImGuiKey_E) || ImGui::IsKeyPressed(ImGuiKey_Period))
+				gPrefabPlaceHeading -= step;
+		}
+		if(io.MouseWheel != 0.0f && io.KeyMods == ImGuiMod_Ctrl)
+			StepUiScale(io.MouseWheel > 0.0f ? 1.0f : -1.0f);
+		else if(gPrefabPlaceMode && !io.WantCaptureMouse && io.MouseWheel != 0.0f)
+			gPrefabPlaceHeading += (io.MouseWheel > 0.0f ? 1.0f : -1.0f) * (io.KeyShift ? 5.0f : 15.0f);
+		else if(!io.WantCaptureMouse && io.MouseWheel != 0.0f && !noMapEditing){
+			TheCamera.m_fov = ClampCameraFov(TheCamera.m_fov - io.MouseWheel * gFovWheelStep);
+		}
+	}
+
+	LoadAllRequestedObjects();
+	// Attached objects follow last frame's edits before the scene is listed.
+	UpdateObjectAttachments();
+	// .rec playback poses its elements for this frame.
+	RecPlayerUpdate();
+	UpdateNpcVehicleSeats();
+	NpcPreviewUpdate(timeStep);
+	TestServerUpdate();
+	AnimUpdate(timeStep);
+	PlayerViewUpdate();
+	if(!noWorld)
+		BuildRenderList();
+
+	// Has to be called for highlighting some objects
+	// but also can mess with timecycle mid frame :/
+	gui();
+
+	if(!noMapEditing){
+		dogizmo();
+		handleTool();
+		handleRectSelect();
+	}
+
+	DefinedState();
+	Scene.camera->clear(&clearcol, rw::Camera::CLEARIMAGE|rw::Camera::CLEARZ);
+	if(!noWorld)
+		renderWorld();
+	rw::SetRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);	// don't mess up GUI
+	TextDrawsAfterWorldRender();
 	AgentBridgeCaptureAfterWorldRender();
 	ImGui::EndFrame();
 	ImGui::Render();

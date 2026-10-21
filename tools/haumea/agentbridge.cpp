@@ -1981,6 +1981,17 @@ leaveAgentScene(void)
 // ---- TextDraws ----
 
 static std::string
+agentTextDrawFileJson(void)
+{
+	return std::string("\"file\":{\"path\":\"") + jsonEscape(GetTextDrawFilePath()) +
+		"\",\"untitled\":" + (GetTextDrawFilePath()[0] ? "false" : "true") +
+		",\"unsaved_changes\":" + (TextDrawFileHasUnsavedChanges() ? "true" : "false") +
+		",\"textdraws\":" + std::to_string(GetTextDraws().size()) +
+		",\"prefix\":\"" + jsonEscape(TextDrawFilePrefix(GetTextDrawFilePath()).c_str()) +
+		"\",\"read_only_in_map\":" + std::to_string(GetMapTextDraws().size()) + "}";
+}
+
+static std::string
 agentTextDrawJson(size_t index, const TextDraw &td)
 {
 	char buf[1024];
@@ -2259,7 +2270,8 @@ handleRequest(const std::vector<std::string> &lines)
 			"\"place\",\"batch\",\"transform\",\"transform3d\",\"suppress_world_models\","
 			"\"delete\",\"material\",\"material_text\",\"material_clear\",\"clear\",\"list\",\"validate\",\"camera\",\"capture\",\"capture_screen\","
 			"\"capture_pose\",\"save\",\"map_status\",\"map_new\",\"map_open\",\"map_merge\",\"place_element\",\"maptool\",\"test_in_game\","
-			"\"properties\",\"undo\",\"redo\",\"map_check\",\"texture_search\",\"textdraws\",\"textdraw_add\",\"textdraw_set\",\"textdraw_delete\"],"
+			"\"properties\",\"undo\",\"redo\",\"map_check\",\"texture_search\",\"textdraws\",\"textdraw_add\",\"textdraw_set\",\"textdraw_delete\","
+			"\"textdraw_new\",\"textdraw_open\",\"textdraw_save\",\"textdraw_move_from_map\"],"
 			"\"element_kinds\":[\"object\",\"vehicle\",\"pickup\",\"label\",\"actor\",\"class\","
 			"\"gangzone\",\"mapicon\",\"npc\",\"pathpoint\",\"sound\",\"checkpoint\"]");
 		return;
@@ -3007,12 +3019,64 @@ handleRequest(const std::vector<std::string> &lines)
 	}
 	if(command == "textdraws"){
 		std::vector<TextDraw> &tds = GetTextDraws();
-		std::string json = "\"result\":\"textdraws\",\"canvas\":[640,448],\"textdraws\":[";
+		std::string json = "\"result\":\"textdraws\"," + agentTextDrawFileJson() +
+			",\"canvas\":[640,448],\"textdraws\":[";
 		for(size_t i = 0; i < tds.size(); i++){
 			if(i) json += ",";
 			json += agentTextDrawJson(i, tds[i]);
 		}
 		writeResponse(requestId, true, json + "]");
+		return;
+	}
+	if(command == "textdraw_new" || command == "textdraw_open" || command == "textdraw_save" ||
+	   command == "textdraw_move_from_map"){
+		// The textdraw file, apart from the map: textdraw_new [discard];
+		// textdraw_open <path> [discard]; textdraw_save [path];
+		// textdraw_move_from_map [path] (an old map's read-only textdraws).
+		if(gAgentSessionActive){
+			writeError(requestId, "commit or roll back the edit session first");
+			return;
+		}
+		std::string path = lines.size() > 2 ? lines[2] : std::string();
+		std::string error;
+		if(command == "textdraw_new" || command == "textdraw_open"){
+			bool open = command == "textdraw_open";
+			if(open && path.empty()){
+				writeError(requestId, "textdraw_open requires a .pwn or .inc path");
+				return;
+			}
+			size_t discardField = open ? 3 : 2;
+			bool discard = false;
+			if(lines.size() > discardField)
+				parseBoolField(lines[discardField], &discard);
+			if(TextDrawFileHasUnsavedChanges() && !discard){
+				writeError(requestId, "the textdraw file has unsaved changes: save it first, or pass discard");
+				return;
+			}
+			if(open && !OpenTextDrawFile(path.c_str(), &error)){
+				writeError(requestId, error.c_str());
+				return;
+			}
+			if(!open)
+				NewTextDrawFile();
+			if(open)
+				AddRecentTextDrawFile(path.c_str());
+		}else if(command == "textdraw_save"){
+			if(!SaveTextDrawFile(path.c_str(), &error)){
+				writeError(requestId, (error + (path.empty() ? ": give a path" : "")).c_str());
+				return;
+			}
+			AddRecentTextDrawFile(GetTextDrawFilePath());
+		}else{
+			if(path.empty())
+				path = SuggestedTextDrawFilePath(GetPawnMapPath());
+			if(MoveMapTextDrawsToFile(path.c_str(), &error) < 0){
+				writeError(requestId, error.c_str());
+				return;
+			}
+		}
+		gAgentSceneRevision++;
+		writeResponse(requestId, true, "\"result\":\"" + command + "\"," + agentTextDrawFileJson());
 		return;
 	}
 	if(command == "textdraw_add" || command == "textdraw_set" || command == "textdraw_delete"){

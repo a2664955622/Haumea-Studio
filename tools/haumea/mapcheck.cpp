@@ -576,6 +576,13 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 		if((int)td.text.size() > MAX_TEXTDRAW_STR_LENGTH)
 			addTd(MAPCHECK_ERROR, "its text is longer than the 800-character limit.");
 	}
+	// An old map's own textdraws are created in game too, beside the file's.
+	const std::vector<TextDraw> &mapTextDraws = GetMapTextDraws();
+	for(size_t i = 0; i < mapTextDraws.size(); i++)
+		(mapTextDraws[i].perPlayer ? playerTds : globalTds)++;
+	if(!mapTextDraws.empty())
+		c.add(MAPCHECK_INFO, TEXTDRAWS, std::vector<int>(), "%d textdraw(s) are still in the map, read-only: "
+			"TextDraws > Move to a separate file to edit them.", (int)mapTextDraws.size());
 	if(globalTds > GLOBAL_TEXTDRAWS)
 		c.add(MAPCHECK_ERROR, TEXTDRAWS, std::vector<int>(), "%d global textdraws, over the limit of %d.",
 			globalTds, GLOBAL_TEXTDRAWS);

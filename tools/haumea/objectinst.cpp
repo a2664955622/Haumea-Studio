@@ -2588,7 +2588,7 @@ ResetPawnMap(void)
 	int changed = 0;
 	// A new or reopened map has nothing left out yet.
 	ClearLastPawnImportReport();
-	ResetTextDraws();
+	ResetMapTextDraws();
 	ClearSelection();
 	for(CPtrNode *p = instances.first; p; p = p->next){
 		ObjectInst *inst = (ObjectInst*)p->item;
@@ -5004,7 +5004,6 @@ coalesceUndo(UndoAction *a)
 				continue;
 			top->newMaterial = a->newMaterial;
 			return true;
-		case UNDO_TEXTDRAWS: top->newTextDraws = a->newTextDraws; return true;
 		}
 		return false;
 	}
@@ -5137,16 +5136,6 @@ UndoRecordProperties(ObjectInst *inst, const ObjectPawnProperties &oldProperties
 	pushUndo(&a);
 }
 
-void
-UndoRecordTextDraws(const std::vector<TextDraw> &before)
-{
-	UndoAction a = {};
-	a.type = UNDO_TEXTDRAWS;
-	a.oldTextDraws = before;
-	a.newTextDraws = GetTextDraws();
-	pushUndo(&a);
-}
-
 VehicleState
 GetVehicleState(const ObjectInst *inst)
 {
@@ -5268,10 +5257,6 @@ undoStep(void)
 	case UNDO_PROPERTIES:
 		SetObjectPawnProperties(a->inst, a->oldProperties, false);
 		break;
-	case UNDO_TEXTDRAWS:
-		GetTextDraws() = a->oldTextDraws;
-		BumpChangeSeq();
-		break;
 	case UNDO_VEHICLE:
 		SetVehicleState(a->inst, a->oldVehicle);
 		break;
@@ -5322,10 +5307,6 @@ redoStep(void)
 		break;
 	case UNDO_PROPERTIES:
 		SetObjectPawnProperties(a->inst, a->newProperties, false);
-		break;
-	case UNDO_TEXTDRAWS:
-		GetTextDraws() = a->newTextDraws;
-		BumpChangeSeq();
 		break;
 	case UNDO_VEHICLE:
 		SetVehicleState(a->inst, a->newVehicle);
@@ -9467,9 +9448,10 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 		setters, &skipped);
 	pawnLinkRaceCheckpoints(entries);
 	report.unreadableCalls = skipped;
-	int numTextDraws = ImportTextDrawsFromSource(source);
+	// Textdraws now have their own file; a map's stay read-only until moved there.
+	int numTextDraws = ImportTextDrawsFromSource(source, GetMapTextDraws());
 	if(numTextDraws > 0)
-		log("ImportPawnCode: %d textdraw(s) from %s\n", numTextDraws, path);
+		log("ImportPawnCode: %d textdraw(s) from %s, read-only in the map\n", numTextDraws, path);
 	if(entries.empty() && removals.empty() && materials.empty()){
 		if(numSkipped) *numSkipped = skipped;
 		log("ImportPawnCode: no supported Pawn object calls found in %s\n", path);

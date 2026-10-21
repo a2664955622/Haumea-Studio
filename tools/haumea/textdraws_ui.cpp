@@ -2,6 +2,7 @@
 #include "workspace.h"
 #include "textdraws.h"
 #include "icons.h"
+#include "shortcuts.h"
 #include "imgui/imgui_internal.h"
 
 #include <ctype.h>
@@ -14,17 +15,123 @@
 #include <dirent.h>
 #endif
 
-// The TextDraws window and the 640x448 canvas drawn over the viewport, with
-// the game's own font textures (models/fonts.txd) and widths (data/fonts.dat).
+// TextDraw mode: the textdraw file on a 640x448 canvas in place of the world,
+// drawn with the game's own font textures (models/fonts.txd) and widths
+// (data/fonts.dat). Map editing is off while it is on.
 
 static int gSelected = -1;
-static bool gShowOverlay = true;
-static bool gEditOnScreen = true;
+static bool gMode;
+enum { TD_BACKGROUND_PLAIN, TD_BACKGROUND_STILL };
+static int gBackground = TD_BACKGROUND_STILL;
+static unsigned int gCanvasColour = 0x3C4450FF;
+static bool gStillPending;	// take the still frame after this frame's world
+static rw::Texture *gStillFrame;
+static std::vector<std::string> gRecent;
+static const int MAX_RECENT_TEXTDRAW_FILES = 8;
+
+static void
+releaseStillFrame(void)
+{
+	if(gStillFrame){
+		gStillFrame->destroy();
+		gStillFrame = nil;
+	}
+}
+
+bool
+InTextDrawMode(void)
+{
+	return gMode;
+}
+
+bool
+TextDrawModeHidesWorld(void)
+{
+	return gMode && !gStillPending;
+}
+
+void
+EnterTextDrawMode(void)
+{
+	if(gMode)
+		return;
+	gMode = true;
+	// The world as it is now, behind the canvas.
+	releaseStillFrame();
+	gStillPending = gBackground == TD_BACKGROUND_STILL;
+}
+
+void
+ExitTextDrawMode(void)
+{
+	gMode = false;
+	gStillPending = false;
+	releaseStillFrame();
+}
 
 void
 SelectTextDraw(int index)
 {
+	EnterTextDrawMode();
 	gSelected = index;
+}
+
+void
+TextDrawsAfterWorldRender(void)
+{
+	if(!gStillPending)
+		return;
+	gStillPending = false;
+	if(Scene.camera == nil || Scene.camera->frameBuffer == nil)
+		return;
+#ifdef RW_GL3
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);	// rows of width*3 bytes, as librw reads them
+#endif
+	rw::Image *image = Scene.camera->frameBuffer->toImage();
+	if(image == nil)
+		return;
+	rw::Raster *raster = rw::Raster::createFromImage(image);
+	image->destroy();
+	if(raster == nil)
+		return;
+	gStillFrame = rw::Texture::create(raster);
+	gStillFrame->setFilter(rw::Texture::LINEAR);
+}
+
+const std::vector<std::string>&
+GetRecentTextDrawFiles(void)
+{
+	return gRecent;
+}
+
+void
+AddRecentTextDrawFile(const char *path)
+{
+	if(path == nil || path[0] == '\0')
+		return;
+	gRecent.erase(std::remove(gRecent.begin(), gRecent.end(), std::string(path)), gRecent.end());
+	gRecent.insert(gRecent.begin(), path);
+	if(gRecent.size() > (size_t)MAX_RECENT_TEXTDRAW_FILES)
+		gRecent.resize(MAX_RECENT_TEXTDRAW_FILES);
+}
+
+bool
+LoadTextDrawSetting(const char *key, const char *value)
+{
+	if(strcmp(key, "textdraw_background") == 0)
+		gBackground = atoi(value) == TD_BACKGROUND_PLAIN ? TD_BACKGROUND_PLAIN : TD_BACKGROUND_STILL;
+	else if(strcmp(key, "textdraw_canvas_colour") == 0)
+		gCanvasColour = (unsigned int)strtoul(value, nil, 16);
+	else
+		return false;
+	return true;
+}
+
+void
+SaveTextDrawSettings(FILE *f)
+{
+	fprintf(f, "textdraw_background %d\n", gBackground);
+	fprintf(f, "textdraw_canvas_colour %08X\n", gCanvasColour);
 }
 
 // ---- Game fonts ----
@@ -445,7 +552,7 @@ previewTexture(const TextDraw &td)
 }
 
 void
-RenderTextDrawPreviews(void)
+TextDrawsBeforeWorldRender(void)
 {
 	for(int i = 0; i < 16; i++){
 		PreviewEntry &e = gPreviews[i];
@@ -528,40 +635,38 @@ selectTextDraw(int index)
 	gSelected = index;
 }
 
-static void drawOverlay(void);
-
-// Edits become one undo step each when the mouse or keyboard lets go.
+// The canvas: the still frame or a plain colour where the world was, the
+// map's read-only textdraws, then the file's, which can be dragged.
 void
 DrawTextDrawsOverlay(void)
 {
-	static std::vector<TextDraw> before;
-	drawOverlay();
-	if(TextDrawsEditPending() && !ImGui::IsAnyItemActive() && TakeTextDrawsEdit())
-		UndoRecordTextDraws(before);
-	if(!TextDrawsEditPending())
-		before = GetTextDraws();
-}
-
-static void
-drawOverlay(void)
-{
-	std::vector<TextDraw> &tds = GetTextDraws();
-	if(!gShowOverlay || tds.empty())
+	if(!gMode)
 		return;
+	std::vector<TextDraw> &tds = GetTextDraws();
 	loadFonts();
 	Canvas cv = getCanvas();
 	ImDrawList *dl = ImGui::GetBackgroundDrawList();
+	ImGuiViewport *vp = ImGui::GetMainViewport();
+	dl->AddRectFilled(vp->Pos, ImVec2(vp->Pos.x + vp->Size.x, vp->Pos.y + vp->Size.y), IM_COL32(24, 26, 30, 255));
+	if(gBackground == TD_BACKGROUND_STILL && gStillFrame)
+		dl->AddImage((ImTextureID)gStillFrame, cv.at(0, 0), cv.at(640, 448));
+	else
+		dl->AddRectFilled(cv.at(0, 0), cv.at(640, 448), rgbaToImU32(gCanvasColour));
+	const std::vector<TextDraw> &mapTds = GetMapTextDraws();
+	for(size_t i = 0; i < mapTds.size(); i++){
+		drawTextDraw(dl, cv, mapTds[i]);
+		float x0, y0, x1, y1;
+		textDrawBounds(mapTds[i], &x0, &y0, &x1, &y1);
+		dl->AddRect(cv.at(x0, y0), cv.at(x1, y1), IM_COL32(160, 160, 170, 120));
+	}
 	for(size_t i = 0; i < tds.size(); i++)
 		drawTextDraw(dl, cv, tds[i]);
 	if(gSelected >= (int)tds.size())
 		gSelected = -1;
-	if(!gEditOnScreen)
-		return;
 	// The screen's edge, so textdraws can be placed against it.
 	dl->AddRect(cv.at(0, 0), cv.at(640, 448), IM_COL32(255, 255, 255, 60));
 
-	// Invisible windows over the textdraws take the clicks, so the world
-	// under them isn't picked; elsewhere the viewport works as usual.
+	// Invisible windows over the textdraws take the clicks and drags.
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
 		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
 		ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoScrollbar;
@@ -834,21 +939,392 @@ properties(TextDraw &td)
 		TextDrawsChanged();
 }
 
-void
-DrawTextDrawsWindow(bool *open)
+// ---- The file ----
+
+static void (*gAfterClose)(void);	// runs once unsaved textdraws are dealt with
+static bool gOpenUnsavedPrompt;
+static bool gShowFileDialog, gFileDialogSave, gFileDialogFocus;
+static char gFileDialogPath[1024];
+static bool gOpenMovePrompt;
+static char gMovePath[1024];
+
+static void
+afterFileChange(const char *verb)
 {
-	if(open == nil || !*open)
+	gSelected = -1;
+	AddRecentTextDrawFile(GetTextDrawFilePath());
+	SaveEditorSettings();
+	if(verb)
+		Toast(TOAST_SAVE, "%s %s", verb, GetTextDrawFileName());
+}
+
+static void
+openFile(const char *path)
+{
+	std::string error;
+	if(!OpenTextDrawFile(path, &error)){
+		ToastFor(TOAST_SAVE, 5.0f, "Could not open %s", path);
+		gRecent.erase(std::remove(gRecent.begin(), gRecent.end(), std::string(path)), gRecent.end());
 		return;
-	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 24.0f, ImGui::GetFontSize() * 34.0f), ImGuiCond_FirstUseEver);
-	if(!ImGui::Begin(ICON_FA_FONT " TextDraws###textdraws", open)){
+	}
+	afterFileChange("Opened");
+}
+
+static bool
+saveFile(const char *path)
+{
+	std::string error;
+	if(!SaveTextDrawFile(path, &error)){
+		ToastFor(TOAST_SAVE, 5.0f, "Could not save the textdraws: %s", error.c_str());
+		return false;
+	}
+	afterFileChange("Saved");
+	if(gAfterClose){
+		void (*then)(void) = gAfterClose;
+		gAfterClose = nil;
+		then();
+	}
+	return true;
+}
+
+// The file's folder, else the map's, else the workspace's gamemodes.
+static std::string
+suggestedPath(void)
+{
+	if(GetTextDrawFilePath()[0])
+		return GetTextDrawFilePath();
+	if(GetPawnMapPath()[0])
+		return SuggestedTextDrawFilePath(GetPawnMapPath());
+	std::string dir = WorkspaceDefaultDir("gamemodes");
+	return (dir.empty() ? std::string(".") : dir) + "/textdraws.pwn";
+}
+
+static void
+showFileDialog(bool save)
+{
+	gShowFileDialog = true;
+	gFileDialogSave = save;
+	gFileDialogFocus = true;
+	snprintf(gFileDialogPath, sizeof(gFileDialogPath), "%s", save ? suggestedPath().c_str() : "");
+}
+
+static void showOpenDialog(void) { showFileDialog(false); }
+
+static void
+newFile(void)
+{
+	NewTextDrawFile();
+	afterFileChange(nil);
+	Toast(TOAST_SAVE, "New textdraws");
+}
+
+static void
+saveOrAsk(void)
+{
+	if(GetTextDrawFilePath()[0])
+		saveFile(nil);
+	else
+		showFileDialog(true);
+}
+
+void
+RequestTextDrawFileClose(void (*then)(void))
+{
+	if(!TextDrawFileHasUnsavedChanges()){
+		if(then)
+			then();
+		return;
+	}
+	gAfterClose = then;
+	gOpenUnsavedPrompt = true;
+}
+
+void
+OfferMoveMapTextDraws(const char *mapPath)
+{
+	if(GetMapTextDraws().empty())
+		return;
+	snprintf(gMovePath, sizeof(gMovePath), "%s", SuggestedTextDrawFilePath(mapPath).c_str());
+	gOpenMovePrompt = true;
+}
+
+static void
+moveMapTextDraws(void)
+{
+	std::string error;
+	int moved = MoveMapTextDrawsToFile(gMovePath, &error);
+	if(moved < 0){
+		ToastFor(TOAST_SAVE, 6.0f, "Could not move the textdraws: %s", error.c_str());
+		return;
+	}
+	afterFileChange(nil);
+	ToastFor(TOAST_SAVE, 6.0f, "Moved %d textdraw(s) to %s. Save the map to take them out of it.",
+		moved, GetTextDrawFileName());
+}
+
+static void
+drawPopups(void)
+{
+	if(gOpenUnsavedPrompt){
+		ImGui::OpenPopup("Unsaved textdraws");
+		gOpenUnsavedPrompt = false;
+	}
+	if(ImGui::BeginPopupModal("Unsaved textdraws", nil, ImGuiWindowFlags_AlwaysAutoResize)){
+		ImGui::Text("Save changes to %s?", GetTextDrawFileName());
+		ImGui::TextDisabled("Your textdraw changes are lost if you don't save them.");
+		ImGui::Spacing();
+		if(ImGui::Button("Save", ImVec2(110, 0))){
+			ImGui::CloseCurrentPopup();
+			saveOrAsk();	// continues once the file is written
+		}
+		ImGui::SameLine();
+		if(ImGui::Button("Don't Save", ImVec2(110, 0))){
+			ImGui::CloseCurrentPopup();
+			void (*then)(void) = gAfterClose;
+			gAfterClose = nil;
+			if(then)
+				then();
+		}
+		ImGui::SameLine();
+		if(ImGui::Button("Cancel", ImVec2(110, 0)) || ImGui::IsKeyPressed(ImGuiKey_Escape)){
+			gAfterClose = nil;
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+
+	if(gOpenMovePrompt){
+		ImGui::OpenPopup("Move textdraws");
+		gOpenMovePrompt = false;
+	}
+	if(ImGui::BeginPopupModal("Move textdraws", nil, ImGuiWindowFlags_AlwaysAutoResize)){
+		int count = (int)GetMapTextDraws().size();
+		ImGui::Text("This map has %d textdraw%s.", count, count == 1 ? "" : "s");
+		ImGui::TextDisabled("Textdraws now have their own file, which Test in game includes.\n"
+			"Left in the map they are read-only.");
+		ImGui::Spacing();
+		if(GetTextDrawFilePath()[0])
+			ImGui::Text("They go into %s.", GetTextDrawFileName());
+		else{
+			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 30.0f);
+			ImGui::InputText("File", gMovePath, sizeof(gMovePath));
+		}
+		ImGui::Spacing();
+		if(ImGui::Button("Move textdraws to a separate file")){
+			ImGui::CloseCurrentPopup();
+			moveMapTextDraws();
+		}
+		ImGui::SameLine();
+		if(ImGui::Button("Keep them read-only") || ImGui::IsKeyPressed(ImGuiKey_Escape))
+			ImGui::CloseCurrentPopup();
+		ImGui::SetItemTooltip("They stay in the map and are saved with it. TextDraws can move them later.");
+		ImGui::EndPopup();
+	}
+
+	if(gShowFileDialog){
+		const char *title = gFileDialogSave ? "Save TextDraws As###tdfile" : "Open TextDraws###tdfile";
+		ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		if(gFileDialogFocus){
+			ImGui::SetNextWindowFocus();
+			gFileDialogFocus = false;
+		}
+		if(ImGui::Begin(title, &gShowFileDialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse |
+			ImGuiWindowFlags_NoDocking)){
+			ImGui::TextDisabled("A .pwn or .inc file with only textdraws; your gamemode includes it.");
+			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 30.0f);
+			ImGui::InputText("Path", gFileDialogPath, sizeof(gFileDialogPath));
+			ImGui::SameLine();
+			if(ImGui::Button("Browse...")){
+				char picked[1024];
+				if(PickPawnFile(picked, sizeof(picked), gFileDialogSave, gFileDialogPath[0] ? gFileDialogPath : nil))
+					snprintf(gFileDialogPath, sizeof(gFileDialogPath), "%s", picked);
+			}
+			if(ImGui::Button(gFileDialogSave ? "Save" : "Open", ImVec2(110, 0)) && gFileDialogPath[0]){
+				gShowFileDialog = false;
+				if(gFileDialogSave)
+					saveFile(gFileDialogPath);
+				else
+					openFile(gFileDialogPath);
+			}
+			ImGui::SameLine();
+			if(ImGui::Button("Cancel", ImVec2(110, 0))){
+				gShowFileDialog = false;
+				gAfterClose = nil;
+			}
+		}
 		ImGui::End();
+	}
+}
+
+// ---- Mode ----
+
+static void
+drawBanner(void)
+{
+	Canvas cv = getCanvas();
+	KeepNextEditorOverlayOnMainWindow();
+	ImGui::SetNextWindowPos(ImVec2(cv.at(320, 0).x, cv.y + ImGui::GetFontSize() * 0.5f), ImGuiCond_Always,
+		ImVec2(0.5f, 0.0f));
+	ImGui::SetNextWindowBgAlpha(0.85f);
+	if(ImGui::Begin("##textdraw_mode_banner", nil, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav |
+		ImGuiWindowFlags_NoDocking)){
+		ImGui::AlignTextToFramePadding();
+		ImGui::TextColored(ImVec4(0.95f, 0.75f, 0.20f, 1.0f), ICON_FA_FONT " TextDraw mode");
+		ImGui::SameLine();
+		ImGui::Text("%s%s", GetTextDrawFileName(), TextDrawFileHasUnsavedChanges() ? " *" : "");
+		ImGui::SameLine();
+		ImGui::TextDisabled("Map editing is off.");
+		ImGui::SameLine();
+		if(ImGui::Button(ICON_FA_XMARK " Exit"))
+			ExitTextDrawMode();
+		ImGui::SetItemTooltip("Back to the map (%s)", ShortcutLabel(SC_CANCEL));
+	}
+	ImGui::End();
+}
+
+bool
+TextDrawModeShortcut(int action)
+{
+	if(!gMode)
+		return false;
+	std::vector<TextDraw> &tds = GetTextDraws();
+	bool selected = gSelected >= 0 && gSelected < (int)tds.size();
+	switch(action){
+	case SC_UNDO:
+		if(UndoTextDraws())
+			Toast(TOAST_UNDO_REDO, "Undo");
+		return true;
+	case SC_REDO:
+		if(RedoTextDraws())
+			Toast(TOAST_UNDO_REDO, "Redo");
+		return true;
+	case SC_NEW_MAP: RequestTextDrawFileClose(newFile); return true;
+	case SC_OPEN_MAP: RequestTextDrawFileClose(showOpenDialog); return true;
+	case SC_SAVE_MAP: saveOrAsk(); return true;
+	case SC_SAVE_MAP_AS: showFileDialog(true); return true;
+	case SC_CANCEL: ExitTextDrawMode(); return true;
+	case SC_DELETE:
+		if(selected){
+			tds.erase(tds.begin() + gSelected);
+			gSelected = -1;
+			TextDrawsChanged();
+		}
+		return true;
+	case SC_DUPLICATE:
+		if(selected){
+			TextDraw copy = tds[gSelected];
+			copy.name[0] = '\0';
+			copy.x += 10.0f; copy.y += 10.0f;
+			tds.push_back(copy);
+			gSelected = (int)tds.size() - 1;
+			TextDrawsChanged();
+		}
+		return true;
+	// The rest works as usual: testing, windows, the interface size.
+	case SC_TEST_IN_GAME:
+	case SC_UI_SCALE_UP: case SC_UI_SCALE_DOWN: case SC_UI_SCALE_RESET:
+	case SC_SCROLL_UP: case SC_SCROLL_DOWN:
+		return false;
+	}
+	return action < SC_WINDOW_BROWSER;	// map editing is off
+}
+
+static void
+fileBar(void)
+{
+	if(ImGui::Button(ICON_FA_FILE " New"))
+		RequestTextDrawFileClose(newFile);
+	ImGui::SameLine();
+	if(ImGui::Button(ICON_FA_FOLDER_OPEN " Open..."))
+		RequestTextDrawFileClose(showOpenDialog);
+	ImGui::SameLine();
+	if(ImGui::Button(ICON_FA_FLOPPY_DISK " Save"))
+		saveOrAsk();
+	ImGui::SetItemTooltip("%s", ShortcutLabel(SC_SAVE_MAP));
+	ImGui::SameLine();
+	if(ImGui::Button("Save As..."))
+		showFileDialog(true);
+	ImGui::SameLine();
+	ImGui::BeginDisabled(gRecent.empty());
+	if(ImGui::Button(ICON_FA_CLOCK_ROTATE_LEFT "##recent"))
+		ImGui::OpenPopup("recent");
+	ImGui::EndDisabled();
+	ImGui::SetItemTooltip("Recent textdraw files");
+	if(ImGui::BeginPopup("recent")){
+		static std::string chosen;
+		for(size_t i = 0; i < gRecent.size(); i++){
+			ImGui::PushID((int)i);
+			const char *name = gRecent[i].c_str() + gRecent[i].find_last_of("/\\") + 1;
+			if(ImGui::MenuItem(name)){
+				chosen = gRecent[i];
+				RequestTextDrawFileClose([]{ openFile(chosen.c_str()); });
+			}
+			ImGui::SetItemTooltip("%s", gRecent[i].c_str());
+			ImGui::PopID();
+		}
+		ImGui::Separator();
+		if(ImGui::MenuItem("Clear list")){
+			gRecent.clear();
+			SaveEditorSettings();
+		}
+		ImGui::EndPopup();
+	}
+	ImGui::TextDisabled("%s%s", TextDrawFileHasUnsavedChanges() ? "Unsaved changes - " : "Saved - ",
+		GetTextDrawFileName());
+	if(GetTextDrawFilePath()[0])
+		ImGui::SetItemTooltip("%s\nInclude it in your gamemode and call %s_CreateTextDraws()\n"
+			"from OnGameModeInit and %s_ShowTextDraws(playerid).", GetTextDrawFilePath(),
+			TextDrawFilePrefix(GetTextDrawFilePath()).c_str(), TextDrawFilePrefix(GetTextDrawFilePath()).c_str());
+}
+
+void
+DrawTextDrawsWindow(void)
+{
+	drawPopups();
+	if(!gMode)
+		return;
+	UpdateTextDrawsUndo();
+	drawBanner();
+	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 24.0f, ImGui::GetFontSize() * 34.0f), ImGuiCond_FirstUseEver);
+	bool open = true;
+	if(!ImGui::Begin(ICON_FA_FONT " TextDraws###textdraws", &open)){
+		ImGui::End();
+		if(!open)
+			ExitTextDrawMode();
 		return;
 	}
 	std::vector<TextDraw> &tds = GetTextDraws();
-	ImGui::Checkbox("Show on screen", &gShowOverlay);
-	ImGui::SameLine();
-	ImGui::Checkbox("Edit on screen", &gEditOnScreen);
-	ImGui::SetItemTooltip("Drag textdraws to move them; drag the corner to resize.");
+	fileBar();
+
+	int background = gBackground;
+	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 9.0f);
+	if(ImGui::Combo("Background", &background, "Plain\0Still frame\0")){
+		gBackground = background;
+		if(gBackground == TD_BACKGROUND_STILL && gStillFrame == nil){
+			// Taken from the world on the next frame.
+			gStillPending = true;
+		}
+		SaveEditorSettings();
+	}
+	ImGui::SetItemTooltip("Still frame: the world as the camera saw it when TextDraw mode started.");
+	if(gBackground == TD_BACKGROUND_PLAIN){
+		ImGui::SameLine();
+		if(colourEdit("##canvas", &gCanvasColour))
+			SaveEditorSettings();
+	}
+
+	const std::vector<TextDraw> &mapTds = GetMapTextDraws();
+	if(!mapTds.empty()){
+		ImGui::Separator();
+		ImGui::TextColored(ImVec4(1.0f, 0.78f, 0.25f, 1.0f), ICON_FA_TRIANGLE_EXCLAMATION " %d in the map (read-only)", (int)mapTds.size());
+		ImGui::SetItemTooltip("From a map made before textdraws had their own file. They are saved\n"
+			"back with the map as they are; move them here to edit them.");
+		ImGui::SameLine();
+		if(ImGui::SmallButton("Move to a separate file..."))
+			OfferMoveMapTextDraws(GetPawnMapPath());
+	}
+	ImGui::Separator();
 
 	if(ImGui::Button(ICON_FA_PLUS " Text")) addTextDraw(TD_FONT_AHARONI);
 	ImGui::SameLine();
@@ -910,4 +1386,6 @@ DrawTextDrawsWindow(bool *open)
 		}
 	}
 	ImGui::End();
+	if(!open)
+		ExitTextDrawMode();
 }

@@ -1,15 +1,26 @@
 #include "haumea.h"
 #include "textdraws.h"
+#include "encoding.h"
 
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 #include <map>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
-// TextDraws of the open map, their Pawn code, and reading it back.
+// The textdraw file (its own .pwn/.inc), the read-only textdraws of maps
+// made before that, their Pawn code, and reading it back.
 
-static std::vector<TextDraw> gTextDraws;
+static std::vector<TextDraw> gTextDraws;	// the textdraw file's
+static std::vector<TextDraw> gMapTextDraws;	// an old map's, saved back with it
+static std::string gFilePath;
+static PawnTextEncoding gFileEncoding = PAWN_TEXT_CP1252;
+static unsigned int gChangeSeq, gSavedSeq;
 static bool gEditPending;	// changed since the last undo step was recorded
+static std::vector<std::vector<TextDraw>> gUndo, gRedo;
+static std::vector<TextDraw> gUndoBase;	// the list as of the last step
 
 void
 InitTextDraw(TextDraw *td)
@@ -37,38 +48,274 @@ GetTextDraws(void)
 	return gTextDraws;
 }
 
+std::vector<TextDraw>&
+GetMapTextDraws(void)
+{
+	return gMapTextDraws;
+}
+
 void
 TextDrawsChanged(void)
 {
 	gEditPending = true;
-	BumpChangeSeq();
+	gChangeSeq++;
+}
+
+const char*
+GetTextDrawFilePath(void)
+{
+	return gFilePath.c_str();
+}
+
+const char*
+GetTextDrawFileName(void)
+{
+	if(gFilePath.empty())
+		return "Untitled textdraws";
+	size_t slash = gFilePath.find_last_of("/\\");
+	return gFilePath.c_str() + (slash == std::string::npos ? 0 : slash + 1);
 }
 
 bool
-TakeTextDrawsEdit(void)
+TextDrawFileHasUnsavedChanges(void)
 {
-	bool pending = gEditPending;
+	return gChangeSeq != gSavedSeq;
+}
+
+static void
+resetUndo(void)
+{
+	gUndo.clear();
+	gRedo.clear();
+	gUndoBase = gTextDraws;
 	gEditPending = false;
-	return pending;
-}
-
-bool
-TextDrawsEditPending(void)
-{
-	return gEditPending;
 }
 
 void
-ResetTextDraws(void)
+NewTextDrawFile(void)
 {
 	gTextDraws.clear();
-	gEditPending = false;
+	gFilePath.clear();
+	gFileEncoding = PAWN_TEXT_CP1252;
+	gSavedSeq = ++gChangeSeq;
+	resetUndo();
+}
+
+static bool
+readFile(const char *path, std::string &out)
+{
+	FILE *f = fopen(path, "rb");
+	if(f == nil)
+		return false;
+	char buffer[4096];
+	size_t n;
+	out.clear();
+	while((n = fread(buffer, 1, sizeof(buffer), f)) > 0)
+		out.append(buffer, n);
+	fclose(f);
+	return true;
+}
+
+bool
+OpenTextDrawFile(const char *path, std::string *error)
+{
+	std::string raw;
+	if(path == nil || !readFile(path, raw)){
+		*error = std::string("could not read ") + (path ? path : "");
+		return false;
+	}
+	PawnTextEncoding encoding;
+	std::string source = DecodePawnFileText(raw, &encoding);
+	std::vector<TextDraw> read;
+	ImportTextDrawsFromSource(source, read);
+	gTextDraws = read;
+	gFilePath = path;
+	gFileEncoding = encoding;
+	gSavedSeq = ++gChangeSeq;
+	resetUndo();
+	log("TextDraws: %d from %s\n", (int)read.size(), path);
+	return true;
+}
+
+std::string
+TextDrawFilePrefix(const char *path)
+{
+	std::string base = path ? path : "";
+	size_t slash = base.find_last_of("/\\");
+	if(slash != std::string::npos)
+		base = base.substr(slash + 1);
+	size_t dot = base.find('.');
+	if(dot != std::string::npos)
+		base.resize(dot);
+	std::string prefix = "Haumea_";
+	for(size_t i = 0; i < base.size(); i++)
+		prefix += isalnum((unsigned char)base[i]) || base[i] == '_' ? base[i] : '_';
+	if(base.empty())
+		prefix += "textdraws";
+	return prefix;
+}
+
+static void writeCompatDefines(FILE *f);
+static void writeGlobals(FILE *f, const std::vector<TextDraw> &tds, const char *prefix);
+static void writeFunctions(FILE *f, const std::vector<TextDraw> &tds, const char *prefix);
+
+std::string
+BuildTextDrawFileCode(const char *path)
+{
+	std::string prefix = TextDrawFilePrefix(path);
+	const char *p = prefix.c_str();
+	FILE *f = tmpfile();
+	if(f == nil)
+		return std::string();
+	fprintf(f, "// TextDraws made with Haumea Studio.\n"
+		"// Call %s_CreateTextDraws() from OnGameModeInit and %s_ShowTextDraws(playerid)\n"
+		"// when a player should see them (it also creates the per-player ones).\n"
+		"\n#tryinclude <open.mp>\n#if !defined _INC_open_mp\n\t#include <a_samp>\n#endif\n", p, p);
+	writeCompatDefines(f);
+	writeGlobals(f, gTextDraws, p);
+	writeFunctions(f, gTextDraws, p);
+	std::string code;
+	long size = ftell(f);
+	if(size > 0 && fseek(f, 0, SEEK_SET) == 0){
+		code.resize((size_t)size);
+		if(fread(&code[0], 1, (size_t)size, f) != (size_t)size)
+			code.clear();
+	}
+	fclose(f);
+	return code;
+}
+
+bool
+SaveTextDrawFile(const char *path, std::string *error)
+{
+	std::string target = path && path[0] ? path : gFilePath;
+	if(target.empty()){
+		*error = "the textdraw file has no name yet";
+		return false;
+	}
+	if(!EnsureParentDirectoriesForPath(target.c_str())){
+		*error = "could not create the folder for " + target;
+		return false;
+	}
+	std::string code = EncodePawnFileText(BuildTextDrawFileCode(target.c_str()), gFileEncoding);
+	// Written beside it and renamed over it, so a failed save keeps the old file.
+	std::string temp = target + ".tmp";
+	FILE *f = fopen(temp.c_str(), "wb");
+	bool written = f && fwrite(code.data(), 1, code.size(), f) == code.size();
+	if(f)
+		written = fclose(f) == 0 && written;
+#ifdef _WIN32
+	written = written && MoveFileExA(temp.c_str(), target.c_str(), MOVEFILE_REPLACE_EXISTING) != 0;
+#else
+	written = written && rename(temp.c_str(), target.c_str()) == 0;
+#endif
+	if(!written){
+		remove(temp.c_str());
+		*error = "could not write " + target;
+		return false;
+	}
+	gFilePath = target;
+	gSavedSeq = gChangeSeq;
+	log("TextDraws: wrote %d to %s\n", (int)gTextDraws.size(), target.c_str());
+	return true;
+}
+
+// ---- Undo ----
+
+void
+UpdateTextDrawsUndo(void)
+{
+	// A drag or a typed field is one step, taken when it is let go.
+	if(gEditPending && !ImGui::IsAnyItemActive()){
+		gEditPending = false;
+		gUndo.push_back(gUndoBase);
+		gRedo.clear();
+		if(gUndo.size() > 200)
+			gUndo.erase(gUndo.begin());
+		gUndoBase = gTextDraws;
+	}
+}
+
+static bool
+stepUndo(std::vector<std::vector<TextDraw>> &from, std::vector<std::vector<TextDraw>> &to)
+{
+	UpdateTextDrawsUndo();
+	if(from.empty())
+		return false;
+	to.push_back(gTextDraws);
+	gTextDraws = from.back();
+	from.pop_back();
+	gUndoBase = gTextDraws;
+	gChangeSeq++;
+	return true;
+}
+
+bool
+UndoTextDraws(void)
+{
+	return stepUndo(gUndo, gRedo);
+}
+
+bool
+RedoTextDraws(void)
+{
+	return stepUndo(gRedo, gUndo);
+}
+
+// ---- The map's own ----
+
+void
+ResetMapTextDraws(void)
+{
+	gMapTextDraws.clear();
 }
 
 bool
 HasTextDraws(void)
 {
-	return !gTextDraws.empty();
+	return !gMapTextDraws.empty();
+}
+
+std::string
+SuggestedTextDrawFilePath(const char *mapPath)
+{
+	std::string base = mapPath && mapPath[0] ? mapPath : "map.pwn";
+	size_t slash = base.find_last_of("/\\");
+	size_t dot = base.rfind('.');
+	if(dot != std::string::npos && (slash == std::string::npos || dot > slash))
+		base.resize(dot);
+	std::string path = base + "_textdraws.pwn";
+	for(int n = 2; n < 100; n++){
+		FILE *f = fopen(path.c_str(), "rb");
+		if(f == nil)
+			break;
+		fclose(f);
+		path = base + "_textdraws" + std::to_string(n) + ".pwn";
+	}
+	return path;
+}
+
+int
+MoveMapTextDrawsToFile(const char *path, std::string *error)
+{
+	if(gMapTextDraws.empty())
+		return 0;
+	if(gFilePath.empty() && (path == nil || path[0] == '\0')){
+		*error = "no file to move them to";
+		return -1;
+	}
+	std::vector<TextDraw> before = gTextDraws;
+	gTextDraws.insert(gTextDraws.end(), gMapTextDraws.begin(), gMapTextDraws.end());
+	TextDrawsChanged();
+	if(!SaveTextDrawFile(gFilePath.empty() ? path : nil, error)){
+		gTextDraws = before;
+		return -1;
+	}
+	int moved = (int)gMapTextDraws.size();
+	gMapTextDraws.clear();
+	BumpChangeSeq();	// the map saves without them
+	resetUndo();
+	return moved;
 }
 
 // ---- Writing ----
@@ -87,12 +334,12 @@ isIdentifier(const char *s)
 // Variable names: the textdraw's own when it is a plain name, otherwise one
 // made from the map's prefix.
 static void
-buildNames(const char *prefix, std::vector<std::string> &names)
+buildNames(const std::vector<TextDraw> &tds, const char *prefix, std::vector<std::string> &names)
 {
 	names.clear();
 	std::map<std::string, int> used;
-	for(size_t i = 0; i < gTextDraws.size(); i++){
-		const TextDraw &td = gTextDraws[i];
+	for(size_t i = 0; i < tds.size(); i++){
+		const TextDraw &td = tds[i];
 		std::string name = isIdentifier(td.name) ? td.name : "";
 		if(name.empty() || used.count(name)){
 			int n = (int)i;
@@ -123,20 +370,20 @@ writeString(FILE *f, const std::string &s)
 void
 WriteTextDrawsPawnHeader(FILE *f, const char *prefix)
 {
-	if(gTextDraws.empty())
+	if(gMapTextDraws.empty())
 		return;
 	fprintf(f, "// Call %s_CreateTextDraws() from OnGameModeInit and %s_ShowTextDraws(playerid)\n"
 		"// when a player should see the textdraws (it also creates the per-player ones).\n", prefix, prefix);
 }
 
-void
-WriteTextDrawsPawnGlobals(FILE *f, const char *prefix)
+// open.mp's names and tags; SA-MP 0.3.7 gets them from these defines,
+// so the same code compiles without warnings on both. Once only, as a map
+// and a textdraw file can both have them.
+static void
+writeCompatDefines(FILE *f)
 {
-	if(gTextDraws.empty())
-		return;
-	// open.mp's names and tags; SA-MP 0.3.7 gets them from these defines,
-	// so the same code compiles without warnings on both.
-	fputs("\n#if !defined TEXT_DRAW_FONT_0\n"
+	fputs("\n#if !defined TEXT_DRAW_FONT_0 && !defined HAUMEA_TD_COMPAT\n"
+		"\t#define HAUMEA_TD_COMPAT\n"
 		"\t#define TEXT_DRAW_FONT: _:\n"
 		"\t#define TEXT_DRAW_ALIGN: _:\n"
 		"\t#define TextDrawColour TextDrawColor\n"
@@ -148,14 +395,28 @@ WriteTextDrawsPawnGlobals(FILE *f, const char *prefix)
 		"\t#define PlayerTextDrawBackgroundColour PlayerTextDrawBackgroundColor\n"
 		"\t#define PlayerTextDrawSetPreviewVehicleColours PlayerTextDrawSetPreviewVehCol\n"
 		"#endif\n\n", f);
+}
+
+static void
+writeGlobals(FILE *f, const std::vector<TextDraw> &tds, const char *prefix)
+{
 	std::vector<std::string> names;
-	buildNames(prefix, names);
-	for(size_t i = 0; i < gTextDraws.size(); i++)
-		if(gTextDraws[i].perPlayer)
+	buildNames(tds, prefix, names);
+	for(size_t i = 0; i < tds.size(); i++)
+		if(tds[i].perPlayer)
 			fprintf(f, "new PlayerText:%s[MAX_PLAYERS];\n", names[i].c_str());
 		else
 			fprintf(f, "new Text:%s;\n", names[i].c_str());
 	fputc('\n', f);
+}
+
+void
+WriteTextDrawsPawnGlobals(FILE *f, const char *prefix)
+{
+	if(gMapTextDraws.empty())
+		return;
+	writeCompatDefines(f);
+	writeGlobals(f, gMapTextDraws, prefix);
 }
 
 static void
@@ -209,28 +470,33 @@ writeTextDraw(FILE *f, const TextDraw &td, const std::string &name)
 	}
 }
 
-void
-WriteTextDrawsPawnFunctions(FILE *f, const char *prefix)
+static void
+writeFunctions(FILE *f, const std::vector<TextDraw> &tds, const char *prefix)
 {
-	if(gTextDraws.empty())
-		return;
 	std::vector<std::string> names;
-	buildNames(prefix, names);
+	buildNames(tds, prefix, names);
 	fprintf(f, "stock %s_CreateTextDraws()\n{\n", prefix);
-	for(size_t i = 0; i < gTextDraws.size(); i++)
-		if(!gTextDraws[i].perPlayer)
-			writeTextDraw(f, gTextDraws[i], names[i]);
+	for(size_t i = 0; i < tds.size(); i++)
+		if(!tds[i].perPlayer)
+			writeTextDraw(f, tds[i], names[i]);
 	fprintf(f, "}\n\n");
 	fprintf(f, "stock %s_ShowTextDraws(playerid)\n{\n", prefix);
-	for(size_t i = 0; i < gTextDraws.size(); i++)
-		if(gTextDraws[i].perPlayer)
-			writeTextDraw(f, gTextDraws[i], names[i]);
-	for(size_t i = 0; i < gTextDraws.size(); i++)
-		if(gTextDraws[i].perPlayer)
+	for(size_t i = 0; i < tds.size(); i++)
+		if(tds[i].perPlayer)
+			writeTextDraw(f, tds[i], names[i]);
+	for(size_t i = 0; i < tds.size(); i++)
+		if(tds[i].perPlayer)
 			fprintf(f, "\tPlayerTextDrawShow(playerid, %s[playerid]);\n", names[i].c_str());
 		else
 			fprintf(f, "\tTextDrawShowForPlayer(playerid, %s);\n", names[i].c_str());
 	fprintf(f, "}\n\n");
+}
+
+void
+WriteTextDrawsPawnFunctions(FILE *f, const char *prefix)
+{
+	if(!gMapTextDraws.empty())
+		writeFunctions(f, gMapTextDraws, prefix);
 }
 
 // ---- Reading ----
@@ -432,7 +698,7 @@ parseString(const std::string &arg, std::string *out)
 }
 
 int
-ImportTextDrawsFromSource(const std::string &source)
+ImportTextDrawsFromSource(const std::string &source, std::vector<TextDraw> &out)
 {
 	std::vector<TdCall> calls;
 	scanCalls(source, calls);
@@ -454,8 +720,8 @@ ImportTextDrawsFromSource(const std::string &source)
 			td.x = x;
 			td.y = y;
 			snprintf(td.name, sizeof(td.name), "%s", c.lhs.c_str());
-			byHandle[c.lhs] = gTextDraws.size();
-			gTextDraws.push_back(td);
+			byHandle[c.lhs] = out.size();
+			out.push_back(td);
 			added++;
 			continue;
 		}
@@ -471,7 +737,7 @@ ImportTextDrawsFromSource(const std::string &source)
 		std::map<std::string, size_t>::iterator it = byHandle.find(handleName(c.args[h]));
 		if(it == byHandle.end())
 			continue;
-		TextDraw &td = gTextDraws[it->second];
+		TextDraw &td = out[it->second];
 		std::vector<float> v;
 		for(size_t a = h + 1; a < c.args.size(); a++){
 			float f = 0.0f;

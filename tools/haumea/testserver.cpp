@@ -759,6 +759,7 @@ struct TsNeeds {
 	std::string prefix;
 	bool removeWorldObjects, showForPlayer;
 	bool textDraws, soundTick, soundArea;	// helpers the gamemode has to call
+	std::string textDrawFile;	// the textdraw file's prefix, when it has textdraws
 };
 
 static TsNeeds
@@ -953,6 +954,7 @@ tsGamemode(const TsNeeds &needs)
 		"// Written by Haumea's Test in game; rewritten on every run.\n"
 		"#include <open.mp>\n"
 		"#include \"haumea_map.pwn\"\n"
+		"%s"
 		"\n"
 		"#define HT_SPAWN_X (%.4f)\n"
 		"#define HT_SPAWN_Y (%.4f)\n"
@@ -963,6 +965,7 @@ tsGamemode(const TsNeeds &needs)
 		"#define HT_MINUTE (%d)\n"
 		"#define HT_WEATHER (%d)\n"
 		"\n",
+		needs.textDrawFile.empty() ? "" : "#include \"haumea_textdraws.pwn\"\n",
 		s.x, s.y, s.z, s.angle, s.interior, currentHour, currentMinute, weather);
 	std::string p = needs.prefix;
 	std::string code = head;
@@ -979,6 +982,8 @@ tsGamemode(const TsNeeds &needs)
 	// Whatever else the map's header asks for.
 	if(needs.textDraws)
 		code += "\t" + p + "_CreateTextDraws();\n";
+	if(!needs.textDrawFile.empty())
+		code += "\t" + needs.textDrawFile + "_CreateTextDraws();\n";
 	if(needs.soundTick)
 		code += "\tSetTimer(\"HT_SoundTick\", 500, true);\n";
 	code +=
@@ -1047,6 +1052,7 @@ tsGamemode(const TsNeeds &needs)
 		"\tSetPlayerWeather(playerid, HT_WEATHER);\n"
 		"\tSetCameraBehindPlayer(playerid);\n"
 		+ (needs.textDraws ? "\t" + p + "_ShowTextDraws(playerid);\n" : std::string()) +
+		(needs.textDrawFile.empty() ? std::string() : "\t" + needs.textDrawFile + "_ShowTextDraws(playerid);\n") +
 		"\tSendClientMessage(playerid, 0xA0C0FFFF, \"Haumea test: /v <model> spawns a vehicle, /tp goes to the editor camera, /reload reloads the map.\");\n"
 		"\treturn 1;\n"
 		"}\n"
@@ -1257,6 +1263,15 @@ TestServerRunMap(int pawnFormat)
 	if(needs.prefix.empty()){
 		tsFail("the exported map has no _CreateObjects function");
 		return;
+	}
+	// The textdraw file as it is now, beside the map.
+	if(!GetTextDraws().empty()){
+		std::string tdPath = tsJoin(gamemodes, "haumea_textdraws.pwn");
+		if(!tsWriteText(tdPath, EncodePawnFileText(BuildTextDrawFileCode(tdPath.c_str()), GetPawnTextEncoding()))){
+			tsFail("could not export the textdraws");
+			return;
+		}
+		needs.textDrawFile = TextDrawFilePrefix(tdPath.c_str());
 	}
 	if(!tsSetup(source, &needs, &error)){
 		tsFail(error);

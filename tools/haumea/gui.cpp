@@ -69,7 +69,6 @@ static bool showMapCheckWindow;
 static bool showNodesWindow;
 static bool showTestServerWindow;
 static bool showInteriorsWindow;
-static bool showTextDrawsWindow;
 static bool gPanelSnap = true;
 static bool gResetPanelLayout;
 static bool gSaNodeJustSelected;
@@ -2479,6 +2478,8 @@ static void uiResetPanelLayout(void);
 static void
 uiUndo(void)
 {
+	if(TextDrawModeShortcut(SC_UNDO))
+		return;
 	finishTransformPanelEdit();
 	Undo();
 	Toast(TOAST_UNDO_REDO, "Undo");
@@ -2487,6 +2488,8 @@ uiUndo(void)
 static void
 uiRedo(void)
 {
+	if(TextDrawModeShortcut(SC_REDO))
+		return;
 	finishTransformPanelEdit();
 	Redo();
 	Toast(TOAST_UNDO_REDO, "Redo");
@@ -2791,7 +2794,11 @@ uiMainmenu(void)
 			if(isSA() && ImGui::MenuItem(ICON_FA_LOCATION_DOT " Nodes (open.mp only)", ShortcutLabel(SC_WINDOW_NODES), showNodesWindow)) { showNodesWindow ^= 1; }
 			if(isSA() && ImGui::MenuItem(ICON_FA_GAMEPAD " Test server", nil, showTestServerWindow)) { showTestServerWindow ^= 1; }
 			if(isSA() && ImGui::MenuItem(ICON_FA_MAP_PIN " Interiors", nil, showInteriorsWindow)) { showInteriorsWindow ^= 1; }
-			if(isSA() && ImGui::MenuItem(ICON_FA_FONT " TextDraws", nil, showTextDrawsWindow)) { showTextDrawsWindow ^= 1; }
+			if(isSA() && ImGui::MenuItem(ICON_FA_FONT " TextDraws", nil, InTextDrawMode())){
+				if(InTextDrawMode()) ExitTextDrawMode();
+				else EnterTextDrawMode();
+			}
+			ImGui::SetItemTooltip("TextDraw mode: edit the textdraw file on a canvas instead of the world.");
 			ImGui::Separator();
 			if(ImGui::MenuItem(ICON_FA_CLOUD_SUN " Time & Weather", ShortcutLabel(SC_WINDOW_TIME_WEATHER), showTimeWeatherWindow)) { showTimeWeatherWindow ^= 1; }
 			if(ImGui::MenuItem(ICON_FA_EYE " View", ShortcutLabel(SC_WINDOW_VIEW), showViewWindow)) { showViewWindow ^= 1; }
@@ -2927,10 +2934,6 @@ uiExportPrefabPopup(void)
 	ImGui::SetItemTooltip("The first selected object goes where you click.");
 	if(selected > 256)
 		ImGui::TextColored(ImVec4(1.0f, 0.78f, 0.25f, 1.0f), "Only the first 256 are saved.");
-	if(!GetTextDraws().empty()){
-		ImGui::TextDisabled("TextDraws are not saved in prefabs.");
-		ImGui::SetItemTooltip("They are on the screen, not in the world, so a selection can't hold them.");
-	}
 
 	bool validName = prefabName[0] != '\0' && strpbrk(prefabName, "/\\:*?\"<>|") == nil &&
 		strstr(folder, "..") == nil && selected > 0;
@@ -3108,6 +3111,7 @@ pawnPathWithExtension(const char *path, char *out, size_t size)
 static int gPendingMapAction = MAP_ACTION_NONE;
 static char gPendingMapPath[1024];
 static bool gOpenUnsavedMapPrompt;
+static bool gTextDrawsAskedBeforeQuit;
 static bool gContinueMapActionAfterSave;
 static bool gWindowCloseRequested;
 static bool gShowOpenReport;
@@ -3385,7 +3389,8 @@ performMapAction(int action, const char *path)
 				return;
 			path = picked;
 		}
-		openPawnMap(path);
+		if(openPawnMap(path))
+			OfferMoveMapTextDraws(path);
 		break;
 	}
 	case MAP_ACTION_QUIT:
@@ -3396,8 +3401,21 @@ performMapAction(int action, const char *path)
 
 // Runs the action now, or after asking about unsaved changes.
 static void
+quitAfterTextDraws(void)
+{
+	gTextDrawsAskedBeforeQuit = true;
+	requestMapAction(MAP_ACTION_QUIT);
+}
+
+static void
 requestMapAction(int action, const char *path)
 {
+	// The textdraw file is asked about first, then the map.
+	if(action == MAP_ACTION_QUIT && !gTextDrawsAskedBeforeQuit && TextDrawFileHasUnsavedChanges()){
+		RequestTextDrawFileClose(quitAfterTextDraws);
+		return;
+	}
+	gTextDrawsAskedBeforeQuit = false;
 	if(!mapHasUnsavedChanges()){
 		performMapAction(action, path);
 		return;
@@ -3465,7 +3483,7 @@ uiUnsavedMapPopup(void)
 static void
 onWindowCloseRequested(GLFWwindow *window)
 {
-	if(!mapHasUnsavedChanges())
+	if(!mapHasUnsavedChanges() && !TextDrawFileHasUnsavedChanges())
 		return;
 	glfwSetWindowShouldClose(window, GLFW_FALSE);
 	gWindowCloseRequested = true;
@@ -3840,6 +3858,8 @@ uiImportPawnPopup(void)
 				Toast(TOAST_SPAWN, "Could not read %s", pathFilename(pawnPath));
 			else if(imported > 0)
 				Toast(TOAST_SPAWN, "Merged %s", pathFilename(pawnPath));
+			if(imported >= 0)
+				OfferMoveMapTextDraws(gPawnSavePath[0] ? gPawnSavePath : pawnPath);
 		}
 		ImGui::EndDisabled();
 		ImGui::SameLine();
@@ -6052,6 +6072,7 @@ loadSaveSettings(void)
 	char line[1024];
 	char key[128];
 	const char *value;
+	std::vector<std::string> recentTextDraws;
 	int intValue;
 	bool boolValue;
 	rw::V3d vecValue;
@@ -6080,6 +6101,11 @@ loadSaveSettings(void)
 			if(gNumRecentMaps < MAX_RECENT_MAPS &&
 			   parseQuotedStringValue(value, gRecentMaps[gNumRecentMaps], sizeof(gRecentMaps[0])))
 				gNumRecentMaps++;
+		}else if(strcmp(key, "recent_textdraws") == 0){
+			char path[1024];
+			if(parseQuotedStringValue(value, path, sizeof(path)))
+				recentTextDraws.push_back(path);
+		}else if(LoadTextDrawSetting(key, value)){
 		}else if(strcmp(key, "shortcut") == 0){
 			ShortcutParseSetting(value);
 		}else if(strcmp(key, "ui_scale") == 0){
@@ -6380,6 +6406,9 @@ loadSaveSettings(void)
 			parseIntSetting(value, &gDiffFilter);
 		}
 	}
+	// Saved newest first; each one added goes on top.
+	for(size_t i = recentTextDraws.size(); i-- > 0;)
+		AddRecentTextDrawFile(recentTextDraws[i].c_str());
 
 	// Version 1 changed the camera target marker to opt-in. Existing settings
 	// files stored the old enabled default, so migrate every user once.
@@ -6457,6 +6486,9 @@ saveSaveSettings(void)
 	writeQuotedSetting(f, "pawn_save_path", gPawnSavePath);
 	for(int i = 0; i < gNumRecentMaps; i++)
 		writeQuotedSetting(f, "recent_map", gRecentMaps[i]);
+	for(size_t i = 0; i < GetRecentTextDrawFiles().size(); i++)
+		writeQuotedSetting(f, "recent_textdraws", GetRecentTextDrawFiles()[i].c_str());
+	SaveTextDrawSettings(f);
 	fprintf(f, "reopen_last_map %d\n", gReopenLastMap ? 1 : 0);
 	fprintf(f, "show_start_guide %d\n", gShowStartGuide ? 1 : 0);
 	fprintf(f, "panel_snap %d\n", gPanelSnap ? 1 : 0);
@@ -7292,10 +7324,8 @@ uiMapCheckWindow(void)
 		if(item.instances.empty() && item.textDraw < 0)
 			ImGui::TextUnformatted(item.text.c_str());
 		else if(item.textDraw >= 0){
-			if(ImGui::Selectable(item.text.c_str())){
-				showTextDrawsWindow = true;
+			if(ImGui::Selectable(item.text.c_str()))
 				SelectTextDraw(item.textDraw);
-			}
 		}
 		else if(ImGui::Selectable(item.text.c_str(), false, ImGuiSelectableFlags_AllowDoubleClick)){
 			ClearSelection();
@@ -11163,11 +11193,9 @@ uiMapObjectsList(void)
 				if(!row.refs.empty())
 					ImGui::SetItemTooltip("Click to select it.");
 			}else{
-				if(ImGui::Selectable(row.label.c_str(), false)){
-					showTextDrawsWindow = true;
+				if(ImGui::Selectable(row.label.c_str(), false))
 					SelectTextDraw(row.textDraw);
-				}
-				ImGui::SetItemTooltip("Opens it in the TextDraws window.");
+				ImGui::SetItemTooltip("Opens it in TextDraw mode.");
 			}
 			ImGui::PopID();
 		}
@@ -11494,7 +11522,13 @@ uiStatusBar(void)
 	const char *mode;
 	ImVec4 modeColor;
 	char hint[512];
-	if(gBrushMode && spawn){
+	if(InTextDrawMode()){
+		mode = "TEXTDRAW";
+		modeColor = ImVec4(0.95f, 0.75f, 0.20f, 1.0f);
+		snprintf(hint, sizeof(hint), "Editing %s: drag a textdraw to move it, its corner to resize it. "
+			"%s saves the textdraws, %s goes back to the map.", GetTextDrawFileName(),
+			uiKey(SC_SAVE_MAP), uiKey(SC_CANCEL));
+	}else if(gBrushMode && spawn){
 		mode = "BRUSH";
 		modeColor = ImVec4(0.95f, 0.75f, 0.20f, 1.0f);
 		snprintf(hint, sizeof(hint), "Painting %s: click or drag on a surface. %s stops.", spawn->m_name, uiKey(SC_CANCEL));
@@ -11684,6 +11718,9 @@ static void
 uiRunShortcut(int action)
 {
 	int count;
+	// TextDraw mode takes the file keys and leaves out map editing.
+	if(action != SC_UNDO && action != SC_REDO && TextDrawModeShortcut(action))
+		return;
 	switch(action){
 	case SC_NEW_MAP: requestMapAction(MAP_ACTION_NEW); break;
 	case SC_OPEN_MAP: requestMapAction(MAP_ACTION_OPEN); break;
@@ -11914,8 +11951,10 @@ gui(void)
 					fclose(report);
 				if(!opened)
 					sk::globals.quit = 1;
-			}else if(openPath && !roundtripIn)
-				openPawnMap(openPath);
+			}else if(openPath && !roundtripIn){
+				if(openPawnMap(openPath))
+					OfferMoveMapTextDraws(openPath);
+			}
 			else if(roundtripIn){
 				bool opened = openPawnMap(roundtripIn);
 				int skipped = 0;
@@ -11925,8 +11964,10 @@ gui(void)
 					roundtripIn, roundtripOut, saved, skipped);
 				fflush(stdout);
 				sk::globals.quit = 1;
-			}else if(gReopenLastMap && gNumRecentMaps > 0 && isSA())
-				openPawnMap(gRecentMaps[0]);
+			}else if(gReopenLastMap && gNumRecentMaps > 0 && isSA()){
+				if(openPawnMap(gRecentMaps[0]))
+					OfferMoveMapTextDraws(gRecentMaps[0]);
+			}
 		}
 	}
 	if(gProfileFrames >= 0){
@@ -11958,11 +11999,13 @@ gui(void)
 #ifdef IMGUI_HAS_DOCK
 	uiDockSpace();
 #endif
-	uiStartGuide();
-	uiPlayerViewOverlay();
+	if(!InTextDrawMode()){
+		uiStartGuide();
+		uiPlayerViewOverlay();
+		uiDrawSampElementOverlays();
+		uiDrawNpcPaths();
+	}
 	uiUnsavedMapPopup();
-	uiDrawSampElementOverlays();
-	uiDrawNpcPaths();
 	// TODO: restore when the Destroy Entire Map workflow is finished.
 	UpdaterDrawGui();
 	autosaveTick();
@@ -11971,6 +12014,12 @@ gui(void)
 	for(int action = 0; action < SC_NUM_ACTIONS; action++)
 		if(ShortcutPressed(action))
 			uiRunShortcut(action);
+	if(InTextDrawMode()){
+		// Map editing is off: nothing selected or being placed.
+		uiExitPlacementModes();
+		if(selection.first)
+			ClearSelection();
+	}
 
 	if(showTimeWeatherWindow){
 		uiNextPanelSizeConstraints();
@@ -12027,7 +12076,7 @@ gui(void)
 	uiPawnCodeWindow();
 	SAPaths::DrawNodesWindow(&showNodesWindow);
 	SAPaths::UpdateNodesUndo();
-	DrawTextDrawsWindow(&showTextDrawsWindow);
+	DrawTextDrawsWindow();
 	DrawTextDrawsOverlay();
 	DrawAddCustomModelDialog();
 	if(showTestServerWindow) TestServerWindow(&showTestServerWindow, gPawnSaveFormat);
@@ -12217,6 +12266,18 @@ SavePawnMapTo(const char *path, int format)
 	snprintf(gPawnSavePath, sizeof(gPawnSavePath), "%s", oldPath);
 	gPawnSaveFormat = oldFormat;
 	return false;
+}
+
+void
+SaveEditorSettings(void)
+{
+	saveSaveSettings();
+}
+
+bool
+PickPawnFile(char *dst, size_t size, bool save, const char *suggested)
+{
+	return pickPawnFileDialog(dst, size, save, suggested);
 }
 
 const char*
