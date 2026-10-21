@@ -9,7 +9,8 @@
 // release ships next to the editor. A build run from the source tree finds
 // them a few folders up (bin/<platform>/Release/haumea).
 
-static const char *licenseFiles[] = { "LICENSE", "THIRD_PARTY_NOTICES.md" };
+static const char *licenseFiles[] = { "LICENSE", "THIRD_PARTY_NOTICES.md", "fonts/material/LICENSE-Liberation.txt" };
+static const int NUM_LICENSE_FILES = sizeof(licenseFiles)/sizeof(licenseFiles[0]);
 
 static bool
 readLicenseFile(const char *name, std::string &text)
@@ -42,10 +43,10 @@ readLicenseFile(const char *name, std::string &text)
 void
 DrawLicensesWindow(bool *open)
 {
-	static std::string texts[2];
-	static bool loaded, found[2];
+	static std::string texts[NUM_LICENSE_FILES];
+	static bool loaded, found[NUM_LICENSE_FILES];
 	if(!loaded){
-		for(int i = 0; i < 2; i++)
+		for(int i = 0; i < NUM_LICENSE_FILES; i++)
 			found[i] = readLicenseFile(licenseFiles[i], texts[i]);
 		loaded = true;
 	}
@@ -58,7 +59,7 @@ DrawLicensesWindow(bool *open)
 	ImGui::TextWrapped("Haumea Studio is free software under the GNU General Public License, version 2 "
 		"or any later version. It includes components under their own licenses.");
 	if(ImGui::BeginTabBar("##license_files")){
-		for(int i = 0; i < 2; i++){
+		for(int i = 0; i < NUM_LICENSE_FILES; i++){
 			if(!ImGui::BeginTabItem(licenseFiles[i]))
 				continue;
 			ImGui::BeginChild("##license_text", ImVec2(0, 0), ImGuiChildFlags_Borders);

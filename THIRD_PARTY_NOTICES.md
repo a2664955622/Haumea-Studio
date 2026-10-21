@@ -3,7 +3,8 @@
 Haumea Studio is licensed under the GNU General Public License, version 2 or
 (at your option) any later version; see [LICENSE](LICENSE). It includes the
 components below, each under its own license. Haumea Studio never ships any
-file of GTA San Andreas or SA-MP: it reads them from your own game folder.
+file of GTA San Andreas, and of SA-MP only its two fonts (listed below): it
+reads everything else from your own game folder.
 
 ## In the editor
 
@@ -20,6 +21,8 @@ file of GTA San Andreas or SA-MP: it reads them from your own game folder.
 | Inter 4.001 (the UI font, `fonts/Inter-Regular.ttf`) | SIL Open Font License 1.1 | Copyright (c) 2016 The Inter Project Authors | https://github.com/rsms/inter |
 | Font Awesome Free 6.7.2 (icons, `fonts/fa-solid-900.ttf`) | Font files: SIL Open Font License 1.1; icons: CC BY 4.0 | Copyright (c) Font Awesome (Fonticons, Inc.) | https://fontawesome.com |
 | open.mp SDK tables: animation names (`anim_ids.h`), vehicle colours and components (`vehicle_tables.h`) | MPL-2.0 | open.mp team and contributors | https://github.com/openmultiplayer/open.mp |
+| Liberation Sans, Serif and Mono 2.1.5, Regular and Bold (material text, `fonts/material/Liberation*.ttf`) | SIL Open Font License 1.1 (`fonts/material/LICENSE-Liberation.txt`) | Digitized data copyright (c) 2010 Google Corporation; Copyright (c) 2012 Red Hat, Inc. | https://github.com/liberationfonts/liberation-fonts |
+| SA-MP fonts GTAWEAPON3 (`fonts/material/gtaweap3.ttf`) and SampAux3 (`fonts/material/sampaux3.ttf`), included so material text renders as in the SA-MP client | Not under the GPL; redistributed as part of SA-MP's client files | © their respective owners | https://sa-mp.mp |
 
 ## In Namaka (the Python companion)
 
