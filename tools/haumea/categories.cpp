@@ -24,7 +24,7 @@ namespace {
 
 struct KeywordRule {
 	int category;
-	const char *words[24];	// matched anywhere in the lower-case model name (and TXD name if 4+ letters)
+	const char *words[32];	// matched anywhere in the lower-case model name (and TXD name if 4+ letters)
 };
 
 // Our own keyword lists. Order matters: specific things before general ones.
@@ -33,7 +33,7 @@ const KeywordRule rules[] = {
 	{ CAT_PLANTS, { "bush", "shrub", "hedge", "plant", "cactus", "fern", "flower", "weed", "reed", "leaf",
 	                "leaves", "veg_", "ivy", "vine", "planter" } },
 	{ CAT_GRASS, { "grass", "hay", "straw", "lawn" } },
-	{ CAT_ROCKS, { "rock", "boulder", "cliff", "stone", "crag", "scree", "quarry" } },
+	{ CAT_ROCKS, { "rock", "boulder", "cliff", "stone", "crag", "scree", "quarry", "volcano" } },
 	{ CAT_AIRPORTS, { "airport", "runway", "helipad", "hangar", "hanger", "taxiway", "airstrip" } },
 	{ CAT_RAILWAYS, { "rail", "track", "train", "tram", "station", "platform", "sleeper" } },
 	{ CAT_BRIDGES, { "bridge", "brdg", "flyover", "overpass", "viaduct" } },
@@ -44,7 +44,8 @@ const KeywordRule rules[] = {
 	{ CAT_WATER, { "seaside", "seawall", "beach", "dock", "pier", "jetty", "harbour", "harbor", "wharf",
 	               "boat", "yacht", "buoy", "lighthouse", "canal", "shore", "coast", "marina", "pontoon" } },
 	{ CAT_LIGHTS, { "light", "lamp", "lite", "lantern", "neon", "spotlt", "streetlt" } },
-	{ CAT_SIGNS, { "sign", "billboard", "bboard", "poster", "advert", "logo", "statue", "monument" } },
+	{ CAT_SIGNS, { "sign", "billboard", "bboard", "poster", "advert", "logo", "statue", "monument",
+	               "graffiti", "spraytag" } },
 	{ CAT_FENCES, { "fence", "wall", "gate", "barrier", "railing", "bollard", "cone" } },
 	{ CAT_STREET_FURNITURE, { "bench", "seat", "bin", "trash", "dumpster", "litter", "rubbish", "garbage",
 	                          "mailbox", "postbox", "phone", "hydrant", "busstop", "bus_stop", "shelter",
@@ -55,7 +56,7 @@ const KeywordRule rules[] = {
 	{ CAT_BOXES, { "crate", "box", "pallet", "carton", "parcel", "package" } },
 	{ CAT_BARRELS, { "barrel", "drum", "container", "keg", "canister", "cylinder" } },
 	{ CAT_FOOD, { "food", "drink", "bottle", "cup", "burger", "pizza", "donut", "cola", "beer", "wine",
-	              "plate" } },
+	              "plate", "hugebowl", "saucepan", "kettle", "coffeemach" } },
 	{ CAT_WEAPON_PROPS, { "gun", "rifle", "pistol", "grenade", "rocket", "missile", "bomb", "knife",
 	                      "sword", "katana", "ammo", "weapon" } },
 	{ CAT_SPORTS, { "ball", "hoop", "basket", "goal", "pool", "golf", "tennis", "skate", "swing", "slide",
@@ -63,7 +64,8 @@ const KeywordRule rules[] = {
 	{ CAT_FURNITURE, { "chair", "table", "desk", "sofa", "couch", "bed", "shelf", "shelves", "cabinet",
 	                   "cupboard", "wardrobe", "drawer", "stool", "dresser", "bookcase", "telly" } },
 	{ CAT_KITCHEN, { "kitchen", "cooker", "oven", "fridge", "freezer", "sink", "toilet", "bath", "shower",
-	                 "basin", "washer", "microwave" } },
+	                 "basin", "washer", "microwave", "worktop" } },
+	{ CAT_OTHER_INTERIOR, { "outlet", "socket", "lightswitch", "radiator", "carpet" } },
 	{ CAT_SHOP_FITTINGS, { "counter", "till", "shop", "rack", "display", "fruit", "slot", "casino",
 	                       "roulette", "blackjack", "poker", "jukebox" } },
 	{ CAT_DOORS, { "door", "window", "shutter", "blind", "curtain" } },
@@ -80,16 +82,18 @@ const KeywordRule rules[] = {
 // SA-MP's own objects: things only SA-MP has, before the rules above.
 const KeywordRule sampRules[] = {
 	{ CAT_FURNITURE, { "fireplace", "firewood" } },
+	{ CAT_SAMP_PROPS, { "fireext", "extinguisher" } },
 	{ CAT_SAMP_WEARABLES, { "hat", "cap", "mask", "glasses", "bandana", "helmet", "beret", "watch",
 	                        "headphone", "hair", "beard", "moustache", "headband", "hood", "earring",
-	                        "necklace", "backpack", "parachute" } },
+	                        "necklace", "backpack", "parachute", "handcuff", "laserpointer", "bandage",
+	                        "armour", "vest" } },
 	{ CAT_SAMP_MARKERS, { "marker", "boundary", "area_", "checkpoint", "arrow", "icon" } },
 	{ CAT_SAMP_EFFECTS, { "particle", "fire", "smoke", "explosion", "spark", "flare", "fountain", "steam",
-	                      "water_", "blood" } },
-	{ CAT_SAMP_TEXT, { "mattext", "matbox", "text", "letter", "number", "font" } },
+	                      "water_", "blood", "prt_", "exhale", "flame", "overheat", "fakesnow", "puke" } },
+	{ CAT_SAMP_TEXT, { "mattext", "matbox", "text", "letter", "number", "font", "gtasamap" } },
 	{ CAT_SAMP_BLOCKS, { "cube", "block", "wall0", "floor", "tile", "plane", "plate", "tube", "ramp",
 	                     "stunt", "loop", "mega", "concrete", "beam", "panel", "slab", "pyramid", "sphere",
-	                     "cylinder", "cone" } },
+	                     "cylinder", "cone", "base1", "base2", "base5", "wsbend", "wsstraight" } },
 	{ CAT_SAMP_LIGHTS, { "light", "lamp", "neon", "spot", "glow" } },
 };
 
