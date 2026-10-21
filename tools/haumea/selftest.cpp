@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
 #include "selftest.h"
+#include "editoricons.h"
 #include "sapaths.h"
 #include "textdraws.h"
 #include "maptools.h"
@@ -371,8 +372,9 @@ RunUndoSelfTest(FILE *out)
 	for(CPtrNode *p = instances.first; p && snappable.size() < 3; p = p->next){
 		ObjectInst *inst = (ObjectInst*)p->item;
 		ObjectDef *def = GetObjectDef(inst->m_objectId);
+		// Not editor icons (labels, sounds...): those are never snap targets.
 		if(!inst->m_isDeleted && PawnObjectNeedsExport(inst) && def && def->m_colModel &&
-		   GetObjectPawnProperties(inst)->attachParent < 0)
+		   GetObjectPawnProperties(inst)->attachParent < 0 && !InstUsesEditorIcon(inst))
 			snappable.push_back(inst);
 	}
 	if(snappable.size() == 3){
