@@ -45,6 +45,8 @@ def headless(env, scratch):
     env['XDG_SESSION_TYPE'] = 'x11'
     env['XDG_RUNTIME_DIR'] = tempfile.mkdtemp(prefix='runtime-', dir=scratch)	# 0700
     env['HAUMEA_TEST_XVFB'] = '1'
+    # Software GL starts one thread per core otherwise: two are plenty for a test.
+    env['LP_NUM_THREADS'] = '2'
     return env
 
 
