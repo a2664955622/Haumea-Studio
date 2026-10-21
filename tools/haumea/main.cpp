@@ -967,8 +967,10 @@ InitRW(void)
 
 	RenderInit();
 
-	UpdaterCheckForUpdate();
-	TelemetrySendPing();
+	if(!IsAutomatedRun()){
+		UpdaterCheckForUpdate();
+		TelemetrySendPing();
+	}
 
 	return true;
 }

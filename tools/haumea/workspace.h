@@ -54,6 +54,10 @@ void SetOpenLastWorkspace(bool open);
 // read the settings but never write them (settings, recent maps, window
 // state, autosaves, the workspace).
 bool SettingsAreReadOnly(void);
+// Test runs and command-line modes (SettingsAreReadOnly, --ui-script, or any
+// editor a test starts with HAUMEA_TEST_XVFB=1): no update check, telemetry,
+// Namaka listening or start screen, whatever else the environment says.
+bool IsAutomatedRun(void);
 
 // Linux file dialogs run zenity or kdialog. Without either this shows a
 // toast saying so and returns false; elsewhere it is always true.

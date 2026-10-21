@@ -279,24 +279,14 @@ SetNamakaListenEnabled(bool on)
 	}
 }
 
-static bool
-hasArgument(const char *name)
-{
-	for(int i = 1; i < sk::args.argc; i++)
-		if(strcmp(sk::args.argv[i], name) == 0)
-			return true;
-	return false;
-}
-
 bool
 NamakaShouldListen(void)
 {
 	// Tests and scripts never listen on their own. HAUMEA_NAMAKA_LISTEN=1
 	// lets a test check that it does (with HAUMEA_NAMAKA_SOCKET elsewhere).
 	const char *forced = getenv("HAUMEA_NAMAKA_LISTEN");
-	bool test = SettingsAreReadOnly() || hasArgument("--ui-script") || hasArgument("--textdraw-roundtrip") ||
-		getenv("HAUMEA_TEST_XVFB") != nil;
-	if(forced && forced[0])
+	bool test = IsAutomatedRun();
+	if(forced && forced[0] && !SettingsAreReadOnly())	// command-line modes never do
 		test = atoi(forced) == 0;
 	return !test && NamakaInstalled() && NamakaListenEnabled();
 }

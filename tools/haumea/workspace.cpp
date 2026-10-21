@@ -245,6 +245,17 @@ SettingsAreReadOnly(void)
 	return false;
 }
 
+bool
+IsAutomatedRun(void)
+{
+	if(SettingsAreReadOnly() || getenv("HAUMEA_TEST_XVFB") != nil)
+		return true;
+	for(int i = 1; i < sk::args.argc; i++)
+		if(strcmp(sk::args.argv[i], "--ui-script") == 0)
+			return true;
+	return false;
+}
+
 static void
 saveSettings(void)
 {

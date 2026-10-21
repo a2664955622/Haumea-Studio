@@ -62,10 +62,12 @@ StartScreenWantedAtLaunch(void)
 		// straight to the editor, as before. HAUMEA_START_SCREEN=1 shows it
 		// anyway (its own UI script), 0 never.
 		const char *env = getenv("HAUMEA_START_SCREEN");
-		if(env && env[0])
+		if(SettingsAreReadOnly())	// command-line modes (--pawn-roundtrip...), whatever the env
+			wanted = 0;
+		else if(env && env[0])
 			wanted = !gShownThisRun && atoi(env) != 0;
 		else
-			wanted = !gShownThisRun && !GetOpenLastWorkspace() && !SettingsAreReadOnly() && !UiScriptActive() &&
+			wanted = !gShownThisRun && !GetOpenLastWorkspace() && !IsAutomatedRun() && !UiScriptActive() &&
 				!hasArgument("--agent-socket") && !hasArgument("--open") && !hasArgument("--textdraw-roundtrip");
 	}
 	return wanted == 1;
