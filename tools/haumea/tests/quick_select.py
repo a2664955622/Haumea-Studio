@@ -50,6 +50,7 @@ SOURCES = {
 	'testserver.cpp': ['test_in_game', 'test_server'],
 	'childprocess.cpp': ['test_in_game', 'namaka'],
 	'namaka.cpp': ['namaka'],
+	'namaka.h': ['namaka'],
 	'maptools.cpp': ['map_tools'],
 	'radarart.cpp': ['radar_art', 'roundtrip'],
 	'mapcheck.cpp': ['map_check'],
