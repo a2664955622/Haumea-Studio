@@ -77,9 +77,10 @@ collectSources(const RadarArtParams &params, std::vector<ObjectInst*> &out)
 // roads, white buildings, grey paved ground, dark red railways (LongWayDrivers'
 // minimap terrains, picked from the radar tiles).
 enum RadarClass : uint8 {
-	RC_NONE, RC_WATER, RC_ROAD, RC_RAIL, RC_SAND, RC_DIRT, RC_DESERT, RC_ROCK, RC_GRASS, RC_FIELD,
-	RC_FOREST, RC_PAVED, RC_BUILDING, RC_SNOW, NUM_RADAR_CLASSES,
-	RC_HIDDEN = 0xFF,	// an invisible material: not drawn, so not on the radar
+	TERRAIN_NONE, TERRAIN_WATER, TERRAIN_ROAD, TERRAIN_RAIL, TERRAIN_SAND, TERRAIN_DIRT,
+	TERRAIN_DESERT, TERRAIN_ROCK, TERRAIN_GRASS, TERRAIN_FIELD,
+	TERRAIN_FOREST, TERRAIN_PAVED, TERRAIN_BUILDING, TERRAIN_SNOW, NUM_RADAR_CLASSES,
+	TERRAIN_HIDDEN = 0xFF,	// an invisible material: not drawn, so not on the radar
 };
 static const uint32 radarPalette[NUM_RADAR_CLASSES] = {
 	0x9F9C9F,	// none: as paved
@@ -103,27 +104,27 @@ static uint8
 surfaceClass(int surface)
 {
 	switch(surface){
-	case 1: case 2: case 3: return RC_ROAD;
+	case 1: case 2: case 3: return TERRAIN_ROAD;
 	case 4: case 5: case 7: case 8: case 34: case 85: case 89: case 134: case 135: case 136: case 137:
-	case 138: case 144: case 161: case 165: return RC_PAVED;
+	case 138: case 144: case 161: case 165: return TERRAIN_PAVED;
 	case 9: case 10: case 11: case 15: case 16: case 17: case 19: case 20: case 80: case 81: case 87:
 	case 115: case 117: case 118: case 120: case 133: case 146: case 147: case 148: case 149: case 150:
-	case 151: case 152: case 160: return RC_GRASS;
+	case 151: case 152: case 160: return TERRAIN_GRASS;
 	case 12: case 13: case 14: case 21: case 40: case 82: case 116: case 119: case 125: case 145:
-	case 153: case 176: return RC_FIELD;
+	case 153: case 176: return TERRAIN_FIELD;
 	case 22: case 23: case 41: case 83: case 84: case 111: case 112: case 113: case 114: case 122:
-	case 128: case 129: case 130: case 132: case 143: return RC_FOREST;
+	case 128: case 129: case 130: case 132: case 143: return TERRAIN_FOREST;
 	case 6: case 24: case 25: case 26: case 27: case 88: case 101: case 123: case 124:
-	case 139: case 140: case 141: case 142: return RC_DIRT;
-	case 86: return RC_DESERT;
+	case 139: case 140: case 141: case 142: return TERRAIN_DIRT;
+	case 86: return TERRAIN_DESERT;
 	case 28: case 29: case 30: case 31: case 32: case 33: case 74: case 75: case 76: case 77: case 78:
-	case 79: return RC_SAND;
-	case 18: case 35: case 36: case 37: case 109: case 121: case 131: case 154: return RC_ROCK;
+	case 79: return TERRAIN_SAND;
+	case 18: case 35: case 36: case 37: case 109: case 121: case 131: case 154: return TERRAIN_ROCK;
 	case 38: case 39: case 96: case 97: case 98: case 99: case 100: case 110: case 126: case 127:
-	case 155: case 156: case 157: return RC_WATER;
-	case 178: return RC_RAIL;
+	case 155: case 156: case 157: return TERRAIN_WATER;
+	case 178: return TERRAIN_RAIL;
 	}
-	return RC_NONE;
+	return TERRAIN_NONE;
 }
 
 // A material by its model, TXD and texture names, as LongWayDrivers'
@@ -132,24 +133,24 @@ static uint8
 nameClass(const char *model, const char *txd, const char *texture)
 {
 	static const struct { uint8 cls; const char *words[12]; } groups[] = {
-		{ RC_HIDDEN, { "invisible", "nocol", "transparent" } },
-		{ RC_WATER, { "water", "river", "ocean", "canal", "pool", "lake", "sea_" } },
-		{ RC_RAIL, { "rail", "traintrack", "tracks" } },
-		{ RC_ROAD, { "road", "asphalt", "tarmac", "freeway", "highway", "hiway", "street", "junction",
+		{ TERRAIN_HIDDEN, { "invisible", "nocol", "transparent" } },
+		{ TERRAIN_WATER, { "water", "river", "ocean", "canal", "pool", "lake", "sea_" } },
+		{ TERRAIN_RAIL, { "rail", "traintrack", "tracks" } },
+		{ TERRAIN_ROAD, { "road", "asphalt", "tarmac", "freeway", "highway", "hiway", "street", "junction",
 			"runway", "motorway" } },
-		{ RC_SNOW, { "snow", "ice_", "frost" } },
-		{ RC_SAND, { "sand", "beach" } },
-		{ RC_ROCK, { "rock", "cliff", "stone", "boulder", "mount" } },
+		{ TERRAIN_SNOW, { "snow", "ice_", "frost" } },
+		{ TERRAIN_SAND, { "sand", "beach" } },
+		{ TERRAIN_ROCK, { "rock", "cliff", "stone", "boulder", "mount" } },
 		// The radar draws no trees or bushes, only the ground under them.
-		{ RC_HIDDEN, { "tree", "pine", "leaf", "leaves", "bush", "hedge", "foliage", "palm", "branch", "shrub", "bark", "trunk" } },
-		{ RC_FOREST, { "forest", "woodland" } },
-		{ RC_GRASS, { "grass", "lawn", "meadow", "turf" } },
-		{ RC_FIELD, { "field", "crop", "hay", "corn" } },
-		{ RC_DESERT, { "desert", "des_" } },
-		{ RC_DIRT, { "dirt", "mud", "gravel", "soil" } },
-		{ RC_PAVED, { "concrete", "conc", "pavement", "pave", "cement", "slab", "carpark", "parking",
+		{ TERRAIN_HIDDEN, { "tree", "pine", "leaf", "leaves", "bush", "hedge", "foliage", "palm", "branch", "shrub", "bark", "trunk" } },
+		{ TERRAIN_FOREST, { "forest", "woodland" } },
+		{ TERRAIN_GRASS, { "grass", "lawn", "meadow", "turf" } },
+		{ TERRAIN_FIELD, { "field", "crop", "hay", "corn" } },
+		{ TERRAIN_DESERT, { "desert", "des_" } },
+		{ TERRAIN_DIRT, { "dirt", "mud", "gravel", "soil" } },
+		{ TERRAIN_PAVED, { "concrete", "conc", "pavement", "pave", "cement", "slab", "carpark", "parking",
 			"plaza", "sidewalk", "floor" } },
-		{ RC_BUILDING, { "roof", "shingle", "brick", "window", "wall" } },
+		{ TERRAIN_BUILDING, { "roof", "shingle", "brick", "window", "wall" } },
 	};
 	char text[192];
 	snprintf(text, sizeof(text), "%s %s %s", model ? model : "", txd ? txd : "", texture ? texture : "");
@@ -159,17 +160,17 @@ nameClass(const char *model, const char *txd, const char *texture)
 		for(const char *w : g.words)
 			if(w && strstr(text, w))
 				return g.cls;
-	return RC_NONE;
+	return TERRAIN_NONE;
 }
 
 struct Tri {
 	rw::V3d v[3];
-	uint8 cls = RC_NONE;
+	uint8 cls = TERRAIN_NONE;
 	uint8 mat = 0xFF;	// the geometry's material: the Pawn material slot
 };
 
 static void
-addBox(std::vector<Tri> &tris, const rw::V3d &mn, const rw::V3d &mx, uint8 cls = RC_NONE)
+addBox(std::vector<Tri> &tris, const rw::V3d &mn, const rw::V3d &mx, uint8 cls = TERRAIN_NONE)
 {
 	rw::V3d c[8];
 	for(int i = 0; i < 8; i++)
@@ -189,7 +190,7 @@ addGeometry(std::vector<Tri> &tris, rw::Geometry *geo, const rw::Matrix *m, Obje
 	if(geo == nil || geo->morphTargets == nil || geo->morphTargets[0].vertices == nil || geo->triangles == nil)
 		return;
 	const TxdDef *txd = GetTxdDef(obj->m_txdSlot);
-	std::vector<uint8> matClass(geo->matList.numMaterials, RC_NONE);
+	std::vector<uint8> matClass(geo->matList.numMaterials, TERRAIN_NONE);
 	for(int k = 0; k < geo->matList.numMaterials; k++){
 		rw::Material *mat = geo->matList.materials[k];
 		matClass[k] = nameClass(obj->m_name, txd ? txd->name : nil, mat && mat->texture ? mat->texture->name : nil);
@@ -198,7 +199,7 @@ addGeometry(std::vector<Tri> &tris, rw::Geometry *geo, const rw::Matrix *m, Obje
 	for(int i = 0; i < geo->numTriangles; i++){
 		Tri tri;
 		int mat = geo->triangles[i].matId;
-		tri.cls = mat < (int)matClass.size() ? matClass[mat] : RC_NONE;
+		tri.cls = mat < (int)matClass.size() ? matClass[mat] : TERRAIN_NONE;
 		tri.mat = (uint8)std::min(mat, 0xFF);
 		for(int k = 0; k < 3; k++){
 			const rw::V3d &v = verts[geo->triangles[i].v[k]];
@@ -252,7 +253,7 @@ collisionClass(ObjectDef *obj)
 {
 	CColModel *col = obj ? obj->m_colModel : nil;
 	if(col == nil)
-		return RC_NONE;
+		return TERRAIN_NONE;
 	double area[NUM_RADAR_CLASSES] = {};
 	for(int i = 0; i < col->numTriangles; i++){
 		const CColTriangle *t = &col->triangles[i];
@@ -266,8 +267,8 @@ collisionClass(ObjectDef *obj)
 		const CColBox &b = col->boxes[i];
 		area[surfaceClass(b.surface)] += 2.0 * (b.box.max.x - b.box.min.x) * (b.box.max.y - b.box.min.y);
 	}
-	int best = RC_NONE;
-	for(int c = RC_NONE + 1; c < NUM_RADAR_CLASSES; c++)
+	int best = TERRAIN_NONE;
+	for(int c = TERRAIN_NONE + 1; c < NUM_RADAR_CLASSES; c++)
 		if(area[c] > area[best])
 			best = c;
 	return (uint8)best;
@@ -290,7 +291,7 @@ modelFootprint(int model, int shape)
 		if(!tris.empty()){
 			uint8 fallback = collisionClass(obj);
 			for(Tri &t : tris)
-				if(t.cls == RC_NONE)
+				if(t.cls == TERRAIN_NONE)
 					t.cls = fallback;
 			return tris;
 		}
@@ -638,7 +639,7 @@ RadarArtBuild(const RadarArtParams &params, RadarArtResult *result, std::string 
 		// SetObjectMaterial: a slot's texture says what the surface is now
 		// (snow, road, an invisible texture...).
 		uint8 slotClass[MAX_PAWN_MATERIALS];
-		std::fill(std::begin(slotClass), std::end(slotClass), (uint8)RC_NONE);
+		std::fill(std::begin(slotClass), std::end(slotClass), (uint8)TERRAIN_NONE);
 		for(int k = 0; k < MAX_PAWN_MATERIALS; k++){
 			const ObjectMaterialOverride *o = GetObjectMaterialOverride((const ObjectInst*)sources[s], k);
 			if(o && o->active && !o->textEnabled && o->hasTexture && o->sourceModel != 0)
@@ -648,9 +649,9 @@ RadarArtBuild(const RadarArtParams &params, RadarArtResult *result, std::string 
 		for(size_t t = 0; t < local.size(); t++){
 			// A road stays a road (black, or brown when dirt) under snow or any
 			// other texture, as on the radar; only an invisible one hides it.
-			uint8 own = local[t].cls, over = local[t].mat < MAX_PAWN_MATERIALS ? slotClass[local[t].mat] : RC_NONE;
-			bool road = own == RC_ROAD || own == RC_RAIL;
-			world[s][t].cls = over == RC_NONE || (road && over != RC_HIDDEN && over != RC_DIRT) ? own : over;
+			uint8 own = local[t].cls, over = local[t].mat < MAX_PAWN_MATERIALS ? slotClass[local[t].mat] : TERRAIN_NONE;
+			bool road = own == TERRAIN_ROAD || own == TERRAIN_RAIL;
+			world[s][t].cls = over == TERRAIN_NONE || (road && over != TERRAIN_HIDDEN && over != TERRAIN_DIRT) ? own : over;
 			for(int k = 0; k < 3; k++){
 				rw::V3d v = toWorld(m, sources[s]->m_translation, local[t].v[k]);
 				world[s][t].v[k] = v;
@@ -682,13 +683,13 @@ RadarArtBuild(const RadarArtParams &params, RadarArtResult *result, std::string 
 	size_t numCells = (size_t)(cols * rows);
 	std::vector<float> top(numCells, -1e30f);
 	std::vector<int> owner(numCells, -1);
-	std::vector<uint8> cellClass(numCells, RC_NONE);
+	std::vector<uint8> cellClass(numCells, TERRAIN_NONE);
 	for(size_t s = 0; s < sources.size(); s++){
 		if(world[s].empty())
 			continue;
 		result->objects++;
 		for(const Tri &t : world[s]){
-			if(t.cls == RC_HIDDEN)
+			if(t.cls == TERRAIN_HIDDEN)
 				continue;
 			const rw::V3d &a = t.v[0], &b = t.v[1], &c = t.v[2];
 			float area = (b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y);
