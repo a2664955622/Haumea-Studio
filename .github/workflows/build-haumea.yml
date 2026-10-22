@@ -770,7 +770,6 @@ jobs:
             --macos dist/macos/haumea dist/symbols/haumea-symbols-macos
           (cd dist/release && sha256sum * > SHA256SUMS && cat SHA256SUMS)
 
-      # What's new in the editor's update banner: this version's CHANGELOG section.
       # What's new in the editor's update banner: the run's notes, if any, then
       # this version's CHANGELOG section.
       - name: Write the release notes

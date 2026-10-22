@@ -10,14 +10,18 @@ newer jobs. Nothing here is automatic: pushing and releasing are your call.
   Pawn compile check and the Windows-under-Wine check. It doesn't release
   anything; those builds call themselves channel `dev` (`pr` for pull
   requests).
-- **A release is a pushed tag**: `v1.0.0.<build>-production` or
-  `v1.0.0.<build>-beta`. The two channels are **production** (what everyone
-  gets) and **beta** (opt-in in the editor; published as a GitHub
-  prerelease). CI's `check-tag` job checks the tag
-  (`tools/release/check_tag.py`): its 1.0.0 must be version.h's, its build
-  number the tagged commit's commit count, and its channel production or
-  beta. Then the release job builds that commit as that channel and publishes
-  the release with the builds, the Namaka bundles and a `SHA256SUMS` file
+- **A release comes from a manual run or a pushed tag.** The two channels
+  are **production** (what everyone gets) and **beta** (opt-in in the
+  editor; published as a GitHub prerelease). A manual run (Actions → Build
+  Haumea Studio → Run workflow) takes three inputs: **Channel** (beta or
+  production), **Release** (build only, draft or publish) and **Notes**
+  (optional text above the CHANGELOG section). A pushed tag
+  `v1.0.0.<build>-<channel>` publishes straight away; CI's `check-tag` job
+  checks it first (`tools/release/check_tag.py`: version.h's 1.0.0, the
+  tagged commit's commit count, channel production or beta).
+  `tools/release/release_plan.py` decides what a run may release: only beta
+  and production, production only from main, never over an existing tag.
+  The release has the update bundles, the Namaka bundles and `SHA256SUMS`
   (see `.github/workflows/build-haumea.yml`).
 - **Version numbers work as open.mp's do.** `tools/haumea/version.h` holds
   MAJOR.MINOR.PATCH (`HAUMEA_VERSION_MAJOR/MINOR/PATCH`, 1.0.0 now); the
@@ -35,7 +39,7 @@ newer jobs. Nothing here is automatic: pushing and releasing are your call.
 - The updater offers the newest release of the channel it follows with a
   higher version, all four parts compared.
 
-## Before tagging
+## Before releasing
 
 1. `tools/haumea/version.h`: the version is right for this release (bump
    MINOR or PATCH as the changes deserve). Keep `tools/agent/_version.py`'s
@@ -44,31 +48,52 @@ newer jobs. Nothing here is automatic: pushing and releasing are your call.
 3. The local test matrix is green (see "Local checks" below), and so is CI
    on `main`.
 
-## Tag and release
+## Release (the usual way: a manual run, as a draft)
+
+1. Push main and wait for its CI run to be green (Actions tab). That run is
+   channel `dev` and releases nothing.
+
+   ```sh
+   cd /mnt/devfast/Projects/Other/ariane
+   git status                      # clean, on main
+   git push origin main
+   ```
+
+2. Actions → **Build Haumea Studio** → **Run workflow**, from the **main**
+   branch: Channel **beta** (or production), Release **draft**, Notes empty.
+   The run builds main's commit as that channel and creates a **draft**
+   release `v1.0.0.<build>-<channel>` (a prerelease for beta). Nothing is
+   public yet, and no one is offered the update.
+3. Check the draft on the Releases page:
+   - the name and tag say the right version and channel;
+   - the assets: `haumea-windows-gl3.tar.gz`, `haumea-linux-amd64.tar.gz`,
+     `haumea-macos`, `haumea-namaka-windows-x86_64.zip`,
+     `haumea-namaka-linux-x86_64.zip`, `SHA256SUMS` (and, once crash reports
+     are on main, `haumea-symbols-<version>.zip`, which the report server
+     fetches);
+   - download one bundle and check it against `SHA256SUMS`.
+4. Edit the draft's text: the body is the run's notes, this version's
+   CHANGELOG section and the license line. For the first beta, paste the
+   reviewed release notes over it.
+5. **Publish release.** Publishing creates the tag on GitHub; `git fetch
+   --tags` brings it here.
+6. Start a build of that channel from before the release and confirm it
+   offers the update, installs it at the next start, and **Help → Roll
+   back** returns.
+
+Release **publish** in step 2 skips the draft; use it only once the draft
+way has worked.
+
+## Release by tag (the alternative)
 
 ```sh
-cd /mnt/devfast/Projects/Other/ariane
-git status                      # clean, on main
-git push origin main            # CI only, no release
+tools/release/tag_release.sh --create beta       # v1.0.0.<build>-beta, local only
+git push origin <the tag it printed>             # this publishes it
 ```
 
-Wait for the run on `main` to be green (Actions tab). Then make the tag for
-that commit and push it:
-
-```sh
-tools/release/tag_release.sh --create            # v1.0.0.<build>-production
-# or, for a beta first:
-tools/release/tag_release.sh --create beta       # v1.0.0.<build>-beta
-git push origin <the tag it printed>             # this releases it
-```
-
-`tag_release.sh` only makes the tag locally; it refuses a dirty tree, a
-channel other than production or beta, and a version that isn't newer than
-that channel's newest tag. Pushing the tag is the release. Check the release
-page has the update bundles (`haumea-windows-gl3.tar.gz`,
-`haumea-linux-amd64.tar.gz`, `haumea-macos`) and `SHA256SUMS`, and that the
-release notes are this version's CHANGELOG section. Then start a build of the
-channel and confirm it offers the update.
+`tag_release.sh` refuses a dirty tree, a channel other than production or
+beta, and a version that isn't newer than that channel's newest tag. The tag
+run publishes at once, with no draft to check, so prefer the manual run.
 
 ## What to watch in the first CI run
 
@@ -113,6 +138,14 @@ tools/haumea/tests/run_all.sh --windows       # adds the MinGW + Wine check
 After pulling a commit that changes `build/haumea.make`'s defines, delete
 `build/obj/*/Release/haumea/imgui*.o` before building: make doesn't rebuild
 on flag changes.
+
+## Windows check (2026-10-22, main a5765cb)
+
+`windows_check.py --gfx gl3,d3d9` (Wine 11.20, fresh prefix, Xvfb,
+synthetic game): green. Both exes built; all 13 maps round-trip byte for
+byte like Linux; capture_screen real; Namaka listens on loopback TCP and a
+second start leaves it alone. The look-button cursor lock isn't exercised by
+it (no mouse held): try it by hand on Windows once.
 
 ## Last local matrix (2026-10-21, main f07bff3)
 
