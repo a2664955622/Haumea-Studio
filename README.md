@@ -110,6 +110,8 @@ Haumea Studio grew from euryopa, the map viewer in [librwgta](https://github.com
 
 Licensed under the GNU GPL v2 or later; see [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
+To report a bug, suggest a feature, translate or contribute code, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 Haumea Discord: https://discord.gg/yTF8DWQqpP
 
 open.mp Discord: https://discord.gg/samp

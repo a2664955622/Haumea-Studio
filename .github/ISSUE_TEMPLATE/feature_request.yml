@@ -1,0 +1,42 @@
+name: Feature request
+description: An idea for Haumea Studio.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One idea per issue, please; search the open issues first.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you're trying to do
+      description: The mapping task or problem, not the solution yet.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help
+      description: How you'd like Haumea Studio to do it.
+    validations:
+      required: true
+  - type: dropdown
+    id: target
+    attributes:
+      label: Server it matters for
+      multiple: true
+      options:
+        - open.mp
+        - SA-MP 0.3.7
+        - SA-MP 0.3.DL
+        - Not about a server (editor only)
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: How you do it today
+      description: Workarounds, or other tools that do it (Texture Studio, MTA's editor, ...).
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Screenshots, example maps, links to the open.mp or SA-MP functions involved.

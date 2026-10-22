@@ -1,0 +1,79 @@
+name: Bug report
+description: Something in Haumea Studio doesn't work as it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. One problem per issue, please; search the open issues first.
+        For a security problem, don't open an issue: see [SECURITY.md](https://github.com/itsneufox/Haumea/blob/main/SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: Haumea Studio version and channel
+      description: The first line of Help > Help, e.g. "Haumea Studio 1.0.0.20 (Beta)".
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - Linux
+        - macOS
+        - Other (say which below)
+    validations:
+      required: true
+  - type: input
+    id: os-version
+    attributes:
+      label: OS version and graphics card
+      description: e.g. "Windows 11, RTX 3060" or "Ubuntu 24.04, Intel UHD 620".
+  - type: dropdown
+    id: target
+    attributes:
+      label: Server the map is for
+      multiple: true
+      options:
+        - open.mp
+        - SA-MP 0.3.7
+        - SA-MP 0.3.DL
+        - Not about a server (editor only)
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Place ...
+        3. Save as ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead
+      description: Error messages, wrong Pawn output, what you saw in game.
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Map, log or screenshots
+      description: |
+        Drag files here. The map (.pwn or .haumea) that shows the problem helps most; the log is
+        in the Log window (F12) and can be copied from there. Leave out anything private.
+  - type: input
+    id: crash-report
+    attributes:
+      label: Crash report ID, if one was sent
+      description: The "id" at the top of the report (Send a report? > View report).
