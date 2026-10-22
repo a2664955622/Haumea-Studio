@@ -12425,6 +12425,15 @@ gui(void)
 			for(int i = 1; i + 1 < sk::args.argc; i++)
 				if(strcmp(sk::args.argv[i], "--open") == 0)
 					openPath = sk::args.argv[i+1];
+			// --dump-zone-settings out.txt: the zones' start-up population as
+			// read from the game's main.scm (tests).
+			for(int i = 1; i + 1 < sk::args.argc; i++)
+				if(strcmp(sk::args.argv[i], "--dump-zone-settings") == 0){
+					bool written = SAPaths::DumpZoneSettings(sk::args.argv[i+1]);
+					printf("dump-zone-settings: %s\n", written ? sk::args.argv[i+1] : "failed");
+					fflush(stdout);
+					sk::globals.quit = 1;
+				}
 			// --material-text-png out.png text materialSize font fontSize bold alignment:
 			// one SetObjectMaterialText texture, white on transparent (tests).
 			for(int i = 1; i + 7 < sk::args.argc; i++)

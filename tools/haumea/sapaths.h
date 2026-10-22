@@ -22,6 +22,9 @@ bool HasSelectedNode(void);
 bool GetSelectedNodePosition(rw::V3d *pos);
 bool SetSelectedNodePosition(const rw::V3d &pos, bool notifyChange);
 void RenderCarPaths(void);
+// --dump-zone-settings: the zones' start-up population as read from
+// main.scm, one zone per line after a count line; false if it can't write.
+bool DumpZoneSettings(const char *path);
 void RenderPedPaths(void);
 void RenderAreaGrid(void);
 void PrepareEditorVehicleVisuals(rw::Clump *clump);

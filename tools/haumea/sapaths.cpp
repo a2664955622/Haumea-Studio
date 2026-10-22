@@ -486,12 +486,19 @@ static PreviewZoneState *findPreviewZoneState(const char *label);
 // opcode, a short-string zone label (type 9, 8 bytes) and small integer
 // arguments, read in file order so later ones win, as in the game. A missing
 // or unreadable script leaves the zones' defaults, and the log says so.
+// What applyPreviewZoneSettingsFromScm read: settings applied, or -1 when it
+// fell back to the defaults; and why.
+static int gPreviewZoneSettingsApplied = -1;
+static const char *gPreviewZoneSettingsSource = "not read";
+
 static void
 applyPreviewZoneSettingsFromScm(void)
 {
+	gPreviewZoneSettingsApplied = -1;
 	std::vector<uint8> scm;
 	if(!loadLogicalPathData("data/script/main.scm", scm) || scm.size() < 64){
 		log("Traffic preview: no data/script/main.scm; zones keep their default population\n");
+		gPreviewZoneSettingsSource = "no main.scm";
 		return;
 	}
 	const uint8 *b = scm.data();
@@ -524,6 +531,7 @@ applyPreviewZoneSettingsFromScm(void)
 	if(firstMission <= 0 || secondMission <= firstMission || (size_t)secondMission > size){
 		log("Traffic preview: data/script/main.scm has no INITIAL mission where expected (modded?); "
 			"zones keep their default population\n");
+		gPreviewZoneSettingsSource = "no INITIAL mission";
 		return;
 	}
 
@@ -570,6 +578,8 @@ applyPreviewZoneSettingsFromScm(void)
 		at = args - 1;
 	}
 	log("Traffic preview: %d zone settings from main.scm's INITIAL mission\n", applied);
+	gPreviewZoneSettingsApplied = applied;
+	gPreviewZoneSettingsSource = "main.scm INITIAL";
 }
 static float previewSeedFloat01(uint32 &seed);
 static void clearPreviewTrafficCars(void);
@@ -6637,6 +6647,29 @@ renderPreviewParkedCars(void)
 	pAmbient->setColor(savedAmbient.red, savedAmbient.green, savedAmbient.blue);
 	pDirect->setColor(savedDirect.red, savedDirect.green, savedDirect.blue);
 	rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
+}
+
+bool
+DumpZoneSettings(const char *path)
+{
+	loadPreviewPopulationData();
+	FILE *f = fopen(path, "w");
+	if(f == nil)
+		return false;
+	if(gPreviewZoneSettingsApplied < 0)
+		fprintf(f, "settings none (%s)\n", strcmp(gPreviewZoneSettingsSource, "not read") != 0 ?
+			gPreviewZoneSettingsSource : gPreviewPopulationFailureReason);
+	else
+		fprintf(f, "settings %d (%s)\n", gPreviewZoneSettingsApplied, gPreviewZoneSettingsSource);
+	// label popType raceMask noCops dealer gang0..gang9
+	for(const PreviewZoneState &z : gPreviewZoneStates){
+		fprintf(f, "%s %d %d %d %d", z.label, z.popType, z.raceMask, z.noCops ? 1 : 0, z.dealerStrength);
+		for(int i = 0; i < 10; i++)
+			fprintf(f, " %d", z.gangStrength[i]);
+		fputc('\n', f);
+	}
+	fclose(f);
+	return true;
 }
 
 void

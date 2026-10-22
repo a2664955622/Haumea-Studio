@@ -381,6 +381,14 @@ def main(target):
 	# the editor reads them (sapaths.cpp applyPreviewZoneSettingsFromScm).
 	(root / 'data' / 'script').mkdir(parents=True, exist_ok=True)
 	(root / 'data' / 'script' / 'main.scm').write_bytes(main_scm())
+	# The zones it sets: Grove Street (GAN1) and one it leaves alone, with
+	# empty population cycles and ped groups (only the traffic preview reads them).
+	(root / 'data' / 'info.zon').write_text('zone\n'
+		'GAN1, 0, 2222.5, -1852.8, -50.0, 2632.8, -1599.0, 200.0, 1, GAN1\n'
+		'MARKST, 0, 926.9, -1577.5, -50.0, 1370.8, -1374.1, 200.0, 1, MARKST\n'
+		'end\n')
+	(root / 'data' / 'popcycle.dat').write_text('// none\n')
+	(root / 'data' / 'pedgrp.dat').write_text('# none\n')
 	# The open.mp NPC path nodes, written by the Nodes tool's own code.
 	sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 	from test_nodes_edit import write_synthetic_nodes
