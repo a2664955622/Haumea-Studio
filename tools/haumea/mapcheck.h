@@ -33,7 +33,9 @@ struct MapCheckResult
 };
 
 // pawnFormat: PAWN_CODE_NATIVE or PAWN_CODE_STREAMER.
-void RunMapCheck(int pawnFormat, MapCheckResult *result);
-// One line for a toast, e.g. "2 problems and 3 warnings"; "" when clean.
+// translated: the text in the UI's language (the Map Check panel); English
+// otherwise (the agent).
+void RunMapCheck(int pawnFormat, MapCheckResult *result, bool translated = false);
+// One line for a toast, e.g. "Problems: 2, warnings: 3"; "" when clean (UI language).
 std::string MapCheckSummary(const MapCheckResult &result);
 const char *MapCheckSeverityName(int severity);
