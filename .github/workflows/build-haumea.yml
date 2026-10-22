@@ -417,6 +417,13 @@ jobs:
           name: haumea-linux-gl3
           path: haumea/bin/linux-amd64-gl3/Release
 
+      # build-windows-mingw.sh lists the sources from premake's makefiles.
+      - name: Install Premake5
+        run: |
+          curl -fsSL https://github.com/premake/premake-core/releases/download/v5.0.0-beta8/premake-5.0.0-beta8-linux.tar.gz \
+            | sudo tar -xz -C /usr/local/bin premake5
+          sudo chmod +x /usr/local/bin/premake5
+
       - name: Cache the WineHQ packages
         id: wine-cache
         uses: actions/cache@v4

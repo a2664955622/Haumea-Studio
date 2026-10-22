@@ -11,7 +11,8 @@
 # builds librw, librwgta and haumea there. The result is
 # $WORK/win-amd64-<gfx>/haumea.exe, a single static exe (GLFW, libstdc++ and
 # libgcc are linked in). The source lists come from build/librwgta.make and
-# build/haumea.make, so files added there are built here too.
+# build/haumea.make, so files added there are built here too; premake5
+# makes them when they are missing (build/ is generated, not in git).
 #
 # d3d9 uses ImGui's Win32 and DX9 backends from vendor/imgui-docking/backends
 # (installed by patch_librw_haumea.py) and librw's releaseDeviceResources
@@ -116,6 +117,14 @@ for src in re.findall(r"^\$\(OBJDIR\)/\S+\.o: (\S+\.(?:c|cc|cpp))$", s, re.M):
     print(src if src.startswith("/") else sys.argv[3] + "/build/" + src)
 ' "$1" "$LIBRW" "$ROOT"
 }
+
+if [ ! -f "$ROOT/build/haumea.make" ] || [ ! -f "$ROOT/build/librwgta.make" ]; then
+	if ! command -v premake5 >/dev/null; then
+		echo "build-windows-mingw.sh: needs premake5 for build/haumea.make (or run premake5 gmake2 first)" >&2
+		exit 1
+	fi
+	(cd "$ROOT" && LIBRW="$LIBRW" premake5 gmake2 >/dev/null)
+fi
 
 echo "librw ($GFX)"
 compile "$OUT/obj/librw" "$COMMON -I$LIBRW/src" \
