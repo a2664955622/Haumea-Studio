@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         Thanks for reporting. One problem per issue, please; search the open issues first.
-        For a security problem, don't open an issue: see [SECURITY.md](https://github.com/itsneufox/Haumea/blob/main/SECURITY.md).
+        For a security problem, don't open an issue: see [SECURITY.md](https://github.com/itsneufox/Haumea-Studio/blob/main/SECURITY.md).
   - type: input
     id: version
     attributes:

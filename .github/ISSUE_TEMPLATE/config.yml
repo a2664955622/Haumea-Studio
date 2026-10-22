@@ -4,5 +4,5 @@ contact_links:
     url: https://discord.gg/yTF8DWQqpP
     about: Ask on the Haumea Discord.
   - name: Security problem
-    url: https://github.com/itsneufox/Haumea/security/advisories/new
+    url: https://github.com/itsneufox/Haumea-Studio/security/advisories/new
     about: Report it privately, not as an issue (see SECURITY.md).
