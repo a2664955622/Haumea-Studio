@@ -208,6 +208,7 @@ GENERATED += $(OBJDIR)/radarart.o
 GENERATED += $(OBJDIR)/trains.o
 GENERATED += $(OBJDIR)/crashreports.o
 GENERATED += $(OBJDIR)/i18n.o
+GENERATED += $(OBJDIR)/keycast.o
 GENERATED += $(OBJDIR)/encoding.o
 GENERATED += $(OBJDIR)/workspace.o
 GENERATED += $(OBJDIR)/zones.o
@@ -301,6 +302,7 @@ OBJECTS += $(OBJDIR)/radarart.o
 OBJECTS += $(OBJDIR)/trains.o
 OBJECTS += $(OBJDIR)/crashreports.o
 OBJECTS += $(OBJDIR)/i18n.o
+OBJECTS += $(OBJDIR)/keycast.o
 OBJECTS += $(OBJDIR)/encoding.o
 OBJECTS += $(OBJDIR)/workspace.o
 OBJECTS += $(OBJDIR)/zones.o
@@ -438,6 +440,9 @@ $(OBJDIR)/crashreports.o: ../tools/haumea/crashreports.cpp
 	@echo "$(notdir $<)"
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/i18n.o: ../tools/haumea/i18n.cpp
+	@echo "$(notdir $<)"
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/keycast.o: ../tools/haumea/keycast.cpp
 	@echo "$(notdir $<)"
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/encoding.o: ../tools/haumea/encoding.cpp

@@ -30,6 +30,7 @@
 #include "playerview.h"
 #include "selftest.h"
 #include "i18n.h"
+#include "keycast.h"
 #include <chrono>
 #ifdef LIBRW_GLFW
 #include <GLFW/glfw3.h>
@@ -2845,6 +2846,11 @@ uiMainmenu(void)
 				saveSaveSettings();
 			}
 			ImGui::SetItemTooltip(_("Dragged panels stick to the screen edges and to each other.\nHold Alt while dragging to place a panel freely."));
+			if(ImGui::MenuItem(L("Show Pressed Keys"), nil, KeycastEnabled())){
+				KeycastSetEnabled(!KeycastEnabled());
+				saveSaveSettings();
+			}
+			ImGui::SetItemTooltip(_("Shows the keys and mouse buttons you press over the 3D view, for tutorials and recordings."));
 #if defined(_WIN32) && defined(RW_D3D9)
 			if(ImGui::MenuItem(_("Bring Panels Back to Main Window")))
 				BringEditorPanelsHome();
@@ -6309,7 +6315,7 @@ loadSaveSettings(void)
 			char path[1024];
 			if(parseQuotedStringValue(value, path, sizeof(path)))
 				recentTextDraws.push_back(path);
-		}else if(LoadTextDrawSetting(key, value)){
+		}else if(LoadTextDrawSetting(key, value) || KeycastLoadSetting(key, value)){
 		}else if(strcmp(key, "shortcut") == 0){
 			ShortcutParseSetting(value);
 		}else if(strcmp(key, "language") == 0){
@@ -6713,6 +6719,7 @@ saveSaveSettings(void)
 	for(size_t i = 0; i < GetRecentTextDrawFiles().size(); i++)
 		writeQuotedSetting(f, "recent_textdraws", GetRecentTextDrawFiles()[i].c_str());
 	SaveTextDrawSettings(f);
+	KeycastSaveSettings(f);
 	fprintf(f, "reopen_last_map %d\n", gReopenLastMap ? 1 : 0);
 	fprintf(f, "show_start_guide %d\n", gShowStartGuide ? 1 : 0);
 	fprintf(f, "panel_snap %d\n", gPanelSnap ? 1 : 0);
@@ -7772,6 +7779,7 @@ uiGeneralPreferences(void)
 	changed |= ImGui::Checkbox(_("Snap panels to edges and each other"), &gPanelSnap);
 	ImGui::SetItemTooltip(_("Hold Alt while dragging to place a panel freely."));
 	changed |= ImGui::Checkbox(_("Show getting started card on empty maps"), &gShowStartGuide);
+	changed |= KeycastPreferences();
 	if(ImGui::Button(TI(ICON_FA_TABLE_COLUMNS, "Reset panel layout")))
 		uiResetPanelLayout();
 
@@ -12871,6 +12879,7 @@ gui(void)
 		finishTransformPanelEdit();
 
 	uiDrawPanelSnapGuides();
+	KeycastFrame();
 	uiToasts();
 	gResetPanelLayout = false;
 

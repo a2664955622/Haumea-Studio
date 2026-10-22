@@ -2054,3 +2054,70 @@ msgstr "nós de veículo só se ligam a nós de veículo, e de pedestre a de ped
 msgid "~n~ new line, ~r~ ~g~ ~b~ ~y~ ~p~ ~w~ ~l~ colours, ~h~ lighter, _ blank"
 msgstr "~n~ nova linha, ~r~ ~g~ ~b~ ~y~ ~p~ ~w~ ~l~ cores, ~h~ mais claro, _ espaço"
 
+#: tools/haumea/keycast.cpp:437
+msgid "Bottom"
+msgstr "Embaixo"
+
+#: tools/haumea/keycast.cpp:437
+msgid "Bottom left"
+msgstr "Embaixo à esquerda"
+
+#: tools/haumea/keycast.cpp:437
+msgid "Bottom right"
+msgstr "Embaixo à direita"
+
+#: tools/haumea/gui.cpp:2849
+msgid "Show Pressed Keys"
+msgstr "Mostrar teclas pressionadas"
+
+#: tools/haumea/keycast.cpp:426
+msgid "Show pressed keys (for tutorials and recordings)"
+msgstr "Mostrar teclas pressionadas (para tutoriais e gravações)"
+
+#: tools/haumea/keycast.cpp:432
+msgid "Show what Namaka is doing"
+msgstr "Mostrar o que o Namaka está fazendo"
+
+#: tools/haumea/gui.cpp:2853
+msgid "Shows the keys and mouse buttons you press over the 3D view, for tutorials and recordings."
+msgstr "Mostra sobre a vista 3D as teclas e os botões do mouse que você pressiona, para tutoriais e gravações."
+
+#: tools/haumea/keycast.cpp:430
+msgid ""
+"Shows the keys and mouse buttons you press over the 3D view.\n"
+"While you type in a field only shortcuts show, never the text."
+msgstr ""
+"Mostra sobre a vista 3D as teclas e os botões do mouse que você pressiona.\n"
+"Enquanto você digita num campo, só os atalhos aparecem, nunca o texto."
+
+#: tools/haumea/keycast.cpp:437
+msgid "Top left"
+msgstr "Em cima à esquerda"
+
+#: tools/haumea/keycast.cpp:437
+msgid "Top right"
+msgstr "Em cima à direita"
+
+#: tools/haumea/keycast.cpp:208
+msgid "Wheel down"
+msgstr "Roda para baixo"
+
+#: tools/haumea/keycast.cpp:208
+msgid "Wheel up"
+msgstr "Roda para cima"
+
+#: tools/haumea/keycast.cpp:439
+msgid "Where"
+msgstr "Onde"
+
+#: tools/haumea/keycast.cpp:440
+msgid "Where in the 3D view the pressed keys and Namaka's actions show."
+msgstr "Em que lugar da vista 3D aparecem as teclas pressionadas e as ações do Namaka."
+
+#: tools/haumea/keycast.cpp:433
+msgid "While Namaka works in the editor, a line over the 3D view says what it is doing."
+msgstr "Enquanto o Namaka trabalha no editor, uma linha sobre a vista 3D diz o que ele está fazendo."
+
+#: tools/haumea/keycast.cpp:122
+msgid "drag"
+msgstr "arrastar"

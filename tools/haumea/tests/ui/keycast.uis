@@ -1,0 +1,46 @@
+# Windows > Show Pressed Keys: the overlay shows each combo the editor gets,
+# with the shortcut's name when one ran, counts repeats, shows the WASD fly
+# with the right button, and never shows text typed into a field.
+open "$UI_FIXTURES/ui_map.pwn"
+click_object model=1634
+wait 5
+assert selected == 1
+assert keycast_lacks "LMB"
+click_item '*' 'Windows'
+click_item '*' 'Show Pressed Keys'
+wait 5
+key Ctrl+D
+wait 3
+assert keycast_contains "Ctrl + D: Duplicate selection"
+key Ctrl+D
+wait 3
+assert keycast_contains "Duplicate selection ×2"
+# Flying: the right button and W, without the Move gizmo shortcut's name.
+move 640 400
+wait 3
+hold right
+hold W
+wait 10
+assert keycast_contains "RMB + W"
+assert keycast_lacks "Move gizmo"
+release W
+release right
+wait_until keycast_lacks "RMB"
+# Typing: the letters never show; a shortcut combo shows, without a name.
+shortcut window_preferences
+wait 5
+click_item 'Preferences' 'Shortcuts'
+wait 3
+click_item 'Preferences' '##shortcut_filter'
+wait 3
+type "secret"
+wait 3
+assert keycast_lacks "S"
+assert keycast_lacks "T"
+key Ctrl+Z
+wait 3
+assert keycast_contains "Ctrl + Z"
+assert keycast_lacks "Undo"
+key Esc
+wait 70
+assert file_contains "$XDG_CONFIG_HOME/haumea/savesettings.txt" "keycast 1"

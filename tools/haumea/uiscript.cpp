@@ -6,6 +6,7 @@
 #include "workspace.h"
 #include "shortcuts.h"
 #include "playerview.h"
+#include "keycast.h"
 #include "i18n.h"
 #include "imgui/imgui_internal.h"
 
@@ -700,12 +701,26 @@ gameObjectBasis(float rx, float ry, float rz, rw::V3d *right, rw::V3d *up, rw::V
 	*at = { cz*sy + sz*sx*cy, sz*sy - cz*sx*cy, cy*cx };
 }
 
+// keycast_contains / keycast_lacks "text": what the pressed-keys overlay shows now.
+static bool
+keycastAssert(const std::string &what, const std::string &text, std::string &why, bool *result)
+{
+	if(what != "keycast_contains" && what != "keycast_lacks")
+		return false;
+	std::string shown = KeycastShownText();
+	why = "keycast shows \"" + shown + "\"";
+	bool found = shown.find(text) != std::string::npos;
+	*result = what == "keycast_contains" ? found : !found;
+	return true;
+}
+
 // assert objects|selected|textdraws <op> N
 // assert selected.model|selected.x|selected.y|selected.z <op> N
 // assert selected.texture <slot> "name"
 // assert pawn_contains "text" [streamer]   (and pawn_lacks)
 // assert pawn_count "text" <op> N             (occurrences in the native Pawn)
 // assert toast_contains "text"
+// assert keycast_contains "text"   (and keycast_lacks: what the pressed-keys overlay shows now)
 // assert file_contains <path> "text"   (and file_lacks)
 // assert window "Title"     / no_window "Title"
 // assert item 'Window' 'Label'   / no_item
@@ -724,6 +739,9 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 	auto arg = [&](size_t k) -> std::string { return a.size() > first + k ? a[first + k] : std::string(); };
 	ObjectInst *sel = selection.first ? (ObjectInst*)selection.first->item : nil;
 	char buf[256];
+	bool result;
+	if(keycastAssert(what, arg(1), why, &result))
+		return result;
 	if(what == "objects" || what == "selected" || what == "textdraws" ||
 	   what == "selected.model" || what == "selected.x" || what == "selected.y" || what == "selected.z"){
 		double v = 0;
