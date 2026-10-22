@@ -76,7 +76,7 @@ in `sites-enabled` to a file that isn't there makes every `nginx -t` fail.
 sudo apt install -y python3 binutils llvm   # binutils/llvm: symbol names for crash stacks
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin haumea-server
 sudo mkdir -p /opt/haumea-server /etc/haumea-server
-sudo cp haumea_server.py symbols.py symbolize.py privacy.html /opt/haumea-server/
+sudo cp haumea_server.py access.py dashboard.py symbols.py symbolize.py privacy.html /opt/haumea-server/
 sudo cp haumea-server.service /etc/systemd/system/
 ```
 
@@ -113,6 +113,38 @@ DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
 `pwgen -s 32 1` or `openssl rand -base64 24` makes a good password. The
 webhook URL is a secret: anyone with it can post to the channel. It lives only
 in this file; the service never logs it.
+
+## 4b. Cloudflare Access for the dashboard
+
+With both names proxied through Cloudflare, let Cloudflare's login guard the
+dashboard instead of the password. In the Cloudflare dashboard:
+
+1. **Zero Trust** (left menu). The first time, pick a team name (for example
+   `itsneufox`, making `itsneufox.cloudflareaccess.com`) and the Free plan.
+2. **Access > Applications > Add an application > Self-hosted.** Name it
+   "Haumea dashboard"; domain `reports.itsneufox.xyz`, path `dashboard`;
+   and a second public hostname with the same domain and path `dashboard/*`.
+3. A policy: Action **Allow**, include **Emails**, your address. Login
+   methods: the one-time PIN (a code by email) is on by default; GitHub or
+   Google can be added under Settings > Authentication.
+4. Save, open the application again and copy its **Application Audience
+   (AUD) Tag** from Overview.
+
+Then in `/etc/haumea-server/env`:
+
+```sh
+HAUMEA_ACCESS_TEAM=itsneufox
+HAUMEA_ACCESS_AUD=the-aud-tag-you-copied
+```
+
+and `sudo systemctl restart haumea-server`. The service now checks the token
+Cloudflare signs on every request it lets through (`access.py`): its
+signature with the team's keys, the issuer, this application's AUD and the
+time. A request that skips Cloudflare (the server's address is public) or
+carries a token for another application gets 403, and the password is no
+longer asked or accepted. Only `/dashboard` is behind the login: the editor
+still sends pings and reports without one. To go back to the password,
+remove the two lines and restart.
 
 ## 5. Start it
 

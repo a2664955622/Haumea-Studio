@@ -379,5 +379,130 @@ class ServerTests(unittest.TestCase):
 		self.assertIn('crash_here', out.stdout)
 
 
+# ---- Cloudflare Access ----------------------------------------------------------------
+
+def _probable_prime(bits, rng):
+	while True:
+		n = rng.getrandbits(bits) | (1 << (bits - 1)) | 1
+		d, r = n - 1, 0
+		while d % 2 == 0:
+			d, r = d // 2, r + 1
+		for _ in range(24):
+			x = pow(rng.randrange(2, n - 2), d, n)
+			if x in (1, n - 1):
+				continue
+			for _ in range(r - 1):
+				x = pow(x, 2, n)
+				if x == n - 1:
+					break
+			else:
+				break
+		else:
+			return n
+
+
+def rsa_key(bits=1024, seed=7):
+	"""An RSA key for signing test tokens (no crypto library needed)."""
+	import random
+	rng = random.Random(seed)
+	e = 65537
+	while True:
+		p, q = _probable_prime(bits // 2, rng), _probable_prime(bits // 2, rng)
+		phi = (p - 1) * (q - 1)
+		if p != q and phi % e:
+			return p * q, e, pow(e, -1, phi)
+
+
+def b64url(data):
+	return base64.urlsafe_b64encode(data).rstrip(b'=').decode()
+
+
+def token(key, claims, kid='k1', alg='RS256'):
+	n, e, d = key
+	head = b64url(json.dumps({'alg': alg, 'kid': kid}).encode())
+	body = b64url(json.dumps(claims).encode())
+	size = (n.bit_length() + 7) // 8
+	digest = bytes.fromhex('3031300d060960864801650304020105000420') + \
+		hashlib.sha256(f'{head}.{body}'.encode()).digest()
+	em = b'\x00\x01' + b'\xff' * (size - len(digest) - 3) + b'\x00' + digest
+	sig = pow(int.from_bytes(em, 'big'), d, n).to_bytes(size, 'big')
+	return f'{head}.{body}.{b64url(sig)}'
+
+
+class AccessTests(unittest.TestCase):
+	TEAM, AUD = 'haumea-test', 'a' * 64
+
+	@classmethod
+	def setUpClass(cls):
+		cls.tmp = Path(tempfile.mkdtemp(prefix='haumea-access-'))
+		cls.key = rsa_key()
+		n, e, _ = cls.key
+		cls.jwks = {'keys': [{'kty': 'RSA', 'kid': 'k1', 'alg': 'RS256',
+		                      'n': b64url(n.to_bytes((n.bit_length() + 7) // 8, 'big')),
+		                      'e': b64url(e.to_bytes(3, 'big'))}]}
+		port = free_port()
+		config = dict(haumea_server.DEFAULTS, HAUMEA_LISTEN=f'127.0.0.1:{port}', HAUMEA_DB=str(cls.tmp / 'db.sqlite'),
+		              HAUMEA_DASH_PASSWORD='s3cret', HAUMEA_SYMBOLS_DIR=str(cls.tmp / 'symbols'),
+		              HAUMEA_FETCH_SYMBOLS='0', HAUMEA_ACCESS_TEAM=cls.TEAM, HAUMEA_ACCESS_AUD=cls.AUD)
+		cls.httpd, cls.service, cls.stop = haumea_server.serve(config)
+		cls.service.access.fetch = lambda: cls.jwks	# never Cloudflare's real keys
+		threading.Thread(target=cls.httpd.serve_forever, daemon=True).start()
+		cls.base = f'http://127.0.0.1:{port}'
+
+	@classmethod
+	def tearDownClass(cls):
+		cls.stop.set()
+		cls.httpd.shutdown()
+		shutil.rmtree(cls.tmp, ignore_errors=True)
+
+	def claims(self, **change):
+		t = int(time.time())
+		return dict({'iss': f'https://{self.TEAM}.cloudflareaccess.com', 'aud': [self.AUD], 'email': 'dev@example.com',
+		             'iat': t - 5, 'nbf': t - 5, 'exp': t + 600}, **change)
+
+	def get(self, path, headers=None):
+		try:
+			with urllib.request.urlopen(urllib.request.Request(self.base + path, headers=headers or {})) as r:
+				return r.status, r.read().decode()
+		except urllib.error.HTTPError as e:
+			return e.code, e.read().decode()
+
+	def test_a_signed_request_gets_in(self):
+		code, page = self.get('/dashboard', {'Cf-Access-Jwt-Assertion': token(self.key, self.claims())})
+		self.assertEqual(code, 200)
+		self.assertIn('dev@example.com', page)
+		self.assertIn('Active installs per day', page)
+		# The browser's cookie works as well as Cloudflare's header.
+		code, _ = self.get('/dashboard?days=7&show=all', {'Cookie': 'CF_Authorization=' + token(self.key, self.claims())})
+		self.assertEqual(code, 200)
+
+	def test_everything_else_is_refused(self):
+		good = token(self.key, self.claims())
+		head, body, sig = good.split('.')
+		forged = rsa_key(seed=8)
+		refused = {
+			'no token': {},
+			'the password': {'Authorization': 'Basic ' + base64.b64encode(b'admin:s3cret').decode()},
+			'another key': {'Cf-Access-Jwt-Assertion': token(forged, self.claims())},
+			'changed claims': {'Cf-Access-Jwt-Assertion': '.'.join(
+				(head, b64url(json.dumps(self.claims(email='evil@example.com')).encode()), sig))},
+			'wrong audience': {'Cf-Access-Jwt-Assertion': token(self.key, self.claims(aud=['b' * 64]))},
+			'wrong team': {'Cf-Access-Jwt-Assertion': token(self.key, self.claims(iss='https://other.cloudflareaccess.com'))},
+			'expired': {'Cf-Access-Jwt-Assertion': token(self.key, self.claims(exp=int(time.time()) - 3600))},
+			'not yet valid': {'Cf-Access-Jwt-Assertion': token(self.key, self.claims(nbf=int(time.time()) + 3600))},
+			'unknown key': {'Cf-Access-Jwt-Assertion': token(self.key, self.claims(), kid='k2')},
+			'alg none': {'Cf-Access-Jwt-Assertion': token(self.key, self.claims(), alg='none')},
+			'garbage': {'Cf-Access-Jwt-Assertion': 'a.b.c'},
+		}
+		for what, headers in refused.items():
+			self.assertEqual(self.get('/dashboard', headers)[0], 403, what)
+		# The public routes need no login.
+		self.assertEqual(self.get('/privacy')[0], 200)
+
+	def test_team_names(self):
+		for team in ('itsneufox', 'itsneufox.cloudflareaccess.com', 'https://itsneufox.cloudflareaccess.com/'):
+			self.assertEqual(haumea_server.access.team_issuer(team), 'https://itsneufox.cloudflareaccess.com')
+
+
 if __name__ == '__main__':
 	unittest.main()

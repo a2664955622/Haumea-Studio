@@ -12,7 +12,8 @@ and reports.itsneufox.xyz over HTTPS. Routes:
     POST /haumea/telemetry/ping   a ping (JSON, under 1 KB): 204
     POST /haumea/reports          a crash or error report (JSON, up to 256 KB): 204
     GET  /privacy                 what is collected and kept
-    GET  /dashboard/...           the dashboard, behind HTTP basic auth
+    GET  /dashboard/...           the dashboard (dashboard.py), behind Cloudflare Access
+                                  (access.py) or, without it set up, HTTP basic auth
 
 No IP address is ever stored: rate limits per IP live in memory only. Every
 field of a ping or report is treated as untrusted text: validated, capped and
@@ -25,7 +26,7 @@ import collections
 import datetime as dt
 import hashlib
 import hmac
-import html
+import http.cookies
 import http.server
 import json
 import os
@@ -42,6 +43,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import access  # noqa: E402
+import dashboard  # noqa: E402
 import symbols  # noqa: E402
 
 PING_MAX = 1024
@@ -57,6 +60,11 @@ DEFAULTS = {
 	'HAUMEA_DB': '/var/lib/haumea-server/haumea.db',
 	'HAUMEA_DASH_USER': 'admin',
 	'HAUMEA_DASH_PASSWORD': '',
+	# Cloudflare Access in front of /dashboard: the team ("itsneufox", as in
+	# itsneufox.cloudflareaccess.com) and the application's AUD tag. Both set:
+	# only Access's signed requests get in, the password is not asked.
+	'HAUMEA_ACCESS_TEAM': '',
+	'HAUMEA_ACCESS_AUD': '',
 	'HAUMEA_PUBLIC_URL': 'https://reports.itsneufox.xyz',
 	'HAUMEA_SYMBOLS_DIR': '/var/lib/haumea-server/symbols',
 	'HAUMEA_RELEASES': 'https://github.com/itsneufox/Haumea-Studio/releases/download',
@@ -283,6 +291,9 @@ class Service:
 		self.symbols = symbols.SymbolCache(config['HAUMEA_SYMBOLS_DIR'], config['HAUMEA_RELEASES'],
 		                                   fetch=config['HAUMEA_FETCH_SYMBOLS'] == '1')
 		self.alerter = Alerter(self)
+		self.access = None
+		if config['HAUMEA_ACCESS_TEAM'] and config['HAUMEA_ACCESS_AUD']:
+			self.access = access.AccessVerifier(config['HAUMEA_ACCESS_TEAM'], config['HAUMEA_ACCESS_AUD'])
 		# Symbols may need a download, so issues are linked off the request.
 		self.linking = queue.Queue()
 
@@ -503,108 +514,6 @@ class Alerter:
 
 # ---- dashboard -------------------------------------------------------------------
 
-PAGE = '''<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><title>{title}</title>
-<style>body{{font:14px system-ui,sans-serif;margin:24px;max-width:1100px;color:#222;background:#fafafa}}
-table{{border-collapse:collapse;width:100%;margin:8px 0 20px}}th,td{{text-align:left;padding:4px 8px;
-border-bottom:1px solid #ddd;vertical-align:top}}th{{background:#eee}}pre{{background:#f0f0f0;padding:8px;
-overflow-x:auto;white-space:pre-wrap}}a{{color:#2563eb}}.muted{{color:#777}}h1{{font-size:20px}}
-h2{{font-size:16px;margin-top:24px}}</style></head><body>{body}</body></html>'''
-
-
-def esc(v):
-	return html.escape(str(v), quote=True)
-
-
-def table(headers, rows):
-	out = '<table><tr>' + ''.join(f'<th>{esc(h)}</th>' for h in headers) + '</tr>'
-	for row in rows:
-		out += '<tr>' + ''.join(f'<td>{c}</td>' for c in row) + '</tr>'
-	return out + '</table>'
-
-
-def dashboard_home(s):
-	t = now()
-	today = t.strftime('%Y-%m-%d')
-	week = (t - dt.timedelta(days=6)).strftime('%Y-%m-%d')
-	daily = s.store.q('SELECT COUNT(*) FROM active_days WHERE day = ?', (today,))[0][0]
-	weekly = s.store.q('SELECT COUNT(DISTINCT uid) FROM active_days WHERE day >= ?', (week,))[0][0]
-	days = s.store.q('SELECT day, COUNT(*) FROM active_days WHERE day >= ? GROUP BY day ORDER BY day DESC LIMIT 30',
-	                 ((t - dt.timedelta(days=29)).strftime('%Y-%m-%d'),))
-	breakdown = lambda col: s.store.q(f'SELECT {col}, COUNT(*) FROM installs WHERE last_seen >= ? '
-	                                  f'GROUP BY {col} ORDER BY 2 DESC', (iso(t - dt.timedelta(days=30)),))
-	groups = s.store.q('SELECT id, title, version, kind, count, last_seen, fixed_in FROM crash_groups '
-	                   'ORDER BY count DESC, last_seen DESC LIMIT 100')
-	body = '<h1>Haumea Studio</h1>'
-	body += f'<p><b>{daily}</b> active installs today, <b>{weekly}</b> in the last 7 days.</p>'
-	body += '<h2>Active installs per day</h2>' + table(['Day', 'Installs'], [(esc(d), esc(n)) for d, n in days])
-	for col, name in (('version', 'Versions'), ('channel', 'Channels'), ('os', 'Systems')):
-		body += f'<h2>{name} (last 30 days)</h2>' + table([name[:-1], 'Installs'],
-		                                                  [(esc(v), esc(n)) for v, n in breakdown(col)])
-	body += '<h2>Crash and error groups</h2>' + table(
-		['Group', 'Version', 'Kind', 'Reports', 'Last seen', 'Fixed in'],
-		[(f'<a href="/dashboard/group/{gid}">{esc(title)}</a>', esc(v), esc(k), esc(c), esc(last), esc(fixed or ''))
-		 for gid, title, v, k, c, last, fixed in groups])
-	return PAGE.format(title='Haumea Studio dashboard', body=body)
-
-
-def dashboard_group(s, gid):
-	row = s.store.q('SELECT id, title, version, signature, kind, top_frames, issue_key, fixed_in, count, '
-	                'first_seen, last_seen FROM crash_groups WHERE id = ?', (gid,))
-	if not row:
-		return None
-	gid, title, version, sig, kind, top, issue, fixed, count, first, last = row[0]
-	split = lambda col: s.store.q(f'SELECT {col}, COUNT(*) FROM reports WHERE group_id = ? GROUP BY {col} '
-	                              'ORDER BY 2 DESC LIMIT 20', (gid,))
-	related = s.store.q('SELECT id, version, count, fixed_in FROM crash_groups WHERE issue_key = ? AND id != ? '
-	                    'ORDER BY id', (issue, gid)) if issue else []
-	reports = s.store.q('SELECT id, received, os, os_version, gl_renderer FROM reports WHERE group_id = ? '
-	                    'ORDER BY received DESC LIMIT 50', (gid,))
-	body = f'<p><a href="/dashboard">Dashboard</a></p><h1>{esc(title)}</h1>'
-	body += (f'<p>{esc(kind)} in {esc(version)}, {esc(count)} reports, first {esc(first)}, last {esc(last)}.<br>'
-	         f'<span class="muted">Signature {esc(sig)}</span></p>')
-	body += '<h2>Top frames</h2><pre>' + esc('\n'.join(json.loads(top))) + '</pre>'
-	body += ('<h2>Fixed in</h2><form method="post" action="/dashboard/group/' + str(gid) + '/fixed">'
-	         f'<input name="version" placeholder="1.0.1.80" value="{esc(fixed or "")}"> '
-	         '<button>Mark fixed</button> <span class="muted">A later version reporting the same issue '
-	         'alerts as a regression. Empty clears it.</span></form>')
-	if related:
-		body += '<h2>The same issue in other versions</h2>' + table(['Group', 'Version', 'Reports', 'Fixed in'], [
-			(f'<a href="/dashboard/group/{r}">#{r}</a>', esc(v), esc(c), esc(f or '')) for r, v, c, f in related])
-	for col, name in (('version', 'Version'), ('os', 'System'), ('os_version', 'System version'),
-	                  ('gl_renderer', 'GPU')):
-		body += f'<h2>By {name.lower()}</h2>' + table([name, 'Reports'], [(esc(v), esc(n)) for v, n in split(col)])
-	body += '<h2>Latest reports</h2>' + table(['Report', 'Received', 'System', 'GPU'], [
-		(f'<a href="/dashboard/report/{rid}">{esc(rid[:12])}</a>', esc(rec), esc(f'{o} {ov}'), esc(gl))
-		for rid, rec, o, ov, gl in reports])
-	return PAGE.format(title=f'Group {gid}', body=body)
-
-
-def dashboard_report(s, rid):
-	if not UID.fullmatch(rid):
-		return None
-	row = s.store.q('SELECT group_id, received, body FROM reports WHERE id = ?', (rid,))
-	if not row:
-		return None
-	gid, received, body_json = row[0]
-	r = json.loads(body_json)
-	names = s.symbols.symbolize(r) or []
-	frames = []
-	for i, f in enumerate(r['frames']):
-		sym = names[i] if i < len(names) and names[i] else f['symbol']
-		frames.append((esc(i), esc(f['module']), esc(f['offset']), esc(sym)))
-	fields = [(esc(k), esc(r.get(k, ''))) for k in ('kind', 'reason', 'address', 'message', 'version', 'commit',
-	                                                'channel', 'os', 'os_version', 'arch', 'gl_renderer',
-	                                                'gl_version', 'build_id', 'created')]
-	fields.append(('context', esc(json.dumps(r.get('context', {})))))
-	body = f'<p><a href="/dashboard">Dashboard</a> · <a href="/dashboard/group/{gid}">Group {gid}</a></p>'
-	body += f'<h1>Report {esc(rid)}</h1><p class="muted">Received {esc(received)}</p>'
-	body += table(['Field', 'Value'], fields)
-	body += '<h2>Stack</h2>' + table(['#', 'Module', 'Offset', 'Function'], frames)
-	body += '<h2>Log</h2><pre>' + esc('\n'.join(r.get('log', []))) + '</pre>'
-	return PAGE.format(title=f'Report {rid[:12]}', body=body)
-
-
 PRIVACY = (HERE / 'privacy.html')
 
 
@@ -689,6 +598,24 @@ class Handler(http.server.BaseHTTPRequestHandler):
 		self.reply(204)
 
 	def authorised(self):
+		"""Who is signed in (an email with Cloudflare Access, else the
+		dashboard's user name), or None after answering 401/403."""
+		verifier = self.service.access
+		if verifier:
+			token = self.headers.get('Cf-Access-Jwt-Assertion', '')
+			if not token:
+				cookies = http.cookies.SimpleCookie()
+				try:
+					cookies.load(self.headers.get('Cookie', ''))
+				except http.cookies.CookieError:
+					pass
+				token = cookies['CF_Authorization'].value if 'CF_Authorization' in cookies else ''
+			try:
+				claims = verifier.verify(token)
+			except access.Denied:
+				self.reply(403, b'Sign in through Cloudflare Access: https://reports.itsneufox.xyz/dashboard')
+				return None
+			return str(claims.get('email') or claims.get('common_name') or 'Cloudflare Access')
 		password = self.service.config['HAUMEA_DASH_PASSWORD']
 		header = self.headers.get('Authorization', '')
 		ok = False
@@ -702,24 +629,27 @@ class Handler(http.server.BaseHTTPRequestHandler):
 		if not ok:
 			self.reply(401, b'Authentication required.',
 			           extra=[('WWW-Authenticate', 'Basic realm="Haumea Studio", charset="UTF-8"')])
-		return ok
+			return None
+		return self.service.config['HAUMEA_DASH_USER']
 
 	def do_GET(self):
-		path = urllib.parse.urlsplit(self.path).path
+		url = urllib.parse.urlsplit(self.path)
+		path = url.path
 		if path == '/privacy':
 			return self.reply(200, PRIVACY.read_bytes(), 'text/html; charset=utf-8')
 		if path == '/healthz':
 			return self.reply(200, b'ok')
 		if path == '/dashboard' or path.startswith('/dashboard/'):
-			if not self.authorised():
+			user = self.authorised()
+			if not user:
 				return
 			page = None
 			if path in ('/dashboard', '/dashboard/'):
-				page = dashboard_home(self.service)
+				page = dashboard.home(self.service, url.query, user)
 			elif re.fullmatch(r'/dashboard/group/\d+', path):
-				page = dashboard_group(self.service, int(path.rsplit('/', 1)[1]))
+				page = dashboard.group(self.service, int(path.rsplit('/', 1)[1]), user)
 			elif re.fullmatch(r'/dashboard/report/[0-9a-f]{32}', path):
-				page = dashboard_report(self.service, path.rsplit('/', 1)[1])
+				page = dashboard.report(self.service, path.rsplit('/', 1)[1], user, UID)
 			if page is None:
 				return self.reply(404)
 			return self.reply(200, page.encode(), 'text/html; charset=utf-8',
