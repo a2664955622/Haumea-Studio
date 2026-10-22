@@ -6,6 +6,7 @@
 #include "workspace.h"
 #include "shortcuts.h"
 #include "playerview.h"
+#include "i18n.h"
 #include "imgui/imgui_internal.h"
 
 #include <ctype.h>
@@ -17,6 +18,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 #include <algorithm>
 #ifdef RW_GL3
 #ifdef __APPLE__
@@ -79,6 +81,7 @@ struct UiItem {
 	ImGuiID id, seed, parent, grand;
 	ImRect bb, clip;	// clip: the visible part of its window when it was drawn
 	std::string window, rootWindow, label, rawLabel;
+	std::string windowName, rootWindowName;	// with any "##" ID
 };
 static std::vector<UiItem> gItems, gPrevItems;
 static std::map<ImGuiID, size_t> gItemIndex;
@@ -112,6 +115,8 @@ ImGuiTestEngineHook_ItemAdd(ImGuiContext *ctx, ImGuiID id, const ImRect &bb, con
 		item.grand = n > 2 ? w->IDStack[n-3] : 0;
 		item.window = visibleTitle(w->Name);
 		item.rootWindow = visibleTitle(w->RootWindow ? w->RootWindow->Name : w->Name);
+		item.windowName = w->Name;
+		item.rootWindowName = w->RootWindow ? w->RootWindow->Name : w->Name;
 	}
 	gItemIndex[id] = gItems.size();
 	gItems.push_back(item);
@@ -151,25 +156,59 @@ plainLabel(const std::string &s)
 	return s.substr(i);
 }
 
+// Scripts name things in English in every language: a window or item matches
+// by the text shown, by the English ID L() puts after the last "###", or by
+// the text translated. part: the name may be part of it.
+static bool
+nameMatches(const std::string &raw, const std::string &name, bool part)
+{
+	size_t hash = raw.rfind("###");
+	std::string shown = visibleTitle(raw.c_str());
+	if(name.empty())	// '': an item with no text of its own
+		return plainLabel(shown).empty();
+	std::string id = hash == std::string::npos ? "" : raw.substr(hash + 3);
+	// Translate() caches by pointer: give it one lasting copy per name.
+	static std::set<std::string> asked;
+	std::string names[2] = { name, Translate(asked.insert(name).first->c_str()) };
+	for(const std::string &n : names){
+		if(n.empty())
+			continue;
+		for(const std::string *t : { &shown, &id }){
+			if(t->empty())
+				continue;
+			std::string plain = plainLabel(*t);
+			if(*t == n || plain == n || (part && plain.find(n) != std::string::npos))
+				return true;
+		}
+	}
+	return false;
+}
+
 static bool
 windowMatches(const UiItem &item, const std::string &window)
 {
 	if(window == "*" || window.empty())
 		return true;
-	return plainLabel(item.window).find(window) != std::string::npos ||
-		plainLabel(item.rootWindow).find(window) != std::string::npos;
+	return nameMatches(item.windowName, window, true) ||
+		nameMatches(item.rootWindowName, window, true);
 }
 
 static const UiItem *findItem(const std::string &window, const std::string &label, int nth = 1);
 
-// An item ImGui labels before it is added (a tab) has only its ID: the label
-// hashed with the item's seed, or "###label" for an L()/LI() label, whose ID
-// is the English text in every language.
+// The ID label gets under seed: the label hashed, or "###label" for an
+// L()/LI() label, whose ID is the English text in every language.
+static bool
+hashesTo(ImGuiID id, const std::string &label, ImGuiID seed)
+{
+	return ImHashStr(label.c_str(), 0, seed) == id ||
+		ImHashStr(("###" + label).c_str(), 0, seed) == id;
+}
+
+// An item ImGui labels before it is added (a tab) has only its ID.
 static bool
 idIs(const UiItem &it, const std::string &label)
 {
-	return ImHashStr(label.c_str(), 0, it.seed) == it.id ||
-		ImHashStr(("###" + label).c_str(), 0, it.seed) == it.id;
+	return hashesTo(it.id, label, it.seed);
 }
 
 // 'Widget/part': a part of a widget that pushes its label as an ID, like a
@@ -186,14 +225,14 @@ findPart(const std::string &window, const std::string &widget, const std::string
 			continue;
 		bool match;
 		if(index)
-			match = it.parent == ImHashStr(widget.c_str(), 0, it.grand) &&
+			match = hashesTo(it.parent, widget, it.grand) &&
 				it.seed == ImHashData(&i, sizeof(i), it.parent);
 		else
-			match = (it.seed == ImHashStr(widget.c_str(), 0, it.parent) &&
-				(it.rawLabel == part || plainLabel(it.label) == part ||
+			match = (hashesTo(it.seed, widget, it.parent) &&
+				(it.rawLabel == part || nameMatches(it.rawLabel, part, false) ||
 				 (it.label.empty() && idIs(it, part)))) ||
 				// A field one ID deeper: InputInt("##value") inside PushID("Colour 1").
-				(it.rawLabel == part && it.parent == ImHashStr(widget.c_str(), 0, it.grand));
+				(it.rawLabel == part && hashesTo(it.parent, widget, it.grand));
 		if(match && ++seen == nth)
 			return &it;
 	}
@@ -230,7 +269,7 @@ findItem(const std::string &window, const std::string &label, int nth)
 		std::vector<const UiItem*> matches;
 		for(size_t i = 0; i < gPrevItems.size(); i++){
 			const UiItem &it = gPrevItems[i];
-			bool named = plainLabel(it.label) == label || it.label == label ||
+			bool named = nameMatches(it.rawLabel, label, false) ||
 				(it.label.empty() && idIs(it, label));
 			if(windowMatches(it, window) && named)
 				matches.push_back(&it);
@@ -247,10 +286,9 @@ findItem(const std::string &window, const std::string &label, int nth)
 				return &it;
 			continue;
 		}
-		std::string plain = plainLabel(it.label);
-		if(plain == label || it.label == label)
+		if(nameMatches(it.rawLabel, label, false))
 			return &it;
-		if(!contains && plain.find(label) != std::string::npos)
+		if(!contains && nameMatches(it.rawLabel, label, true))
 			contains = &it;
 	}
 	return contains;
@@ -630,7 +668,7 @@ windowOpen(const std::string &title)
 	ImGuiContext &g = *GImGui;
 	for(int i = 0; i < g.Windows.Size; i++){
 		ImGuiWindow *w = g.Windows[i];
-		if(w->WasActive && !w->Hidden && plainLabel(visibleTitle(w->Name)) == title)
+		if(w->WasActive && !w->Hidden && nameMatches(w->Name, title, false))
 			return true;
 	}
 	return false;
@@ -1389,8 +1427,8 @@ UiScriptTick(void)
 			}
 			for(int i = 0; i < g.Windows.Size; i++){
 				ImGuiWindow *w = g.Windows[i];
-				std::string title = plainLabel(visibleTitle(w->Name));
-				if(w->WasActive && !title.empty() && title.find(gScrollWindow) != std::string::npos)
+				if(w->WasActive && !plainLabel(visibleTitle(w->Name)).empty() &&
+				   nameMatches(w->Name, gScrollWindow, true))
 					ImGui::SetScrollY(w, std::min(w->Scroll.y + 60.0f, w->ScrollMax.y));
 			}
 			return;
