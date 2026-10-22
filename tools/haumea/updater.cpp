@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "i18n.h"
 #include "version.h"
 #include "versionutil.h"
 #include "updatecore.h"
@@ -135,22 +136,23 @@ installDir(void)
 }
 
 // Why this install can only be told about updates, or "" when it can update.
-static std::string
+// N_(): it is also written to the notice file; shown with _().
+static const char*
 notifyOnlyReason(const std::string &dir)
 {
 	if(UpdateBundleName() == nil)
-		return "Updates for this platform are downloaded from the release page.";
+		return N_("Updates for this platform are downloaded from the release page.");
 	if(dir.empty())
-		return "Haumea can't find its own folder.";
+		return N_("Haumea can't find its own folder.");
 #ifdef __linux__
 	if(dir.compare(0, 5, "/usr/") == 0 || dir.compare(0, 5, "/opt/") == 0 || dir.compare(0, 5, "/nix/") == 0)
-		return "Haumea was installed by a package manager: update it there.";
+		return N_("Haumea was installed by a package manager: update it there.");
 #endif
 	if(UpdateFileExists(dir + "/.package-managed"))
-		return "Haumea was installed by a package manager: update it there.";
+		return N_("Haumea was installed by a package manager: update it there.");
 	if(!UpdateDirWritable(dir))
-		return "Haumea's folder can't be written to.";
-	return std::string();
+		return N_("Haumea's folder can't be written to.");
+	return "";
 }
 
 // The test suite points the updater at a local release server; nothing else
@@ -501,13 +503,13 @@ static const char*
 restartBlocker(void)
 {
 	if(PawnMapHasUnsavedChanges() || TextDrawFileHasUnsavedChanges())
-		return "Save your changes first.";
+		return _("Save your changes first.");
 	if(InTextDrawMode())
-		return "Leave TextDraw mode first.";
+		return _("Leave TextDraw mode first.");
 	if(TestServerIsRunning())
-		return "Stop Test in game first.";
+		return _("Stop Test in game first.");
 	if(AgentBridgeSessionActive())
-		return "An agent edit session is open.";
+		return _("An agent edit session is open.");
 	return nil;
 }
 
@@ -630,7 +632,8 @@ previousVersion(void)
 static std::atomic<int> gStatus(UPD_IDLE);
 static std::atomic<bool> gWorking(false);
 static UpdateRelease gRelease;
-static std::string gError, gNotifyOnly;
+static std::string gError;
+static const char *gNotifyOnly = "";	// a literal from notifyOnlyReason, or ""
 static bool gManualCheck;		// Help > Check for updates: also say "up to date"
 static bool gBannerHidden;		// Later
 static bool gShowWhatsNew;
@@ -662,16 +665,16 @@ checkWorker(void)
 			&rel, &error);
 	gRelease = rel;
 	gError = error;
-	gNotifyOnly = status == UPD_AVAILABLE ? notifyOnlyReason(installDir()) : std::string();
-	if(status == UPD_AVAILABLE && gNotifyOnly.empty() && UpdateBundleName() && !rel.Find(UpdateBundleName()))
-		gNotifyOnly = "This release has no download for this platform.";
+	gNotifyOnly = status == UPD_AVAILABLE ? notifyOnlyReason(installDir()) : "";
+	if(status == UPD_AVAILABLE && !gNotifyOnly[0] && UpdateBundleName() && !rel.Find(UpdateBundleName()))
+		gNotifyOnly = N_("This release has no download for this platform.");
 	// Already downloaded (the banner was put off with Later last time).
 	if(status == UPD_AVAILABLE && stagedVersion(updateDir() + "/staged") == rel.version){
 		gWorking = false;
 		gStatus = UPD_READY;
 		return;
 	}
-	if(status == UPD_AVAILABLE && gNotifyOnly.empty() && (gGoingBack || (gUpdateDownloadAuto && !gManualCheck))){
+	if(status == UPD_AVAILABLE && !gNotifyOnly[0] && (gGoingBack || (gUpdateDownloadAuto && !gManualCheck))){
 		gStatus = UPD_DOWNLOADING;
 		downloadWorker();
 		return;
@@ -734,7 +737,7 @@ void
 UpdaterCheckNow(void)
 {
 	if(!updatesAllowed()){
-		Toast(TOAST_SELECTION, "Updates are off in this run");
+		Toast(TOAST_SELECTION, _("Updates are off in this run"));
 		return;
 	}
 	startCheck(true);
@@ -746,7 +749,7 @@ rollBack(void)
 	std::string from = HaumeaFullVersion(), to = previousVersion();
 	std::string error;
 	if(!UpdateRollback(installDir(), &error)){
-		Toast(TOAST_SELECTION, "Couldn't roll back: %s", error.c_str());
+		Toast(TOAST_SELECTION, _("Couldn't roll back: %s"), error.c_str());
 		return;
 	}
 	// Don't offer the version just left again.
@@ -754,7 +757,7 @@ rollBack(void)
 	SaveEditorSettingsNow();
 	writeNotice("rolledback " + from + " " + to + "\n");
 	if(!RestartHaumeaKeepingArgs())
-		Toast(TOAST_SELECTION, "Rolled back to %s: restart Haumea to use it", to.c_str());
+		Toast(TOAST_SELECTION, _("Rolled back to %s: restart Haumea to use it"), to.c_str());
 }
 
 // ---- GUI ----
@@ -765,11 +768,11 @@ whatsNewBody(void)
 	const std::string &version = gNoticeKind == "updated" ? gNoticeVersion : gRelease.version;
 	const std::string &notes = gNoticeKind == "updated" ? gNotes : gRelease.body;
 	if(notes.empty())
-		ImGui::TextDisabled("This release has no notes.");
+		ImGui::TextDisabled(_("This release has no notes."));
 	else
 		ImGui::TextWrapped("%s", notes.c_str());
 	if(!gRelease.pageUrl.empty() && version == gRelease.version)
-		ImGui::TextLinkOpenURL("Release page", gRelease.pageUrl.c_str());
+		ImGui::TextLinkOpenURL(_("Release page"), gRelease.pageUrl.c_str());
 }
 
 static void
@@ -780,7 +783,8 @@ whatsNewWindow(void)
 	const std::string &version = gNoticeKind == "updated" ? gNoticeVersion : gRelease.version;
 	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 30.0f, ImGui::GetFontSize() * 24.0f), ImGuiCond_FirstUseEver);
 	char title[96];
-	snprintf(title, sizeof(title), "What's new in %s###updater_whats_new", version.c_str());
+	snprintf(title, sizeof(title), _("What's new in %s"), version.c_str());
+	snprintf(title + strlen(title), sizeof(title) - strlen(title), "###updater_whats_new");
 	if(ImGui::Begin(title, &gShowWhatsNew))
 		whatsNewBody();
 	ImGui::End();
@@ -791,7 +795,7 @@ whatsNewWindow(void)
 static void
 whatsNewButton(void)
 {
-	if(ImGui::Button("What's new")){
+	if(ImGui::Button(_("What's new"))){
 		if(gDrawingInline)
 			gWhatsNewInline = !gWhatsNewInline;
 		else
@@ -816,43 +820,46 @@ static void
 noticeContents(void)
 {
 	if(gNoticeKind == "updated"){
-		ImGui::Text(ICON_FA_CHECK " Updated to Haumea Studio %s", gNoticeVersion.c_str());
+		ImGui::Text(TI(ICON_FA_CHECK, "Updated to Haumea Studio %s"), gNoticeVersion.c_str());
 		for(const std::string &p : gNoticeLocal)
-			ImGui::TextWrapped("You had changed %s: your copy is %s.local.", p.c_str(), p.c_str());
+			ImGui::TextWrapped(_("You had changed %s: your copy is %s.local."), p.c_str(), p.c_str());
 		whatsNewButton();
 		ImGui::SameLine();
 	}else if(gNoticeKind == "rolledback"){
-		ImGui::Text(ICON_FA_ROTATE_LEFT " Back to Haumea Studio %s", gNoticeOther.c_str());
-		ImGui::TextDisabled("%s won't be offered again.", gNoticeVersion.c_str());
+		ImGui::Text(TI(ICON_FA_ROTATE_LEFT, "Back to Haumea Studio %s"), gNoticeOther.c_str());
+		ImGui::TextDisabled(_("%s won't be offered again."), gNoticeVersion.c_str());
 	}else{
-		ImGui::TextWrapped(ICON_FA_TRIANGLE_EXCLAMATION " The update wasn't installed: %s", gNoticeError.c_str());
+		ImGui::TextWrapped(TI(ICON_FA_TRIANGLE_EXCLAMATION, "The update wasn't installed: %s"), gNoticeError.c_str());
 	}
-	if(ImGui::Button("OK##updater_notice"))
+	ImGui::PushID("updater_notice");
+	if(ImGui::Button(_("OK")))
 		gNoticeKind.clear();
+	ImGui::PopID();
 }
 
 // The banner's text and buttons, in the floating banner or the start screen.
 static void
 bannerContents(int status)
 {
-	ImGui::Text(ICON_FA_BELL " Haumea Studio %s %s", gRelease.version.c_str(),
-		status == UPD_DOWNLOADING ? "is downloading" : status == UPD_READY ? "is ready to install" : "is available");
+	ImGui::Text(status == UPD_DOWNLOADING ? TI(ICON_FA_BELL, "Haumea Studio %s is downloading") :
+		status == UPD_READY ? TI(ICON_FA_BELL, "Haumea Studio %s is ready to install") :
+		TI(ICON_FA_BELL, "Haumea Studio %s is available"), gRelease.version.c_str());
 	if(status == UPD_AVAILABLE){
-		if(!gNotifyOnly.empty())
-			ImGui::TextDisabled("%s", gNotifyOnly.c_str());
+		if(gNotifyOnly[0])
+			ImGui::TextDisabled("%s", _(gNotifyOnly));
 		whatsNewButton();
 		ImGui::SameLine();
-		if(gNotifyOnly.empty()){
-			if(ImGui::Button("Update now"))
+		if(!gNotifyOnly[0]){
+			if(ImGui::Button(_("Update now")))
 				startDownload();
-			ImGui::SetItemTooltip("Downloads it in the background; it installs when Haumea restarts.");
+			ImGui::SetItemTooltip(_("Downloads it in the background; it installs when Haumea restarts."));
 		}else if(!gRelease.pageUrl.empty())
-			ImGui::TextLinkOpenURL("Release page", gRelease.pageUrl.c_str());
+			ImGui::TextLinkOpenURL(_("Release page"), gRelease.pageUrl.c_str());
 		ImGui::SameLine();
-		if(ImGui::Button("Later"))
+		if(ImGui::Button(_("Later")))
 			gBannerHidden = true;
 		ImGui::SameLine();
-		if(ImGui::Button("Skip this version")){
+		if(ImGui::Button(_("Skip this version"))){
 			snprintf(gUpdateSkip, sizeof(gUpdateSkip), "%s", gRelease.version.c_str());
 			SaveEditorSettingsNow();
 			gBannerHidden = true;
@@ -864,27 +871,27 @@ bannerContents(int status)
 			ImGui::ProgressBar((float)((double)gDownloadedBytes / total));
 		else
 			ImGui::ProgressBar(-1.0f * (float)ImGui::GetTime());
-		if(ImGui::Button("Hide"))
+		if(ImGui::Button(_("Hide")))
 			gBannerHidden = true;
-		ImGui::SetItemTooltip("The download goes on; the update installs when Haumea restarts.");
+		ImGui::SetItemTooltip(_("The download goes on; the update installs when Haumea restarts."));
 	}else if(status == UPD_READY){
 		const char *blocker = restartBlocker();
 		ImGui::BeginDisabled(blocker != nil);
-		if(ImGui::Button("Restart now") && !RestartHaumeaKeepingArgs())
-			Toast(TOAST_SELECTION, "Couldn't restart: the update installs next time");
+		if(ImGui::Button(_("Restart now")) && !RestartHaumeaKeepingArgs())
+			Toast(TOAST_SELECTION, _("Couldn't restart: the update installs next time"));
 		ImGui::EndDisabled();
 		if(blocker)
-			ImGui::SetItemTooltip("%s The update installs the next time Haumea starts.", blocker);
+			ImGui::SetItemTooltip(_("%s The update installs the next time Haumea starts."), blocker);
 		ImGui::SameLine();
-		if(ImGui::Button("Later"))
+		if(ImGui::Button(_("Later")))
 			gBannerHidden = true;
-		ImGui::SetItemTooltip("It installs the next time Haumea starts.");
+		ImGui::SetItemTooltip(_("It installs the next time Haumea starts."));
 	}else{
-		ImGui::TextWrapped("The update failed: %s", gError.c_str());
-		if(ImGui::Button("Try again"))
+		ImGui::TextWrapped(_("The update failed: %s"), gError.c_str());
+		if(ImGui::Button(_("Try again")))
 			startDownload();
 		ImGui::SameLine();
-		if(ImGui::Button("Dismiss"))
+		if(ImGui::Button(_("Dismiss")))
 			gBannerHidden = true;
 	}
 }
@@ -936,9 +943,9 @@ UpdaterDrawGui(void)
 	int status = gStatus;
 	if(gManualCheck && (status == UPD_UP_TO_DATE || status == UPD_OFFLINE || status == UPD_FAILED)){
 		if(status == UPD_UP_TO_DATE)
-			Toast(TOAST_SELECTION, "Haumea Studio %s is up to date", HaumeaFullVersion());
+			Toast(TOAST_SELECTION, _("Haumea Studio %s is up to date"), HaumeaFullVersion());
 		else
-			Toast(TOAST_SELECTION, "Couldn't check for updates: %s", gError.c_str());
+			Toast(TOAST_SELECTION, _("Couldn't check for updates: %s"), gError.c_str());
 		gManualCheck = false;
 		gStatus = UPD_IDLE;
 		return;
@@ -963,17 +970,22 @@ UpdaterDrawGui(void)
 void
 UpdaterHelpMenuItems(void)
 {
-	if(ImGui::MenuItem(ICON_FA_BELL " Check for updates", nil, false, !gWorking))
+	if(ImGui::MenuItem(LI(ICON_FA_BELL, "Check for updates"), nil, false, !gWorking))
 		UpdaterCheckNow();
 	std::string dir = installDir();
 	if(!dir.empty() && UpdateCanRollback(dir)){
 		std::string prev = previousVersion();
 		char label[96];
-		snprintf(label, sizeof(label), ICON_FA_ROTATE_LEFT " Roll back to %s", prev.empty() ? "the previous version" : prev.c_str());
+		if(prev.empty())
+			snprintf(label, sizeof(label), "%s###rollback", TI(ICON_FA_ROTATE_LEFT, "Roll back to the previous version"));
+		else{
+			snprintf(label, sizeof(label), TI(ICON_FA_ROTATE_LEFT, "Roll back to %s"), prev.c_str());
+			snprintf(label + strlen(label), sizeof(label) - strlen(label), "###rollback");
+		}
 		const char *blocker = restartBlocker();
 		if(ImGui::MenuItem(label, nil, false, blocker == nil))
 			rollBack();
-		ImGui::SetItemTooltip(blocker ? blocker : "Puts back the version before the last update, then restarts.");
+		ImGui::SetItemTooltip("%s", blocker ? blocker : _("Puts back the version before the last update, then restarts."));
 	}
 }
 
@@ -981,50 +993,50 @@ void
 UpdaterPreferences(void)
 {
 	bool changed = false;
-	changed |= ImGui::Checkbox("Check for updates when Haumea starts", &gUpdateCheckAuto);
-	changed |= ImGui::Checkbox("Download updates automatically", &gUpdateDownloadAuto);
-	ImGui::SetItemTooltip("Downloads in the background; the update still installs only when Haumea restarts.");
+	changed |= ImGui::Checkbox(_("Check for updates when Haumea starts"), &gUpdateCheckAuto);
+	changed |= ImGui::Checkbox(_("Download updates automatically"), &gUpdateDownloadAuto);
+	ImGui::SetItemTooltip(_("Downloads in the background; the update still installs only when Haumea restarts."));
 	defaultChannel();
 	int beta = followsBeta() ? 1 : 0;
-	ImGui::TextUnformatted("Channel");
+	ImGui::TextUnformatted(_("Channel"));
 	ImGui::SameLine();
-	changed |= ImGui::RadioButton("Production", &beta, 0);
-	ImGui::SetItemTooltip("The tested releases everyone gets.");
+	changed |= ImGui::RadioButton(_("Production"), &beta, 0);
+	ImGui::SetItemTooltip(_("The tested releases everyone gets."));
 	ImGui::SameLine();
-	changed |= ImGui::RadioButton("Beta", &beta, 1);
-	ImGui::SetItemTooltip("New features before everyone else, and sometimes new bugs.\n"
-		"You get the newest of Beta and Production.");
+	changed |= ImGui::RadioButton(_("Beta"), &beta, 1);
+	ImGui::SetItemTooltip(_("New features before everyone else, and sometimes new bugs.\n"
+		"You get the newest of Beta and Production."));
 	snprintf(gUpdateChannel, sizeof(gUpdateChannel), "%s", beta ? "beta" : "production");
 	// A CI artifact updates to the next official release; a PR build (whose
 	// build number can run ahead of main's) can also switch to the latest one
 	// now, even an older one.
 	bool pr = strcmp(buildChannel(), "pr") == 0;
 	if(unofficialBuild())
-		ImGui::TextWrapped("This is %s, not an official release: it updates to the next official release.",
-			pr ? "a PR build" : "a Dev build");
+		ImGui::TextWrapped(_("This is %s, not an official release: it updates to the next official release."),
+			pr ? _("a PR build") : _("a Dev build"));
 	// A beta build back on Production is never downgraded on its own.
 	bool backToProduction = !beta && strcmp(buildChannel(), "beta") == 0;
 	if(backToProduction)
-		ImGui::TextWrapped("You'll move to Production with the next production release newer than %s.",
+		ImGui::TextWrapped(_("You'll move to Production with the next production release newer than %s."),
 			HaumeaFullVersion());
 	if(backToProduction || pr){
 		ImGui::BeginDisabled(gWorking);
-		if(ImGui::Button(pr ? "Switch to the latest official release" : "Go back to the latest Production now"))
+		if(ImGui::Button(pr ? _("Switch to the latest official release") : _("Go back to the latest Production now")))
 			startGoBack();
 		ImGui::EndDisabled();
-		ImGui::SetItemTooltip("Downloads the newest %s release, even if it's older than this build;\n"
-			"it installs the next time Haumea starts. Your maps and settings stay.", beta ? "Beta or Production" : "Production");
+		ImGui::SetItemTooltip(_("Downloads the newest %s release, even if it's older than this build;\n"
+			"it installs the next time Haumea starts. Your maps and settings stay."), beta ? _("Beta or Production") : _("Production"));
 	}
 	if(gUpdateSkip[0]){
-		ImGui::TextDisabled("Skipping %s", gUpdateSkip);
+		ImGui::TextDisabled(_("Skipping %s"), gUpdateSkip);
 		ImGui::SameLine();
-		if(ImGui::SmallButton("Offer it again")){
+		if(ImGui::SmallButton(_("Offer it again"))){
 			gUpdateSkip[0] = '\0';
 			changed = true;
 		}
 	}
-	ImGui::TextDisabled("This is %s.", HaumeaVersionDisplay());
-	if(ImGui::Button("Check now"))
+	ImGui::TextDisabled(_("This is %s."), HaumeaVersionDisplay());
+	if(ImGui::Button(_("Check now")))
 		UpdaterCheckNow();
 	if(changed)
 		SaveEditorSettingsNow();

@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "i18n.h"
 #include "crashreports.h"
 #include "imgui/imgui_internal.h"
 #include "telemetry.h"
@@ -1380,11 +1381,11 @@ SnapSelectedToGround(bool alignRotation)
 		}
 	}
 	if(capped)
-		Toast(TOAST_SELECTION, "Ground snap limited to first %d selected instance(s)", MAX_BATCH_OBJECTS);
+		Toast(TOAST_SELECTION, _("Ground snap limited to first %d selected instance(s)"), MAX_BATCH_OBJECTS);
 
 	if(targets.empty()){
 		if(skipped > 0)
-			Toast(TOAST_SELECTION, "Ground snap skipped linked multi-selection");
+			Toast(TOAST_SELECTION, _("Ground snap skipped linked multi-selection"));
 		return 0;
 	}
 
@@ -1461,7 +1462,7 @@ SnapSelectedToGround(bool alignRotation)
 
 	if(transforms.empty()){
 		if(skipped > 0)
-			Toast(TOAST_SELECTION, "Ground snap skipped %d instance(s)", skipped);
+			Toast(TOAST_SELECTION, _("Ground snap skipped %d instance(s)"), skipped);
 		return 0;
 	}
 
@@ -1471,14 +1472,14 @@ SnapSelectedToGround(bool alignRotation)
 
 	if(snapped > 0){
 		if(alignRotation)
-			Toast(TOAST_SELECTION, "Aligned %d instance(s) to ground", snapped);
+			Toast(TOAST_SELECTION, _("Aligned %d instance(s) to ground"), snapped);
 		else
-			Toast(TOAST_SELECTION, "Snapped %d instance(s) to ground", snapped);
+			Toast(TOAST_SELECTION, _("Snapped %d instance(s) to ground"), snapped);
 	}
 	if(skipped > 0)
-		Toast(TOAST_SELECTION, "Skipped %d linked/conflicting instance(s)", skipped);
+		Toast(TOAST_SELECTION, _("Skipped %d linked/conflicting instance(s)"), skipped);
 	if(capped)
-		Toast(TOAST_SELECTION, "Snap skipped some linked instances at the %d object cap", MAX_BATCH_OBJECTS);
+		Toast(TOAST_SELECTION, _("Snap skipped some linked instances at the %d object cap"), MAX_BATCH_OBJECTS);
 	return snapped;
 }
 
@@ -1719,9 +1720,9 @@ brushBurstAt(rw::V3d hitPos, rw::V3d hitNormal)
 		UndoRecordPaste(batch, n);
 		ObjectDef *obj = GetObjectDef(objId);
 		if(count > 1)
-			Toast(TOAST_SPAWN, "Painted %d x %s", count, obj ? obj->m_name : "?");
+			Toast(TOAST_SPAWN, _("Painted %d x %s"), count, obj ? obj->m_name : "?");
 		else
-			Toast(TOAST_SPAWN, "Placed %s", obj ? obj->m_name : "?");
+			Toast(TOAST_SPAWN, _("Placed %s"), obj ? obj->m_name : "?");
 	}
 
 	sBrushLastPaintPos = hitPos;
@@ -1918,7 +1919,7 @@ handleRectSelect(void)
 		if(!gta::BeginColourCodePass(camera, &black)){
 			sRectSelectDragging = false;
 			gRectSelectActive = false;
-			Toast(TOAST_SELECTION, "Rectangle select failed to create the picking buffer");
+			Toast(TOAST_SELECTION, _("Rectangle select failed to create the picking buffer"));
 			return;
 		}
 		RenderEverythingColourCoded();
@@ -1933,13 +1934,13 @@ handleRectSelect(void)
 		if(numCodes < 0){
 			sRectSelectDragging = false;
 			gRectSelectActive = false;
-			Toast(TOAST_SELECTION, "Rectangle select failed to read the picking buffer");
+			Toast(TOAST_SELECTION, _("Rectangle select failed to read the picking buffer"));
 			return;
 		}
 		if(!addMode && !ctx.removeMode)
 			ClearSelection();
 		if(numCodes >= MAX_BATCH_OBJECTS)
-			Toast(TOAST_SELECTION, "Rectangle select limited to %d object(s)", MAX_BATCH_OBJECTS);
+			Toast(TOAST_SELECTION, _("Rectangle select limited to %d object(s)"), MAX_BATCH_OBJECTS);
 
 		int count = 0;
 		for(int i = 0; i < numCodes; i++){
@@ -1954,7 +1955,7 @@ handleRectSelect(void)
 		}
 
 		if(count > 0)
-			Toast(TOAST_SELECTION, "Selected %d object(s)", count);
+			Toast(TOAST_SELECTION, _("Selected %d object(s)"), count);
 
 		sRectSelectDragging = false;
 		gRectSelectActive = false;
@@ -2042,7 +2043,7 @@ handleTool(void)
 		}else{
 			int32 code = pick();
 			if(code < 0){
-				Toast(TOAST_SELECTION, "Selection failed to create or read the picking buffer");
+				Toast(TOAST_SELECTION, _("Selection failed to create or read the picking buffer"));
 				return;
 			}
 			ObjectInst *inst = GetInstanceByID(code);
@@ -2070,7 +2071,7 @@ handleTool(void)
 		// middle-click selection and middle-button drag camera controls.
 		if(CPad::IsAltDown() && !CPad::IsCtrlDown()){
 			TheCamera.m_fov = CAMERA_FOV_DEFAULT;
-			Toast(TOAST_SELECTION, "FOV reset to 70°");
+			Toast(TOAST_SELECTION, _("FOV reset to 70°"));
 			return;
 		}else if(!IsIplMapDocumentOpen() && CPad::IsCtrlDown()){
 			Path::selectedNode = Path::hoveredNode;
@@ -2086,7 +2087,7 @@ handleTool(void)
 			}else{
 				int32 code = pick();
 				if(code < 0){
-					Toast(TOAST_SELECTION, "Selection failed to create or read the picking buffer");
+					Toast(TOAST_SELECTION, _("Selection failed to create or read the picking buffer"));
 					return;
 				}
 				ClearSelection();
@@ -2251,19 +2252,19 @@ DrawSplashPlanet(ImDrawList *dl, ImVec2 c, float r, float t, ImU32 accent)
 static void
 DrawSplash(float dt)
 {
-	// %s is the key of the tip's shortcut, from the shortcut table.
+	// %s is the key of the tip's shortcut, from the shortcut table. N_(): drawn with _().
 	static const struct { const char *text; int shortcut; } tips[] = {
-		{ "Press %s to pick an object, then double-click it to place it.", SC_WINDOW_BROWSER },
-		{ "Press %s to outline every object in your map, even invisible ones.", SC_OUTLINE_OBJECTS },
-		{ "Drag a panel's title bar to dock it beside the 3D view.", -1 },
-		{ "Hold Shift while dragging the gizmo to move in fixed steps.", -1 },
-		{ "%s drops the selected objects onto the ground.", SC_SNAP_TO_GROUND },
-		{ "%s pastes objects exactly where they were copied.", SC_PASTE_IN_PLACE },
-		{ "%s points the camera at the selection.", SC_FOCUS_SELECTION },
-		{ "%s lists every keyboard shortcut; change them in Preferences.", SC_WINDOW_SHORTCUTS },
-		{ "The SA-MP tab places pickups, 3D labels, actors, classes, gang zones and map icons.", -1 },
-		{ "Select several objects and edit a field: it changes on all of them.", -1 },
-		{ "Search the browser by ID ranges, like 19000-19100.", -1 },
+		{ N_("Press %s to pick an object, then double-click it to place it."), SC_WINDOW_BROWSER },
+		{ N_("Press %s to outline every object in your map, even invisible ones."), SC_OUTLINE_OBJECTS },
+		{ N_("Drag a panel's title bar to dock it beside the 3D view."), -1 },
+		{ N_("Hold Shift while dragging the gizmo to move in fixed steps."), -1 },
+		{ N_("%s drops the selected objects onto the ground."), SC_SNAP_TO_GROUND },
+		{ N_("%s pastes objects exactly where they were copied."), SC_PASTE_IN_PLACE },
+		{ N_("%s points the camera at the selection."), SC_FOCUS_SELECTION },
+		{ N_("%s lists every keyboard shortcut; change them in Preferences."), SC_WINDOW_SHORTCUTS },
+		{ N_("The SA-MP tab places pickups, 3D labels, actors, classes, gang zones and map icons."), -1 },
+		{ N_("Select several objects and edit a field: it changes on all of them."), -1 },
+		{ N_("Search the browser by ID ranges, like 19000-19100."), -1 },
 	};
 	static int tip = -1;
 	if(tip < 0)	// rand() is never seeded, so it would pick the same tip every time
@@ -2280,6 +2281,7 @@ DrawSplash(float dt)
 	cam->clear(&background, rw::Camera::CLEARIMAGE | rw::Camera::CLEARZ);
 	cam->beginUpdate();
 	DefinedState();
+	I18nNewFrame();
 	ImGui_ImplRW_NewFrame(dt);
 
 	static float time;
@@ -2340,7 +2342,7 @@ DrawSplash(float dt)
 	dl->AddText(font, bySize, ImVec2(left + 3.0f, y), SplashColor(ar, ag, ab, 1.0f), "by itsneufox");
 	y += bySize + fontSize * 1.1f;
 	dl->AddText(font, fontSize, ImVec2(left + 3.0f, y), IM_COL32(170, 172, 195, 230),
-		"The all-in-one editor for open.mp and SA-MP");
+		_("The all-in-one editor for open.mp and SA-MP"));
 
 	// Progress: a glowing bar with a light sweeping along it.
 	float barWidth = floorf(min(W * 0.4f, 420.0f));
@@ -2378,10 +2380,10 @@ DrawSplash(float dt)
 	char tipText[200];
 	char tipBody[160];
 	if(tips[tip].shortcut >= 0)
-		snprintf(tipBody, sizeof(tipBody), tips[tip].text, ShortcutLabel(tips[tip].shortcut));
+		snprintf(tipBody, sizeof(tipBody), _(tips[tip].text), ShortcutLabel(tips[tip].shortcut));
 	else
-		snprintf(tipBody, sizeof(tipBody), "%s", tips[tip].text);
-	snprintf(tipText, sizeof(tipText), "Tip: %s", tipBody);
+		snprintf(tipBody, sizeof(tipBody), "%s", _(tips[tip].text));
+	snprintf(tipText, sizeof(tipText), _("Tip: %s"), tipBody);
 	dl->AddText(font, fontSize, ImVec2(left, H - fontSize * 2.6f), IM_COL32(170, 172, 195, 210), tipText);
 	char version[64];
 	const char *channel = HAUMEA_CHANNEL_DISPLAY;	// empty for production
@@ -2450,7 +2452,7 @@ ExpandSplashWindow(void)
 		ShowEditorWindow();
 		splashActive = true;
 		splashExpand = 1.0f;
-		strncpy(splashStatus, "Opening map", sizeof(splashStatus) - 1);
+		strncpy(splashStatus, _("Opening map"), sizeof(splashStatus) - 1);
 		for(int i = 0; i < 3; i++)
 			DrawSplash(1/60.0f);
 		splashExpand = 0.0f;
@@ -2462,7 +2464,7 @@ ExpandSplashWindow(void)
 	SetEditorWindowDecorated(true);
 	splashActive = true;
 	splashProgress = 1.0f;
-	strncpy(splashStatus, "Ready", sizeof(splashStatus) - 1);
+	strncpy(splashStatus, _("Ready"), sizeof(splashStatus) - 1);
 	const float duration = 0.6f;
 	Clock::time_point start = Clock::now(), last = start;
 	for(;;){
@@ -2533,7 +2535,7 @@ LoadGame(void)
 //	SetCurrentDirectory("C:/Users/aap/games/gtasa");
 
 	splashActive = true;
-	SplashProgress(0.0f, "Starting");
+	SplashProgress(0.0f, _("Starting"));
 	SAPaths::Reset();
 	FindVersion();
 	ModloaderInit();
@@ -2559,7 +2561,7 @@ LoadGame(void)
 
 	defaultTxd = rw::TexDictionary::getCurrent();
 
-	SplashProgress(0.04f, "Loading textures and weather");
+	SplashProgress(0.04f, _("Loading textures and weather"));
 	int particleTxdSlot = AddTxdSlot("particle");
 	LoadTxd(particleTxdSlot, "MODELS/PARTICLE.TXD");
 
@@ -2581,7 +2583,7 @@ LoadGame(void)
 	AddColSlot("generic");
 	AddIplSlot("generic");
 
-	SplashProgress(0.08f, "Opening model archives");
+	SplashProgress(0.08f, _("Opening model archives"));
 
 	AddCdImage("MODELS\\GTA3.IMG");
 	if(isSA())
@@ -2609,7 +2611,7 @@ LoadGame(void)
 	}
 
 	if(isSA()){
-		SplashProgress(0.84f, "Loading vehicles");
+		SplashProgress(0.84f, _("Loading vehicles"));
 		FileLoader::LoadVehicleDefinitions();
 		RefreshCdImageMappings();
 	}
@@ -2626,7 +2628,7 @@ LoadGame(void)
 		}
 	}
 
-	SplashProgress(0.88f, "Loading SA-MP objects");
+	SplashProgress(0.88f, _("Loading SA-MP objects"));
 	if(isSA())
 		SampLoader::LoadDefinitions();
 
@@ -2639,7 +2641,7 @@ LoadGame(void)
 	LoadFavourites();
 	LoadRecentObjects();
 	// InitPreviewRenderer called lazily on first use
-	SplashProgress(0.95f, "Building the world");
+	SplashProgress(0.95f, _("Building the world"));
 	InitSectors();
 
 	CPtrNode *p;
@@ -2671,7 +2673,7 @@ LoadGame(void)
 		obj = GetObjectDef("IslandLODbeach", nil);
 		if(obj) obj->m_isHidden = true;
 	}
-	SplashProgress(1.0f, "Ready");
+	SplashProgress(1.0f, _("Ready"));
 	splashActive = false;
 }
 
@@ -3152,7 +3154,7 @@ dogizmo(void)
 		bool dragOverflow = false;
 		CaptureObjectTransformTargets(inst, true, dragTransforms, &dragOverflow);
 		if(dragOverflow)
-			Toast(TOAST_SELECTION, "Selection too large: some objects won't move (max %d)", MAX_BATCH_OBJECTS);
+			Toast(TOAST_SELECTION, _("Selection too large: some objects won't move (max %d)"), MAX_BATCH_OBJECTS);
 	}
 	// Record undo when drag ends
 	if(!isUsing && wasDragging){
@@ -3504,6 +3506,7 @@ Draw(void)
 
 	DefinedState();
 
+	I18nNewFrame();	// a language chosen in Preferences applies from here
 	ImGui_ImplRW_NewFrame(timeStep);
 	ImGuizmo::BeginFrame();
 
@@ -3583,7 +3586,7 @@ Idle(void)
 	switch(state){
 	case 0:
 		if(WorkspaceSetupNeeded()){
-			strncpy(splashStatus, "Choose the GTA San Andreas folder", sizeof(splashStatus) - 1);
+			strncpy(splashStatus, _("Choose the GTA San Andreas folder"), sizeof(splashStatus) - 1);
 			DrawSplash(1/60.0f);
 			break;
 		}

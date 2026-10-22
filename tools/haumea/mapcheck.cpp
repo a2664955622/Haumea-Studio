@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "i18n.h"
 #include "trains.h"
 #include "rec.h"
 #include "mapcheck.h"
@@ -196,7 +197,7 @@ label(const ObjectInst *inst, char *buf, size_t size)
 	ObjectDef *obj = GetObjectDef(inst->m_objectId);
 	int kind = GetSampElementKind(inst);
 	const char *what = kind != SAMP_ELEMENT_OBJECT ? GetSampElementKindName(kind) :
-		obj ? obj->m_name : "object";
+		obj ? obj->m_name : _("object");
 	if(p->name[0])
 		snprintf(buf, size, "%s (%s)", p->name, what);
 	else
@@ -209,7 +210,7 @@ label(const ObjectInst *inst, char *buf, size_t size)
 const char*
 MapCheckSeverityName(int severity)
 {
-	return severity == MAPCHECK_ERROR ? "Problem" : severity == MAPCHECK_WARNING ? "Warning" : "Note";
+	return severity == MAPCHECK_ERROR ? _("Problem") : severity == MAPCHECK_WARNING ? _("Warning") : _("Note");
 }
 
 void
@@ -242,21 +243,21 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 	}
 
 	// --- Limits ---
-	const char *LIMITS = "Limits";
+	const char *LIMITS = _("Limits");
 	int objectLimit = OBJECTS_037;
-	const char *objectWhy = "SA-MP 0.3.7 and open.mp with 0.3.7 clients allowed";
+	const char *objectWhy = _("SA-MP 0.3.7 and open.mp with 0.3.7 clients allowed");
 	if(config.found && config.artwork && !config.allow037){
 		objectLimit = OBJECTS_OMP;
-		objectWhy = "open.mp with artwork on and no 0.3.7 clients (config.json)";
+		objectWhy = _("open.mp with artwork on and no 0.3.7 clients (config.json)");
 	}
 	if(!streamer){
 		if((int)objects.size() > objectLimit)
-			c.add(MAPCHECK_ERROR, LIMITS, ids(objects), "%d objects, but CreateObject stops at %d (%s). "
-				"Objects past the limit are not created; save with Streamer code instead.",
+			c.add(MAPCHECK_ERROR, LIMITS, ids(objects), _("%d objects, but CreateObject stops at %d (%s). "
+				"Objects past the limit are not created; save with Streamer code instead."),
 				(int)objects.size(), objectLimit, objectWhy);
 		else if((int)objects.size() > objectLimit * 9 / 10)
-			c.add(MAPCHECK_WARNING, LIMITS, std::vector<int>(), "%d of %d objects (%s): the rest of the gamemode "
-				"has little room left.", (int)objects.size(), objectLimit, objectWhy);
+			c.add(MAPCHECK_WARNING, LIMITS, std::vector<int>(), _("%d of %d objects (%s): the rest of the gamemode "
+				"has little room left."), (int)objects.size(), objectLimit, objectWhy);
 	}else if(objects.size() > CLIENT_OBJECTS){
 		// The streamer creates what is near a player; find the busiest spot.
 		// Objects in 300 m cells: a spot's neighbours are in the 3x3 cells around it.
@@ -288,8 +289,8 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 			}
 		}
 		if(worst > CLIENT_OBJECTS)
-			c.add(MAPCHECK_WARNING, LIMITS, worstAt, "%d objects within %.0f m of one spot: a 0.3.7 client "
-				"shows at most %d at once, so the streamer will leave some out there.",
+			c.add(MAPCHECK_WARNING, LIMITS, worstAt, _("%d objects within %.0f m of one spot: a 0.3.7 client "
+				"shows at most %d at once, so the streamer will leave some out there."),
 				worst, STREAMER_OBJECT_SD, CLIENT_OBJECTS);
 	}
 	// Gang zones by how they are shown: only global ones share the server's
@@ -301,8 +302,8 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 	int globalZones = (int)zonesBy[SAMP_ZONE_GLOBAL].size();
 	int playerZones = globalZones + (int)zonesBy[SAMP_ZONE_PLAYER].size();
 	if(!zonesBy[SAMP_ZONE_PLAYER].empty() && playerZones > GANG_ZONES)
-		c.add(MAPCHECK_ERROR, LIMITS, ids(zonesBy[SAMP_ZONE_PLAYER]), "%d gang zones for every player (%d per-player, "
-			"%d global), over the %d a player can have; the extra ones are not shown.", playerZones,
+		c.add(MAPCHECK_ERROR, LIMITS, ids(zonesBy[SAMP_ZONE_PLAYER]), _("%d gang zones for every player (%d per-player, "
+			"%d global), over the %d a player can have; the extra ones are not shown."), playerZones,
 			(int)zonesBy[SAMP_ZONE_PLAYER].size(), globalZones, GANG_ZONES);
 	if(!zonesBy[SAMP_ZONE_STREAMED].empty()){
 		std::vector<float> bounds;
@@ -316,25 +317,25 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 		StreamedZoneGrid grid;
 		GetStreamedZoneGrid(bounds, &grid);
 		if(grid.capacity + playerZones > GANG_ZONES)
-			c.add(MAPCHECK_WARNING, LIMITS, ids(zonesBy[SAMP_ZONE_STREAMED]), "Up to %d streamed gang zones around "
+			c.add(MAPCHECK_WARNING, LIMITS, ids(zonesBy[SAMP_ZONE_STREAMED]), _("Up to %d streamed gang zones around "
 				"one spot, plus %d shown to everyone: a player can have %d, so some near there are left out. "
-				"Use bigger cells or fewer colours in the radar art.", grid.capacity, playerZones, GANG_ZONES);
+				"Use bigger cells or fewer colours in the radar art."), grid.capacity, playerZones, GANG_ZONES);
 	}
 	std::vector<ObjectInst*> ompZones = zonesBy[SAMP_ZONE_PLAYER];
 	ompZones.insert(ompZones.end(), zonesBy[SAMP_ZONE_STREAMED].begin(), zonesBy[SAMP_ZONE_STREAMED].end());
 	struct { int kind; int limit; bool streamerFree; const char *what; } pools[] = {
-		{ SAMP_ELEMENT_PICKUP, PICKUPS, true, "pickups" },
-		{ SAMP_ELEMENT_LABEL, LABELS, true, "3D text labels" },
-		{ SAMP_ELEMENT_ACTOR, ACTORS, true, "actors" },
-		{ SAMP_ELEMENT_GANGZONE, GANG_ZONES, false, "gang zones" },
-		{ SAMP_ELEMENT_CLASS, CLASSES, false, "player classes" },
-		{ SAMP_ELEMENT_MAPICON, MAP_ICONS, true, "map icons" },
+		{ SAMP_ELEMENT_PICKUP, PICKUPS, true, N_("pickups") },
+		{ SAMP_ELEMENT_LABEL, LABELS, true, N_("3D text labels") },
+		{ SAMP_ELEMENT_ACTOR, ACTORS, true, N_("actors") },
+		{ SAMP_ELEMENT_GANGZONE, GANG_ZONES, false, N_("gang zones") },
+		{ SAMP_ELEMENT_CLASS, CLASSES, false, N_("player classes") },
+		{ SAMP_ELEMENT_MAPICON, MAP_ICONS, true, N_("map icons") },
 	};
 	for(auto &pool : pools){
 		int n = (int)byKind[pool.kind].size();
 		if(n > pool.limit && !(streamer && pool.streamerFree))
-			c.add(MAPCHECK_ERROR, LIMITS, ids(byKind[pool.kind]), "%d %s, over the server's limit of %d; "
-				"the extra ones are not created.", n, pool.what, pool.limit);
+			c.add(MAPCHECK_ERROR, LIMITS, ids(byKind[pool.kind]), _("%d %s, over the server's limit of %d; "
+				"the extra ones are not created."), n, _(pool.what), pool.limit);
 	}
 	// A train takes a vehicle id for the engine and each carriage.
 	int vehicleIds = 0, trainIds = 0;
@@ -346,33 +347,33 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 	}
 	if(vehicleIds > VEHICLES){
 		if(trainIds > 0)
-			c.add(MAPCHECK_ERROR, LIMITS, ids(vehicles), "%d vehicle ids (%d of them for trains, 4 each), over the "
-				"limit of %d.", vehicleIds, trainIds, VEHICLES);
+			c.add(MAPCHECK_ERROR, LIMITS, ids(vehicles), _("%d vehicle ids (%d of them for trains, 4 each), over the "
+				"limit of %d."), vehicleIds, trainIds, VEHICLES);
 		else
-			c.add(MAPCHECK_ERROR, LIMITS, ids(vehicles), "%d vehicles, over the limit of %d.", vehicleIds, VEHICLES);
+			c.add(MAPCHECK_ERROR, LIMITS, ids(vehicles), _("%d vehicles, over the limit of %d."), vehicleIds, VEHICLES);
 	}
 
 	// --- Trains ---
-	const char *TRAINS = "Trains";
+	const char *TRAINS = _("Trains");
 	for(ObjectInst *inst : vehicles){
 		int model = inst->m_objectId;
 		if(IsTrainEngineModel(model)){
 			if(!inst->m_vehicleStatic)
-				c.add(MAPCHECK_ERROR, TRAINS, inst, "%s: trains are only made with AddStaticVehicle(Ex); open.mp's "
-					"CreateVehicle refuses them. Tick Static vehicle.", label(inst, name, sizeof(name)));
+				c.add(MAPCHECK_ERROR, TRAINS, inst, _("%s: trains are only made with AddStaticVehicle(Ex); open.mp's "
+					"CreateVehicle refuses them. Tick Static vehicle."), label(inst, name, sizeof(name)));
 			TrainCar cars[TRAIN_MAX_CARS];
 			float off = 0.0f;
 			if(ComputeTrainCars(model, inst->m_translation, GetTrainInstAngle(inst), cars, &off) > 0 && off > 3.0f)
-				c.add(MAPCHECK_WARNING, TRAINS, inst, "%s is %.0f m off the track: in game it stands on the nearest "
-					"track instead, at %.1f, %.1f, %.1f.", label(inst, name, sizeof(name)), off,
+				c.add(MAPCHECK_WARNING, TRAINS, inst, _("%s is %.0f m off the track: in game it stands on the nearest "
+					"track instead, at %.1f, %.1f, %.1f."), label(inst, name, sizeof(name)), off,
 					cars[0].position.x, cars[0].position.y, cars[0].position.z);
 		}else if(model == 569 || model == 570)
-			c.add(MAPCHECK_WARNING, TRAINS, inst, "%s: a carriage on its own isn't made in game (the client says \"bad "
-				"train carriages\"); place a %s, which brings three.", label(inst, name, sizeof(name)),
-				model == 570 ? "Brown Streak (538)" : "Freight (537)");
+			c.add(MAPCHECK_WARNING, TRAINS, inst, _("%s: a carriage on its own isn't made in game (the client says \"bad "
+				"train carriages\"); place a %s, which brings three."), label(inst, name, sizeof(name)),
+				model == 570 ? _("Brown Streak (538)") : _("Freight (537)"));
 		else if(model == 590)
-			c.add(MAPCHECK_WARNING, TRAINS, inst, "%s: no train in the game pulls the box freight, so it stands "
-				"alone, off any track.", label(inst, name, sizeof(name)));
+			c.add(MAPCHECK_WARNING, TRAINS, inst, _("%s: no train in the game pulls the box freight, so it stands "
+				"alone, off any track."), label(inst, name, sizeof(name)));
 	}
 
 	// --- Removed buildings ---
@@ -393,26 +394,26 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 	int areas = (int)GetPawnAreaRemovals().size();
 	int lines = areas + (int)removedOne.size();
 	if(lines > REMOVALS)
-		c.add(MAPCHECK_ERROR, LIMITS, ids(removedOne), "%d RemoveBuildingForPlayer calls, over SA-MP's %d per player: "
-			"the rest stay in the world.", lines, REMOVALS);
+		c.add(MAPCHECK_ERROR, LIMITS, ids(removedOne), _("%d RemoveBuildingForPlayer calls, over SA-MP's %d per player: "
+			"the rest stay in the world."), lines, REMOVALS);
 	else if(areas > 0)
-		c.add(MAPCHECK_INFO, LIMITS, ids(removedOne), "%d RemoveBuildingForPlayer calls: %d for whole areas (model -1) "
-			"and %d for single buildings.", lines, areas, (int)removedOne.size());
+		c.add(MAPCHECK_INFO, LIMITS, ids(removedOne), _("%d RemoveBuildingForPlayer calls: %d for whole areas (model -1) "
+			"and %d for single buildings."), lines, areas, (int)removedOne.size());
 	if(!inArea.empty())
-		c.add(MAPCHECK_WARNING, LIMITS, ids(inArea), "%d world building(s) shown here are inside a model -1 removal: "
-			"in game they stay removed.", (int)inArea.size());
+		c.add(MAPCHECK_WARNING, LIMITS, ids(inArea), _("%d world building(s) shown here are inside a model -1 removal: "
+			"in game they stay removed."), (int)inArea.size());
 	int npcs = (int)byKind[SAMP_ELEMENT_NPC].size();
 	if(npcs > 0){
 		if(config.found && npcs > config.maxPlayers)
-			c.add(MAPCHECK_ERROR, LIMITS, ids(byKind[SAMP_ELEMENT_NPC]), "%d NPCs, but config.json allows %d players "
-				"and every NPC takes a player slot.", npcs, config.maxPlayers);
+			c.add(MAPCHECK_ERROR, LIMITS, ids(byKind[SAMP_ELEMENT_NPC]), _("%d NPCs, but config.json allows %d players "
+				"and every NPC takes a player slot."), npcs, config.maxPlayers);
 		else
-			c.add(MAPCHECK_INFO, LIMITS, std::vector<int>(), "%d NPC(s) will take %d player slot(s)%s.", npcs, npcs,
-				config.found ? "" : " (no config.json in the workspace to check max_players against)");
+			c.add(MAPCHECK_INFO, LIMITS, std::vector<int>(), _("%d NPC(s) will take %d player slot(s)%s."), npcs, npcs,
+				config.found ? "" : _(" (no config.json in the workspace to check max_players against)"));
 	}
 
 	// --- Models ---
-	const char *MODELS = "Models";
+	const char *MODELS = _("Models");
 	const PawnImportReport &report = GetLastPawnImportReport();
 	if(report.unknownModelObjects > 0){
 		std::string list, custom;
@@ -423,24 +424,24 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 			if(to.size() < 200)
 				to += (to.empty() ? "" : ", ") + std::to_string(isCustom ? PawnModelId(id) : id);
 		}
-		c.add(MAPCHECK_ERROR, MODELS, std::vector<int>(), "%d object(s) with models the editor doesn't know were left "
-			"out when the map was opened, and saving drops them.%s%s%s%s", report.unknownModelObjects,
-			list.empty() ? "" : " IDs: ", list.c_str(),
-			custom.empty() ? "" : list.empty() ? " Custom IDs not in artconfig.txt or AddSimpleModel: " :
-				". Custom IDs not in artconfig.txt or AddSimpleModel: ", custom.c_str());
+		c.add(MAPCHECK_ERROR, MODELS, std::vector<int>(), _("%d object(s) with models the editor doesn't know were left "
+			"out when the map was opened, and saving drops them.%s%s%s%s"), report.unknownModelObjects,
+			list.empty() ? "" : _(" IDs: "), list.c_str(),
+			custom.empty() ? "" : list.empty() ? _(" Custom IDs not in artconfig.txt or AddSimpleModel: ") :
+				_(". Custom IDs not in artconfig.txt or AddSimpleModel: "), custom.c_str());
 		// What to do about it.
-		c.add(MAPCHECK_INFO, MODELS, std::vector<int>(), "To keep them: a SA-MP 0.3.DL or open.mp custom model "
+		c.add(MAPCHECK_INFO, MODELS, std::vector<int>(), _("To keep them: a SA-MP 0.3.DL or open.mp custom model "
 			"goes in the workspace's models/artconfig.txt (AddSimpleModel) with its DFF and TXD; anything "
-			"else needs a similar game or SA-MP object in its place (search the Object Browser).");
+			"else needs a similar game or SA-MP object in its place (search the Object Browser)."));
 	}
 	for(ObjectInst *inst : objects){
 		ObjectDef *obj = GetObjectDef(inst->m_objectId);
 		if(obj == nil || obj->m_cantLoad)
-			c.add(MAPCHECK_ERROR, MODELS, inst, "%s: its model can't be loaded.", label(inst, name, sizeof(name)));
+			c.add(MAPCHECK_ERROR, MODELS, inst, _("%s: its model can't be loaded."), label(inst, name, sizeof(name)));
 	}
 
 	// --- Positions ---
-	const char *PLACES = "Positions";
+	const char *PLACES = _("Positions");
 	std::vector<ObjectInst*> outside, offMap;
 	for(CPtrNode *p = instances.first; p; p = p->next){
 		ObjectInst *inst = (ObjectInst*)p->item;
@@ -453,14 +454,14 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 			offMap.push_back(inst);
 	}
 	if(!outside.empty())
-		c.add(MAPCHECK_ERROR, PLACES, ids(outside), "%d element(s) outside SA-MP's world bounds (\xC2\xB1%d): "
-			"the server clamps or ignores those positions.", (int)outside.size(), SA_MP_WORLD_BOUND);
+		c.add(MAPCHECK_ERROR, PLACES, ids(outside), _("%d element(s) outside SA-MP's world bounds (\xC2\xB1%d): "
+			"the server clamps or ignores those positions."), (int)outside.size(), SA_MP_WORLD_BOUND);
 	if(!offMap.empty())
-		c.add(MAPCHECK_INFO, PLACES, ids(offMap), "%d element(s) beyond the San Andreas map (\xC2\xB1%d). "
-			"They work, but the game's water, map and radar end there.", (int)offMap.size(), SA_GAME_WATER_BOUND);
+		c.add(MAPCHECK_INFO, PLACES, ids(offMap), _("%d element(s) beyond the San Andreas map (\xC2\xB1%d). "
+			"They work, but the game's water, map and radar end there."), (int)offMap.size(), SA_GAME_WATER_BOUND);
 
 	// --- Materials ---
-	const char *MATERIALS = "Materials";
+	const char *MATERIALS = _("Materials");
 	std::map<std::string, std::vector<int>> missingFonts;	// lowercase name -> objects
 	std::map<std::string, std::string> missingFontNames, missingFontPreviews;
 	for(ObjectInst *inst : objects){
@@ -473,8 +474,8 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 			if(m == nil || (!m->active && !m->textEnabled))
 				continue;
 			if(count >= 0 && slot >= count)
-				c.add(MAPCHECK_WARNING, MATERIALS, inst, "%s: material slot %d is set, but the model has %d slot(s), "
-					"so it does nothing.", label(inst, name, sizeof(name)), slot, count);
+				c.add(MAPCHECK_WARNING, MATERIALS, inst, _("%s: material slot %d is set, but the model has %d slot(s), "
+					"so it does nothing."), label(inst, name, sizeof(name)), slot, count);
 			if(m->active && !m->textEnabled){
 				// The TXD and texture as the client looks them up (game, SA-MP
 				// or the workspace's custom models).
@@ -483,7 +484,7 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 				if(check != MATERIAL_TEXTURE_OK)
 					c.add(check == MATERIAL_TEXTURE_ERROR ? MAPCHECK_ERROR :
 						check == MATERIAL_TEXTURE_NOTE ? MAPCHECK_INFO : MAPCHECK_WARNING, MATERIALS, inst,
-						"%s: material slot %d: %s", label(inst, name, sizeof(name)), slot, why);
+						_("%s: material slot %d: %s"), label(inst, name, sizeof(name)), slot, why);
 			}
 			if(m->textEnabled){
 				std::string preview;
@@ -497,57 +498,57 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 					missingFontPreviews[key] = preview;
 				}
 				if(badColourCode(m->text))
-					c.add(MAPCHECK_WARNING, MATERIALS, inst, "%s: material text in slot %d has a '{' that isn't a "
-						"{RRGGBB} colour code; it shows as text.", label(inst, name, sizeof(name)), slot);
+					c.add(MAPCHECK_WARNING, MATERIALS, inst, _("%s: material text in slot %d has a '{' that isn't a "
+						"{RRGGBB} colour code; it shows as text."), label(inst, name, sizeof(name)), slot);
 				if((int)strlen(m->text) >= PAWN_MATERIAL_TEXT_LEN - 1)
-					c.add(MAPCHECK_WARNING, MATERIALS, inst, "%s: material text in slot %d is at the %d-character "
-						"limit and may have been cut.", label(inst, name, sizeof(name)), slot, PAWN_MATERIAL_TEXT_LEN - 1);
+					c.add(MAPCHECK_WARNING, MATERIALS, inst, _("%s: material text in slot %d is at the %d-character "
+						"limit and may have been cut."), label(inst, name, sizeof(name)), slot, PAWN_MATERIAL_TEXT_LEN - 1);
 			}
 		}
 	}
 
 	for(auto &f : missingFonts)
-		c.add(MAPCHECK_INFO, MATERIALS, f.second, "%d object(s) use the font \"%s\", which isn't installed here: "
+		c.add(MAPCHECK_INFO, MATERIALS, f.second, _("%d object(s) use the font \"%s\", which isn't installed here: "
 			"the preview uses %s. Players see it only if they have the font. To preview it, put its .ttf in "
-			"the fonts folder (Object Info, Open fonts folder) and rescan.", (int)f.second.size(),
+			"the fonts folder (Object Info, Open fonts folder) and rescan."), (int)f.second.size(),
 			missingFontNames[f.first].c_str(), missingFontPreviews[f.first].c_str());
 
 	// --- Elements ---
-	const char *ELEMENTS = "Elements";
+	const char *ELEMENTS = _("Elements");
 	for(ObjectInst *inst : byKind[SAMP_ELEMENT_LABEL]){
 		const ObjectPawnProperties *p = GetObjectPawnProperties(inst);
 		if(p->labelText[0] == '\0')
-			c.add(MAPCHECK_WARNING, ELEMENTS, inst, "%s has no text.", label(inst, name, sizeof(name)));
+			c.add(MAPCHECK_WARNING, ELEMENTS, inst, _("%s has no text."), label(inst, name, sizeof(name)));
 		if(badColourCode(p->labelText))
-			c.add(MAPCHECK_WARNING, ELEMENTS, inst, "%s: a '{' that isn't a {RRGGBB} colour code shows as text.",
+			c.add(MAPCHECK_WARNING, ELEMENTS, inst, _("%s: a '{' that isn't a {RRGGBB} colour code shows as text."),
 				label(inst, name, sizeof(name)));
 		if((int)strlen(p->labelText) >= PAWN_LABEL_TEXT_LEN - 1)
-			c.add(MAPCHECK_WARNING, ELEMENTS, inst, "%s is at the %d-character limit and may have been cut.",
+			c.add(MAPCHECK_WARNING, ELEMENTS, inst, _("%s is at the %d-character limit and may have been cut."),
 				label(inst, name, sizeof(name)), PAWN_LABEL_TEXT_LEN - 1);
 	}
 	for(ObjectInst *inst : byKind[SAMP_ELEMENT_SOUND]){
 		const ObjectPawnProperties *p = GetObjectPawnProperties(inst);
 		if(p->soundKind == SAMP_SOUND_STREAM &&
 		   strncmp(p->soundUrl, "http://", 7) != 0 && strncmp(p->soundUrl, "https://", 8) != 0)
-			c.add(MAPCHECK_ERROR, ELEMENTS, inst, "%s: PlayAudioStreamForPlayer needs an http:// or https:// URL%s.",
-				label(inst, name, sizeof(name)), p->soundUrl[0] ? "" : ", and it has none");
+			c.add(MAPCHECK_ERROR, ELEMENTS, inst, _("%s: PlayAudioStreamForPlayer needs an http:// or https:// URL%s."),
+				label(inst, name, sizeof(name)), p->soundUrl[0] ? "" : _(", and it has none"));
 	}
 	for(auto &v : variables)
 		if(v.second.size() > 1)
-			c.add(MAPCHECK_ERROR, ELEMENTS, ids(v.second), "%d elements share the variable name \"%s\": "
-				"the Pawn code won't compile.", (int)v.second.size(), v.first.c_str());
+			c.add(MAPCHECK_ERROR, ELEMENTS, ids(v.second), _("%d elements share the variable name \"%s\": "
+				"the Pawn code won't compile."), (int)v.second.size(), v.first.c_str());
 	for(CPtrNode *p = instances.first; p; p = p->next){
 		ObjectInst *inst = (ObjectInst*)p->item;
 		if(inst->m_isDeleted || inst->m_pawnProperties == nil || inst->m_pawnProperties->attachParent < 0)
 			continue;
 		ObjectInst *parent = GetInstanceByID(inst->m_pawnProperties->attachParent);
 		if(parent == nil || parent->m_isDeleted)
-			c.add(MAPCHECK_ERROR, ELEMENTS, inst, "%s is attached to an object that was deleted.",
+			c.add(MAPCHECK_ERROR, ELEMENTS, inst, _("%s is attached to an object that was deleted."),
 				label(inst, name, sizeof(name)));
 	}
 
 	// --- NPCs (open.mp) ---
-	const char *NPCS = "NPCs";
+	const char *NPCS = _("NPCs");
 	std::set<std::string> usedPaths;
 	std::map<std::string, std::vector<ObjectInst*>> npcNames;
 	std::map<std::pair<int32, int>, std::vector<ObjectInst*>> seats;	// (vehicle, seat)
@@ -556,57 +557,57 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 		npcNames[p->npcName].push_back(inst);
 		ObjectInst *vehicle = GetNpcVehicle(inst);
 		if(p->npcVehicle >= 0 && vehicle == nil)
-			c.add(MAPCHECK_ERROR, NPCS, inst, "%s sits in a vehicle that was deleted, so it is saved on foot.",
+			c.add(MAPCHECK_ERROR, NPCS, inst, _("%s sits in a vehicle that was deleted, so it is saved on foot."),
 				label(inst, name, sizeof(name)));
 		if(vehicle)
 			seats[std::make_pair(vehicle->m_id, p->npcSeat)].push_back(inst);
 		if(p->npcRecording[0]){
 			int type = RecTypeOfName(p->npcRecording);
 			if(type == REC_DRIVER && !(vehicle && p->npcSeat == 0))
-				c.add(MAPCHECK_ERROR, NPCS, inst, "%s plays driver recording %s but isn't driving a vehicle: "
-					"open.mp reports it playing, yet the NPC never moves. Put it in a vehicle as the driver.",
+				c.add(MAPCHECK_ERROR, NPCS, inst, _("%s plays driver recording %s but isn't driving a vehicle: "
+					"open.mp reports it playing, yet the NPC never moves. Put it in a vehicle as the driver."),
 					label(inst, name, sizeof(name)), p->npcRecording);
 			else if(type == REC_ONFOOT && vehicle)
-				c.add(MAPCHECK_WARNING, NPCS, inst, "%s plays on-foot recording %s while in a vehicle; "
-					"it needs to be on foot.", label(inst, name, sizeof(name)), p->npcRecording);
+				c.add(MAPCHECK_WARNING, NPCS, inst, _("%s plays on-foot recording %s while in a vehicle; "
+					"it needs to be on foot."), label(inst, name, sizeof(name)), p->npcRecording);
 		}
 		if(!validName(p->npcName))
-			c.add(MAPCHECK_ERROR, NPCS, inst, "%s: \"%s\" isn't a valid player name (%d-%d letters, digits or ][_$=()), "
-				"so NPC_Create fails.", label(inst, name, sizeof(name)), p->npcName, MIN_NAME, MAX_NAME);
+			c.add(MAPCHECK_ERROR, NPCS, inst, _("%s: \"%s\" isn't a valid player name (%d-%d letters, digits or ][_$=()), "
+				"so NPC_Create fails."), label(inst, name, sizeof(name)), p->npcName, MIN_NAME, MAX_NAME);
 		if(p->npcRecording[0]){
 			std::string file = p->npcRecording;
 			if(file.size() < 4 || strcasecmp(file.c_str() + file.size() - 4, ".rec") != 0)
 				file += ".rec";
 			if(GetWorkspaceDir()[0] && !fileExists(WorkspacePath(("npcmodes/recordings/" + file).c_str())))
-				c.add(MAPCHECK_ERROR, NPCS, inst, "%s: recording %s isn't in the workspace's npcmodes/recordings.",
+				c.add(MAPCHECK_ERROR, NPCS, inst, _("%s: recording %s isn't in the workspace's npcmodes/recordings."),
 					label(inst, name, sizeof(name)), file.c_str());
 		}else if(p->npcPlaysNode){
 			char node[64];
 			snprintf(node, sizeof(node), "scriptfiles/NPCs/nodes/NODES%d.DAT", p->npcNode);
 			if(GetWorkspaceDir()[0] && !fileExists(WorkspacePath(node)))
-				c.add(MAPCHECK_INFO, NPCS, inst, "%s walks node file %d, which isn't in the workspace (%s). "
-					"open.mp downloads it on first use; offline servers need it copied there.",
+				c.add(MAPCHECK_INFO, NPCS, inst, _("%s walks node file %d, which isn't in the workspace (%s). "
+					"open.mp downloads it on first use; offline servers need it copied there."),
 					label(inst, name, sizeof(name)), p->npcNode, node);
 		}else if(p->pathName[0]){
 			usedPaths.insert(p->pathName);
 			std::vector<ObjectInst*> points;
 			GetNpcPathPoints(p->pathName, points);
 			if(points.empty())
-				c.add(MAPCHECK_ERROR, NPCS, inst, "%s follows path \"%s\", which has no points.",
+				c.add(MAPCHECK_ERROR, NPCS, inst, _("%s follows path \"%s\", which has no points."),
 					label(inst, name, sizeof(name)), p->pathName);
 			else if(points.size() == 1)
-				c.add(MAPCHECK_WARNING, NPCS, inst, "%s follows path \"%s\", which has one point: it walks there "
-					"and stops.", label(inst, name, sizeof(name)), p->pathName);
+				c.add(MAPCHECK_WARNING, NPCS, inst, _("%s follows path \"%s\", which has one point: it walks there "
+					"and stops."), label(inst, name, sizeof(name)), p->pathName);
 		}
 	}
 	for(auto &seat : seats)
 		if(seat.second.size() > 1)
-			c.add(MAPCHECK_ERROR, NPCS, ids(seat.second), "%d NPCs sit in the same seat (%d) of one vehicle: "
-				"they can't both sit there.", (int)seat.second.size(), seat.first.second);
+			c.add(MAPCHECK_ERROR, NPCS, ids(seat.second), _("%d NPCs sit in the same seat (%d) of one vehicle: "
+				"they can't both sit there."), (int)seat.second.size(), seat.first.second);
 	for(auto &n : npcNames)
 		if(n.second.size() > 1 && n.first[0])
-			c.add(MAPCHECK_ERROR, NPCS, ids(n.second), "%d NPCs are named \"%s\": names must be unique, so only "
-				"one is created.", (int)n.second.size(), n.first.c_str());
+			c.add(MAPCHECK_ERROR, NPCS, ids(n.second), _("%d NPCs are named \"%s\": names must be unique, so only "
+				"one is created."), (int)n.second.size(), n.first.c_str());
 	std::map<std::string, std::vector<ObjectInst*>> unusedPaths;
 	for(ObjectInst *inst : byKind[SAMP_ELEMENT_PATHPOINT]){
 		const ObjectPawnProperties *p = GetObjectPawnProperties(inst);
@@ -614,20 +615,20 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 			unusedPaths[p->pathName].push_back(inst);
 	}
 	for(auto &path : unusedPaths)
-		c.add(MAPCHECK_INFO, NPCS, ids(path.second), "Path \"%s\" (%d point(s)) isn't followed by any NPC.",
-			path.first.empty() ? "(no name)" : path.first.c_str(), (int)path.second.size());
+		c.add(MAPCHECK_INFO, NPCS, ids(path.second), _("Path \"%s\" (%d point(s)) isn't followed by any NPC."),
+			path.first.empty() ? _("(no name)") : path.first.c_str(), (int)path.second.size());
 	// open.mp walks a path once; repeating it needs the generated helper hooked up.
 	std::vector<ObjectInst*> repeating;
 	for(ObjectInst *inst : byKind[SAMP_ELEMENT_NPC])
 		if(GetObjectPawnProperties(inst)->npcPathRepeat != NPC_PATH_ONCE)
 			repeating.push_back(inst);
 	if(!repeating.empty())
-		c.add(MAPCHECK_INFO, NPCS, ids(repeating), "%d NPC(s) loop or walk back and forth along their path: "
+		c.add(MAPCHECK_INFO, NPCS, ids(repeating), _("%d NPC(s) loop or walk back and forth along their path: "
 			"call the map's <prefix>_OnNPCFinishMovePath(npcid, pathid) from your gamemode's "
-			"OnNPCFinishMovePath, or they stop at the path's end.", (int)repeating.size());
+			"OnNPCFinishMovePath, or they stop at the path's end."), (int)repeating.size());
 
 	// --- Checkpoints (streamer only) ---
-	const char *CHECKPOINTS = "Checkpoints";
+	const char *CHECKPOINTS = _("Checkpoints");
 	std::vector<ObjectInst*> plainCps, raceCps;
 	std::map<std::string, std::vector<ObjectInst*>> races;
 	for(ObjectInst *inst : byKind[SAMP_ELEMENT_CHECKPOINT]){
@@ -639,28 +640,28 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 			plainCps.push_back(inst);
 	}
 	if(!streamer && !byKind[SAMP_ELEMENT_CHECKPOINT].empty())
-		c.add(MAPCHECK_WARNING, CHECKPOINTS, ids(byKind[SAMP_ELEMENT_CHECKPOINT]), "%d checkpoint(s) are not written "
-			"in native code (a player has one checkpoint at a time, set by the script). Save as Streamer code.",
+		c.add(MAPCHECK_WARNING, CHECKPOINTS, ids(byKind[SAMP_ELEMENT_CHECKPOINT]), _("%d checkpoint(s) are not written "
+			"in native code (a player has one checkpoint at a time, set by the script). Save as Streamer code."),
 			(int)byKind[SAMP_ELEMENT_CHECKPOINT].size());
 	else if(plainCps.size() + raceCps.size() > 1)
-		c.add(MAPCHECK_INFO, CHECKPOINTS, std::vector<int>(), "%d checkpoint(s) and %d race checkpoint(s): a player "
-			"sees one of each at a time, so the streamer shows the nearest.", (int)plainCps.size(), (int)raceCps.size());
+		c.add(MAPCHECK_INFO, CHECKPOINTS, std::vector<int>(), _("%d checkpoint(s) and %d race checkpoint(s): a player "
+			"sees one of each at a time, so the streamer shows the nearest."), (int)plainCps.size(), (int)raceCps.size());
 	for(auto &race : races){
-		const char *raceName = race.first.empty() ? "(no name)" : race.first.c_str();
+		const char *raceName = race.first.empty() ? _("(no name)") : race.first.c_str();
 		if(race.second.size() == 1)
-			c.add(MAPCHECK_WARNING, CHECKPOINTS, ids(race.second), "Race \"%s\" has one checkpoint: there is "
-				"nothing to race to.", raceName);
+			c.add(MAPCHECK_WARNING, CHECKPOINTS, ids(race.second), _("Race \"%s\" has one checkpoint: there is "
+				"nothing to race to."), raceName);
 		std::map<int, std::vector<ObjectInst*>> orders;
 		for(ObjectInst *inst : race.second)
 			orders[GetObjectPawnProperties(inst)->cpOrder].push_back(inst);
 		for(auto &order : orders)
 			if(order.second.size() > 1)
-				c.add(MAPCHECK_ERROR, CHECKPOINTS, ids(order.second), "Race \"%s\": %d checkpoints share order %d, "
-					"so which one comes first is undefined.", raceName, (int)order.second.size(), order.first);
+				c.add(MAPCHECK_ERROR, CHECKPOINTS, ids(order.second), _("Race \"%s\": %d checkpoints share order %d, "
+					"so which one comes first is undefined."), raceName, (int)order.second.size(), order.first);
 	}
 
 	// --- Dynamic areas (streamer only) ---
-	const char *AREAS = "Dynamic areas";
+	const char *AREAS = _("Dynamic areas");
 	std::vector<ObjectInst*> limited;
 	std::map<std::string, int> uses;
 	for(CPtrNode *p = instances.first; p; p = p->next){
@@ -675,18 +676,18 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 	}
 	if(!streamer){
 		if(!byKind[SAMP_ELEMENT_AREA].empty())
-			c.add(MAPCHECK_WARNING, AREAS, ids(byKind[SAMP_ELEMENT_AREA]), "%d dynamic area(s) are not written in "
-				"native code (they are the streamer's). Save as Streamer code.", (int)byKind[SAMP_ELEMENT_AREA].size());
+			c.add(MAPCHECK_WARNING, AREAS, ids(byKind[SAMP_ELEMENT_AREA]), _("%d dynamic area(s) are not written in "
+				"native code (they are the streamer's). Save as Streamer code."), (int)byKind[SAMP_ELEMENT_AREA].size());
 		if(!limited.empty())
-			c.add(MAPCHECK_WARNING, AREAS, ids(limited), "%d item(s) are set to show only inside a dynamic area, "
-				"but native code shows them everywhere. Save as Streamer code.", (int)limited.size());
+			c.add(MAPCHECK_WARNING, AREAS, ids(limited), _("%d item(s) are set to show only inside a dynamic area, "
+				"but native code shows them everywhere. Save as Streamer code."), (int)limited.size());
 	}else{
 		for(ObjectInst *inst : limited){
 			const ObjectPawnProperties *props = GetObjectPawnProperties(inst);
 			ObjectInst *area = FindAreaByName(props->areaName);
 			if(area == nil){
-				c.add(MAPCHECK_WARNING, AREAS, inst, "%s is set to show only inside area \"%s\", which is not in "
-					"the map: it is written without one and shows everywhere.",
+				c.add(MAPCHECK_WARNING, AREAS, inst, _("%s is set to show only inside area \"%s\", which is not in "
+					"the map: it is written without one and shows everywhere."),
 					label(inst, name, sizeof(name)), props->areaName);
 				continue;
 			}
@@ -694,73 +695,74 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 			bool world = ap->virtualWorld < 0 || props->virtualWorld < 0 || ap->virtualWorld == props->virtualWorld;
 			bool interior = area->m_area <= 0 || inst->m_area <= 0 || area->m_area == inst->m_area;
 			if(!world || !interior)
-				c.add(MAPCHECK_WARNING, AREAS, { inst->m_id, area->m_id }, "%s only shows inside area \"%s\", "
-					"but they are in different virtual worlds or interiors: no player is ever in both.",
+				c.add(MAPCHECK_WARNING, AREAS, { inst->m_id, area->m_id }, _("%s only shows inside area \"%s\", "
+					"but they are in different virtual worlds or interiors: no player is ever in both."),
 					label(inst, name, sizeof(name)), ap->name);
 		}
 		for(ObjectInst *area : byKind[SAMP_ELEMENT_AREA]){
 			const ObjectPawnProperties *ap = GetObjectPawnProperties(area);
 			if(ap->areaShape == SAMP_AREA_POLYGON && ap->areaPointCount < 3)
-				c.add(MAPCHECK_ERROR, AREAS, area, "Polygon area \"%s\" has %d corner(s): it needs 3 or more, "
-					"or nobody is ever inside it.", ap->name, ap->areaPointCount);
+				c.add(MAPCHECK_ERROR, AREAS, area, _("Polygon area \"%s\" has %d corner(s): it needs 3 or more, "
+					"or nobody is ever inside it."), ap->name, ap->areaPointCount);
 			else if(uses.count(ap->name) == 0)
-				c.add(MAPCHECK_INFO, AREAS, area, "Area \"%s\" has no items limited to it (fine if the script "
-					"uses it for something else).", ap->name);
+				c.add(MAPCHECK_INFO, AREAS, area, _("Area \"%s\" has no items limited to it (fine if the script "
+					"uses it for something else)."), ap->name);
 		}
 	}
 
 	// --- TextDraws ---
-	const char *TEXTDRAWS = "TextDraws";
+	const char *TEXTDRAWS = _("TextDraws");
 	const std::vector<TextDraw> &textDraws = GetTextDraws();
 	int globalTds = 0, playerTds = 0;
 	for(size_t i = 0; i < textDraws.size(); i++){
 		const TextDraw &td = textDraws[i];
 		(td.perPlayer ? playerTds : globalTds)++;
-		const char *tdName = td.name[0] ? td.name : "(unnamed)";
+		const char *tdName = td.name[0] ? td.name : _("(unnamed)");
 		MapCheckItem item;
 		item.category = TEXTDRAWS;
 		item.textDraw = (int)i;
 		char text[512];
 		auto addTd = [&](int severity, const char *message){
-			snprintf(text, sizeof(text), "TextDraw %s: %s", tdName, message);
+			snprintf(text, sizeof(text), _("TextDraw %s: %s"), tdName, message);
 			item.severity = severity;
 			item.text = text;
 			result->items.push_back(item);
 		};
 		if(td.x < 0.0f || td.x > TEXTDRAW_CANVAS_W || td.y < 0.0f || td.y > TEXTDRAW_CANVAS_H)
-			addTd(MAPCHECK_WARNING, "its position is off the 640x448 canvas, so players won't see it.");
+			addTd(MAPCHECK_WARNING, _("its position is off the 640x448 canvas, so players won't see it."));
 		if(td.font == TD_FONT_SPRITE){
 			if(td.text.empty() || td.text.find(':') == std::string::npos)
-				addTd(MAPCHECK_ERROR, "a sprite needs its text as TXD:texture.");
+				addTd(MAPCHECK_ERROR, _("a sprite needs its text as TXD:texture."));
 		}else if(td.font != TD_FONT_PREVIEW){
 			if(td.text.empty())
-				addTd(MAPCHECK_WARNING, "empty text can crash 0.3.7 clients; use \"_\" for nothing.");
+				addTd(MAPCHECK_WARNING, _("empty text can crash 0.3.7 clients; use \"_\" for nothing."));
 			else if(badColourCode(td.text.c_str()))
-				addTd(MAPCHECK_INFO, "has a '{' that isn't a {RRGGBB} colour code.");
+				addTd(MAPCHECK_INFO, _("has a '{' that isn't a {RRGGBB} colour code."));
 		}
 		if((int)td.text.size() > MAX_TEXTDRAW_STR_LENGTH)
-			addTd(MAPCHECK_ERROR, "its text is longer than the 800-character limit.");
+			addTd(MAPCHECK_ERROR, _("its text is longer than the 800-character limit."));
 	}
 	// An old map's own textdraws are created in game too, beside the file's.
 	const std::vector<TextDraw> &mapTextDraws = GetMapTextDraws();
 	for(size_t i = 0; i < mapTextDraws.size(); i++)
 		(mapTextDraws[i].perPlayer ? playerTds : globalTds)++;
 	if(!mapTextDraws.empty())
-		c.add(MAPCHECK_INFO, TEXTDRAWS, std::vector<int>(), "%d textdraw(s) are still in the map, read-only: "
-			"TextDraws > Move to a separate file to edit them.", (int)mapTextDraws.size());
+		c.add(MAPCHECK_INFO, TEXTDRAWS, std::vector<int>(), _("%d textdraw(s) are still in the map, read-only: "
+			"TextDraws > Move to a separate file to edit them."), (int)mapTextDraws.size());
 	if(globalTds > GLOBAL_TEXTDRAWS)
-		c.add(MAPCHECK_ERROR, TEXTDRAWS, std::vector<int>(), "%d global textdraws, over the limit of %d.",
+		c.add(MAPCHECK_ERROR, TEXTDRAWS, std::vector<int>(), _("%d global textdraws, over the limit of %d."),
 			globalTds, GLOBAL_TEXTDRAWS);
 	if(playerTds > PLAYER_TEXTDRAWS)
-		c.add(MAPCHECK_ERROR, TEXTDRAWS, std::vector<int>(), "%d player textdraws, over the limit of %d per player.",
+		c.add(MAPCHECK_ERROR, TEXTDRAWS, std::vector<int>(), _("%d player textdraws, over the limit of %d per player."),
 			playerTds, PLAYER_TEXTDRAWS);
 
 	// --- Text encoding ---
 	// SA-MP and open.mp clients draw a string's bytes as Windows-1252.
-	const char *TEXT = "Text";
+	const char *TEXT = _("Text");
 	bool cp1252 = GetPawnTextEncoding() == PAWN_TEXT_CP1252;
 	std::vector<int> utf8Text;
-	auto checkText = [&](ObjectInst *inst, int textDraw, const char *what, const char *text, bool shown){
+	// format: the whole sentence, with the element's name and the missing characters.
+	auto checkText = [&](ObjectInst *inst, int textDraw, const char *format, const char *who, const char *text, bool shown){
 		if(text == nil || IsAscii(text))
 			return;
 		if(!cp1252){
@@ -774,9 +776,7 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 		if(missing.empty())
 			return;
 		char message[512];
-		snprintf(message, sizeof(message), "%s%s has %s, which Windows-1252 (what SA-MP and open.mp clients "
-			"draw) doesn't have: it is saved as '?'.", inst ? label(inst, name, sizeof(name)) : "", what,
-			missing.c_str());
+		snprintf(message, sizeof(message), format, inst ? label(inst, name, sizeof(name)) : who, missing.c_str());
 		if(inst){
 			c.add(shown ? MAPCHECK_WARNING : MAPCHECK_INFO, TEXT, inst, "%s", message);
 		}else{
@@ -794,46 +794,51 @@ RunMapCheck(int pawnFormat, MapCheckResult *result)
 			continue;
 		const ObjectPawnProperties *props = GetObjectPawnProperties(inst);
 		if(props->elementKind == SAMP_ELEMENT_LABEL)
-			checkText(inst, -1, "'s text", props->labelText, true);
+			checkText(inst, -1, _("%s's text has %s, which Windows-1252 (what SA-MP and open.mp clients draw) "
+				"doesn't have: it is saved as '?'."), nil, props->labelText, true);
 		for(int slot = 0; slot < MAX_PAWN_MATERIALS; slot++){
 			const ObjectMaterialOverride *m = GetObjectMaterialOverride(inst, slot);
 			if(m && m->textEnabled)
-				checkText(inst, -1, "'s material text", m->text, true);
+				checkText(inst, -1, _("%s's material text has %s, which Windows-1252 (what SA-MP and open.mp clients "
+					"draw) doesn't have: it is saved as '?'."), nil, m->text, true);
 		}
-		checkText(inst, -1, "'s group", props->group, false);
-		checkText(inst, -1, "'s note", props->comment, false);
+		checkText(inst, -1, _("%s's group has %s, which Windows-1252 (what SA-MP and open.mp clients draw) "
+			"doesn't have: it is saved as '?'."), nil, props->group, false);
+		checkText(inst, -1, _("%s's note has %s, which Windows-1252 (what SA-MP and open.mp clients draw) "
+			"doesn't have: it is saved as '?'."), nil, props->comment, false);
 	}
 	for(size_t i = 0; i < textDraws.size(); i++){
-		std::string what = std::string("TextDraw ") + (textDraws[i].name[0] ? textDraws[i].name : "(unnamed)");
-		checkText(nil, (int)i, what.c_str(), textDraws[i].text.c_str(), true);
+		checkText(nil, (int)i, _("TextDraw %s has %s, which Windows-1252 (what SA-MP and open.mp clients draw) "
+			"doesn't have: it is saved as '?'."), textDraws[i].name[0] ? textDraws[i].name : _("(unnamed)"),
+			textDraws[i].text.c_str(), true);
 	}
 	if(!utf8Text.empty()){
 		std::vector<int> insts;
 		for(int id : utf8Text)
 			if(id >= 0)
 				insts.push_back(id);
-		c.add(MAPCHECK_WARNING, TEXT, insts, "%d text(s) with accents or symbols are saved as UTF-8, but SA-MP "
+		c.add(MAPCHECK_WARNING, TEXT, insts, _("%d text(s) with accents or symbols are saved as UTF-8, but SA-MP "
 			"and open.mp clients draw Windows-1252, so they show garbled (\"Ã§\" for \"ç\"). Save As > "
-			"Windows-1252 fixes it.", (int)utf8Text.size());
+			"Windows-1252 fixes it."), (int)utf8Text.size());
 	}
 
 	// --- Server version ---
-	const char *SERVER = "Server";
+	const char *SERVER = _("Server");
 	int ompOnly = (int)(byKind[SAMP_ELEMENT_NPC].size() + byKind[SAMP_ELEMENT_PATHPOINT].size());
 	if(ompOnly > 0)
-		c.add(MAPCHECK_WARNING, SERVER, ids(byKind[SAMP_ELEMENT_NPC]), "The map has NPCs or NPC paths: their NPC_* "
-			"calls only compile and run on open.mp (with its NPCs component), not on a SA-MP 0.3.7 server.");
+		c.add(MAPCHECK_WARNING, SERVER, ids(byKind[SAMP_ELEMENT_NPC]), _("The map has NPCs or NPC paths: their NPC_* "
+			"calls only compile and run on open.mp (with its NPCs component), not on a SA-MP 0.3.7 server."));
 	if(!ompZones.empty())
-		c.add(MAPCHECK_WARNING, SERVER, ids(ompZones), "%d per-player or streamed gang zone(s): "
+		c.add(MAPCHECK_WARNING, SERVER, ids(ompZones), _("%d per-player or streamed gang zone(s): "
 			"CreatePlayerGangZone only compiles and runs on open.mp, not on a SA-MP 0.3.7 server. For 0.3.7, "
-			"set them to Global (Object Info > Shown as, or radar art's Shown as).", (int)ompZones.size());
+			"set them to Global (Object Info > Shown as, or radar art's Shown as)."), (int)ompZones.size());
 	if(!customModels.empty()){
 		bool ready = config.found && config.artwork;
-		c.add(ready ? MAPCHECK_INFO : MAPCHECK_WARNING, SERVER, ids(customModels), "%d element(s) use custom models: "
+		c.add(ready ? MAPCHECK_INFO : MAPCHECK_WARNING, SERVER, ids(customModels), _("%d element(s) use custom models: "
 			"the server needs them in models/artconfig.txt (or AddSimpleModel) and artwork enabled%s; players "
-			"need SA-MP 0.3.DL or an open.mp client.%s", (int)customModels.size(),
-			config.found ? (config.artwork ? "" : ", but config.json has artwork.enable off") : "",
-			config.found && config.allow037 ? " 0.3.7 clients are allowed and won't see them." : "");
+			"need SA-MP 0.3.DL or an open.mp client.%s"), (int)customModels.size(),
+			config.found ? (config.artwork ? "" : _(", but config.json has artwork.enable off")) : "",
+			config.found && config.allow037 ? _(" 0.3.7 clients are allowed and won't see them.") : "");
 	}
 
 	result->numErrors = result->numWarnings = 0;
@@ -848,12 +853,11 @@ MapCheckSummary(const MapCheckResult &result)
 {
 	char buf[96];
 	if(result.numErrors && result.numWarnings)
-		snprintf(buf, sizeof(buf), "%d problem%s and %d warning%s", result.numErrors, result.numErrors == 1 ? "" : "s",
-			result.numWarnings, result.numWarnings == 1 ? "" : "s");
+		snprintf(buf, sizeof(buf), _("Problems: %d, warnings: %d"), result.numErrors, result.numWarnings);
 	else if(result.numErrors)
-		snprintf(buf, sizeof(buf), "%d problem%s", result.numErrors, result.numErrors == 1 ? "" : "s");
+		snprintf(buf, sizeof(buf), _("Problems: %d"), result.numErrors);
 	else if(result.numWarnings)
-		snprintf(buf, sizeof(buf), "%d warning%s", result.numWarnings, result.numWarnings == 1 ? "" : "s");
+		snprintf(buf, sizeof(buf), _("Warnings: %d"), result.numWarnings);
 	else
 		buf[0] = '\0';
 	return buf;

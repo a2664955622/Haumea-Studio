@@ -128,6 +128,10 @@ jobs:
           $prefabs = Join-Path $bundle "prefabs"
           New-Item -ItemType Directory -Force -Path $prefabs | Out-Null
           Copy-Item "haumea\tools\haumea\prefabs\*" $prefabs -Recurse
+          # Translations: every lang/*.po is a language (tools/haumea/i18n.cpp).
+          $lang = Join-Path $bundle "lang"
+          New-Item -ItemType Directory -Force -Path $lang | Out-Null
+          Copy-Item "haumea\tools\haumea\lang\*.po" $lang
           $glfwDll = "glfw-3.3.4.bin.WIN64\lib-vc2015\glfw3.dll"
           if (Test-Path $glfwDll) { Copy-Item $glfwDll $bundle }
 
@@ -736,6 +740,11 @@ jobs:
           install -m 755 dist/linux/haumea dist/linux-bundle/haumea
           cp -r haumea/fonts dist/linux-bundle/fonts
           cp -r haumea/tools/haumea/prefabs dist/linux-bundle/prefabs
+          # Translations beside the editor, in the MANIFEST like any shipped
+          # file, so an update brings new catalogs. Windows stages its own.
+          mkdir -p dist/linux-bundle/lang
+          cp haumea/tools/haumea/lang/*.po dist/linux-bundle/lang/
+          ls dist/windows/lang/*.po >/dev/null || { echo "::error::the Windows bundle has no lang/*.po"; exit 1; }
           # Namaka (the AI companion) ships in each editor bundle's namaka/: its
           # wheel and wheelhouse from the Namaka bundle, and its installer.
           stage_namaka() {

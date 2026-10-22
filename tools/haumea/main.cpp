@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "i18n.h"
 #include "crashreports.h"
 #include "workspace.h"
 #include "modelmeta.h"
@@ -980,6 +981,9 @@ InitRW(void)
 	Scene.world->addCamera(TheCamera.m_rwcam);
 	Scene.world->addCamera(TheCamera.m_rwcam_viewer);
 
+	// The catalogs and the saved language, before the first frame and before
+	// imgui.ini is read (L() moves old window titles to their ### IDs).
+	I18nInit();
 	if(!ImGui_ImplRW_Init())
 		return false;
 	if(SettingsAreReadOnly()){
@@ -1191,9 +1195,9 @@ AppEventHandler(sk::Event e, void *param)
 		if(haumeaPrefab){
 			int imported = ImportPrefab(path);
 			if(imported > 0)
-				Toast(TOAST_SPAWN, "Imported %d instance(s) from prefab", imported);
+				Toast(TOAST_SPAWN, _("Imported %d instance(s) from prefab"), imported);
 			else
-				Toast(TOAST_SPAWN, "Failed to import prefab");
+				Toast(TOAST_SPAWN, _("Failed to import prefab"));
 		}else if(pawnFile || pawnInclude || textureStudioMap){
 			HandleMapFileDrop(path);
 		}else

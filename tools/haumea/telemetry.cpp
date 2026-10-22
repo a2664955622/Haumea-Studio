@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "i18n.h"
 #include "version.h"
 #include "versionutil.h"
 #include "telemetry.h"
@@ -198,7 +199,8 @@ hasArgument(const char *name)
 	return false;
 }
 
-// Why nothing may be sent from this run, or nil.
+// Why nothing may be sent from this run, or nil. N_(): logged in English,
+// shown with _().
 static const char*
 blockedBecause(void)
 {
@@ -208,9 +210,9 @@ blockedBecause(void)
 	if(testUrl())
 		return nil;	// a test of its own server
 	if(IsAutomatedRun())
-		return "an automated run";
+		return N_("an automated run");
 	if(hasArgument("--agent-socket"))
-		return "an agent session";
+		return N_("an agent session");
 	if(getenv("CI") || getenv("GITHUB_ACTIONS"))
 		return "CI";
 	return nil;
@@ -463,18 +465,18 @@ TelemetryDrawConsent(void)
 	gQuestionShown = true;
 	ImGui::Spacing();
 	ImGui::BeginChild("##telemetry_question", ImVec2(0, 0), ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY);
-	ImGui::TextWrapped("Help count Haumea Studio's users? Once a day it would send a random install ID, "
-		"the version, the channel and the operating system: nothing about you, your computer or your maps.");
-	if(ImGui::Button("Yes, send it"))
+	ImGui::TextWrapped(_("Help count Haumea Studio's users? Once a day it would send a random install ID, "
+		"the version, the channel and the operating system: nothing about you, your computer or your maps."));
+	if(ImGui::Button(_("Yes, send it")))
 		TelemetrySetEnabled(true);
 	ImGui::SameLine();
-	if(ImGui::Button("No thanks"))
+	if(ImGui::Button(_("No thanks")))
 		TelemetrySetEnabled(false);
 	ImGui::SameLine();
-	if(ImGui::SmallButton("What is kept?"))
+	if(ImGui::SmallButton(_("What is kept?")))
 		OpenInFileManager(PRIVACY_URL);
 	ImGui::SameLine();
-	ImGui::TextDisabled("Preferences > Privacy changes it later.");
+	ImGui::TextDisabled(_("Preferences > Privacy changes it later."));
 	ImGui::EndChild();
 }
 
@@ -490,18 +492,18 @@ void
 TelemetryPreferences(void)
 {
 	bool on = TelemetryIsEnabled();
-	if(ImGui::Checkbox("Send a daily usage ping", &on))
+	if(ImGui::Checkbox(_("Send a daily usage ping"), &on))
 		TelemetrySetEnabled(on);
-	ImGui::TextWrapped("At most once a day: a random install ID, the version (%s), the channel (%s) and the "
+	ImGui::TextWrapped(_("At most once a day: a random install ID, the version (%s), the channel (%s) and the "
 		"operating system (%s). It counts how many installs are in use; nothing about you, your computer or "
-		"your maps is sent. Turning it off deletes the ID.", HaumeaFullVersion(), HAUMEA_CHANNEL, osName());
+		"your maps is sent. Turning it off deletes the ID."), HaumeaFullVersion(), HAUMEA_CHANNEL, osName());
 	if(on){
 		load();
 		if(!gLastSent.empty())
-			ImGui::TextDisabled("Last sent %s (UTC).", gLastSent.c_str());
+			ImGui::TextDisabled(_("Last sent %s (UTC)."), gLastSent.c_str());
 		if(const char *why = blockedBecause())
-			ImGui::TextDisabled("Not sent from this run (%s).", why);
+			ImGui::TextDisabled(_("Not sent from this run (%s)."), _(why));
 	}
-	if(ImGui::SmallButton("What is sent and kept..."))
+	if(ImGui::SmallButton(_("What is sent and kept...")))
 		OpenInFileManager(PRIVACY_URL);
 }

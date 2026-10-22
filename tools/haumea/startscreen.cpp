@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "i18n.h"
 #include "telemetry.h"
 #include "workspace.h"
 #include "startscreen.h"
@@ -41,7 +42,7 @@ listSize(void)
 {
 	return ImVec2(0.0f, std::max(ImGui::GetFrameHeight() * 2.0f, gBodyBottom - ImGui::GetCursorScreenPos().y));
 }
-static const char *TITLE = "Welcome to Haumea Studio";
+static const char *TITLE = N_("Welcome to Haumea Studio");
 
 // ---- When ----
 
@@ -129,9 +130,13 @@ whenText(long long when)
 	if(when <= 0)
 		return "";
 	long long days = ((long long)time(nil) - when) / 86400;
-	if(days <= 0) return "today";
-	if(days == 1) return "yesterday";
-	if(days < 30) return std::to_string(days) + " days ago";
+	if(days <= 0) return _("today");
+	if(days == 1) return _("yesterday");
+	if(days < 30){
+		char ago[64];
+		snprintf(ago, sizeof(ago), _("%d days ago"), (int)days);
+		return ago;
+	}
 	time_t t = (time_t)when;
 	char buf[32];
 	strftime(buf, sizeof(buf), "%Y-%m-%d", localtime(&t));
@@ -251,14 +256,17 @@ countCustomModels(const std::string &workspace)
 static void
 gameSection(bool gameLoaded)
 {
-	ImGui::SeparatorText(ICON_FA_GAMEPAD " GTA San Andreas");
-	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize("Browse...").x -
+	ImGui::SeparatorText(TI(ICON_FA_GAMEPAD, "GTA San Andreas"));
+	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize(_("Browse...")).x -
 		ImGui::GetStyle().FramePadding.x * 2.0f - ImGui::GetStyle().ItemSpacing.x);
 	ImGui::InputText("##game", gGameField, sizeof(gGameField));
 	ImGui::SameLine();
-	if(ImGui::Button("Browse...##game")){
+	ImGui::PushID("game");
+	bool browse = ImGui::Button(_("Browse..."));
+	ImGui::PopID();
+	if(browse){
 		char picked[1024];
-		if(PickFolderDialog(picked, sizeof(picked), "GTA San Andreas folder", gGameField))
+		if(PickFolderDialog(picked, sizeof(picked), _("GTA San Andreas folder"), gGameField))
 			snprintf(gGameField, sizeof(gGameField), "%s", picked);
 	}
 	std::string problem;
@@ -267,7 +275,7 @@ gameSection(bool gameLoaded)
 	if(!ok)
 		ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.4f, 1.0f), "%s", problem.c_str());
 	else if(changed){
-		if(ImGui::Button("Use this game folder")){
+		if(ImGui::Button(_("Use this game folder"))){
 			SetGameDir(gGameField, nil);
 			gRestartNeeded = true;
 		}
@@ -275,24 +283,24 @@ gameSection(bool gameLoaded)
 		// What the editor found in the folder it loaded.
 		std::string version;
 		if(sampClientVersion(&version))
-			ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.5f, 1.0f), ICON_FA_CHECK " SA-MP %s found",
-				version.empty() ? "client" : version.c_str());
+			ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.5f, 1.0f), TI(ICON_FA_CHECK, "SA-MP %s found"),
+				version.empty() ? _("client") : version.c_str());
 		else
-			ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.35f, 1.0f), "No SA-MP client: SA-MP's own objects won't show.");
+			ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.35f, 1.0f), _("No SA-MP client: SA-MP's own objects won't show."));
 		if(sampClientVersion(&version) && version.empty()){
 			ImGui::SameLine();
-			ImGui::TextDisabled("(version unknown)");
+			ImGui::TextDisabled(_("(version unknown)"));
 		}
 		ImGui::SameLine();
 		int custom = countCustomModels(gSelected);
-		ImGui::TextDisabled("|  0.3.DL custom models in this workspace: %d", custom);
-		ImGui::SetItemTooltip("From the workspace's models/artconfig.txt.");
+		ImGui::TextDisabled(_("|  0.3.DL custom models in this workspace: %d"), custom);
+		ImGui::SetItemTooltip(_("From the workspace's models/artconfig.txt."));
 	}else
-		ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.5f, 1.0f), ICON_FA_CHECK " GTA San Andreas found.");
+		ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.5f, 1.0f), TI(ICON_FA_CHECK, "GTA San Andreas found."));
 	if(gRestartNeeded){
-		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.35f, 1.0f), "The new game folder loads when Haumea restarts.");
+		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.35f, 1.0f), _("The new game folder loads when Haumea restarts."));
 		ImGui::SameLine();
-		if(ImGui::SmallButton("Restart now"))
+		if(ImGui::SmallButton(_("Restart now")))
 			RestartHaumea();
 	}
 }
@@ -305,29 +313,32 @@ static char gNewParent[1024], gNewName[128];
 static void
 newWorkspaceForm(void)
 {
-	ImGui::TextDisabled("A server folder with gamemodes, filterscripts and scriptfiles.");
-	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize("Browse...").x -
+	ImGui::TextDisabled(_("A server folder with gamemodes, filterscripts and scriptfiles."));
+	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize(_("Browse...")).x -
 		ImGui::GetStyle().FramePadding.x * 2.0f - ImGui::GetStyle().ItemSpacing.x);
-	ImGui::InputTextWithHint("##parent", "In this folder", gNewParent, sizeof(gNewParent));
+	ImGui::InputTextWithHint("##parent", _("In this folder"), gNewParent, sizeof(gNewParent));
 	ImGui::SameLine();
-	if(ImGui::Button("Browse...##parent")){
+	ImGui::PushID("parent");
+	bool browse = ImGui::Button(_("Browse..."));
+	ImGui::PopID();
+	if(browse){
 		char picked[1024];
-		if(PickFolderDialog(picked, sizeof(picked), "Where the workspace goes", gNewParent))
+		if(PickFolderDialog(picked, sizeof(picked), _("Where the workspace goes"), gNewParent))
 			snprintf(gNewParent, sizeof(gNewParent), "%s", picked);
 	}
 	ImGui::SetNextItemWidth(-FLT_MIN);
-	ImGui::InputTextWithHint("##name", "Name, e.g. my-server", gNewName, sizeof(gNewName));
+	ImGui::InputTextWithHint("##name", _("Name, e.g. my-server"), gNewName, sizeof(gNewName));
 	bool nameOk = gNewName[0] && strpbrk(gNewName, "/\\:*?\"<>|") == nil && strcmp(gNewName, ".") && strcmp(gNewName, "..");
 	bool parentOk = isDir(gNewParent);
 	std::string path = std::string(gNewParent) + "/" + gNewName;
 	if(gNewName[0] && !nameOk)
-		ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.4f, 1.0f), "A name can't have / \\ : * ? \" < > |");
+		ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.4f, 1.0f), _("A name can't have / \\ : * ? \" < > |"));
 	else if(gNewParent[0] && !parentOk)
-		ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.4f, 1.0f), "That folder doesn't exist.");
+		ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.4f, 1.0f), _("That folder doesn't exist."));
 	else if(nameOk && parentOk && isDir(path))
-		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.35f, 1.0f), "%s exists: it is used as it is.", gNewName);
+		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.35f, 1.0f), _("%s exists: it is used as it is."), gNewName);
 	ImGui::BeginDisabled(!nameOk || !parentOk);
-	if(ImGui::Button("Create workspace")){
+	if(ImGui::Button(_("Create workspace"))){
 		bool made = makeDir(path);
 		static const char *folders[] = { "gamemodes", "filterscripts", "scriptfiles" };
 		for(const char *folder : folders)
@@ -338,23 +349,25 @@ newWorkspaceForm(void)
 			gNewWorkspace = false;
 			gNewName[0] = '\0';
 		}else
-			Toast(TOAST_SAVE, "Could not create %s", path.c_str());
+			Toast(TOAST_SAVE, _("Could not create %s"), path.c_str());
 	}
 	ImGui::EndDisabled();
 	ImGui::SameLine();
-	if(ImGui::Button("Cancel##new"))
+	ImGui::PushID("new");
+	if(ImGui::Button(_("Cancel")))
 		gNewWorkspace = false;
+	ImGui::PopID();
 }
 
 static void
 workspaceList(void)
 {
-	if(ImGui::Button(ICON_FA_PLUS " New workspace..."))
+	if(ImGui::Button(LI(ICON_FA_PLUS, "New workspace...")))
 		gNewWorkspace = !gNewWorkspace;
 	ImGui::SameLine();
-	if(ImGui::Button(ICON_FA_FOLDER_OPEN " Open folder as workspace...")){
+	if(ImGui::Button(LI(ICON_FA_FOLDER_OPEN, "Open folder as workspace..."))){
 		char picked[1024];
-		if(PickFolderDialog(picked, sizeof(picked), "Server folder", gSelected.c_str())){
+		if(PickFolderDialog(picked, sizeof(picked), _("Server folder"), gSelected.c_str())){
 			SetWorkspaceDir(picked);
 			gSelected = GetWorkspaceDir();
 		}
@@ -365,7 +378,7 @@ workspaceList(void)
 	std::vector<RecentWorkspace> recent = GetRecentWorkspaceList();
 	ImGui::BeginChild("workspaces", listSize(), ImGuiChildFlags_Borders);
 	if(recent.empty())
-		ImGui::TextDisabled("No workspaces yet: make one or open a server folder.");
+		ImGui::TextDisabled(_("No workspaces yet: make one or open a server folder."));
 	float buttons = ImGui::GetFrameHeight() * 3.0f + ImGui::GetStyle().ItemSpacing.x * 2.0f;
 	for(size_t i = 0; i < recent.size(); i++){
 		const RecentWorkspace &w = recent[i];
@@ -384,15 +397,15 @@ workspaceList(void)
 				gOpen = false;
 			}
 		}
-		ImGui::SetItemTooltip(gLoaded ? "%s\nDouble-click to open it." : "%s", w.path.c_str());
+		ImGui::SetItemTooltip(gLoaded ? _("%s\nDouble-click to open it.") : "%s", w.path.c_str());
 		ImGui::SetCursorPos(ImVec2(start.x + ImGui::GetStyle().ItemSpacing.x, start.y));
 		ImGui::TextUnformatted(label.c_str());
 		if(missing){
 			ImGui::SameLine();
-			ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.4f, 1.0f), "(missing)");
+			ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.4f, 1.0f), _("(missing)"));
 		}else if(w.path == GetWorkspaceDir()){
 			ImGui::SameLine();
-			ImGui::TextDisabled("(open)");
+			ImGui::TextDisabled(_("(open)"));
 		}
 		ImGui::SetCursorPosX(start.x + ImGui::GetStyle().ItemSpacing.x);
 		std::string when = whenText(w.lastOpened);
@@ -405,20 +418,20 @@ workspaceList(void)
 			PinRecentWorkspace(w.path.c_str(), !w.pinned);
 		if(!w.pinned)
 			ImGui::PopStyleColor();
-		ImGui::SetItemTooltip(w.pinned ? "Unpin" : "Pin: keep it at the top of the list");
+		ImGui::SetItemTooltip(w.pinned ? _("Unpin") : _("Pin: keep it at the top of the list"));
 		ImGui::SameLine();
 		ImGui::BeginDisabled(missing);
 		if(ImGui::Button(ICON_FA_FOLDER_OPEN "##folder"))
 			OpenInFileManager(w.path);
 		ImGui::EndDisabled();
-		ImGui::SetItemTooltip("Open the folder");
+		ImGui::SetItemTooltip(_("Open the folder"));
 		ImGui::SameLine();
 		if(ImGui::Button(ICON_FA_XMARK "##remove")){
 			RemoveRecentWorkspace(w.path.c_str());
 			if(gSelected == w.path)
 				gSelected.clear();
 		}
-		ImGui::SetItemTooltip("Remove from the list (the folder stays)");
+		ImGui::SetItemTooltip(_("Remove from the list (the folder stays)"));
 		// An item for the row's whole height, so the list grows with it.
 		ImGui::SetCursorPos(start);
 		ImGui::Dummy(ImVec2(1.0f, ImGui::GetTextLineHeightWithSpacing() * 2.0f));
@@ -448,11 +461,11 @@ mapList(bool gameLoaded)
 		if(isInside(path, gSelected))
 			maps.push_back(path);
 	if(gSelected.empty())
-		ImGui::TextDisabled("Pick a workspace to see its maps.");
+		ImGui::TextDisabled(_("Pick a workspace to see its maps."));
 	else if(maps.empty())
-		ImGui::TextDisabled("No recent maps in %s yet.", baseName(gSelected).c_str());
+		ImGui::TextDisabled(_("No recent maps in %s yet."), baseName(gSelected).c_str());
 	else if(!gameLoaded)
-		ImGui::TextDisabled("Maps open once the game folder is loaded.");
+		ImGui::TextDisabled(_("Maps open once the game folder is loaded."));
 	float tile = ImGui::GetFontSize() * 7.5f;
 	float avail = ImGui::GetContentRegionAvail().x;
 	int perRow = std::max(1, (int)((avail + ImGui::GetStyle().ItemSpacing.x) / (tile + ImGui::GetStyle().ItemSpacing.x)));
@@ -470,7 +483,7 @@ mapList(bool gameLoaded)
 			if(ImGui::IsMouseDoubleClicked(0))
 				openSelected(path);
 		}
-		ImGui::SetItemTooltip("%s\nDouble-click to open it.", path.c_str());
+		ImGui::SetItemTooltip(_("%s\nDouble-click to open it."), path.c_str());
 		ImDrawList *dl = ImGui::GetWindowDrawList();
 		rw::Texture *thumb = GetPrefabThumbnailTexture(path.c_str());
 		ImVec2 pad(4.0f, 4.0f);
@@ -500,10 +513,10 @@ contents(bool gameLoaded)
 	gLoaded = gameLoaded;
 	if(gSelected.empty() && !GetRecentWorkspaceList().empty())
 		gSelected = GetWorkspaceDir()[0] ? GetWorkspaceDir() : GetRecentWorkspaceList()[0].path;
-	ImGui::Text("Haumea Studio %s", HaumeaVersionDisplay());
+	ImGui::Text(_("Haumea Studio %s"), HaumeaVersionDisplay());
 	ImGui::SameLine();
-	ImGui::TextDisabled("the all-in-one editor for open.mp and SA-MP");
-	ImGui::TextDisabled("A workspace is the open.mp or SA-MP server you map for; its maps and models live there.");
+	ImGui::TextDisabled(_("the all-in-one editor for open.mp and SA-MP"));
+	ImGui::TextDisabled(_("A workspace is the open.mp or SA-MP server you map for; its maps and models live there."));
 	// An update, or what the last one did: the updater's banner, in here
 	// rather than dimmed behind this window.
 	if(UpdaterHasNews()){
@@ -527,11 +540,16 @@ contents(bool gameLoaded)
 		ImGui::TableSetupColumn("Workspaces", ImGuiTableColumnFlags_WidthStretch, 0.45f);
 		ImGui::TableSetupColumn("Maps", ImGuiTableColumnFlags_WidthStretch, 0.55f);
 		ImGui::TableNextColumn();
-		ImGui::SeparatorText(ICON_FA_GLOBE " Workspaces");
+		ImGui::SeparatorText(TI(ICON_FA_GLOBE, "Workspaces"));
 		workspaceList();
 		ImGui::TableNextColumn();
-		ImGui::SeparatorText(gSelected.empty() ? ICON_FA_FILE " Maps" :
-			(std::string(ICON_FA_FILE " Maps in ") + baseName(gSelected)).c_str());
+		if(gSelected.empty())
+			ImGui::SeparatorText(TI(ICON_FA_FILE, "Maps"));
+		else{
+			char heading[256];
+			snprintf(heading, sizeof(heading), TI(ICON_FA_FILE, "Maps in %s"), baseName(gSelected).c_str());
+			ImGui::SeparatorText(heading);
+		}
 		ImGui::BeginChild("maps", listSize());
 		mapList(gameLoaded);
 		ImGui::EndChild();
@@ -544,15 +562,15 @@ contents(bool gameLoaded)
 	std::string problem;
 	bool gameOk = gameLoaded || CheckGameDir(gGameField, &problem);
 	ImGui::BeginDisabled(!gameOk);
-	const char *open = !gameLoaded || gSelected.empty() ? "Continue" :
-		gSelectedMap.empty() ? "Open workspace" : "Open map";
+	const char *open = !gameLoaded || gSelected.empty() ? _("Continue") :
+		gSelectedMap.empty() ? _("Open workspace") : _("Open map");
 	if(ImGui::Button(open, ImVec2(ImGui::GetFontSize() * 9.0f, 0))){
 		if(!gameLoaded)
 			FinishWorkspaceSetup(gGameField, gSelected.c_str());
 		openSelected(gameLoaded ? gSelectedMap : std::string());
 	}
 	ImGui::SameLine();
-	if(ImGui::Button("Continue without a workspace")){
+	if(ImGui::Button(_("Continue without a workspace"))){
 		gSelected.clear();
 		if(!gameLoaded)
 			FinishWorkspaceSetup(gGameField, "");
@@ -563,16 +581,16 @@ contents(bool gameLoaded)
 	ImGui::EndDisabled();
 	if(gameLoaded){
 		ImGui::SameLine();
-		if(ImGui::Button("Skip"))
+		if(ImGui::Button(_("Skip")))
 			gOpen = false;
-		ImGui::SetItemTooltip("Keep the workspace and map as they are (%s).", GetWorkspaceDir()[0] ?
-			GetWorkspaceDir() : "no workspace");
+		ImGui::SetItemTooltip(_("Keep the workspace and map as they are (%s)."), GetWorkspaceDir()[0] ?
+			GetWorkspaceDir() : _("no workspace"));
 	}
 	ImGui::SameLine();
 	bool openLast = GetOpenLastWorkspace();
-	if(ImGui::Checkbox("Open the last workspace automatically", &openLast))
+	if(ImGui::Checkbox(_("Open the last workspace automatically"), &openLast))
 		SetOpenLastWorkspace(openLast);
-	ImGui::SetItemTooltip("Skip this screen at start. File > Switch Workspace shows it again.");
+	ImGui::SetItemTooltip(_("Skip this screen at start. File > Switch Workspace shows it again."));
 }
 
 void
@@ -593,7 +611,7 @@ DrawStartScreen(bool gameLoaded)
 		gShownThisRun = true;
 		ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 		ImGui::SetNextWindowSize(size, ImGuiCond_Always);
-		ImGui::Begin(TITLE, nil, flags);
+		ImGui::Begin(L(TITLE), nil, flags);
 		contents(false);
 		ImGui::End();
 		return;
@@ -604,7 +622,7 @@ DrawStartScreen(bool gameLoaded)
 		gShownThisRun = true;
 		gSelected = GetWorkspaceDir();
 		gSelectedMap.clear();
-		ImGui::OpenPopup(TITLE);
+		ImGui::OpenPopup(L(TITLE));
 	}
 	if(!gOpen){
 		TelemetryStartScreenClosed();
@@ -612,7 +630,7 @@ DrawStartScreen(bool gameLoaded)
 	}
 	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 	ImGui::SetNextWindowSize(size, ImGuiCond_Always);
-	if(!ImGui::BeginPopupModal(TITLE, nil, flags)){
+	if(!ImGui::BeginPopupModal(L(TITLE), nil, flags)){
 		gOpen = false;
 		return;
 	}

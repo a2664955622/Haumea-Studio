@@ -1,0 +1,1937 @@
+# pt-BR translations (ariane-05) of the strings in: crashreports.cpp haumea.cpp main.cpp mapcheck.cpp namaka.cpp rec.cpp shortcuts.cpp startscreen.cpp telemetry.cpp updater.cpp workspace.cpp
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: tools/haumea/mapcheck.cpp:412
+msgid " (no config.json in the workspace to check max_players against)"
+msgstr " (sem config.json no workspace para conferir o max_players)"
+
+#: tools/haumea/mapcheck.cpp:841
+msgid " 0.3.7 clients are allowed and won't see them."
+msgstr " Clientes 0.3.7 são permitidos e não os verão."
+
+#: tools/haumea/mapcheck.cpp:430
+msgid " Custom IDs not in artconfig.txt or AddSimpleModel: "
+msgstr " IDs personalizados fora do artconfig.txt e do AddSimpleModel: "
+
+#: tools/haumea/mapcheck.cpp:429
+msgid " IDs: "
+msgstr " IDs: "
+
+#: tools/haumea/mapcheck.cpp:337
+#, c-format
+msgid "%d %s, over the server's limit of %d; the extra ones are not created."
+msgstr "%d %s, acima do limite de %d do servidor; os excedentes não são criados."
+
+#: tools/haumea/mapcheck.cpp:626
+#, c-format
+msgid "%d NPC(s) loop or walk back and forth along their path: call the map's <prefix>_OnNPCFinishMovePath(npcid, pathid) from your gamemode's OnNPCFinishMovePath, or they stop at the path's end."
+msgstr "%d NPC(s) repetem ou vão e voltam pelo caminho: chame o <prefix>_OnNPCFinishMovePath(npcid, pathid) do mapa no OnNPCFinishMovePath do seu gamemode, senão eles param no fim do caminho."
+
+#: tools/haumea/mapcheck.cpp:411
+#, c-format
+msgid "%d NPC(s) will take %d player slot(s)%s."
+msgstr "%d NPC(s) vão ocupar %d vaga(s) de jogador%s."
+
+#: tools/haumea/mapcheck.cpp:609
+#, c-format
+msgid "%d NPCs are named \"%s\": names must be unique, so only one is created."
+msgstr "%d NPCs se chamam \"%s\": os nomes precisam ser únicos, então só um é criado."
+
+#: tools/haumea/mapcheck.cpp:605
+#, c-format
+msgid "%d NPCs sit in the same seat (%d) of one vehicle: they can't both sit there."
+msgstr "%d NPCs estão no mesmo assento (%d) de um veículo: não cabem os dois ali."
+
+#: tools/haumea/mapcheck.cpp:408
+#, c-format
+msgid "%d NPCs, but config.json allows %d players and every NPC takes a player slot."
+msgstr "%d NPCs, mas o config.json permite %d jogadores e cada NPC ocupa uma vaga de jogador."
+
+#: tools/haumea/mapcheck.cpp:397
+#, c-format
+msgid "%d RemoveBuildingForPlayer calls, over SA-MP's %d per player: the rest stay in the world."
+msgstr "%d chamadas de RemoveBuildingForPlayer, acima das %d por jogador do SA-MP: as demais continuam no mundo."
+
+#: tools/haumea/mapcheck.cpp:400
+#, c-format
+msgid "%d RemoveBuildingForPlayer calls: %d for whole areas (model -1) and %d for single buildings."
+msgstr "%d chamadas de RemoveBuildingForPlayer: %d para áreas inteiras (modelo -1) e %d para construções avulsas."
+
+#: tools/haumea/mapcheck.cpp:647
+#, c-format
+msgid "%d checkpoint(s) and %d race checkpoint(s): a player sees one of each at a time, so the streamer shows the nearest."
+msgstr "%d checkpoint(s) e %d race checkpoint(s): o jogador vê um de cada por vez, então o streamer mostra o mais próximo."
+
+#: tools/haumea/mapcheck.cpp:643
+#, c-format
+msgid "%d checkpoint(s) are not written in native code (a player has one checkpoint at a time, set by the script). Save as Streamer code."
+msgstr "%d checkpoint(s) não são escritos em código nativo (o jogador tem um checkpoint por vez, definido pelo script). Salve como código Streamer."
+
+#: tools/haumea/startscreen.cpp:137
+#, c-format
+msgid "%d days ago"
+msgstr "há %d dias"
+
+#: tools/haumea/mapcheck.cpp:679
+#, c-format
+msgid "%d dynamic area(s) are not written in native code (they are the streamer's). Save as Streamer code."
+msgstr "%d área(s) dinâmica(s) não são escritas em código nativo (são do streamer). Salve como código Streamer."
+
+#: tools/haumea/mapcheck.cpp:460
+#, c-format
+msgid "%d element(s) beyond the San Andreas map (±%d). They work, but the game's water, map and radar end there."
+msgstr "%d elemento(s) além do mapa de San Andreas (±%d). Funcionam, mas a água, o mapa e o radar do jogo acabam ali."
+
+#: tools/haumea/mapcheck.cpp:457
+#, c-format
+msgid "%d element(s) outside SA-MP's world bounds (±%d): the server clamps or ignores those positions."
+msgstr "%d elemento(s) fora dos limites do mundo do SA-MP (±%d): o servidor limita ou ignora essas posições."
+
+#: tools/haumea/mapcheck.cpp:837
+#, c-format
+msgid "%d element(s) use custom models: the server needs them in models/artconfig.txt (or AddSimpleModel) and artwork enabled%s; players need SA-MP 0.3.DL or an open.mp client.%s"
+msgstr "%d elemento(s) usam modelos personalizados: o servidor precisa deles no models/artconfig.txt (ou AddSimpleModel) e do artwork ativado%s; os jogadores precisam do SA-MP 0.3.DL ou de um cliente open.mp.%s"
+
+#: tools/haumea/mapcheck.cpp:538
+#, c-format
+msgid "%d elements share the variable name \"%s\": the Pawn code won't compile."
+msgstr "%d elementos usam o mesmo nome de variável \"%s\": o código Pawn não vai compilar."
+
+#: tools/haumea/mapcheck.cpp:305
+#, c-format
+msgid "%d gang zones for every player (%d per-player, %d global), over the %d a player can have; the extra ones are not shown."
+msgstr "%d gang zones para cada jogador (%d por jogador, %d globais), acima das %d que um jogador pode ter; as excedentes não aparecem."
+
+#: tools/haumea/mapcheck.cpp:753
+#, c-format
+msgid "%d global textdraws, over the limit of %d."
+msgstr "%d textdraws globais, acima do limite de %d."
+
+#: tools/haumea/mapcheck.cpp:682
+#, c-format
+msgid "%d item(s) are set to show only inside a dynamic area, but native code shows them everywhere. Save as Streamer code."
+msgstr "%d item(ns) estão configurados para aparecer só dentro de uma área dinâmica, mas o código nativo os mostra em todo lugar. Salve como código Streamer."
+
+#: tools/haumea/mapcheck.cpp:511
+#, c-format
+msgid "%d object(s) use the font \"%s\", which isn't installed here: the preview uses %s. Players see it only if they have the font. To preview it, put its .ttf in the fonts folder (Object Info, Open fonts folder) and rescan."
+msgstr "%d objeto(s) usam a fonte \"%s\", que não está instalada aqui: a prévia usa %s. Os jogadores só a veem se tiverem a fonte. Para pré-visualizá-la, coloque o .ttf dela na pasta de fontes (Informações do objeto, Abrir pasta de fontes) e procure de novo."
+
+#: tools/haumea/mapcheck.cpp:427
+#, c-format
+msgid "%d object(s) with models the editor doesn't know were left out when the map was opened, and saving drops them.%s%s%s%s"
+msgstr "%d objeto(s) com modelos que o editor não conhece ficaram de fora ao abrir o mapa, e salvar os descarta.%s%s%s%s"
+
+#: tools/haumea/mapcheck.cpp:292
+#, c-format
+msgid "%d objects within %.0f m of one spot: a 0.3.7 client shows at most %d at once, so the streamer will leave some out there."
+msgstr "%d objetos a até %.0f m de um ponto: um cliente 0.3.7 mostra no máximo %d de uma vez, então o streamer vai deixar alguns de fora ali."
+
+#: tools/haumea/mapcheck.cpp:255
+#, c-format
+msgid "%d objects, but CreateObject stops at %d (%s). Objects past the limit are not created; save with Streamer code instead."
+msgstr "%d objetos, mas o CreateObject para em %d (%s). Objetos além do limite não são criados; salve com código Streamer."
+
+#: tools/haumea/mapcheck.cpp:259
+#, c-format
+msgid "%d of %d objects (%s): the rest of the gamemode has little room left."
+msgstr "%d de %d objetos (%s): sobra pouco espaço para o resto do gamemode."
+
+#: tools/haumea/mapcheck.cpp:832
+#, c-format
+msgid "%d per-player or streamed gang zone(s): CreatePlayerGangZone only compiles and runs on open.mp, not on a SA-MP 0.3.7 server. For 0.3.7, set them to Global (Object Info > Shown as, or radar art's Shown as)."
+msgstr "%d gang zone(s) por jogador ou com streamer: o CreatePlayerGangZone só compila e funciona no open.mp, não em um servidor SA-MP 0.3.7. Para o 0.3.7, defina-as como Global (Informações do objeto > Mostrado como, ou o Mostrado como da arte de radar)."
+
+#: tools/haumea/mapcheck.cpp:756
+#, c-format
+msgid "%d player textdraws, over the limit of %d per player."
+msgstr "%d textdraws de jogador, acima do limite de %d por jogador."
+
+#: tools/haumea/mapcheck.cpp:820
+#, c-format
+msgid "%d text(s) with accents or symbols are saved as UTF-8, but SA-MP and open.mp clients draw Windows-1252, so they show garbled (\"Ã§\" for \"ç\"). Save As > Windows-1252 fixes it."
+msgstr "%d texto(s) com acentos ou símbolos são salvos em UTF-8, mas os clientes SA-MP e open.mp desenham em Windows-1252, então aparecem embaralhados (\"Ã§\" no lugar de \"ç\"). Salvar como > Windows-1252 resolve."
+
+#: tools/haumea/mapcheck.cpp:750
+#, c-format
+msgid "%d textdraw(s) are still in the map, read-only: TextDraws > Move to a separate file to edit them."
+msgstr "%d textdraw(s) ainda estão no mapa, somente leitura: TextDraws > Mover para um arquivo separado para editá-los."
+
+#: tools/haumea/rec.cpp:807
+#, c-format
+msgid "%d trailing bytes ignored"
+msgstr "%d bytes finais ignorados"
+
+#: tools/haumea/mapcheck.cpp:350
+#, c-format
+msgid "%d vehicle ids (%d of them for trains, 4 each), over the limit of %d."
+msgstr "%d IDs de veículo (%d deles para trens, 4 cada), acima do limite de %d."
+
+#: tools/haumea/mapcheck.cpp:353
+#, c-format
+msgid "%d vehicles, over the limit of %d."
+msgstr "%d veículos, acima do limite de %d."
+
+#: tools/haumea/mapcheck.cpp:403
+#, c-format
+msgid "%d world building(s) shown here are inside a model -1 removal: in game they stay removed."
+msgstr "%d construção(ões) do mundo mostradas aqui estão dentro de uma remoção de modelo -1: no jogo continuam removidas."
+
+#: tools/haumea/startscreen.cpp:400 tools/haumea/startscreen.cpp:486
+#, c-format
+msgid ""
+"%s\n"
+"Double-click to open it."
+msgstr "%s\nClique duas vezes para abrir."
+
+#: tools/haumea/updater.cpp:884
+#, c-format
+msgid "%s The update installs the next time Haumea starts."
+msgstr "%s A atualização é instalada na próxima vez que o Haumea abrir."
+
+#: tools/haumea/haumea.cpp:2261
+#, c-format
+msgid "%s drops the selected objects onto the ground."
+msgstr "%s coloca os objetos selecionados no chão."
+
+#: tools/haumea/startscreen.cpp:339
+#, c-format
+msgid "%s exists: it is used as it is."
+msgstr "%s já existe: será usado como está."
+
+#: tools/haumea/mapcheck.cpp:596
+#, c-format
+msgid "%s follows path \"%s\", which has no points."
+msgstr "%s segue o caminho \"%s\", que não tem pontos."
+
+#: tools/haumea/mapcheck.cpp:599
+#, c-format
+msgid "%s follows path \"%s\", which has one point: it walks there and stops."
+msgstr "%s segue o caminho \"%s\", que tem um ponto só: ele anda até lá e para."
+
+#: tools/haumea/mapcheck.cpp:521
+#, c-format
+msgid "%s has no text."
+msgstr "%s não tem texto."
+
+#: tools/haumea/mapcheck.cpp:367
+#, c-format
+msgid "%s is %.0f m off the track: in game it stands on the nearest track instead, at %.1f, %.1f, %.1f."
+msgstr "%s está a %.0f m do trilho: no jogo ele fica no trilho mais próximo, em %.1f, %.1f, %.1f."
+
+#: tools/haumea/mapcheck.cpp:526
+#, c-format
+msgid "%s is at the %d-character limit and may have been cut."
+msgstr "%s está no limite de %d caracteres e pode ter sido cortado."
+
+#: tools/haumea/mapcheck.cpp:546
+#, c-format
+msgid "%s is attached to an object that was deleted."
+msgstr "%s está preso a um objeto que foi excluído."
+
+#: tools/haumea/mapcheck.cpp:689
+#, c-format
+msgid "%s is set to show only inside area \"%s\", which is not in the map: it is written without one and shows everywhere."
+msgstr "%s está configurado para aparecer só dentro da área \"%s\", que não está no mapa: é escrito sem ela e aparece em todo lugar."
+
+#: tools/haumea/haumea.cpp:2264
+#, c-format
+msgid "%s lists every keyboard shortcut; change them in Preferences."
+msgstr "%s lista todos os atalhos de teclado; mude-os em Preferências."
+
+#: tools/haumea/mapcheck.cpp:698
+#, c-format
+msgid "%s only shows inside area \"%s\", but they are in different virtual worlds or interiors: no player is ever in both."
+msgstr "%s só aparece dentro da área \"%s\", mas eles estão em mundos virtuais ou interiores diferentes: nenhum jogador fica nos dois."
+
+#: tools/haumea/haumea.cpp:2262
+#, c-format
+msgid "%s pastes objects exactly where they were copied."
+msgstr "%s cola os objetos exatamente onde foram copiados."
+
+#: tools/haumea/mapcheck.cpp:567
+#, c-format
+msgid "%s plays driver recording %s but isn't driving a vehicle: open.mp reports it playing, yet the NPC never moves. Put it in a vehicle as the driver."
+msgstr "%s toca a gravação de motorista %s, mas não está dirigindo um veículo: o open.mp diz que está tocando, mas o NPC nunca se move. Coloque-o em um veículo como motorista."
+
+#: tools/haumea/mapcheck.cpp:571
+#, c-format
+msgid "%s plays on-foot recording %s while in a vehicle; it needs to be on foot."
+msgstr "%s toca a gravação a pé %s dentro de um veículo; ele precisa estar a pé."
+
+#: tools/haumea/haumea.cpp:2263
+#, c-format
+msgid "%s points the camera at the selection."
+msgstr "%s aponta a câmera para a seleção."
+
+#: tools/haumea/mapcheck.cpp:560
+#, c-format
+msgid "%s sits in a vehicle that was deleted, so it is saved on foot."
+msgstr "%s está em um veículo que foi excluído, então é salvo a pé."
+
+#: tools/haumea/mapcheck.cpp:588
+#, c-format
+msgid "%s walks node file %d, which isn't in the workspace (%s). open.mp downloads it on first use; offline servers need it copied there."
+msgstr "%s anda pelo arquivo de nodes %d, que não está no workspace (%s). O open.mp o baixa no primeiro uso; servidores offline precisam dele copiado lá."
+
+#: tools/haumea/updater.cpp:830
+#, c-format
+msgid "%s won't be offered again."
+msgstr "%s não será oferecida de novo."
+
+#: tools/haumea/mapcheck.cpp:805
+#, c-format
+msgid "%s's group has %s, which Windows-1252 (what SA-MP and open.mp clients draw) doesn't have: it is saved as '?'."
+msgstr "O grupo de %s tem %s, que o Windows-1252 (o que os clientes SA-MP e open.mp desenham) não tem: é salvo como '?'."
+
+#: tools/haumea/mapcheck.cpp:802
+#, c-format
+msgid "%s's material text has %s, which Windows-1252 (what SA-MP and open.mp clients draw) doesn't have: it is saved as '?'."
+msgstr "O texto de material de %s tem %s, que o Windows-1252 (o que os clientes SA-MP e open.mp desenham) não tem: é salvo como '?'."
+
+#: tools/haumea/mapcheck.cpp:807
+#, c-format
+msgid "%s's note has %s, which Windows-1252 (what SA-MP and open.mp clients draw) doesn't have: it is saved as '?'."
+msgstr "A nota de %s tem %s, que o Windows-1252 (o que os clientes SA-MP e open.mp desenham) não tem: é salva como '?'."
+
+#: tools/haumea/mapcheck.cpp:797
+#, c-format
+msgid "%s's text has %s, which Windows-1252 (what SA-MP and open.mp clients draw) doesn't have: it is saved as '?'."
+msgstr "O texto de %s tem %s, que o Windows-1252 (o que os clientes SA-MP e open.mp desenham) não tem: é salvo como '?'."
+
+#: tools/haumea/rec.cpp:800
+#, c-format
+msgid "%s, %d frames, %s, %.0f m"
+msgstr "%s, %d quadros, %s, %.0f m"
+
+#: tools/haumea/rec.cpp:790
+#, c-format
+msgid "%s.rec is not in the recordings folder"
+msgstr "%s.rec não está na pasta de gravações"
+
+#: tools/haumea/mapcheck.cpp:575
+#, c-format
+msgid "%s: \"%s\" isn't a valid player name (%d-%d letters, digits or ][_$=()), so NPC_Create fails."
+msgstr "%s: \"%s\" não é um nome de jogador válido (%d-%d letras, dígitos ou ][_$=()), então o NPC_Create falha."
+
+#: tools/haumea/mapcheck.cpp:533
+#, c-format
+msgid "%s: PlayAudioStreamForPlayer needs an http:// or https:// URL%s."
+msgstr "%s: o PlayAudioStreamForPlayer precisa de uma URL http:// ou https://%s."
+
+#: tools/haumea/mapcheck.cpp:523
+#, c-format
+msgid "%s: a '{' that isn't a {RRGGBB} colour code shows as text."
+msgstr "%s: um '{' que não é um código de cor {RRGGBB} aparece como texto."
+
+#: tools/haumea/mapcheck.cpp:371
+#, c-format
+msgid "%s: a carriage on its own isn't made in game (the client says \"bad train carriages\"); place a %s, which brings three."
+msgstr "%s: um vagão sozinho não é criado no jogo (o cliente diz \"bad train carriages\"); coloque um %s, que traz três."
+
+#: tools/haumea/mapcheck.cpp:440
+#, c-format
+msgid "%s: its model can't be loaded."
+msgstr "%s: o modelo dele não pode ser carregado."
+
+#: tools/haumea/mapcheck.cpp:477
+#, c-format
+msgid "%s: material slot %d is set, but the model has %d slot(s), so it does nothing."
+msgstr "%s: o slot de material %d está definido, mas o modelo tem %d slot(s), então não faz nada."
+
+#: tools/haumea/mapcheck.cpp:487
+#, c-format
+msgid "%s: material slot %d: %s"
+msgstr "%s: slot de material %d: %s"
+
+#: tools/haumea/mapcheck.cpp:501
+#, c-format
+msgid "%s: material text in slot %d has a '{' that isn't a {RRGGBB} colour code; it shows as text."
+msgstr "%s: o texto de material no slot %d tem um '{' que não é um código de cor {RRGGBB}; aparece como texto."
+
+#: tools/haumea/mapcheck.cpp:504
+#, c-format
+msgid "%s: material text in slot %d is at the %d-character limit and may have been cut."
+msgstr "%s: o texto de material no slot %d está no limite de %d caracteres e pode ter sido cortado."
+
+#: tools/haumea/mapcheck.cpp:375
+#, c-format
+msgid "%s: no train in the game pulls the box freight, so it stands alone, off any track."
+msgstr "%s: nenhum trem do jogo puxa o vagão de carga fechado, então ele fica sozinho, fora de qualquer trilho."
+
+#: tools/haumea/mapcheck.cpp:582
+#, c-format
+msgid "%s: recording %s isn't in the workspace's npcmodes/recordings."
+msgstr "%s: a gravação %s não está em npcmodes/recordings do workspace."
+
+#: tools/haumea/mapcheck.cpp:362
+#, c-format
+msgid "%s: trains are only made with AddStaticVehicle(Ex); open.mp's CreateVehicle refuses them. Tick Static vehicle."
+msgstr "%s: trens só são criados com AddStaticVehicle(Ex); o CreateVehicle do open.mp os recusa. Marque Veículo estático."
+
+#: tools/haumea/namaka.cpp:699
+#, c-format
+msgid "(%d tools)"
+msgstr "(%d ferramentas)"
+
+#: tools/haumea/startscreen.cpp:405
+msgid "(missing)"
+msgstr "(sumiu)"
+
+#: tools/haumea/mapcheck.cpp:619 tools/haumea/mapcheck.cpp:650
+msgid "(no name)"
+msgstr "(sem nome)"
+
+#: tools/haumea/rec.cpp:759 tools/haumea/rec.cpp:761
+msgid "(none)"
+msgstr "(nenhuma)"
+
+#: tools/haumea/startscreen.cpp:408
+msgid "(open)"
+msgstr "(aberto)"
+
+#: tools/haumea/mapcheck.cpp:720 tools/haumea/mapcheck.cpp:812
+msgid "(unnamed)"
+msgstr "(sem nome)"
+
+#: tools/haumea/startscreen.cpp:292
+msgid "(version unknown)"
+msgstr "(versão desconhecida)"
+
+#: tools/haumea/mapcheck.cpp:534
+msgid ", and it has none"
+msgstr ", e não tem nenhuma"
+
+#: tools/haumea/mapcheck.cpp:840
+msgid ", but config.json has artwork.enable off"
+msgstr ", mas o config.json está com artwork.enable desligado"
+
+#: tools/haumea/mapcheck.cpp:431
+msgid ". Custom IDs not in artconfig.txt or AddSimpleModel: "
+msgstr ". IDs personalizados fora do artconfig.txt e do AddSimpleModel: "
+
+#: tools/haumea/mapcheck.cpp:328
+msgid "3D text labels"
+msgstr "3D text labels"
+
+#: tools/haumea/rec.cpp:803
+msgid "A driver recording: the NPC must be in a vehicle"
+msgstr "Uma gravação de motorista: o NPC precisa estar em um veículo"
+
+#: tools/haumea/startscreen.cpp:335
+msgid "A name can't have / \\ : * ? \" < > |"
+msgstr "Um nome não pode ter / \\ : * ? \" < > |"
+
+#: tools/haumea/startscreen.cpp:316
+msgid "A server folder with gamemodes, filterscripts and scriptfiles."
+msgstr "Uma pasta de servidor com gamemodes, filterscripts e scriptfiles."
+
+#: tools/haumea/startscreen.cpp:519
+msgid "A workspace is the open.mp or SA-MP server you map for; its maps and models live there."
+msgstr "Um workspace é o servidor open.mp ou SA-MP para o qual você mapeia; os mapas e modelos dele ficam lá."
+
+#: tools/haumea/crashreports.cpp:1391
+#, c-format
+msgid "After a crash or an error: the version, system and graphics card, where in Haumea's code it happened and the last lines of its log, with your folders, user name and map names left out. With the daily ping on, the install ID too. Reports not sent are deleted after %d days."
+msgstr "Depois de um travamento ou erro: a versão, o sistema e a placa de vídeo, onde no código do Haumea aconteceu e as últimas linhas do log, sem as suas pastas, nome de usuário e nomes de mapas. Com o ping diário ligado, o ID de instalação também. Relatórios não enviados são apagados após %d dias."
+
+#: tools/haumea/namaka.cpp:713
+msgid "Agent Alpha is also installed (it still works):"
+msgstr "O Agent Alpha também está instalado (ainda funciona):"
+
+#: tools/haumea/haumea.cpp:1475
+#, c-format
+msgid "Aligned %d instance(s) to ground"
+msgstr "%d instância(s) alinhada(s) ao chão"
+
+#: tools/haumea/crashreports.cpp:1347 tools/haumea/crashreports.cpp:1380
+msgid "Always send"
+msgstr "Sempre enviar"
+
+#: tools/haumea/updater.cpp:512
+msgid "An agent edit session is open."
+msgstr "Há uma sessão de edição do agente aberta."
+
+#: tools/haumea/rec.cpp:805
+msgid "An on-foot recording on a vehicle"
+msgstr "Uma gravação a pé em um veículo"
+
+#: tools/haumea/namaka.cpp:812
+msgid "Another Haumea is using the Namaka socket, so this one isn't listening. Close the other one and start this again to connect here."
+msgstr "Outro Haumea está usando o socket do Namaka, então este não está escutando. Feche o outro e abra este de novo para conectar aqui."
+
+#: tools/haumea/mapcheck.cpp:708
+#, c-format
+msgid "Area \"%s\" has no items limited to it (fine if the script uses it for something else)."
+msgstr "A área \"%s\" não tem itens limitados a ela (tudo bem se o script a usa para outra coisa)."
+
+#: tools/haumea/crashreports.cpp:1378
+msgid "Ask"
+msgstr "Perguntar"
+
+#: tools/haumea/telemetry.cpp:497
+#, c-format
+msgid "At most once a day: a random install ID, the version (%s), the channel (%s) and the operating system (%s). It counts how many installs are in use; nothing about you, your computer or your maps is sent. Turning it off deletes the ID."
+msgstr "No máximo uma vez por dia: um ID de instalação aleatório, a versão (%s), o canal (%s) e o sistema operacional (%s). Serve para contar quantas instalações estão em uso; nada sobre você, seu computador ou seus mapas é enviado. Desligar apaga o ID."
+
+#: tools/haumea/updater.cpp:829
+#, c-format
+msgid "Back to Haumea Studio %s"
+msgstr "De volta ao Haumea Studio %s"
+
+#: tools/haumea/updater.cpp:1006
+msgid "Beta"
+msgstr "Beta"
+
+#: tools/haumea/updater.cpp:1028
+msgid "Beta or Production"
+msgstr "Beta ou Produção"
+
+#: tools/haumea/shortcuts.cpp:69
+msgid "Bigger interface (like Ctrl+wheel)"
+msgstr "Interface maior (como Ctrl+roda)"
+
+#: tools/haumea/mapcheck.cpp:373
+msgid "Brown Streak (538)"
+msgstr "Brown Streak (538)"
+
+#: tools/haumea/workspace.cpp:820
+msgid "Browse needs zenity or kdialog: type or paste the folder's path."
+msgstr "Procurar precisa do zenity ou do kdialog: digite ou cole o caminho da pasta."
+
+#: tools/haumea/rec.cpp:734 tools/haumea/rec.cpp:744 tools/haumea/startscreen.cpp:260 tools/haumea/startscreen.cpp:265
+msgid "Browse..."
+msgstr "Procurar..."
+
+#: tools/haumea/haumea.cpp:2644
+msgid "Building the world"
+msgstr "Montando o mundo"
+
+#: tools/haumea/namaka.cpp:708
+#, c-format
+msgid "Bundled: Namaka %s"
+msgstr "No pacote: Namaka %s"
+
+#: tools/haumea/shortcuts.cpp:81
+msgid "Camera"
+msgstr "Câmera"
+
+#: tools/haumea/namaka.cpp:771 tools/haumea/startscreen.cpp:357
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: tools/haumea/shortcuts.cpp:82
+msgid "Changes"
+msgstr "Alterações"
+
+#: tools/haumea/updater.cpp:1001
+msgid "Channel"
+msgstr "Canal"
+
+#: tools/haumea/updater.cpp:973
+msgid "Check for updates"
+msgstr "Procurar atualizações"
+
+#: tools/haumea/updater.cpp:996
+msgid "Check for updates when Haumea starts"
+msgstr "Procurar atualizações quando o Haumea abrir"
+
+#: tools/haumea/updater.cpp:1039
+msgid "Check now"
+msgstr "Procurar agora"
+
+#: tools/haumea/mapcheck.cpp:631
+msgid "Checkpoints"
+msgstr "Checkpoints"
+
+#: tools/haumea/haumea.cpp:3589
+msgid "Choose the GTA San Andreas folder"
+msgstr "Escolha a pasta do GTA San Andreas"
+
+#: tools/haumea/workspace.cpp:432
+msgid "Choose the GTA San Andreas folder."
+msgstr "Escolha a pasta do GTA San Andreas."
+
+#: tools/haumea/namaka.cpp:802
+msgid "Connect an AI assistant"
+msgstr "Conectar um assistente de IA"
+
+#: tools/haumea/startscreen.cpp:565
+msgid "Continue"
+msgstr "Continuar"
+
+#: tools/haumea/startscreen.cpp:573
+msgid "Continue without a workspace"
+msgstr "Continuar sem workspace"
+
+#: tools/haumea/namaka.cpp:824
+msgid "Copied the claude mcp add command"
+msgstr "Comando claude mcp add copiado"
+
+#: tools/haumea/namaka.cpp:830
+msgid "Copied the claude_desktop_config.json entry"
+msgstr "Entrada do claude_desktop_config.json copiada"
+
+#: tools/haumea/namaka.cpp:822
+msgid "Copy for Claude Code"
+msgstr "Copiar para o Claude Code"
+
+#: tools/haumea/namaka.cpp:828
+msgid "Copy for Claude Desktop"
+msgstr "Copiar para o Claude Desktop"
+
+#: tools/haumea/shortcuts.cpp:38
+msgid "Copy selection"
+msgstr "Copiar seleção"
+
+#: tools/haumea/shortcuts.cpp:56
+msgid "Copy the camera position"
+msgstr "Copiar a posição da câmera"
+
+#: tools/haumea/startscreen.cpp:352
+#, c-format
+msgid "Could not create %s"
+msgstr "Não foi possível criar %s"
+
+#: tools/haumea/updater.cpp:948
+#, c-format
+msgid "Couldn't check for updates: %s"
+msgstr "Não foi possível procurar atualizações: %s"
+
+#: tools/haumea/updater.cpp:881
+msgid "Couldn't restart: the update installs next time"
+msgstr "Não foi possível reiniciar: a atualização é instalada na próxima vez"
+
+#: tools/haumea/updater.cpp:752
+#, c-format
+msgid "Couldn't roll back: %s"
+msgstr "Não foi possível voltar a versão: %s"
+
+#: tools/haumea/crashreports.cpp:1376
+msgid "Crash and error reports"
+msgstr "Relatórios de travamento e erro"
+
+#: tools/haumea/startscreen.cpp:341
+msgid "Create workspace"
+msgstr "Criar workspace"
+
+#: tools/haumea/shortcuts.cpp:39
+msgid "Cut selection"
+msgstr "Recortar seleção"
+
+#: tools/haumea/shortcuts.cpp:43
+msgid "Delete selection"
+msgstr "Excluir seleção"
+
+#: tools/haumea/updater.cpp:894
+msgid "Dismiss"
+msgstr "Dispensar"
+
+#: tools/haumea/crashreports.cpp:1342
+msgid "Don't send"
+msgstr "Não enviar"
+
+#: tools/haumea/namaka.cpp:555
+msgid "Done."
+msgstr "Pronto."
+
+#: tools/haumea/updater.cpp:997
+msgid "Download updates automatically"
+msgstr "Baixar atualizações automaticamente"
+
+#: tools/haumea/updater.cpp:998
+msgid "Downloads in the background; the update still installs only when Haumea restarts."
+msgstr "Baixa em segundo plano; a atualização só é instalada quando o Haumea reinicia."
+
+#: tools/haumea/updater.cpp:855
+msgid "Downloads it in the background; it installs when Haumea restarts."
+msgstr "Baixa em segundo plano; é instalada quando o Haumea reinicia."
+
+#: tools/haumea/updater.cpp:1027
+#, c-format
+msgid ""
+"Downloads the newest %s release, even if it's older than this build;\n"
+"it installs the next time Haumea starts. Your maps and settings stay."
+msgstr "Baixa a versão %s mais nova, mesmo que seja mais antiga que esta build;\nela é instalada na próxima vez que o Haumea abrir. Seus mapas e configurações ficam."
+
+#: tools/haumea/namaka.cpp:727
+msgid "Downloads the parts the bundle has only for Python 3.14 (needs internet)."
+msgstr "Baixa as partes que o pacote só tem para o Python 3.14 (precisa de internet)."
+
+#: tools/haumea/haumea.cpp:2259
+msgid "Drag a panel's title bar to dock it beside the 3D view."
+msgstr "Arraste a barra de título de um painel para encaixá-lo ao lado da vista 3D."
+
+#: tools/haumea/rec.cpp:134
+msgid "Driver"
+msgstr "Motorista"
+
+#: tools/haumea/shortcuts.cpp:52
+msgid "Drop and align to the ground's slope"
+msgstr "Colocar no chão e alinhar à inclinação"
+
+#: tools/haumea/shortcuts.cpp:51
+msgid "Drop selection to the ground"
+msgstr "Colocar a seleção no chão"
+
+#: tools/haumea/shortcuts.cpp:42
+msgid "Duplicate selection"
+msgstr "Duplicar seleção"
+
+#: tools/haumea/mapcheck.cpp:664
+msgid "Dynamic areas"
+msgstr "Áreas dinâmicas"
+
+#: tools/haumea/shortcuts.cpp:36 tools/haumea/shortcuts.cpp:37 tools/haumea/shortcuts.cpp:38 tools/haumea/shortcuts.cpp:39
+msgid "Edit"
+msgstr "Editar"
+
+#: tools/haumea/mapcheck.cpp:517
+msgid "Elements"
+msgstr "Elementos"
+
+#: tools/haumea/shortcuts.cpp:32
+msgid "Export selection as prefab"
+msgstr "Exportar seleção como prefab"
+
+#: tools/haumea/haumea.cpp:2074
+msgid "FOV reset to 70°"
+msgstr "FOV redefinido para 70°"
+
+#: tools/haumea/main.cpp:1200
+msgid "Failed to import prefab"
+msgstr "Falha ao importar o prefab"
+
+#: tools/haumea/shortcuts.cpp:67
+msgid "Faster fly speed"
+msgstr "Voo mais rápido"
+
+#: tools/haumea/shortcuts.cpp:28 tools/haumea/shortcuts.cpp:29 tools/haumea/shortcuts.cpp:30 tools/haumea/shortcuts.cpp:31
+msgid "File"
+msgstr "Arquivo"
+
+#: tools/haumea/workspace.cpp:737
+msgid "File dialogs need zenity or kdialog. Install one (sudo apt install zenity) or type the path."
+msgstr "As caixas de diálogo de arquivo precisam do zenity ou do kdialog. Instale um (sudo apt install zenity) ou digite o caminho."
+
+#: tools/haumea/shortcuts.cpp:54
+msgid "Focus the camera on the selection"
+msgstr "Focar a câmera na seleção"
+
+#: tools/haumea/rec.cpp:742
+msgid "Folder with the server's .rec files; empty: the workspace's npcmodes/recordings"
+msgstr "Pasta com os arquivos .rec do servidor; vazio: npcmodes/recordings do workspace"
+
+#: tools/haumea/rec.cpp:856
+#, c-format
+msgid "Frame %d  %.1f km/h  Health %.0f  Armour %.0f  Weapon %d"
+msgstr "Quadro %d  %.1f km/h  Vida %.0f  Colete %.0f  Arma %d"
+
+#: tools/haumea/mapcheck.cpp:373
+msgid "Freight (537)"
+msgstr "Freight (537)"
+
+#: tools/haumea/rec.cpp:832
+msgid "From here"
+msgstr "Daqui"
+
+#: tools/haumea/startscreen.cpp:297
+msgid "From the workspace's models/artconfig.txt."
+msgstr "Do models/artconfig.txt do workspace."
+
+#: tools/haumea/startscreen.cpp:259
+msgid "GTA San Andreas"
+msgstr "GTA San Andreas"
+
+#: tools/haumea/startscreen.cpp:269 tools/haumea/workspace.cpp:873
+msgid "GTA San Andreas folder"
+msgstr "Pasta do GTA San Andreas"
+
+#: tools/haumea/workspace.cpp:873
+msgid "GTA San Andreas folder (read only)"
+msgstr "Pasta do GTA San Andreas (somente leitura)"
+
+#: tools/haumea/startscreen.cpp:299 tools/haumea/workspace.cpp:878
+msgid "GTA San Andreas found."
+msgstr "GTA San Andreas encontrado."
+
+#: tools/haumea/updater.cpp:1024
+msgid "Go back to the latest Production now"
+msgstr "Voltar para a Produção mais recente agora"
+
+#: tools/haumea/shortcuts.cpp:55
+msgid "Go to coordinates (pasted x, y, z)"
+msgstr "Ir para coordenadas (x, y, z coladas)"
+
+#: tools/haumea/haumea.cpp:1384
+#, c-format
+msgid "Ground snap limited to first %d selected instance(s)"
+msgstr "Encaixe no chão limitado às primeiras %d instância(s) selecionada(s)"
+
+#: tools/haumea/haumea.cpp:1465
+#, c-format
+msgid "Ground snap skipped %d instance(s)"
+msgstr "O encaixe no chão pulou %d instância(s)"
+
+#: tools/haumea/haumea.cpp:1388
+msgid "Ground snap skipped linked multi-selection"
+msgstr "O encaixe no chão pulou a seleção múltipla vinculada"
+
+#: tools/haumea/startscreen.cpp:516
+#, c-format
+msgid "Haumea Studio %s"
+msgstr "Haumea Studio %s"
+
+#: tools/haumea/updater.cpp:846
+#, c-format
+msgid "Haumea Studio %s is available"
+msgstr "Haumea Studio %s está disponível"
+
+#: tools/haumea/updater.cpp:844
+#, c-format
+msgid "Haumea Studio %s is downloading"
+msgstr "Haumea Studio %s está sendo baixado"
+
+#: tools/haumea/updater.cpp:845
+#, c-format
+msgid "Haumea Studio %s is ready to install"
+msgstr "Haumea Studio %s está pronto para instalar"
+
+#: tools/haumea/updater.cpp:946
+#, c-format
+msgid "Haumea Studio %s is up to date"
+msgstr "O Haumea Studio %s está atualizado"
+
+#: tools/haumea/crashreports.cpp:1333
+msgid "Haumea Studio closed unexpectedly or hit an error. A report can help fix it."
+msgstr "O Haumea Studio fechou inesperadamente ou teve um erro. Um relatório pode ajudar a corrigir."
+
+#: tools/haumea/crashreports.cpp:1334
+msgid "Haumea Studio closed unexpectedly or hit errors. Reports can help fix them."
+msgstr "O Haumea Studio fechou inesperadamente ou teve erros. Os relatórios podem ajudar a corrigir."
+
+#: tools/haumea/updater.cpp:146
+msgid "Haumea can't find its own folder."
+msgstr "O Haumea não encontra a própria pasta."
+
+#: tools/haumea/namaka.cpp:819
+msgid "Haumea starts listening for Namaka from its next start."
+msgstr "O Haumea começa a escutar o Namaka na próxima vez que abrir."
+
+#: tools/haumea/updater.cpp:149 tools/haumea/updater.cpp:152
+msgid "Haumea was installed by a package manager: update it there."
+msgstr "O Haumea foi instalado por um gerenciador de pacotes: atualize por ele."
+
+#: tools/haumea/updater.cpp:154
+msgid "Haumea's folder can't be written to."
+msgstr "Não dá para gravar na pasta do Haumea."
+
+#: tools/haumea/telemetry.cpp:468
+msgid "Help count Haumea Studio's users? Once a day it would send a random install ID, the version, the channel and the operating system: nothing about you, your computer or your maps."
+msgstr "Ajudar a contar os usuários do Haumea Studio? Uma vez por dia ele enviaria um ID de instalação aleatório, a versão, o canal e o sistema operacional: nada sobre você, seu computador ou seus mapas."
+
+#: tools/haumea/updater.cpp:874
+msgid "Hide"
+msgstr "Ocultar"
+
+#: tools/haumea/shortcuts.cpp:60
+msgid "Hide the selection in the viewport"
+msgstr "Ocultar a seleção na viewport"
+
+#: tools/haumea/haumea.cpp:2260
+msgid "Hold Shift while dragging the gizmo to move in fixed steps."
+msgstr "Segure Shift ao arrastar o gizmo para mover em passos fixos."
+
+#: tools/haumea/shortcuts.cpp:33
+msgid "Import prefab"
+msgstr "Importar prefab"
+
+#: tools/haumea/main.cpp:1198
+#, c-format
+msgid "Imported %d instance(s) from prefab"
+msgstr "%d instância(s) importada(s) do prefab"
+
+#: tools/haumea/startscreen.cpp:319
+msgid "In this folder"
+msgstr "Nesta pasta"
+
+#: tools/haumea/namaka.cpp:749
+msgid "Install"
+msgstr "Instalar"
+
+#: tools/haumea/namaka.cpp:715
+msgid "Install Namaka, point your MCP client at it (Copy below), then delete this folder."
+msgstr "Instale o Namaka, aponte seu cliente MCP para ele (Copiar abaixo) e depois apague esta pasta."
+
+#: tools/haumea/namaka.cpp:426
+msgid ""
+"Install Python 3.14 (or 3.10 or newer) with its venv module, then press Look again:\n"
+"Debian/Ubuntu: sudo apt install python3 python3-venv\n"
+"Fedora: sudo dnf install python3\n"
+"Arch: sudo pacman -S python"
+msgstr "Instale o Python 3.14 (ou 3.10 ou mais novo) com o módulo venv e depois clique em Procurar de novo:\nDebian/Ubuntu: sudo apt install python3 python3-venv\nFedora: sudo dnf install python3\nArch: sudo pacman -S python"
+
+#: tools/haumea/namaka.cpp:420
+msgid ""
+"Install Python 3.14 from python.org (tick \"Add python.exe to PATH\"), or run\n"
+"winget install Python.Python.3.14, then press Look again."
+msgstr "Instale o Python 3.14 pelo python.org (marque \"Add python.exe to PATH\") ou rode\nwinget install Python.Python.3.14, depois clique em Procurar de novo."
+
+#: tools/haumea/namaka.cpp:423
+msgid ""
+"Install Python 3.14 from python.org, or run brew install python@3.14,\n"
+"then press Look again."
+msgstr "Instale o Python 3.14 pelo python.org ou rode brew install python@3.14,\ndepois clique em Procurar de novo."
+
+#: tools/haumea/namaka.cpp:742
+msgid "Install and update"
+msgstr "Instalar e atualizar"
+
+#: tools/haumea/namaka.cpp:759
+msgid "Installs it again from the bundle; the old install stays until the new one works."
+msgstr "Instala de novo a partir do pacote; a instalação antiga fica até a nova funcionar."
+
+#: tools/haumea/namaka.cpp:724
+msgid "Installs offline from the bundle."
+msgstr "Instala offline a partir do pacote."
+
+#: tools/haumea/shortcuts.cpp:61
+msgid "Isolate the selection (hide everything else)"
+msgstr "Isolar a seleção (ocultar todo o resto)"
+
+#: tools/haumea/updater.cpp:888
+msgid "It installs the next time Haumea starts."
+msgstr "É instalada na próxima vez que o Haumea abrir."
+
+#: tools/haumea/startscreen.cpp:586
+#, c-format
+msgid "Keep the workspace and map as they are (%s)."
+msgstr "Manter o workspace e o mapa como estão (%s)."
+
+#: tools/haumea/shortcuts.cpp:86
+msgid "Keyboard Shortcuts"
+msgstr "Atalhos de teclado"
+
+#: tools/haumea/rec.cpp:859
+#, c-format
+msgid "Keys 0x%X  Special action %d  Animation %d"
+msgstr "Teclas 0x%X  Ação especial %d  Animação %d"
+
+#: tools/haumea/rec.cpp:861
+#, c-format
+msgid "Keys 0x%X  Vehicle ID %d  Vehicle health %.0f%s"
+msgstr "Teclas 0x%X  ID do veículo %d  Lataria %.0f%s"
+
+#: tools/haumea/telemetry.cpp:503
+#, c-format
+msgid "Last sent %s (UTC)."
+msgstr "Último envio: %s (UTC)."
+
+#: tools/haumea/updater.cpp:859 tools/haumea/updater.cpp:886
+msgid "Later"
+msgstr "Depois"
+
+#: tools/haumea/updater.cpp:508
+msgid "Leave TextDraw mode first."
+msgstr "Saia do modo TextDraw primeiro."
+
+#: tools/haumea/shortcuts.cpp:46
+msgid "Leave place, prefab, brush, path or TextDraw mode"
+msgstr "Sair do modo de colocar, prefab, pincel, caminho ou TextDraw"
+
+#: tools/haumea/namaka.cpp:792
+msgid "Let Namaka connect"
+msgstr "Deixar o Namaka conectar"
+
+#: tools/haumea/mapcheck.cpp:246
+msgid "Limits"
+msgstr "Limites"
+
+#: tools/haumea/namaka.cpp:809
+msgid "Listening for Namaka"
+msgstr "Escutando o Namaka"
+
+#: tools/haumea/namaka.cpp:806
+#, c-format
+msgid "Listening for Namaka on %s"
+msgstr "Escutando o Namaka em %s"
+
+#: tools/haumea/shortcuts.cpp:83
+msgid "Live Pawn Code"
+msgstr "Código Pawn ao vivo"
+
+#: tools/haumea/haumea.cpp:2631
+msgid "Loading SA-MP objects"
+msgstr "Carregando objetos do SA-MP"
+
+#: tools/haumea/haumea.cpp:2564
+msgid "Loading textures and weather"
+msgstr "Carregando texturas e clima"
+
+#: tools/haumea/haumea.cpp:2614
+msgid "Loading vehicles"
+msgstr "Carregando veículos"
+
+#: tools/haumea/shortcuts.cpp:87
+msgid "Log"
+msgstr "Log"
+
+#: tools/haumea/namaka.cpp:734
+msgid "Look again"
+msgstr "Procurar de novo"
+
+#: tools/haumea/namaka.cpp:720
+msgid "Looking for Python..."
+msgstr "Procurando o Python..."
+
+#: tools/haumea/rec.cpp:827
+msgid "Loop"
+msgstr "Repetir"
+
+#: tools/haumea/shortcuts.cpp:89
+msgid "Map Check"
+msgstr "Verificação do mapa"
+
+#: tools/haumea/shortcuts.cpp:77
+msgid "Map Objects"
+msgstr "Objetos do mapa"
+
+#: tools/haumea/startscreen.cpp:547
+msgid "Maps"
+msgstr "Mapas"
+
+#: tools/haumea/startscreen.cpp:550
+#, c-format
+msgid "Maps in %s"
+msgstr "Mapas em %s"
+
+#: tools/haumea/startscreen.cpp:468
+msgid "Maps open once the game folder is loaded."
+msgstr "Os mapas abrem depois que a pasta do jogo for carregada."
+
+#: tools/haumea/mapcheck.cpp:464 tools/haumea/objfilters.cpp:413 tools/haumea/objfilters.cpp:804
+msgid "Materials"
+msgstr "Materiais"
+
+#: tools/haumea/mapcheck.cpp:416
+msgid "Models"
+msgstr "Modelos"
+
+#: tools/haumea/shortcuts.cpp:48
+msgid "Move gizmo"
+msgstr "Gizmo de mover"
+
+#: tools/haumea/rec.cpp:838
+msgid ""
+"Move the route so it starts at the element, like NPC_StartPlayback\n"
+"with a start position. Off plays it where it was recorded."
+msgstr "Move a rota para começar no elemento, como o NPC_StartPlayback\ncom posição inicial. Desligado, toca onde foi gravada."
+
+#: tools/haumea/mapcheck.cpp:551
+msgid "NPCs"
+msgstr "NPCs"
+
+#: tools/haumea/namaka.cpp:695
+#, c-format
+msgid "Namaka %s is installed"
+msgstr "Namaka %s está instalado"
+
+#: tools/haumea/namaka.cpp:703
+msgid "Namaka is not installed."
+msgstr "O Namaka não está instalado."
+
+#: tools/haumea/namaka.cpp:851
+msgid "Namaka lets an AI assistant (Claude Code, Claude Desktop or another MCP client) look at and edit the map open in Haumea."
+msgstr "O Namaka deixa um assistente de IA (Claude Code, Claude Desktop ou outro cliente MCP) ver e editar o mapa aberto no Haumea."
+
+#: tools/haumea/namaka.cpp:574
+#, c-format
+msgid "Namaka updated: %s"
+msgstr "Namaka atualizado: %s"
+
+#: tools/haumea/namaka.cpp:545 tools/haumea/namaka.cpp:574
+#, c-format
+msgid "Namaka was not updated: %s"
+msgstr "O Namaka não foi atualizado: %s"
+
+#: tools/haumea/startscreen.cpp:330
+msgid "Name, e.g. my-server"
+msgstr "Nome, por exemplo meu-servidor"
+
+#: tools/haumea/crashreports.cpp:1382
+msgid "Never send"
+msgstr "Nunca enviar"
+
+#: tools/haumea/updater.cpp:1007
+msgid ""
+"New features before everyone else, and sometimes new bugs.\n"
+"You get the newest of Beta and Production."
+msgstr "Novidades antes de todo mundo, e às vezes bugs novos.\nVocê recebe a mais nova entre Beta e Produção."
+
+#: tools/haumea/shortcuts.cpp:28
+msgid "New map"
+msgstr "Novo mapa"
+
+#: tools/haumea/startscreen.cpp:365
+msgid "New workspace..."
+msgstr "Novo workspace..."
+
+#: tools/haumea/rec.cpp:775
+msgid "No .rec files in this folder"
+msgstr "Nenhum arquivo .rec nesta pasta"
+
+#: tools/haumea/namaka.cpp:729
+msgid "No Python 3.10 or newer found."
+msgstr "Nenhum Python 3.10 ou mais novo encontrado."
+
+#: tools/haumea/startscreen.cpp:289
+msgid "No SA-MP client: SA-MP's own objects won't show."
+msgstr "Sem cliente SA-MP: os objetos próprios do SA-MP não vão aparecer."
+
+#: tools/haumea/startscreen.cpp:466
+#, c-format
+msgid "No recent maps in %s yet."
+msgstr "Ainda não há mapas recentes em %s."
+
+#: tools/haumea/telemetry.cpp:473
+msgid "No thanks"
+msgstr "Não, obrigado"
+
+#: tools/haumea/workspace.cpp:907
+msgid "No workspace"
+msgstr "Sem workspace"
+
+#: tools/haumea/workspace.cpp:455
+msgid "No workspace: maps open and save wherever you choose."
+msgstr "Sem workspace: os mapas abrem e são salvos onde você escolher."
+
+#: tools/haumea/startscreen.cpp:381
+msgid "No workspaces yet: make one or open a server folder."
+msgstr "Nenhum workspace ainda: crie um ou abra uma pasta de servidor."
+
+#: tools/haumea/shortcuts.cpp:85
+msgid "Nodes (open.mp)"
+msgstr "Nodes (open.mp)"
+
+#: tools/haumea/rec.cpp:788
+msgid "Not an NPC recording (unknown type)"
+msgstr "Não é uma gravação de NPC (tipo desconhecido)"
+
+#: tools/haumea/namaka.cpp:817
+msgid "Not listening: \"Let Namaka connect\" is off."
+msgstr "Não está escutando: \"Deixar o Namaka conectar\" está desligado."
+
+#: tools/haumea/telemetry.cpp:505
+#, c-format
+msgid "Not sent from this run (%s)."
+msgstr "Não enviado nesta execução (%s)."
+
+#: tools/haumea/mapcheck.cpp:213
+msgid "Note"
+msgstr "Observação"
+
+#: tools/haumea/updater.cpp:835
+msgid "OK"
+msgstr "OK"
+
+#: tools/haumea/shortcuts.cpp:75
+msgid "Object Browser"
+msgstr "Navegador de objetos"
+
+#: tools/haumea/shortcuts.cpp:76
+msgid "Object Info"
+msgstr "Informações do objeto"
+
+#: tools/haumea/shortcuts.cpp:53
+msgid "Object snap on / off"
+msgstr "Encaixe em objetos ligado / desligado"
+
+#: tools/haumea/updater.cpp:1033
+msgid "Offer it again"
+msgstr "Oferecer de novo"
+
+#: tools/haumea/rec.cpp:134
+msgid "On foot"
+msgstr "A pé"
+
+#: tools/haumea/namaka.cpp:815
+msgid "Once Namaka is installed, Haumea listens for it from its next start."
+msgstr "Depois que o Namaka for instalado, o Haumea o escuta a partir da próxima vez que abrir."
+
+#: tools/haumea/shortcuts.cpp:29
+msgid "Open a Pawn map"
+msgstr "Abrir um mapa Pawn"
+
+#: tools/haumea/startscreen.cpp:368
+msgid "Open folder as workspace..."
+msgstr "Abrir pasta como workspace..."
+
+#: tools/haumea/startscreen.cpp:566
+msgid "Open map"
+msgstr "Abrir mapa"
+
+#: tools/haumea/startscreen.cpp:427
+msgid "Open the folder"
+msgstr "Abrir a pasta"
+
+#: tools/haumea/startscreen.cpp:591
+msgid "Open the last workspace automatically"
+msgstr "Abrir o último workspace automaticamente"
+
+#: tools/haumea/namaka.cpp:781
+msgid "Open the log"
+msgstr "Abrir o log"
+
+#: tools/haumea/startscreen.cpp:566
+msgid "Open workspace"
+msgstr "Abrir workspace"
+
+#: tools/haumea/haumea.cpp:2455
+msgid "Opening map"
+msgstr "Abrindo o mapa"
+
+#: tools/haumea/haumea.cpp:2586
+msgid "Opening model archives"
+msgstr "Abrindo os arquivos de modelos"
+
+#: tools/haumea/shortcuts.cpp:58
+msgid "Outline every map object"
+msgstr "Contornar todos os objetos do mapa"
+
+#: tools/haumea/haumea.cpp:1723
+#, c-format
+msgid "Painted %d x %s"
+msgstr "%d pintado(s) de %s"
+
+#: tools/haumea/shortcuts.cpp:40
+msgid "Paste in front of the camera"
+msgstr "Colar na frente da câmera"
+
+#: tools/haumea/shortcuts.cpp:41
+msgid "Paste where it was copied"
+msgstr "Colar onde foi copiado"
+
+#: tools/haumea/mapcheck.cpp:618
+#, c-format
+msgid "Path \"%s\" (%d point(s)) isn't followed by any NPC."
+msgstr "O caminho \"%s\" (%d ponto(s)) não é seguido por nenhum NPC."
+
+#: tools/haumea/rec.cpp:810
+msgid "Pause"
+msgstr "Pausar"
+
+#: tools/haumea/startscreen.cpp:464
+msgid "Pick a workspace to see its maps."
+msgstr "Escolha um workspace para ver os mapas dele."
+
+#: tools/haumea/rec.cpp:775
+msgid "Pick the recordings folder first"
+msgstr "Escolha a pasta de gravações primeiro"
+
+#: tools/haumea/startscreen.cpp:421
+msgid "Pin: keep it at the top of the list"
+msgstr "Fixar: manter no topo da lista"
+
+#: tools/haumea/haumea.cpp:1725
+#, c-format
+msgid "Placed %s"
+msgstr "%s colocado"
+
+#: tools/haumea/rec.cpp:810
+msgid "Play"
+msgstr "Tocar"
+
+#: tools/haumea/shortcuts.cpp:63
+msgid "Player view: see the map as a player would"
+msgstr "Visão do jogador: veja o mapa como um jogador veria"
+
+#: tools/haumea/mapcheck.cpp:705
+#, c-format
+msgid "Polygon area \"%s\" has %d corner(s): it needs 3 or more, or nobody is ever inside it."
+msgstr "A área poligonal \"%s\" tem %d canto(s): precisa de 3 ou mais, senão ninguém fica dentro dela."
+
+#: tools/haumea/mapcheck.cpp:444
+msgid "Positions"
+msgstr "Posições"
+
+#: tools/haumea/shortcuts.cpp:88
+msgid "Preferences"
+msgstr "Preferências"
+
+#: tools/haumea/telemetry.cpp:479
+msgid "Preferences > Privacy changes it later."
+msgstr "Preferências > Privacidade muda isso depois."
+
+#: tools/haumea/haumea.cpp:2258
+#, c-format
+msgid "Press %s to outline every object in your map, even invisible ones."
+msgstr "Aperte %s para contornar todos os objetos do mapa, até os invisíveis."
+
+#: tools/haumea/haumea.cpp:2257
+#, c-format
+msgid "Press %s to pick an object, then double-click it to place it."
+msgstr "Aperte %s para escolher um objeto e clique duas vezes nele para colocá-lo."
+
+#: tools/haumea/mapcheck.cpp:213
+msgid "Problem"
+msgstr "Problema"
+
+#: tools/haumea/mapcheck.cpp:858
+#, c-format
+msgid "Problems: %d"
+msgstr "Problemas: %d"
+
+#: tools/haumea/mapcheck.cpp:856
+#, c-format
+msgid "Problems: %d, warnings: %d"
+msgstr "Problemas: %d, avisos: %d"
+
+#: tools/haumea/updater.cpp:1003 tools/haumea/updater.cpp:1028
+msgid "Production"
+msgstr "Produção"
+
+#: tools/haumea/shortcuts.cpp:45
+msgid "Put the selection in a group"
+msgstr "Colocar a seleção em um grupo"
+
+#: tools/haumea/updater.cpp:988
+msgid "Puts back the version before the last update, then restarts."
+msgstr "Volta a versão de antes da última atualização e reinicia."
+
+#: tools/haumea/namaka.cpp:718
+msgid "Python"
+msgstr "Python"
+
+#: tools/haumea/mapcheck.cpp:652
+#, c-format
+msgid "Race \"%s\" has one checkpoint: there is nothing to race to."
+msgstr "A corrida \"%s\" tem um checkpoint só: não há para onde correr."
+
+#: tools/haumea/mapcheck.cpp:659
+#, c-format
+msgid "Race \"%s\": %d checkpoints share order %d, so which one comes first is undefined."
+msgstr "Corrida \"%s\": %d checkpoints têm a ordem %d, então não se sabe qual vem primeiro."
+
+#: tools/haumea/haumea.cpp:2467 tools/haumea/haumea.cpp:2676
+msgid "Ready"
+msgstr "Pronto"
+
+#: tools/haumea/rec.cpp:760
+msgid "Recording"
+msgstr "Gravação"
+
+#: tools/haumea/haumea.cpp:1922
+msgid "Rectangle select failed to create the picking buffer"
+msgstr "A seleção por retângulo não conseguiu criar o buffer de seleção"
+
+#: tools/haumea/haumea.cpp:1937
+msgid "Rectangle select failed to read the picking buffer"
+msgstr "A seleção por retângulo não conseguiu ler o buffer de seleção"
+
+#: tools/haumea/haumea.cpp:1943
+#, c-format
+msgid "Rectangle select limited to %d object(s)"
+msgstr "Seleção por retângulo limitada a %d objeto(s)"
+
+#: tools/haumea/shortcuts.cpp:37
+msgid "Redo"
+msgstr "Refazer"
+
+#: tools/haumea/updater.cpp:775 tools/haumea/updater.cpp:857
+msgid "Release page"
+msgstr "Página da versão"
+
+#: tools/haumea/rec.cpp:791
+msgid "Reload"
+msgstr "Recarregar"
+
+#: tools/haumea/startscreen.cpp:434
+msgid "Remove from the list (the folder stays)"
+msgstr "Remover da lista (a pasta fica)"
+
+#: tools/haumea/shortcuts.cpp:44
+msgid "Rename the selected object's variable (Map Objects)"
+msgstr "Renomear a variável do objeto selecionado (Objetos do mapa)"
+
+#: tools/haumea/namaka.cpp:757
+msgid "Repair"
+msgstr "Reparar"
+
+#: tools/haumea/crashreports.cpp:1358
+msgid "Report"
+msgstr "Relatório"
+
+#: tools/haumea/crashreports.cpp:1395
+#, c-format
+msgid "Reports waiting: %d"
+msgstr "Relatórios aguardando: %d"
+
+#: tools/haumea/shortcuts.cpp:66
+msgid "Reset FOV"
+msgstr "Redefinir FOV"
+
+#: tools/haumea/shortcuts.cpp:71
+msgid "Reset interface size"
+msgstr "Redefinir o tamanho da interface"
+
+#: tools/haumea/startscreen.cpp:303 tools/haumea/updater.cpp:880 tools/haumea/workspace.cpp:890
+msgid "Restart now"
+msgstr "Reiniciar agora"
+
+#: tools/haumea/updater.cpp:982
+#, c-format
+msgid "Roll back to %s"
+msgstr "Voltar para %s"
+
+#: tools/haumea/updater.cpp:980
+msgid "Roll back to the previous version"
+msgstr "Voltar para a versão anterior"
+
+#: tools/haumea/updater.cpp:760
+#, c-format
+msgid "Rolled back to %s: restart Haumea to use it"
+msgstr "Voltou para %s: reinicie o Haumea para usá-la"
+
+#: tools/haumea/shortcuts.cpp:49
+msgid "Rotate gizmo"
+msgstr "Gizmo de girar"
+
+#: tools/haumea/rec.cpp:829
+msgid "Route"
+msgstr "Rota"
+
+#: tools/haumea/startscreen.cpp:286
+#, c-format
+msgid "SA-MP %s found"
+msgstr "SA-MP %s encontrado"
+
+#: tools/haumea/mapcheck.cpp:248
+msgid "SA-MP 0.3.7 and open.mp with 0.3.7 clients allowed"
+msgstr "SA-MP 0.3.7 e open.mp com clientes 0.3.7 permitidos"
+
+#: tools/haumea/shortcuts.cpp:30
+msgid "Save the map"
+msgstr "Salvar o mapa"
+
+#: tools/haumea/shortcuts.cpp:31
+msgid "Save the map as"
+msgstr "Salvar o mapa como"
+
+#: tools/haumea/updater.cpp:506
+msgid "Save your changes first."
+msgstr "Salve suas alterações primeiro."
+
+#: tools/haumea/shortcuts.cpp:73
+msgid "Scroll the panel under the mouse down"
+msgstr "Rolar para baixo o painel sob o mouse"
+
+#: tools/haumea/shortcuts.cpp:72
+msgid "Scroll the panel under the mouse up"
+msgstr "Rolar para cima o painel sob o mouse"
+
+#: tools/haumea/haumea.cpp:2267
+msgid "Search the browser by ID ranges, like 19000-19100."
+msgstr "Busque no navegador por faixas de ID, como 19000-19100."
+
+#: tools/haumea/haumea.cpp:2266
+msgid "Select several objects and edit a field: it changes on all of them."
+msgstr "Selecione vários objetos e edite um campo: ele muda em todos."
+
+#: tools/haumea/haumea.cpp:1958
+#, c-format
+msgid "Selected %d object(s)"
+msgstr "%d objeto(s) selecionado(s)"
+
+#: tools/haumea/haumea.cpp:2046 tools/haumea/haumea.cpp:2090
+msgid "Selection failed to create or read the picking buffer"
+msgstr "A seleção não conseguiu criar ou ler o buffer de seleção"
+
+#: tools/haumea/haumea.cpp:3157
+#, c-format
+msgid "Selection too large: some objects won't move (max %d)"
+msgstr "Seleção grande demais: alguns objetos não vão se mover (máx. %d)"
+
+#: tools/haumea/crashreports.cpp:1339
+msgid "Send"
+msgstr "Enviar"
+
+#: tools/haumea/telemetry.cpp:495
+msgid "Send a daily usage ping"
+msgstr "Enviar um ping diário de uso"
+
+#: tools/haumea/crashreports.cpp:1332
+msgid "Send a report?"
+msgstr "Enviar um relatório?"
+
+#: tools/haumea/crashreports.cpp:1353
+msgid "Sending..."
+msgstr "Enviando..."
+
+#: tools/haumea/crashreports.cpp:1360
+msgid "Sent with your install ID too, since the daily ping is on."
+msgstr "Enviado com o seu ID de instalação também, já que o ping diário está ligado."
+
+#: tools/haumea/mapcheck.cpp:826
+msgid "Server"
+msgstr "Servidor"
+
+#: tools/haumea/startscreen.cpp:370 tools/haumea/workspace.cpp:895
+msgid "Server folder"
+msgstr "Pasta do servidor"
+
+#: tools/haumea/workspace.cpp:899
+msgid "Server folder found."
+msgstr "Pasta do servidor encontrada."
+
+#: tools/haumea/workspace.cpp:910
+#, c-format
+msgid "Settings and editor data: %s"
+msgstr "Configurações e dados do editor: %s"
+
+#: tools/haumea/shortcuts.cpp:62
+msgid "Show everything hidden"
+msgstr "Mostrar tudo o que está oculto"
+
+#: tools/haumea/rec.cpp:862
+msgid "Siren"
+msgstr "Sirene"
+
+#: tools/haumea/startscreen.cpp:584
+msgid "Skip"
+msgstr "Pular"
+
+#: tools/haumea/startscreen.cpp:593
+msgid "Skip this screen at start. File > Switch Workspace shows it again."
+msgstr "Pular esta tela ao abrir. Arquivo > Trocar de workspace a mostra de novo."
+
+#: tools/haumea/updater.cpp:862
+msgid "Skip this version"
+msgstr "Pular esta versão"
+
+#: tools/haumea/haumea.cpp:1480
+#, c-format
+msgid "Skipped %d linked/conflicting instance(s)"
+msgstr "%d instância(s) vinculada(s)/em conflito pulada(s)"
+
+#: tools/haumea/updater.cpp:1031
+#, c-format
+msgid "Skipping %s"
+msgstr "Pulando %s"
+
+#: tools/haumea/shortcuts.cpp:68
+msgid "Slower fly speed"
+msgstr "Voo mais lento"
+
+#: tools/haumea/shortcuts.cpp:70
+msgid "Smaller interface (like Ctrl+wheel)"
+msgstr "Interface menor (como Ctrl+roda)"
+
+#: tools/haumea/haumea.cpp:1482
+#, c-format
+msgid "Snap skipped some linked instances at the %d object cap"
+msgstr "O encaixe pulou algumas instâncias vinculadas no limite de %d objetos"
+
+#: tools/haumea/haumea.cpp:1477
+#, c-format
+msgid "Snapped %d instance(s) to ground"
+msgstr "%d instância(s) encaixada(s) no chão"
+
+#: tools/haumea/haumea.cpp:2538
+msgid "Starting"
+msgstr "Iniciando"
+
+#: tools/haumea/namaka.cpp:693
+msgid "Status"
+msgstr "Status"
+
+#: tools/haumea/rec.cpp:819
+msgid "Stop"
+msgstr "Parar"
+
+#: tools/haumea/updater.cpp:510
+msgid "Stop Test in game first."
+msgstr "Pare o Testar no jogo primeiro."
+
+#: tools/haumea/rec.cpp:825
+msgid "Stop and put the element back where it was"
+msgstr "Parar e devolver o elemento para onde estava"
+
+#: tools/haumea/shortcuts.cpp:50
+msgid "Switch local / world axes"
+msgstr "Alternar eixos locais / do mundo"
+
+#: tools/haumea/updater.cpp:1024
+msgid "Switch to the latest official release"
+msgstr "Mudar para a versão oficial mais recente"
+
+#: tools/haumea/shortcuts.cpp:34
+msgid "Test in game"
+msgstr "Testar no jogo"
+
+#: tools/haumea/mapcheck.cpp:761
+msgid "Text"
+msgstr "Texto"
+
+#: tools/haumea/mapcheck.cpp:811
+#, c-format
+msgid "TextDraw %s has %s, which Windows-1252 (what SA-MP and open.mp clients draw) doesn't have: it is saved as '?'."
+msgstr "O TextDraw %s tem %s, que o Windows-1252 (o que os clientes SA-MP e open.mp desenham) não tem: é salvo como '?'."
+
+#: tools/haumea/mapcheck.cpp:726
+#, c-format
+msgid "TextDraw %s: %s"
+msgstr "TextDraw %s: %s"
+
+#: tools/haumea/mapcheck.cpp:714
+msgid "TextDraws"
+msgstr "TextDraws"
+
+#: tools/haumea/shortcuts.cpp:84
+msgid "Texture Browser"
+msgstr "Navegador de texturas"
+
+#: tools/haumea/startscreen.cpp:337
+msgid "That folder doesn't exist."
+msgstr "Essa pasta não existe."
+
+#: tools/haumea/haumea.cpp:2265
+msgid "The SA-MP tab places pickups, 3D labels, actors, classes, gang zones and map icons."
+msgstr "A aba SA-MP coloca pickups, 3D labels, atores, classes, gang zones e ícones de mapa."
+
+#: tools/haumea/haumea.cpp:2345
+msgid "The all-in-one editor for open.mp and SA-MP"
+msgstr "O editor tudo-em-um para open.mp e SA-MP"
+
+#: tools/haumea/updater.cpp:876
+msgid "The download goes on; the update installs when Haumea restarts."
+msgstr "O download continua; a atualização é instalada quando o Haumea reinicia."
+
+#: tools/haumea/namaka.cpp:554
+#, c-format
+msgid "The installer stopped (exit code %d)."
+msgstr "O instalador parou (código de saída %d)."
+
+#: tools/haumea/mapcheck.cpp:829
+msgid "The map has NPCs or NPC paths: their NPC_* calls only compile and run on open.mp (with its NPCs component), not on a SA-MP 0.3.7 server."
+msgstr "O mapa tem NPCs ou caminhos de NPC: as chamadas NPC_* só compilam e funcionam no open.mp (com o componente de NPCs), não em um servidor SA-MP 0.3.7."
+
+#: tools/haumea/startscreen.cpp:301 tools/haumea/workspace.cpp:888
+msgid "The new game folder loads when Haumea restarts."
+msgstr "A nova pasta do jogo é carregada quando o Haumea reiniciar."
+
+#: tools/haumea/updater.cpp:1004
+msgid "The tested releases everyone gets."
+msgstr "As versões testadas que todo mundo recebe."
+
+#: tools/haumea/updater.cpp:890
+#, c-format
+msgid "The update failed: %s"
+msgstr "A atualização falhou: %s"
+
+#: tools/haumea/updater.cpp:832
+#, c-format
+msgid "The update wasn't installed: %s"
+msgstr "A atualização não foi instalada: %s"
+
+#: tools/haumea/namaka.cpp:706
+msgid "This Haumea has no Namaka bundle (a developer build): use a release, or set HAUMEA_NAMAKA_BUNDLE."
+msgstr "Este Haumea não tem o pacote do Namaka (uma build de desenvolvimento): use uma versão oficial ou defina HAUMEA_NAMAKA_BUNDLE."
+
+#: tools/haumea/workspace.cpp:463
+msgid "This does not look like a server folder (no gamemodes/, scriptfiles/ or server executable). It can still be the workspace."
+msgstr "Isto não parece uma pasta de servidor (sem gamemodes/, scriptfiles/ ou executável do servidor). Ainda pode ser o workspace."
+
+#: tools/haumea/workspace.cpp:434 tools/haumea/workspace.cpp:457
+msgid "This folder does not exist."
+msgstr "Esta pasta não existe."
+
+#: tools/haumea/workspace.cpp:466
+msgid "This folder is inside the game folder, which Haumea never writes to."
+msgstr "Esta pasta está dentro da pasta do jogo, na qual o Haumea nunca grava."
+
+#: tools/haumea/updater.cpp:1015
+#, c-format
+msgid "This is %s, not an official release: it updates to the next official release."
+msgstr "Isto é %s, não uma versão oficial: atualiza para a próxima versão oficial."
+
+#: tools/haumea/updater.cpp:1038
+#, c-format
+msgid "This is %s."
+msgstr "Esta é a %s."
+
+#: tools/haumea/workspace.cpp:439
+msgid "This is not a GTA San Andreas folder: it has no gta_sa.exe, or models/gta3.img and data/."
+msgstr "Esta não é uma pasta do GTA San Andreas: não tem gta_sa.exe, nem models/gta3.img e data/."
+
+#: tools/haumea/updater.cpp:670
+msgid "This release has no download for this platform."
+msgstr "Esta versão não tem download para esta plataforma."
+
+#: tools/haumea/updater.cpp:771
+msgid "This release has no notes."
+msgstr "Esta versão não tem notas."
+
+#: tools/haumea/shortcuts.cpp:80
+msgid "Time & Weather"
+msgstr "Hora e clima"
+
+#: tools/haumea/haumea.cpp:2386
+#, c-format
+msgid "Tip: %s"
+msgstr "Dica: %s"
+
+#: tools/haumea/mapcheck.cpp:433
+msgid "To keep them: a SA-MP 0.3.DL or open.mp custom model goes in the workspace's models/artconfig.txt (AddSimpleModel) with its DFF and TXD; anything else needs a similar game or SA-MP object in its place (search the Object Browser)."
+msgstr "Para mantê-los: um modelo personalizado do SA-MP 0.3.DL ou do open.mp vai no models/artconfig.txt do workspace (AddSimpleModel) com o DFF e o TXD; o resto precisa de um objeto parecido do jogo ou do SA-MP no lugar (procure no Navegador de objetos)."
+
+#: tools/haumea/shortcuts.cpp:78
+msgid "Tools"
+msgstr "Ferramentas"
+
+#: tools/haumea/mapcheck.cpp:357
+msgid "Trains"
+msgstr "Trens"
+
+#: tools/haumea/shortcuts.cpp:48 tools/haumea/shortcuts.cpp:49 tools/haumea/shortcuts.cpp:50 tools/haumea/shortcuts.cpp:51
+msgid "Transform"
+msgstr "Transformar"
+
+#: tools/haumea/updater.cpp:891
+msgid "Try again"
+msgstr "Tentar de novo"
+
+#: tools/haumea/shortcuts.cpp:36
+msgid "Undo"
+msgstr "Desfazer"
+
+#: tools/haumea/namaka.cpp:765
+msgid "Uninstall"
+msgstr "Desinstalar"
+
+#: tools/haumea/rec.cpp:134
+msgid "Unknown"
+msgstr "Desconhecido"
+
+#: tools/haumea/startscreen.cpp:421
+msgid "Unpin"
+msgstr "Desafixar"
+
+#: tools/haumea/mapcheck.cpp:320
+#, c-format
+msgid "Up to %d streamed gang zones around one spot, plus %d shown to everyone: a player can have %d, so some near there are left out. Use bigger cells or fewer colours in the radar art."
+msgstr "Até %d gang zones com streamer em volta de um ponto, mais %d mostradas para todos: um jogador pode ter %d, então algumas por ali ficam de fora. Use células maiores ou menos cores na arte de radar."
+
+#: tools/haumea/namaka.cpp:753
+msgid "Update"
+msgstr "Atualizar"
+
+#: tools/haumea/updater.cpp:853
+msgid "Update now"
+msgstr "Atualizar agora"
+
+#: tools/haumea/updater.cpp:823
+#, c-format
+msgid "Updated to Haumea Studio %s"
+msgstr "Atualizado para o Haumea Studio %s"
+
+#: tools/haumea/updater.cpp:740
+msgid "Updates are off in this run"
+msgstr "As atualizações estão desligadas nesta execução"
+
+#: tools/haumea/updater.cpp:144
+msgid "Updates for this platform are downloaded from the release page."
+msgstr "As atualizações para esta plataforma são baixadas na página da versão."
+
+#: tools/haumea/startscreen.cpp:278 tools/haumea/workspace.cpp:881
+msgid "Use this game folder"
+msgstr "Usar esta pasta do jogo"
+
+#: tools/haumea/workspace.cpp:901
+msgid "Use this workspace"
+msgstr "Usar este workspace"
+
+#: tools/haumea/shortcuts.cpp:58 tools/haumea/shortcuts.cpp:59 tools/haumea/shortcuts.cpp:60 tools/haumea/shortcuts.cpp:61
+msgid "View"
+msgstr "Visualizar"
+
+#: tools/haumea/crashreports.cpp:1336
+msgid "View report"
+msgstr "Ver relatório"
+
+#: tools/haumea/shortcuts.cpp:59
+msgid "Viewer camera (longer draw distance)"
+msgstr "Câmera de visualização (distância de desenho maior)"
+
+#: tools/haumea/mapcheck.cpp:213
+msgid "Warning"
+msgstr "Aviso"
+
+#: tools/haumea/mapcheck.cpp:860
+#, c-format
+msgid "Warnings: %d"
+msgstr "Avisos: %d"
+
+#: tools/haumea/startscreen.cpp:45
+msgid "Welcome to Haumea Studio"
+msgstr "Bem-vindo ao Haumea Studio"
+
+#: tools/haumea/telemetry.cpp:476
+msgid "What is kept?"
+msgstr "O que é guardado?"
+
+#: tools/haumea/crashreports.cpp:1397 tools/haumea/telemetry.cpp:507
+msgid "What is sent and kept..."
+msgstr "O que é enviado e guardado..."
+
+#: tools/haumea/updater.cpp:798
+msgid "What's new"
+msgstr "Novidades"
+
+#: tools/haumea/updater.cpp:786
+#, c-format
+msgid "What's new in %s"
+msgstr "Novidades da %s"
+
+#: tools/haumea/namaka.cpp:795
+msgid ""
+"When Namaka is installed, Haumea listens for it on its own socket\n"
+"(only your user can use it). Changes apply from the next start."
+msgstr "Quando o Namaka está instalado, o Haumea o escuta no próprio socket\n(só o seu usuário pode usá-lo). As mudanças valem a partir da próxima vez que abrir."
+
+#: tools/haumea/startscreen.cpp:326
+msgid "Where the workspace goes"
+msgstr "Onde o workspace fica"
+
+#: tools/haumea/shortcuts.cpp:75 tools/haumea/shortcuts.cpp:76 tools/haumea/shortcuts.cpp:77 tools/haumea/shortcuts.cpp:78
+msgid "Windows"
+msgstr "Janelas"
+
+#: tools/haumea/workspace.cpp:895
+msgid "Workspace (server folder)"
+msgstr "Workspace (pasta do servidor)"
+
+#: tools/haumea/startscreen.cpp:543
+msgid "Workspaces"
+msgstr "Workspaces"
+
+#: tools/haumea/telemetry.cpp:470
+msgid "Yes, send it"
+msgstr "Sim, enviar"
+
+#: tools/haumea/updater.cpp:825
+#, c-format
+msgid "You had changed %s: your copy is %s.local."
+msgstr "Você tinha alterado %s: a sua cópia é %s.local."
+
+#: tools/haumea/updater.cpp:1020
+#, c-format
+msgid "You'll move to Production with the next production release newer than %s."
+msgstr "Você vai passar para a Produção na próxima versão de produção mais nova que %s."
+
+#: tools/haumea/crashreports.cpp:1335
+msgid "Your folders, user name and map names are left out."
+msgstr "Suas pastas, nome de usuário e nomes de mapas ficam de fora."
+
+#: tools/haumea/shortcuts.cpp:64
+msgid "Zoom in (narrower FOV, like the wheel)"
+msgstr "Aproximar (FOV mais estreito, como a roda)"
+
+#: tools/haumea/shortcuts.cpp:65
+msgid "Zoom out (wider FOV, like the wheel)"
+msgstr "Afastar (FOV mais largo, como a roda)"
+
+#: tools/haumea/updater.cpp:1016
+msgid "a Dev build"
+msgstr "uma build Dev"
+
+#: tools/haumea/updater.cpp:1016
+msgid "a PR build"
+msgstr "uma build de PR"
+
+#: tools/haumea/mapcheck.cpp:735
+msgid "a sprite needs its text as TXD:texture."
+msgstr "um sprite precisa do texto como TXD:textura."
+
+#: tools/haumea/mapcheck.cpp:329
+msgid "actors"
+msgstr "atores"
+
+#: tools/haumea/telemetry.cpp:215
+msgid "an agent session"
+msgstr "uma sessão de agente"
+
+#: tools/haumea/telemetry.cpp:213
+msgid "an automated run"
+msgstr "uma execução automatizada"
+
+#: tools/haumea/startscreen.cpp:287
+msgid "client"
+msgstr "cliente"
+
+#: tools/haumea/mapcheck.cpp:738
+msgid "empty text can crash 0.3.7 clients; use \"_\" for nothing."
+msgstr "texto vazio pode travar clientes 0.3.7; use \"_\" para nada."
+
+#: tools/haumea/mapcheck.cpp:330
+msgid "gang zones"
+msgstr "gang zones"
+
+#: tools/haumea/mapcheck.cpp:740
+msgid "has a '{' that isn't a {RRGGBB} colour code."
+msgstr "tem um '{' que não é um código de cor {RRGGBB}."
+
+#: tools/haumea/mapcheck.cpp:732
+msgid "its position is off the 640x448 canvas, so players won't see it."
+msgstr "a posição está fora da tela de 640x448, então os jogadores não o veem."
+
+#: tools/haumea/mapcheck.cpp:743
+msgid "its text is longer than the 800-character limit."
+msgstr "o texto passa do limite de 800 caracteres."
+
+#: tools/haumea/mapcheck.cpp:332
+msgid "map icons"
+msgstr "ícones de mapa"
+
+#: tools/haumea/startscreen.cpp:587
+msgid "no workspace"
+msgstr "sem workspace"
+
+#: tools/haumea/rec.cpp:736
+msgid "npcmodes/recordings folder"
+msgstr "pasta npcmodes/recordings"
+
+#: tools/haumea/mapcheck.cpp:200
+msgid "object"
+msgstr "objeto"
+
+#: tools/haumea/mapcheck.cpp:251
+msgid "open.mp with artwork on and no 0.3.7 clients (config.json)"
+msgstr "open.mp com artwork ligado e sem clientes 0.3.7 (config.json)"
+
+#: tools/haumea/mapcheck.cpp:327
+msgid "pickups"
+msgstr "pickups"
+
+#: tools/haumea/mapcheck.cpp:331
+msgid "player classes"
+msgstr "classes de jogador"
+
+#: tools/haumea/startscreen.cpp:518
+msgid "the all-in-one editor for open.mp and SA-MP"
+msgstr "o editor tudo-em-um para open.mp e SA-MP"
+
+#: tools/haumea/startscreen.cpp:133
+msgid "today"
+msgstr "hoje"
+
+#: tools/haumea/startscreen.cpp:134
+msgid "yesterday"
+msgstr "ontem"
+
+#: tools/haumea/startscreen.cpp:296
+#, c-format
+msgid "|  0.3.DL custom models in this workspace: %d"
+msgstr "|  Modelos personalizados 0.3.DL neste workspace: %d"
+

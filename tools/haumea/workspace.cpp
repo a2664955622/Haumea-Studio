@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "i18n.h"
 #include "workspace.h"
 
 #include <stdio.h>
@@ -428,14 +429,14 @@ CheckGameDir(const char *dir, std::string *problem)
 	std::string why;
 	std::string base = normalizeDir(dir);
 	if(base.empty())
-		why = "Choose the GTA San Andreas folder.";
+		why = _("Choose the GTA San Andreas folder.");
 	else if(!isDirectory(base))
-		why = "This folder does not exist.";
+		why = _("This folder does not exist.");
 	else if(isFile(resolveUnder(base, "gta_sa.exe")) ||
 	        (isFile(resolveUnder(base, "models/gta3.img")) && isDirectory(resolveUnder(base, "data"))))
 		why.clear();
 	else
-		why = "This is not a GTA San Andreas folder: it has no gta_sa.exe, or models/gta3.img and data/.";
+		why = _("This is not a GTA San Andreas folder: it has no gta_sa.exe, or models/gta3.img and data/.");
 	if(problem)
 		*problem = why;
 	return why.empty();
@@ -451,18 +452,18 @@ CheckWorkspaceDir(const char *dir, std::string *warning)
 		"omp-server", "omp-server.exe", "samp03svr", "samp-server.exe", "config.json", "server.cfg",
 	};
 	if(base.empty())
-		why = "No workspace: maps open and save wherever you choose.";
+		why = _("No workspace: maps open and save wherever you choose.");
 	else if(!isDirectory(base))
-		why = "This folder does not exist.";
+		why = _("This folder does not exist.");
 	else{
 		bool server = false;
 		for(const char *marker : markers)
 			server |= isDirectory(resolveUnder(base, marker)) || isFile(resolveUnder(base, marker));
 		if(!server)
-			why = "This does not look like a server folder (no gamemodes/, scriptfiles/ or server "
-				"executable). It can still be the workspace.";
+			why = _("This does not look like a server folder (no gamemodes/, scriptfiles/ or server "
+				"executable). It can still be the workspace.");
 		else if(!gGameDir.empty() && IsInGameDir(base.c_str()))
-			why = "This folder is inside the game folder, which Haumea never writes to.";
+			why = _("This folder is inside the game folder, which Haumea never writes to.");
 	}
 	if(warning)
 		*warning = why;
@@ -733,8 +734,8 @@ FileDialogAvailable(void)
 	if(!found)
 		found = system("command -v zenity >/dev/null 2>&1 || command -v kdialog >/dev/null 2>&1") == 0;
 	if(!found)
-		ToastFor(TOAST_SAVE, 8.0f, "File dialogs need zenity or kdialog. Install one "
-			"(sudo apt install zenity) or type the path.");
+		ToastFor(TOAST_SAVE, 8.0f, _("File dialogs need zenity or kdialog. Install one "
+			"(sudo apt install zenity) or type the path."));
 	return found;
 #endif
 }
@@ -802,21 +803,21 @@ folderField(const char *label, const char *id, char *buffer, size_t size, const 
 {
 	ImGui::TextUnformatted(label);
 	ImGui::PushID(id);
-	float browse = ImGui::CalcTextSize("Browse...").x + ImGui::GetStyle().FramePadding.x * 2;
+	float browse = ImGui::CalcTextSize(_("Browse...")).x + ImGui::GetStyle().FramePadding.x * 2;
 	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - browse - ImGui::GetStyle().ItemSpacing.x);
 	ImGui::InputText("##path", buffer, size);
 	ImGui::SameLine();
 	// The first-run window draws no toasts, so say it here too.
 	ImGuiStorage *storage = ImGui::GetStateStorage();
 	ImGuiID noDialog = ImGui::GetID("no dialog");
-	if(ImGui::Button("Browse...")){
+	if(ImGui::Button(_("Browse..."))){
 		char picked[1024];
 		if(PickFolderDialog(picked, sizeof(picked), dialogTitle, buffer))
 			snprintf(buffer, size, "%s", picked);
 		storage->SetBool(noDialog, !FileDialogAvailable());
 	}
 	if(storage->GetBool(noDialog))
-		ImGui::TextDisabled("Browse needs zenity or kdialog: type or paste the folder's path.");
+		ImGui::TextDisabled(_("Browse needs zenity or kdialog: type or paste the folder's path."));
 	ImGui::PopID();
 }
 
@@ -869,44 +870,44 @@ uiWorkspaceSettings(void)
 	bool changedGame = false;
 	ImGui::PushID("WorkspaceSettings");
 
-	folderField("GTA San Andreas folder (read only)", "game", game, sizeof(game), "GTA San Andreas folder");
+	folderField(_("GTA San Andreas folder (read only)"), "game", game, sizeof(game), _("GTA San Andreas folder"));
 	std::string problem;
 	bool gameOk = CheckGameDir(game, &problem);
 	bool gameEdited = normalizeDir(game) != gGameDir;
 	if(gameEdited || !gameOk)
-		statusLine(gameOk, gameOk ? "GTA San Andreas found." : problem, false);
+		statusLine(gameOk, gameOk ? _("GTA San Andreas found.") : problem, false);
 	if(gameEdited){
 		ImGui::BeginDisabled(!gameOk);
-		if(ImGui::Button("Use this game folder")){
+		if(ImGui::Button(_("Use this game folder"))){
 			SetGameDir(game, nil);
 			restartNeeded = changedGame = true;
 		}
 		ImGui::EndDisabled();
 	}
 	if(restartNeeded){
-		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.35f, 1.0f), "The new game folder loads when Haumea restarts.");
+		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.35f, 1.0f), _("The new game folder loads when Haumea restarts."));
 		ImGui::SameLine();
-		if(ImGui::SmallButton("Restart now"))
+		if(ImGui::SmallButton(_("Restart now")))
 			RestartHaumea();
 	}
 	ImGui::Spacing();
 
-	folderField("Workspace (server folder)", "workspace", workspace, sizeof(workspace), "Server folder");
+	folderField(_("Workspace (server folder)"), "workspace", workspace, sizeof(workspace), _("Server folder"));
 	std::string warning;
 	bool serverOk = CheckWorkspaceDir(workspace, &warning);
 	if(!serverOk || workspace[0])
-		statusLine(serverOk, serverOk ? "Server folder found." : warning, true);
+		statusLine(serverOk, serverOk ? _("Server folder found.") : warning, true);
 	bool edited = normalizeDir(workspace) != gWorkspaceDir;
-	if(edited && ImGui::Button("Use this workspace"))
+	if(edited && ImGui::Button(_("Use this workspace")))
 		SetWorkspaceDir(workspace);
 	if(!gWorkspaceDir.empty()){
 		// Beside Use, not after the status line, where it ran off the window.
 		if(edited)
 			ImGui::SameLine();
-		if(ImGui::Button("No workspace"))
+		if(ImGui::Button(_("No workspace")))
 			SetWorkspaceDir(nil);
 	}
-	ImGui::TextDisabled("Settings and editor data: %s", GetConfigDir());
+	ImGui::TextDisabled(_("Settings and editor data: %s"), GetConfigDir());
 	ImGui::PopID();
 	return changedGame;
 }

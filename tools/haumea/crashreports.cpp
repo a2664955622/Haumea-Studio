@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "i18n.h"
 #include "version.h"
 #include "versionutil.h"
 #include "crashreports.h"
@@ -1334,35 +1335,35 @@ CrashReportsDrawBanner(void)
 		ImGuiCond_Always, ImVec2(0.5f, 0.0f));
 	ImGuiWindowFlags flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse |
 		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoMove;
-	if(ImGui::Begin("Send a report?###crash_reports", nil, flags)){
-		ImGui::TextUnformatted(gPending.size() == 1 ? "Haumea Studio closed unexpectedly or hit an error. A report can help fix it." :
-			"Haumea Studio closed unexpectedly or hit errors. Reports can help fix them.");
-		ImGui::TextDisabled("Your folders, user name and map names are left out.");
-		if(ImGui::Button("View report"))
+	if(ImGui::Begin((std::string(_("Send a report?")) + "###crash_reports").c_str(), nil, flags)){
+		ImGui::TextUnformatted(gPending.size() == 1 ? _("Haumea Studio closed unexpectedly or hit an error. A report can help fix it.") :
+			_("Haumea Studio closed unexpectedly or hit errors. Reports can help fix them."));
+		ImGui::TextDisabled(_("Your folders, user name and map names are left out."));
+		if(ImGui::Button(_("View report")))
 			gShowViewer = true;
 		ImGui::SameLine();
-		if(ImGui::Button("Send"))
+		if(ImGui::Button(_("Send")))
 			sendPending();
 		ImGui::SameLine();
-		if(ImGui::Button("Don't send")){
+		if(ImGui::Button(_("Don't send"))){
 			deletePending();
 			gBannerDismissed = true;
 		}
 		ImGui::SameLine();
-		if(ImGui::Button("Always send")){
+		if(ImGui::Button(_("Always send"))){
 			gSendMode = SEND_ALWAYS;
 			saveSettings();
 			sendPending();
 		}
 		if(gSending)
-			ImGui::TextDisabled("Sending...");
+			ImGui::TextDisabled(_("Sending..."));
 	}
 	ImGui::End();
 	if(gShowViewer){
 		ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 40.0f, ImGui::GetFontSize() * 24.0f), ImGuiCond_FirstUseEver);
-		if(ImGui::Begin("Report###crash_report_viewer", &gShowViewer)){
+		if(ImGui::Begin((std::string(_("Report")) + "###crash_report_viewer").c_str(), &gShowViewer)){
 			if(!TelemetryInstallId().empty())
-				ImGui::TextDisabled("Sent with your install ID too, since the daily ping is on.");
+				ImGui::TextDisabled(_("Sent with your install ID too, since the daily ping is on."));
 			for(const std::string &name : gPending){
 				std::string body;
 				readFile(joinDir(pendingDir(), name.c_str()), &body);
@@ -1378,13 +1379,13 @@ void
 CrashReportsPreferences(void)
 {
 	loadSettings();
-	ImGui::SeparatorText("Crash and error reports");
+	ImGui::SeparatorText(_("Crash and error reports"));
 	int mode = gSendMode;
-	bool changed = ImGui::RadioButton("Ask", &mode, SEND_ASK);
+	bool changed = ImGui::RadioButton(_("Ask"), &mode, SEND_ASK);
 	ImGui::SameLine();
-	changed |= ImGui::RadioButton("Always send", &mode, SEND_ALWAYS);
+	changed |= ImGui::RadioButton(_("Always send"), &mode, SEND_ALWAYS);
 	ImGui::SameLine();
-	changed |= ImGui::RadioButton("Never send", &mode, SEND_NEVER);
+	changed |= ImGui::RadioButton(_("Never send"), &mode, SEND_NEVER);
 	if(changed){
 		gSendMode = mode;
 		saveSettings();
@@ -1393,11 +1394,13 @@ CrashReportsPreferences(void)
 		else if(mode == SEND_ALWAYS)
 			sendPending();
 	}
-	ImGui::TextWrapped("After a crash or an error: the version, system and graphics card, where in Haumea's "
+	ImGui::TextWrapped(_("After a crash or an error: the version, system and graphics card, where in Haumea's "
 		"code it happened and the last lines of its log, with your folders, user name and map names left out. "
-		"With the daily ping on, the install ID too. Reports not sent are deleted after %d days.", KEEP_DAYS);
+		"With the daily ping on, the install ID too. Reports not sent are deleted after %d days."), KEEP_DAYS);
 	if(!gPending.empty())
-		ImGui::TextDisabled("%d report(s) waiting.", (int)gPending.size());
-	if(ImGui::SmallButton("What is sent and kept...##reports"))
+		ImGui::TextDisabled(_("Reports waiting: %d"), (int)gPending.size());
+	ImGui::PushID("reports");
+	if(ImGui::SmallButton(_("What is sent and kept...")))
 		OpenInFileManager(PRIVACY_URL);
+	ImGui::PopID();
 }
