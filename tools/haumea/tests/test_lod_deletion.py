@@ -13,7 +13,7 @@ class LodDeletionTests(unittest.TestCase):
     def test_cascade_identity_and_shared_lods(self):
         source = (ROOT / 'tools/haumea/objectinst.cpp').read_text()
         helpers = source[source.index('static bool\nsameIplFamily'):
-                         source.index('void\nObjectInst::UpdateMatrix')]
+                         source.index('// CFileLoader::LoadObjectInstance')]
         cascade = source[source.index('void\nObjectInst::Delete(void)'):
                          source.index('static void\nsetDeletedWithoutCascade')]
         fixture = r'''
