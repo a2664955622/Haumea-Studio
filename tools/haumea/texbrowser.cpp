@@ -2,6 +2,7 @@
 #include "haumea.h"
 #include "workspace.h"
 #include "icons.h"
+#include "i18n.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -383,7 +384,7 @@ apply(const Pick &pick, const std::string &key)
 {
 	endPreview();
 	if(pick.model < 0 || GetObjectDef(pick.model) == nil){
-		Toast(TOAST_SELECTION, "No model loads TXD %s, so SA-MP can't use this texture", pick.txd.c_str());
+		Toast(TOAST_SELECTION, _("No model loads TXD %s, so SA-MP can't use this texture"), pick.txd.c_str());
 		return -1;
 	}
 	std::vector<ObjectInst*> targets;
@@ -429,24 +430,24 @@ targetBar(void)
 	rw::Atomic *atomic = obj && obj->m_type == ObjectDef::ATOMIC ? obj->m_atomics[0] : nil;
 	int count = atomic && atomic->geometry ? atomic->geometry->matList.numMaterials : 0;
 	if(first == nil){
-		ImGui::TextDisabled("Select objects to apply textures to them.");
+		ImGui::TextDisabled("%s", _("Select objects to apply textures to them."));
 		return;
 	}
 	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.0f);
-	if(ImGui::InputInt("Slot", &gSlot))
+	if(ImGui::InputInt(L("Slot"), &gSlot))
 		gSlot = std::max(0, std::min(gSlot, std::max(0, count - 1)));
-	ImGui::SetItemTooltip("The material slot (SetObjectMaterial's index) the texture goes to.\n%s has %d.",
+	ImGui::SetItemTooltip(_("The material slot (SetObjectMaterial's index) the texture goes to.\n%s has %d."),
 		obj->m_name, count);
 	ImGui::SameLine();
 	bool all = GetBatchEditSelection();
-	if(ImGui::Checkbox("Edit all selected", &all))
+	if(ImGui::Checkbox(L("Edit all selected"), &all))
 		SetBatchEditSelection(all);
-	ImGui::SetItemTooltip("As in Object Info: every selected object that has this slot, as one undo step.");
+	ImGui::SetItemTooltip("%s", _("As in Object Info: every selected object that has this slot, as one undo step."));
 	std::vector<ObjectInst*> applied;
 	selectedTargets(applied);
 	if(applied.size() > 1){
 		ImGui::SameLine();
-		ImGui::TextDisabled("Applies to %d selected", (int)applied.size());
+		ImGui::TextDisabled(_("Applies to %d selected"), (int)applied.size());
 	}
 }
 
@@ -514,14 +515,15 @@ tileGrid(const std::vector<int> &items, bool tstudio)
 				if(hovered){
 					hoveredAny = true;
 					preview(pick, key);
-					ImGui::SetTooltip("%s\nTXD %s, model %d%s\nClick applies it; right-click keeps it in Favourites.",
-						pick.texture.c_str(), pick.txd.c_str(), PawnModelId(pick.model),
-						pick.model < 0 ? " (no model loads this TXD)" : "");
+					ImGui::SetTooltip(pick.model < 0 ?
+						_("%s\nTXD %s, model %d (no model loads this TXD)\nClick applies it; right-click keeps it in Favourites.") :
+						_("%s\nTXD %s, model %d\nClick applies it; right-click keeps it in Favourites."),
+						pick.texture.c_str(), pick.txd.c_str(), PawnModelId(pick.model));
 				}
 				if(clicked){
 					int n = apply(pick, key);
 					if(n == 0)
-						Toast(TOAST_SELECTION, "Select objects to apply the texture to");
+						Toast(TOAST_SELECTION, "%s", _("Select objects to apply the texture to"));
 				}
 				if(ImGui::IsItemClicked(ImGuiMouseButton_Right))
 					toggleFavourite(key);
@@ -541,7 +543,7 @@ DrawTextureBrowserWindow(bool *open)
 		return;
 	}
 	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 34.0f, ImGui::GetFontSize() * 36.0f), ImGuiCond_FirstUseEver);
-	if(!ImGui::Begin(ICON_FA_PAINTBRUSH " Texture Browser###Texture Browser", open)){
+	if(!ImGui::Begin(LI(ICON_FA_PAINTBRUSH, "Texture Browser"), open)){
 		endPreview();
 		ImGui::End();
 		return;
@@ -550,21 +552,24 @@ DrawTextureBrowserWindow(bool *open)
 	bool indexed = indexStep(64);
 	targetBar();
 	if(ImGui::BeginTabBar("##texbrowser")){
-		if(ImGui::BeginTabItem("Textures")){
+		if(ImGui::BeginTabItem(L("Textures"))){
 			gSearch.Draw("##search", -FLT_MIN);
 			if(!gSearch.IsActive()){
 				ImVec2 p = ImGui::GetItemRectMin();
 				ImGui::GetWindowDrawList()->AddText(ImVec2(p.x + 6, p.y + ImGui::GetStyle().FramePadding.y),
-					ImGui::GetColorU32(ImGuiCol_TextDisabled), ICON_FA_MAGNIFYING_GLASS " Search texture names");
+					ImGui::GetColorU32(ImGuiCol_TextDisabled), TI(ICON_FA_MAGNIFYING_GLASS, "Search texture names"));
 			}
-			static const char *shows[] = { "All textures", "SA-MP textures only", "Custom models", "Recently used", "Favourites" };
+			static const char *shows[] = { N_("All textures"), N_("SA-MP textures only"), N_("Custom models"), N_("Recently used"), N_("Favourites") };
+			const char *showNames[IM_ARRAYSIZE(shows)];
+			for(int i = 0; i < IM_ARRAYSIZE(shows); i++)
+				showNames[i] = _(shows[i]);
 			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10.0f);
-			ImGui::Combo("##show", &gShow, shows, IM_ARRAYSIZE(shows));
+			ImGui::Combo("##show", &gShow, showNames, IM_ARRAYSIZE(shows));
 			ImGui::SameLine();
 			gTxdFilter.Draw("TXD", ImGui::GetFontSize() * 8.0f);
 			ImGui::SameLine();
 			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 5.0f);
-			ImGui::SliderFloat("##tile", &gTile, 3.0f, 12.0f, "Size");
+			ImGui::SliderFloat("##tile", &gTile, 3.0f, 12.0f, _("Size"));
 			std::vector<int> items;
 			if(gShow == SHOW_RECENT || gShow == SHOW_FAVOURITES){
 				// Looked up by "txd:texture", recent ones newest first.
@@ -586,21 +591,21 @@ DrawTextureBrowserWindow(bool *open)
 					if(passes(gIndex[i], std::string()))
 						items.push_back((int)i);
 			if(!indexed)
-				ImGui::TextDisabled("Indexing textures... %d of %d TXDs", gNextSlot, GetNumTxdSlots());
+				ImGui::TextDisabled(_("Indexing textures... %d of %d TXDs"), gNextSlot, GetNumTxdSlots());
 			else
-				ImGui::TextDisabled("%d textures", (int)items.size());
+				ImGui::TextDisabled(_("Textures: %d"), (int)items.size());
 			ImGui::BeginChild("##grid");
 			tileGrid(items, false);
 			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}
-		if(ImGui::BeginTabItem("Texture Studio list")){
+		if(ImGui::BeginTabItem(L("Texture Studio list"))){
 			gTsSearch.Draw("##tssearch", -FLT_MIN);
 			std::string from;
 			int n;
 			const TStudioTexture *tstudioTextures = TStudioTextureList(&n, &from);
-			ImGui::SetItemTooltip("Texture Studio's texture index (alltextures.pwn): search by number, TXD or name.\n"
-				"From %s.", from == "bundled" ? "the copy that comes with Haumea" : from.c_str());
+			ImGui::SetItemTooltip(_("Texture Studio's texture index (alltextures.pwn): search by number, TXD or name.\n"
+				"From %s."), from == "bundled" ? _("the copy that comes with Haumea") : from.c_str());
 			std::vector<int> items;
 			for(int i = 1; i < n; i++){
 				char line[128];
@@ -608,7 +613,7 @@ DrawTextureBrowserWindow(bool *open)
 				if(gTsSearch.PassFilter(line))
 					items.push_back(i);
 			}
-			ImGui::TextDisabled("%d of %d", (int)items.size(), n - 1);
+			ImGui::TextDisabled(_("%d of %d"), (int)items.size(), n - 1);
 			ImGui::BeginChild("##tsgrid");
 			tileGrid(items, true);
 			ImGui::EndChild();

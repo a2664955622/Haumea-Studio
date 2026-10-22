@@ -48,6 +48,7 @@ Node *FindNode(int areaId, int pointId);
 void GetAreaCounts(int areaId, int *vehicleNodes, int *pedNodes, int *links);
 bool IsAreaDirty(int areaId);
 bool AreNodesLinked(const Node *a, const Node *b);
+// reason: why it failed, in English (N_); show it with _(reason).
 bool LinkNodes(Node *a, Node *b, const char **reason);
 bool UnlinkNodes(Node *a, Node *b);
 Node *AddNode(const rw::V3d &pos, bool vehicle, Node *linkTo, const char **reason);

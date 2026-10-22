@@ -3,6 +3,7 @@
 #include "modloader.h"
 #include "sapaths.h"
 #include "workspace.h"
+#include "i18n.h"
 #include <cctype>
 #include <cfloat>
 #include <cstdlib>
@@ -4747,10 +4748,10 @@ static const char*
 loadSourceModeLabel(LoadSourceMode mode)
 {
 	switch(mode){
-	case LOAD_SOURCE_IMG: return "IMG archive";
+	case LOAD_SOURCE_IMG: return N_("IMG archive");
 	case LOAD_SOURCE_LOOSE: return "data/Paths";
 	case LOAD_SOURCE_AUTO:
-	default: return "Auto";
+	default: return N_("Auto");
 	}
 }
 
@@ -4758,9 +4759,9 @@ static const char*
 activeLoadSourceLabel(ActiveLoadSource source)
 {
 	switch(source){
-	case ACTIVE_LOAD_SOURCE_IMG: return "IMG archive";
+	case ACTIVE_LOAD_SOURCE_IMG: return N_("IMG archive");
 	case ACTIVE_LOAD_SOURCE_LOOSE: return "data/Paths";
-	default: return "none";
+	default: return N_("none");
 	}
 }
 
@@ -6787,29 +6788,29 @@ selectLinkedNode(int slot)
 }
 
 static const char *behaviourTypeLabels[] = {
-	"0 - Default",
-	"1 - Roadblock",
-	"2 - Parking",
-	"3 - Unknown",
-	"4 - Unknown",
-	"5 - Unknown",
-	"6 - Unknown",
-	"7 - Unknown",
-	"8 - Unknown",
-	"9 - Unknown",
-	"10 - Unknown",
-	"11 - Unknown",
-	"12 - Unknown",
-	"13 - Unknown",
-	"14 - Unknown",
-	"15 - Unknown",
+	N_("0 - Default"),
+	N_("1 - Roadblock"),
+	N_("2 - Parking"),
+	N_("3 - Unknown"),
+	N_("4 - Unknown"),
+	N_("5 - Unknown"),
+	N_("6 - Unknown"),
+	N_("7 - Unknown"),
+	N_("8 - Unknown"),
+	N_("9 - Unknown"),
+	N_("10 - Unknown"),
+	N_("11 - Unknown"),
+	N_("12 - Unknown"),
+	N_("13 - Unknown"),
+	N_("14 - Unknown"),
+	N_("15 - Unknown"),
 };
 
 static const char *trafficLightStateLabels[] = {
-	"0 - Disabled (no traffic light)",
-	"1 - North-South phase",
-	"2 - West-East phase",
-	"3 - Unused (undefined in vanilla)",
+	N_("0 - Disabled (no traffic light)"),
+	N_("1 - North-South phase"),
+	N_("2 - West-East phase"),
+	N_("3 - Unused (undefined in vanilla)"),
 };
 
 static void
@@ -6825,122 +6826,124 @@ drawNodeEditor(void)
 
 	bool isVehicle = isVehicleNode(selectedNode);
 	ImVec4 nodeTypeColor = isVehicle ? ImVec4(1.0f, 0.3f, 0.3f, 1.0f) : ImVec4(1.0f, 0.3f, 1.0f, 1.0f);
-	ImGui::TextColored(nodeTypeColor, "%s  |  Area %d  Node %d",
-		isVehicle ? "Vehicle Node" : "Ped Node",
+	ImGui::TextColored(nodeTypeColor, isVehicle ? _("Vehicle Node  |  Area %d  Node %d") : _("Ped Node  |  Area %d  Node %d"),
 		selectedNode->raw.areaId, selectedNode->raw.nodeId);
-	ImGui::TextDisabled("Source: %s", area->sourcePath[0] ? area->sourcePath : "(unknown)");
-	ImGui::TextDisabled("Stream area: %d  (grid %d, %d)  |  bounds X [%.0f, %.0f]  Y [%.0f, %.0f]",
+	ImGui::TextDisabled(_("Source: %s"), area->sourcePath[0] ? area->sourcePath : _("(unknown)"));
+	ImGui::TextDisabled(_("Stream area: %d  (grid %d, %d)  |  bounds X [%.0f, %.0f]  Y [%.0f, %.0f]"),
 		selectedNode->ownerAreaId,
 		getAreaGridX(selectedNode->ownerAreaId), getAreaGridY(selectedNode->ownerAreaId),
 		getAreaMinX(selectedNode->ownerAreaId), getAreaMaxX(selectedNode->ownerAreaId),
 		getAreaMinY(selectedNode->ownerAreaId), getAreaMaxY(selectedNode->ownerAreaId));
 	if(area->dirty)
-		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "Area has unsaved edits");
+		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "%s", _("Area has unsaved edits"));
 	if(gBlockedCrossAreaNodeMove)
 		ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.35f, 1.0f),
-			"Blocked: nodes cannot cross SA streamed area boundaries yet.");
+			"%s", _("Blocked: nodes cannot cross SA streamed area boundaries yet."));
 	if(gBlockedCrossAreaNaviMove)
 		ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.35f, 1.0f),
-			"Blocked: moving this car node would push attached navis into another streamed area.");
+			"%s", _("Blocked: moving this car node would push attached navis into another streamed area."));
 
 	ImGui::Separator();
 
 	float pos[3] = { selectedNode->x(), selectedNode->y(), selectedNode->z() };
-	if(ImGui::DragFloat3("Position", pos, 0.125f)){
+	if(ImGui::DragFloat3(L("Position"), pos, 0.125f)){
 		SetSelectedNodePosition({ pos[0], pos[1], pos[2] }, true);
 	}
-	ImGui::SetItemTooltip("World position of this node.\nDrag to move, or use the translate gizmo (W key) in the viewport.\nQuantized to 0.125 units (1/8). Nodes cannot cross area boundaries.");
+	ImGui::SetItemTooltip("%s", _("World position of this node.\nDrag to move, or use the translate gizmo (W key) in the viewport.\nQuantized to 0.125 units (1/8). Nodes cannot cross area boundaries."));
 
 	float width = selectedNode->width();
-	if(ImGui::DragFloat("Path Width", &width, 0.0625f, 0.0f, 16.0f)){
+	if(ImGui::DragFloat(L("Path Width"), &width, 0.0625f, 0.0f, 16.0f)){
 		selectedNode->setWidth(width);
 		markAreaDirty(selectedNode->ownerAreaId);
 	}
-	ImGui::SetItemTooltip("Width of the path at this node, in game units.\nAffects how far from the center vehicles/peds can deviate.\nQuantized to 0.0625 units (1/16).");
+	ImGui::SetItemTooltip("%s", _("Width of the path at this node, in game units.\nAffects how far from the center vehicles/peds can deviate.\nQuantized to 0.0625 units (1/16)."));
 
 	ImGui::Separator();
 
 	int spawn = selectedNode->spawnProbability();
-	if(ImGui::SliderInt("Spawn Probability", &spawn, 0, 15)){
+	if(ImGui::SliderInt(L("Spawn Probability"), &spawn, 0, 15)){
 		selectedNode->setSpawnProbability(spawn);
 		markAreaDirty(selectedNode->ownerAreaId);
 	}
-	ImGui::SetItemTooltip("Traffic/ped spawn weight at this node (0-15).\n"
+	ImGui::SetItemTooltip(_("Traffic/ped spawn weight at this node (0-15).\n"
 		"SA uses: (rand & 0xF) > min(nodeA, nodeB) to skip spawning.\n"
 		"0 = very rare (~6%% chance), 15 = guaranteed spawn.\n"
-		"The minimum of both connected nodes is used.");
+		"The minimum of both connected nodes is used."));
 
 	int behaviour = selectedNode->behaviourType();
-	if(ImGui::Combo("Behaviour Type", &behaviour, behaviourTypeLabels, IM_ARRAYSIZE(behaviourTypeLabels))){
+	const char *behaviourNames[IM_ARRAYSIZE(behaviourTypeLabels)];
+	for(int i = 0; i < IM_ARRAYSIZE(behaviourTypeLabels); i++)
+		behaviourNames[i] = _(behaviourTypeLabels[i]);
+	if(ImGui::Combo(L("Behaviour Type"), &behaviour, behaviourNames, IM_ARRAYSIZE(behaviourTypeLabels))){
 		selectedNode->setBehaviourType(behaviour);
 		markAreaDirty(selectedNode->ownerAreaId);
 	}
-	ImGui::SetItemTooltip("Special behaviour assigned to this node.\n"
+	ImGui::SetItemTooltip("%s", _("Special behaviour assigned to this node.\n"
 		"0 = Default (normal path node)\n"
 		"1 = Roadblock (police can set up roadblocks here)\n"
-		"2 = Parking (vehicles may park at this node)");
+		"2 = Parking (vehicles may park at this node)"));
 
 	ImGui::Separator();
-	ImGui::TextDisabled("Flags");
+	ImGui::TextDisabled("%s", _("Flags"));
 
 	bool onDeadEnd = selectedNode->onDeadEnd();
-	if(ImGui::Checkbox("Dead End", &onDeadEnd)){
+	if(ImGui::Checkbox(L("Dead End"), &onDeadEnd)){
 		selectedNode->setOnDeadEnd(onDeadEnd);
 		markAreaDirty(selectedNode->ownerAreaId);
 	}
-	ImGui::SetItemTooltip("This node is at a dead end.\nVehicles will turn around here rather than continuing.");
+	ImGui::SetItemTooltip("%s", _("This node is at a dead end.\nVehicles will turn around here rather than continuing."));
 	ImGui::SameLine();
 	bool switchedOff = selectedNode->isSwitchedOff();
-	if(ImGui::Checkbox("Switched Off", &switchedOff)){
+	if(ImGui::Checkbox(L("Switched Off"), &switchedOff)){
 		selectedNode->setSwitchedOff(switchedOff);
 		markAreaDirty(selectedNode->ownerAreaId);
 	}
-	ImGui::SetItemTooltip("Soft-disables this node. Not a hard block:\n"
+	ImGui::SetItemTooltip("%s", _("Soft-disables this node. Not a hard block:\n"
 		"- Excluded from low-traffic node selection\n"
 		"- AI cannot enter from a non-switched node (directional barrier)\n"
 		"- Skipped as vehicle spawn point in some contexts\n"
-		"Used by missions/scripts to close roads via SwitchRoadsOffInArea.");
+		"Used by missions/scripts to close roads via SwitchRoadsOffInArea."));
 
 	bool roadBlocks = selectedNode->roadBlocks();
-	if(ImGui::Checkbox("Road Block", &roadBlocks)){
+	if(ImGui::Checkbox(L("Road Block"), &roadBlocks)){
 		selectedNode->setRoadBlocks(roadBlocks);
 		markAreaDirty(selectedNode->ownerAreaId);
 	}
-	ImGui::SetItemTooltip("Road block flag on this node.\nNote: actual roadblock placement in vanilla SA is driven by\ndata/paths/roadblox.dat, not this flag alone.\nExact vanilla effect of this bit is not fully confirmed.");
+	ImGui::SetItemTooltip("%s", _("Road block flag on this node.\nNote: actual roadblock placement in vanilla SA is driven by\ndata/paths/roadblox.dat, not this flag alone.\nExact vanilla effect of this bit is not fully confirmed."));
 	ImGui::SameLine();
 	bool water = selectedNode->waterNode();
-	if(ImGui::Checkbox("Water Node", &water)){
+	if(ImGui::Checkbox(L("Water Node"), &water)){
 		selectedNode->setWaterNode(water);
 		markAreaDirty(selectedNode->ownerAreaId);
 	}
-	ImGui::SetItemTooltip("This is a boat/water path node.\nOnly boats will use this node for navigation.");
+	ImGui::SetItemTooltip("%s", _("This is a boat/water path node.\nOnly boats will use this node for navigation."));
 
 	bool dontWander = selectedNode->dontWander();
-	if(ImGui::Checkbox("Dont Wander", &dontWander)){
+	if(ImGui::Checkbox(L("Dont Wander"), &dontWander)){
 		selectedNode->setDontWander(dontWander);
 		markAreaDirty(selectedNode->ownerAreaId);
 	}
-	ImGui::SetItemTooltip("Peds will not wander to this node.\nPrevents idle pedestrians from walking here.");
+	ImGui::SetItemTooltip("%s", _("Peds will not wander to this node.\nPrevents idle pedestrians from walking here."));
 	ImGui::SameLine();
 	bool highway = selectedNode->highway();
-	if(ImGui::Checkbox("Highway", &highway)){
+	if(ImGui::Checkbox(L("Highway"), &highway)){
 		selectedNode->setHighway(highway);
 		markAreaDirty(selectedNode->ownerAreaId);
 	}
-	ImGui::SetItemTooltip("Marks this node as a highway node.\nPresent in vanilla path data but no confirmed gameplay\neffect found in the reversed SA source.");
+	ImGui::SetItemTooltip("%s", _("Marks this node as a highway node.\nPresent in vanilla path data but no confirmed gameplay\neffect found in the reversed SA source."));
 
 	bool notHighway = selectedNode->notHighway();
-	if(ImGui::Checkbox("Not Highway", &notHighway)){
+	if(ImGui::Checkbox(L("Not Highway"), &notHighway)){
 		selectedNode->setNotHighway(notHighway);
 		markAreaDirty(selectedNode->ownerAreaId);
 	}
-	ImGui::SetItemTooltip("Marks this node as explicitly not a highway.\nPresent in vanilla path data but no confirmed gameplay\neffect found in the reversed SA source.");
+	ImGui::SetItemTooltip("%s", _("Marks this node as explicitly not a highway.\nPresent in vanilla path data but no confirmed gameplay\neffect found in the reversed SA source."));
 	ImGui::SameLine();
 	bool switchedOffOriginal = selectedNode->switchedOffOriginal();
 	ImGui::BeginDisabled();
-	ImGui::Checkbox("Orig Switched Off", &switchedOffOriginal);
+	ImGui::Checkbox(L("Orig Switched Off"), &switchedOffOriginal);
 	ImGui::EndDisabled();
-	ImGui::SetItemTooltip("Read-only. The original value of 'Switched Off' when the game loaded this area.\nSA copies this from the Switched Off flag at load time.");
+	ImGui::SetItemTooltip("%s", _("Read-only. The original value of 'Switched Off' when the game loaded this area.\nSA copies this from the Switched Off flag at load time."));
 }
 
 static void
@@ -6954,17 +6957,17 @@ drawLinksEditor(void)
 
 	ensureSelectedLinkIndex();
 	ImGui::Separator();
-	ImGui::Text("Links (%d)", selectedNode->numLinks());
-	ImGui::SetItemTooltip("Outgoing connections from this node to other path nodes.\nEach link can have a navi node (lane waypoint) between the two endpoints.\nClick a row to inspect/edit that link's details below.");
+	ImGui::Text(_("Links (%d)"), selectedNode->numLinks());
+	ImGui::SetItemTooltip("%s", _("Outgoing connections from this node to other path nodes.\nEach link can have a navi node (lane waypoint) between the two endpoints.\nClick a row to inspect/edit that link's details below."));
 	if(ImGui::BeginTable("SAPathLinks", 8, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)){
 		ImGui::TableSetupColumn("#");
-		ImGui::TableSetupColumn("Target Node");
-		ImGui::TableSetupColumn("Length");
-		ImGui::TableSetupColumn("Road Cross");
-		ImGui::TableSetupColumn("Ped Light");
-		ImGui::TableSetupColumn("Navi Node");
-		ImGui::TableSetupColumn("Same Lanes");
-		ImGui::TableSetupColumn("Opp Lanes");
+		ImGui::TableSetupColumn(_("Target Node"));
+		ImGui::TableSetupColumn(_("Length"));
+		ImGui::TableSetupColumn(_("Road Cross"));
+		ImGui::TableSetupColumn(_("Ped Light"));
+		ImGui::TableSetupColumn(_("Navi Node"));
+		ImGui::TableSetupColumn(_("Same Lanes"));
+		ImGui::TableSetupColumn(_("Opp Lanes"));
 		ImGui::TableHeadersRow();
 		for(int li = 0; li < selectedNode->numLinks(); li++){
 			int slot = selectedNode->raw.baseLinkId + li;
@@ -6994,7 +6997,7 @@ drawLinksEditor(void)
 				if(ImGui::SmallButton(targetLabel))
 					selectLinkedNode(slot);
 			}else{
-				ImGui::TextDisabled("none");
+				ImGui::TextDisabled("%s", _("none"));
 			}
 			ImGui::TableSetColumnIndex(2);
 			ImGui::Text("%u", area->linkLengths[slot]);
@@ -7029,14 +7032,14 @@ drawLinksEditor(void)
 		findReciprocalLinkSlot(sourceAddr, targetAddr, &reciprocalAreaId, &reciprocalSlot);
 
 	ImGui::Separator();
-	ImGui::Text("Selected Link %d", gSelectedLinkIndex);
+	ImGui::Text(_("Selected Link %d"), gSelectedLinkIndex);
 	if(hasReciprocal)
-		ImGui::TextDisabled("Reciprocal link found. Length and intersection flags are mirrored;\nnavi edits below apply only to this direction.");
+		ImGui::TextDisabled("%s", _("Reciprocal link found. Length and intersection flags are mirrored;\nnavi edits below apply only to this direction."));
 	else if(targetAddr.isValid())
-		ImGui::TextDisabled("No reciprocal link found (one-way connection).");
+		ImGui::TextDisabled("%s", _("No reciprocal link found (one-way connection)."));
 
 	int length = area->linkLengths[slot];
-	if(ImGui::SliderInt("Link Length", &length, 0, 255)){
+	if(ImGui::SliderInt(L("Link Length"), &length, 0, 255)){
 		area->linkLengths[slot] = (uint8)length;
 		markAreaDirty(selectedNode->ownerAreaId);
 		if(hasReciprocal){
@@ -7047,10 +7050,10 @@ drawLinksEditor(void)
 			}
 		}
 	}
-	ImGui::SetItemTooltip("Precomputed distance between the two nodes (0-255).\nUsed by the AI pathfinder to pick shortest routes.\nAutomatically recomputed when you move nodes with the gizmo.");
+	ImGui::SetItemTooltip("%s", _("Precomputed distance between the two nodes (0-255).\nUsed by the AI pathfinder to pick shortest routes.\nAutomatically recomputed when you move nodes with the gizmo."));
 
 	bool roadCross = getRoadCross(area->intersections[slot]);
-	if(ImGui::Checkbox("Crosses Road", &roadCross)){
+	if(ImGui::Checkbox(L("Crosses Road"), &roadCross)){
 		setRoadCross(area->intersections[slot], roadCross);
 		markAreaDirty(selectedNode->ownerAreaId);
 		if(hasReciprocal){
@@ -7061,10 +7064,10 @@ drawLinksEditor(void)
 			}
 		}
 	}
-	ImGui::SetItemTooltip("This link crosses a road.\nPeds will look both ways before crossing here.");
+	ImGui::SetItemTooltip("%s", _("This link crosses a road.\nPeds will look both ways before crossing here."));
 	ImGui::SameLine();
 	bool pedLight = getPedTrafficLight(area->intersections[slot]);
-	if(ImGui::Checkbox("Ped Traffic Light", &pedLight)){
+	if(ImGui::Checkbox(L("Ped Traffic Light"), &pedLight)){
 		setPedTrafficLight(area->intersections[slot], pedLight);
 		markAreaDirty(selectedNode->ownerAreaId);
 		if(hasReciprocal){
@@ -7075,7 +7078,7 @@ drawLinksEditor(void)
 			}
 		}
 	}
-	ImGui::SetItemTooltip("Pedestrian traffic light present at this crossing.\nPeds will wait for the light before crossing.");
+	ImGui::SetItemTooltip("%s", _("Pedestrian traffic light present at this crossing.\nPeds will wait for the light before crossing."));
 
 	if(isVehicleNode(selectedNode) && slot < (int)area->naviLinks.size()){
 		CarPathLinkAddress naviAddr = area->naviLinks[slot];
@@ -7085,11 +7088,11 @@ drawLinksEditor(void)
 				DiskCarPathLink &navi = naviArea->naviNodes[naviAddr.nodeId()];
 
 				ImGui::Separator();
-				ImGui::Text("Navi Node  (%d:%d)", naviAddr.areaId(), naviAddr.nodeId());
-				ImGui::SetItemTooltip("Navi nodes are lane waypoints placed between two path nodes.\n"
+				ImGui::Text(_("Navi Node  (%d:%d)"), naviAddr.areaId(), naviAddr.nodeId());
+				ImGui::SetItemTooltip("%s", _("Navi nodes are lane waypoints placed between two path nodes.\n"
 					"They define road width, lane count, and traffic direction\n"
-					"for the road segment between this node and the target.");
-				if(ImGui::Button("Dump Preview Traffic Debug")){
+					"for the road segment between this node and the target."));
+				if(ImGui::Button(L("Dump Preview Traffic Debug"))){
 					dumpPreviewTrafficLinkDebug(sourceAddr, targetAddr, slot, naviAddr);
 					if(hasReciprocal){
 						AreaData *recArea = getArea(reciprocalAreaId);
@@ -7103,10 +7106,10 @@ drawLinksEditor(void)
 						}
 					}
 				}
-				ImGui::SetItemTooltip("Logs the selected link, its reciprocal direction when present, and any active or nearest preview cars.\nUse this on a problematic highway segment, then inspect the app log/terminal output.");
+				ImGui::SetItemTooltip("%s", _("Logs the selected link, its reciprocal direction when present, and any active or nearest preview cars.\nUse this on a problematic highway segment, then inspect the app log/terminal output."));
 
 				float naviPos[2] = { navi.x * NAVI_POS_SCALE, navi.y * NAVI_POS_SCALE };
-				if(ImGui::DragFloat2("Navi Pos", naviPos, 0.125f)){
+				if(ImGui::DragFloat2(L("Navi Pos"), naviPos, 0.125f)){
 					navi.x = (int16)(naviPos[0] / NAVI_POS_SCALE);
 					navi.y = (int16)(naviPos[1] / NAVI_POS_SCALE);
 					Node *attached = getNode({ navi.attachedAreaId, navi.attachedNodeId });
@@ -7114,70 +7117,73 @@ drawLinksEditor(void)
 						alignNaviDirectionToAttachedNode(navi, *attached);
 					markAreaDirty(naviAddr.areaId());
 				}
-				ImGui::SetItemTooltip("2D position (X, Y) of this navi waypoint.\nUsually placed at the midpoint between two path nodes.\nQuantized to 0.125 units.");
+				ImGui::SetItemTooltip("%s", _("2D position (X, Y) of this navi waypoint.\nUsually placed at the midpoint between two path nodes.\nQuantized to 0.125 units."));
 
 				int naviDir[2] = { navi.dirX, navi.dirY };
-				if(ImGui::SliderInt2("Navi Direction", naviDir, -100, 100)){
+				if(ImGui::SliderInt2(L("Navi Direction"), naviDir, -100, 100)){
 					navi.dirX = (int8)clamp(naviDir[0], -128, 127);
 					navi.dirY = (int8)clamp(naviDir[1], -128, 127);
 					markAreaDirty(naviAddr.areaId());
 				}
-				ImGui::SetItemTooltip("Direction vector of traffic flow (X, Y).\nScaled to -100..100. Determines which way vehicles drive.\nUse 'Point Dir To Node' to auto-calculate from geometry.");
+				ImGui::SetItemTooltip("%s", _("Direction vector of traffic flow (X, Y).\nScaled to -100..100. Determines which way vehicles drive.\nUse 'Point Dir To Node' to auto-calculate from geometry."));
 				ImGui::SameLine();
-				if(ImGui::Button("Point Dir To Node")){
+				if(ImGui::Button(L("Point Dir To Node"))){
 					Node *attached = getNode({ navi.attachedAreaId, navi.attachedNodeId });
 					if(attached){
 						alignNaviDirectionToAttachedNode(navi, *attached);
 						markAreaDirty(naviAddr.areaId());
 					}
 				}
-				ImGui::SetItemTooltip("Auto-compute direction vector pointing from this navi toward its attached node.");
+				ImGui::SetItemTooltip("%s", _("Auto-compute direction vector pointing from this navi toward its attached node."));
 
 				float naviWidth = getNaviWidth(navi);
-				if(ImGui::DragFloat("Navi Width", &naviWidth, 0.0625f, 0.0f, 16.0f)){
+				if(ImGui::DragFloat(L("Navi Width"), &naviWidth, 0.0625f, 0.0f, 16.0f)){
 					navi.pathWidth = (int8)clamp((int)(naviWidth / NAVI_WIDTH_SCALE + 0.5f), -128, 127);
 					markAreaDirty(naviAddr.areaId());
 				}
-				ImGui::SetItemTooltip("Total road width at this navi waypoint.\nAffects lane positioning and vehicle lateral offset.");
+				ImGui::SetItemTooltip("%s", _("Total road width at this navi waypoint.\nAffects lane positioning and vehicle lateral offset."));
 
 				int same = getNaviSameLanes(navi);
-				if(ImGui::SliderInt("Same Dir Lanes", &same, 0, 7)){
+				if(ImGui::SliderInt(L("Same Dir Lanes"), &same, 0, 7)){
 					setNaviSameLanes(navi, same);
 					markAreaDirty(naviAddr.areaId());
 				}
-				ImGui::SetItemTooltip("Number of lanes going in the same direction as the navi direction.\nThese are the 'right side' lanes (following traffic flow).");
+				ImGui::SetItemTooltip("%s", _("Number of lanes going in the same direction as the navi direction.\nThese are the 'right side' lanes (following traffic flow)."));
 
 				int opposite = getNaviOppositeLanes(navi);
-				if(ImGui::SliderInt("Opposite Dir Lanes", &opposite, 0, 7)){
+				if(ImGui::SliderInt(L("Opposite Dir Lanes"), &opposite, 0, 7)){
 					setNaviOppositeLanes(navi, opposite);
 					markAreaDirty(naviAddr.areaId());
 				}
-				ImGui::SetItemTooltip("Number of lanes going opposite to the navi direction.\nThese are the 'left side' / oncoming traffic lanes.\nSet to 0 for one-way roads.");
+				ImGui::SetItemTooltip("%s", _("Number of lanes going opposite to the navi direction.\nThese are the 'left side' / oncoming traffic lanes.\nSet to 0 for one-way roads."));
 
 				bool tlDir = getNaviTrafficLightDir(navi);
-				if(ImGui::Checkbox("Traffic Light Direction", &tlDir)){
+				if(ImGui::Checkbox(L("Traffic Light Direction"), &tlDir)){
 					setNaviTrafficLightDir(navi, tlDir);
 					markAreaDirty(naviAddr.areaId());
 				}
-				ImGui::SetItemTooltip("Whether this navi's traffic flow matches the traffic light cycle.\nUsed to sync vehicle stopping with light phases.");
+				ImGui::SetItemTooltip("%s", _("Whether this navi's traffic flow matches the traffic light cycle.\nUsed to sync vehicle stopping with light phases."));
 				ImGui::SameLine();
 				bool bridge = getNaviBridgeLights(navi);
-				if(ImGui::Checkbox("Bridge Lights", &bridge)){
+				if(ImGui::Checkbox(L("Bridge Lights"), &bridge)){
 					setNaviBridgeLights(navi, bridge);
 					markAreaDirty(naviAddr.areaId());
 				}
-				ImGui::SetItemTooltip("Bridge/train crossing signal flag.\nIn vanilla SA, train crossing objects set this flag via\nSetLinksBridgeLights when a train approaches.\nVehicles read it (ShouldCarStopForBridge) and stop\nif the flag transitions from unset to set on their next navi.");
+				ImGui::SetItemTooltip("%s", _("Bridge/train crossing signal flag.\nIn vanilla SA, train crossing objects set this flag via\nSetLinksBridgeLights when a train approaches.\nVehicles read it (ShouldCarStopForBridge) and stop\nif the flag transitions from unset to set on their next navi."));
 
 				int tlState = getNaviTrafficLightState(navi);
-				if(ImGui::Combo("Traffic Light State", &tlState, trafficLightStateLabels, IM_ARRAYSIZE(trafficLightStateLabels))){
+				const char *tlNames[IM_ARRAYSIZE(trafficLightStateLabels)];
+				for(int i = 0; i < IM_ARRAYSIZE(trafficLightStateLabels); i++)
+					tlNames[i] = _(trafficLightStateLabels[i]);
+				if(ImGui::Combo(L("Traffic Light State"), &tlState, tlNames, IM_ARRAYSIZE(trafficLightStateLabels))){
 					setNaviTrafficLightState(navi, tlState);
 					markAreaDirty(naviAddr.areaId());
 				}
-				ImGui::SetItemTooltip("Which traffic light phase controls this road segment.\n"
+				ImGui::SetItemTooltip("%s", _("Which traffic light phase controls this road segment.\n"
 					"0 = Disabled (cars pass freely, no light)\n"
 					"1 = North-South phase (uses LightForCars1)\n"
 					"2 = West-East phase (uses LightForCars2)\n"
-					"3 = Unused in vanilla SA (undefined behavior)");
+					"3 = Unused in vanilla SA (undefined behavior)"));
 			}
 		}
 	}
@@ -7267,15 +7273,15 @@ DrawInfoPanel(void)
 
 	int dirtyAreas = GetDirtyAreaCount();
 	const char *modeLabels[] = {
-		"Auto",
-		"IMG (models/paths.img or models/gta3.img)",
-		"Loose (data/Paths)"
+		_("Auto"),
+		_("IMG (models/paths.img or models/gta3.img)"),
+		_("Loose (data/Paths)")
 	};
 	int mode = (int)gLoadSourceMode;
 	bool canChangeSource = dirtyAreas == 0;
 	if(!canChangeSource)
 		ImGui::BeginDisabled();
-	if(ImGui::Combo("SA Path Source", &mode, modeLabels, IM_ARRAYSIZE(modeLabels))){
+	if(ImGui::Combo(L("SA Path Source"), &mode, modeLabels, IM_ARRAYSIZE(modeLabels))){
 		gLoadSourceMode = (LoadSourceMode)mode;
 		Reset();
 		EnsureLoaded();
@@ -7283,61 +7289,60 @@ DrawInfoPanel(void)
 	if(!canChangeSource)
 		ImGui::EndDisabled();
 	if(!canChangeSource)
-		ImGui::TextDisabled("Save or discard SA path edits before switching source.");
+		ImGui::TextDisabled("%s", _("Save or discard SA path edits before switching source."));
 	ImGui::SameLine();
 	if(!canChangeSource)
 		ImGui::BeginDisabled();
-	if(ImGui::Button("Reload SA Paths")){
+	if(ImGui::Button(L("Reload SA Paths"))){
 		Reset();
 		EnsureLoaded();
 	}
 	if(!canChangeSource)
 		ImGui::EndDisabled();
 
-	ImGui::TextDisabled("Requested: %s", loadSourceModeLabel(gLoadSourceMode));
-	ImGui::TextDisabled("Active: %s%s",
-	                    gActiveLoadSourceDetail[0] ? gActiveLoadSourceDetail : activeLoadSourceLabel(gActiveLoadSource),
-	                    gUsedLenientImgRead ? " (lenient IMG read)" : "");
+	ImGui::TextDisabled(_("Requested: %s"), _(loadSourceModeLabel(gLoadSourceMode)));
+	ImGui::TextDisabled(gUsedLenientImgRead ? _("Active: %s (lenient IMG read)") : _("Active: %s"),
+	                    gActiveLoadSourceDetail[0] ? gActiveLoadSourceDetail : _(activeLoadSourceLabel(gActiveLoadSource)));
 
 	if(gLoadFailed){
-		ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "Failed to load streamed SA path areas");
+		ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "%s", _("Failed to load streamed SA path areas"));
 		if(gLastLoadFailureArea >= 0)
-			ImGui::TextDisabled("First failure: area %d (%s)", gLastLoadFailureArea,
-			                    gLastLoadFailureReason[0] ? gLastLoadFailureReason : "unknown");
+			ImGui::TextDisabled(_("First failure: area %d (%s)"), gLastLoadFailureArea,
+			                    gLastLoadFailureReason[0] ? gLastLoadFailureReason : _("unknown"));
 		if(gLastLoadFailurePath[0] != '\0')
-			ImGui::TextDisabled("Path: %s", gLastLoadFailurePath);
+			ImGui::TextDisabled(_("Path: %s"), gLastLoadFailurePath);
 		return;
 	}
 
-	ImGui::Text("Changed areas: %d", dirtyAreas);
-	ImGui::TextDisabled("Save them from Windows > Nodes. The game's own files are never changed.");
+	ImGui::Text(_("Changed areas: %d"), dirtyAreas);
+	ImGui::TextDisabled("%s", _("Save them from Windows > Nodes. The game's own files are never changed."));
 
-	if(ImGui::TreeNode("How to Use")){
+	if(ImGui::TreeNode(L("How to Use"))){
 		ImGui::TextWrapped(
-			"SA uses a streamed path network split into 64 areas (8x8 grid, 750 units each). "
-			"The path system has three layers:");
-		ImGui::BulletText("Nodes: intersections and waypoints on the road/sidewalk network");
-		ImGui::BulletText("Links: connections between nodes (each node can have up to 15)");
-		ImGui::BulletText("Navi nodes: lane waypoints on vehicle links that define road width,\n"
-			"lane count, and traffic direction between two nodes");
+			"%s", _("SA uses a streamed path network split into 64 areas (8x8 grid, 750 units each). "
+			"The path system has three layers:"));
+		ImGui::BulletText("%s", _("Nodes: intersections and waypoints on the road/sidewalk network"));
+		ImGui::BulletText("%s", _("Links: connections between nodes (each node can have up to 15)"));
+		ImGui::BulletText("%s", _("Navi nodes: lane waypoints on vehicle links that define road width,\n"
+			"lane count, and traffic direction between two nodes"));
 		ImGui::Spacing();
-		ImGui::TextWrapped("Controls:");
-		ImGui::BulletText("Left-click a node in the viewport to select it");
-		ImGui::BulletText("Press W to activate the translate gizmo, then drag to move");
-		ImGui::BulletText("Vehicle nodes are shown as red boxes, ped nodes as magenta spheres");
-		ImGui::BulletText("Link lines match node color (red/magenta), white when selected,\nyellow = road crossings, green = vehicle lanes");
-		ImGui::BulletText("Hover over any field below for a description of what it does in-game");
+		ImGui::TextWrapped("%s", _("Controls:"));
+		ImGui::BulletText("%s", _("Left-click a node in the viewport to select it"));
+		ImGui::BulletText("%s", _("Press W to activate the translate gizmo, then drag to move"));
+		ImGui::BulletText("%s", _("Vehicle nodes are shown as red boxes, ped nodes as magenta spheres"));
+		ImGui::BulletText("%s", _("Link lines match node color (red/magenta), white when selected,\nyellow = road crossings, green = vehicle lanes"));
+		ImGui::BulletText("%s", _("Hover over any field below for a description of what it does in-game"));
 		ImGui::Spacing();
 		ImGui::TextWrapped(
-			"Nodes cannot be moved across area boundaries. "
-			"Edits are held in memory until you save them from the Nodes window.");
+			"%s", _("Nodes cannot be moved across area boundaries. "
+			"Edits are held in memory until you save them from the Nodes window."));
 		ImGui::TreePop();
 	}
 
 	ImGui::Separator();
 
 	if(selectedNode == nil){
-		ImGui::TextDisabled("Select a streamed SA path node in the viewport to begin editing.");
+		ImGui::TextDisabled("%s", _("Select a streamed SA path node in the viewport to begin editing."));
 		return;
 	}
 
@@ -7565,11 +7570,11 @@ LinkNodes(Node *a, Node *b, const char **reason)
 	if(reason == nil) reason = &dummy;
 	*reason = nil;
 	if(a == nil || b == nil || a == b){
-		*reason = "pick two different nodes";
+		*reason = N_("pick two different nodes");
 		return false;
 	}
 	if(isVehicleNode(a) != isVehicleNode(b)){
-		*reason = "vehicle nodes link only to vehicle nodes, ped nodes to ped nodes";
+		*reason = N_("vehicle nodes link only to vehicle nodes, ped nodes to ped nodes");
 		return false;
 	}
 	NodeAddress addrA = a->address();
@@ -7577,21 +7582,21 @@ LinkNodes(Node *a, Node *b, const char **reason)
 	bool needAB = findLinkSlot(*a, addrB) < 0;
 	bool needBA = findLinkSlot(*b, addrA) < 0;
 	if(!needAB && !needBA){
-		*reason = "already linked";
+		*reason = N_("already linked");
 		return false;
 	}
 	if((needAB && a->numLinks() >= 15) || (needBA && b->numLinks() >= 15)){
-		*reason = "a node can have at most 15 links";
+		*reason = N_("a node can have at most 15 links");
 		return false;
 	}
 	uint8 length = computeLinkLength(*a, *b);
 	// Nodes live in vectors that don't change size here, so the pointers stay valid.
 	if(needAB && !insertLinkSlot(gAreas[a->ownerAreaId], *a, addrB, length)){
-		*reason = "the area has no room for more links";
+		*reason = N_("the area has no room for more links");
 		return false;
 	}
 	if(needBA && !insertLinkSlot(gAreas[b->ownerAreaId], *b, addrA, length)){
-		*reason = "the area has no room for more links";
+		*reason = N_("the area has no room for more links");
 		return false;
 	}
 	afterStructureChange(selectedNode ? selectedNode->address() : NodeAddress{ 0xFFFF, 0xFFFF });
@@ -7627,18 +7632,18 @@ AddNode(const rw::V3d &pos, bool vehicle, Node *linkTo, const char **reason)
 	*reason = nil;
 	EnsureLoaded();
 	if(!gLoadSucceeded){
-		*reason = "the node files aren't loaded";
+		*reason = N_("the node files aren't loaded");
 		return nil;
 	}
 	if(pos.x < -3000.0f || pos.x >= 3000.0f || pos.y < -3000.0f || pos.y >= 3000.0f ||
 	   pos.z < -4096.0f || pos.z >= 4096.0f){
-		*reason = "nodes must be inside the map (-3000 to 3000)";
+		*reason = N_("nodes must be inside the map (-3000 to 3000)");
 		return nil;
 	}
 	uint16 areaId = (uint16)findAreaIdForPosition(pos.x, pos.y);
 	AreaData &area = gAreas[areaId];
 	if(area.nodes.size() >= 0xFFFE){
-		*reason = "the area is full";
+		*reason = N_("the area is full");
 		return nil;
 	}
 
@@ -7865,15 +7870,15 @@ SaveAreasToFolder(const char *dir, int *saved, char *err, size_t errSize)
 	if(err && errSize) err[0] = '\0';
 	EnsureLoaded();
 	if(!gLoadSucceeded){
-		if(err) snprintf(err, errSize, "the node files aren't loaded");
+		if(err) snprintf(err, errSize, _("the node files aren't loaded"));
 		return false;
 	}
 	if(dir == nil || dir[0] == '\0'){
-		if(err) snprintf(err, errSize, "pick a folder first");
+		if(err) snprintf(err, errSize, _("pick a folder first"));
 		return false;
 	}
 	if(IsGameNodesFolder(dir)){
-		if(err) snprintf(err, errSize, "that is the game's own data; pick a server's scriptfiles/NPCs/nodes");
+		if(err) snprintf(err, errSize, _("that is the game's own data; pick a server's scriptfiles/NPCs/nodes"));
 		return false;
 	}
 	std::string base = resolveFolderPath(dir);
@@ -7889,7 +7894,7 @@ SaveAreasToFolder(const char *dir, int *saved, char *err, size_t errSize)
 		buildAreaFileData(area, data);
 		if(!writeBufferToPath(path.c_str(), data)){
 			log("SAPaths: couldn't write %s\n", path.c_str());
-			if(err) snprintf(err, errSize, "couldn't write %s", path.c_str());
+			if(err) snprintf(err, errSize, _("couldn't write %s"), path.c_str());
 			return false;
 		}
 		count++;
@@ -7909,7 +7914,7 @@ LoadAreasFromFolder(const char *dir, int *loaded, char *err, size_t errSize)
 	if(err && errSize) err[0] = '\0';
 	EnsureLoaded();
 	if(!gLoadSucceeded){
-		if(err) snprintf(err, errSize, "the game's node files aren't loaded");
+		if(err) snprintf(err, errSize, _("the game's node files aren't loaded"));
 		return false;
 	}
 	std::string base = resolveFolderPath(dir);
@@ -7941,7 +7946,7 @@ LoadAreasFromFolder(const char *dir, int *loaded, char *err, size_t errSize)
 		}
 	}
 	if(count == 0){
-		if(err) snprintf(err, errSize, "no NODES*.DAT files in %s", base.c_str());
+		if(err) snprintf(err, errSize, _("no NODES*.DAT files in %s"), base.c_str());
 		return false;
 	}
 	// Areas missing from the folder keep the game's data.

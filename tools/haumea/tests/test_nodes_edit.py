@@ -37,6 +37,8 @@ typedef unsigned long long uint64;
 typedef unsigned short uint16; typedef short int16;
 typedef unsigned int uint32; typedef int int32;
 #define nil nullptr
+#define _(text) text	// i18n.h: English is all the test needs
+#define N_(text) text
 template <typename T> T min(T a, T b) { return a < b ? a : b; }
 template <typename T> T max(T a, T b) { return a > b ? a : b; }
 template <typename T> T clamp(T v, T lo, T hi) { return v < lo ? lo : v > hi ? hi : v; }

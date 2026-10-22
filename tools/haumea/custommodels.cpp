@@ -3,6 +3,7 @@
 #include "autocol.h"
 #include "workspace.h"
 #include "categories.h"
+#include "i18n.h"
 
 #include <regex>
 #include <string>
@@ -202,6 +203,23 @@ txdSlotForFile(const std::string &path)
 	return slot;
 }
 
+// fmt with its one %s or %d filled in.
+static std::string
+message(const char *fmt, const std::string &arg)
+{
+	char buf[1200];
+	snprintf(buf, sizeof(buf), fmt, arg.c_str());
+	return buf;
+}
+
+static std::string
+message(const char *fmt, int arg)
+{
+	char buf[256];
+	snprintf(buf, sizeof(buf), fmt, arg);
+	return buf;
+}
+
 static void
 modelName(const std::string &dff, char *dst, size_t size)
 {
@@ -215,24 +233,26 @@ modelName(const std::string &dff, char *dst, size_t size)
 	snprintf(dst, size, "%s", base.c_str());
 }
 
+// problems are logged, so English unless translated (for the dialog).
 static void
 addModel(int pawnId, int baseId, const std::string &dff, const std::string &txd,
-	bool timed, int timeOn, int timeOff, bool character, std::vector<std::string> &problems)
+	bool timed, int timeOn, int timeOff, bool character, std::vector<std::string> &problems,
+	bool translated = false)
 {
 	int editorId = EditorModelId(pawnId);
 	if(character ? (pawnId < 20001 || pawnId > 30000) : (pawnId > -1000 || pawnId < -30000)){
-		problems.push_back("ID " + std::to_string(pawnId) + " is out of range");
+		problems.push_back(message(translated ? _("ID %d is out of range") : "ID %d is out of range", pawnId));
 		return;
 	}
 	if(GetObjectDef(editorId)){
 		if(!IsCustomModel(editorId))
-			problems.push_back("ID " + std::to_string(pawnId) + " is already a game model");
+			problems.push_back(message(translated ? _("ID %d is already a game model") : "ID %d is already a game model", pawnId));
 		return;	// listed twice: the first one counts, as on the server
 	}
 	std::string dffPath = findModelFile(dff);
 	std::string txdPath = findModelFile(txd);
 	if(dffPath.empty() || txdPath.empty()){
-		problems.push_back("missing " + (dffPath.empty() ? dff : txd));
+		problems.push_back(message(translated ? _("missing %s") : "missing %s", dffPath.empty() ? dff : txd));
 		return;
 	}
 	ObjectDef *obj = AddObjectDef(editorId);
@@ -354,7 +374,7 @@ LoadCustomModelsForMap(const char *mapPath, const std::string &source)
 	for(size_t i = 0; i < problems.size(); i++)
 		log("CustomModels: %s\n", problems[i].c_str());
 	if(!problems.empty())
-		Toast(TOAST_SPAWN, "%d custom model(s) couldn't be loaded, see the log", (int)problems.size());
+		Toast(TOAST_SPAWN, _("Custom models that couldn't be loaded: %d (see the log)"), (int)problems.size());
 }
 
 bool
@@ -438,7 +458,7 @@ copyIntoModels(const std::string &modelsDir, const std::string &src, std::string
 {
 	std::vector<uint8> data, existing;
 	if(!readFile(src, data) || data.empty()){
-		err = "can't read " + src;
+		err = message(_("can't read %s"), src);
 		return false;
 	}
 	std::string name = src.substr(src.find_last_of("/\\") + 1);
@@ -456,20 +476,20 @@ copyIntoModels(const std::string &modelsDir, const std::string &src, std::string
 			continue;
 		}
 		if(!EnsureParentDirectoriesForPath(dst.c_str())){
-			err = "can't create " + modelsDir;
+			err = message(_("can't create %s"), modelsDir);
 			return false;
 		}
 		FILE *f = fopen(dst.c_str(), "wb");
 		if(f == nil || fwrite(&data[0], 1, data.size(), f) != data.size()){
 			if(f) fclose(f);
-			err = "can't write " + dst;
+			err = message(_("can't write %s"), dst);
 			return false;
 		}
 		fclose(f);
 		usedName = candidate;
 		return true;
 	}
-	err = "too many files named " + name;
+	err = message(_("too many files named %s"), name);
 	return false;
 }
 
@@ -496,21 +516,21 @@ addModelToServer(const std::string &dff, const std::string &txd, bool character,
 {
 	std::string server = serverDirForWriting();
 	if(server.empty()){
-		err = "pick the server folder first";
+		err = _("pick the server folder first");
 		return -1;
 	}
 	std::string modelsDir = server + "/models";
 	if(IsInGameDir(modelsDir.c_str())){
-		err = "that folder is inside the game folder; pick the server's folder";
+		err = _("that folder is inside the game folder; pick the server's folder");
 		return -1;
 	}
 	std::vector<uint8> head;
 	if(!readFile(dff, head) || head.size() < 12 || head[0] != 0x10){
-		err = "the DFF isn't a model file";
+		err = _("the DFF isn't a model file");
 		return -1;
 	}
 	if(GetObjectDef(EditorModelId(id))){
-		err = "ID " + std::to_string(id) + " is already used";
+		err = message(_("ID %d is already used"), id);
 		return -1;
 	}
 	std::string dffName, txdName;
@@ -525,7 +545,7 @@ addModelToServer(const std::string &dff, const std::string &txd, bool character,
 	std::string text = readText(artconfig);
 	FILE *f = fopen(artconfig.c_str(), "ab");
 	if(f == nil){
-		err = "can't write " + artconfig;
+		err = message(_("can't write %s"), artconfig);
 		return -1;
 	}
 	if(!text.empty() && text.back() != '\n')
@@ -537,7 +557,7 @@ addModelToServer(const std::string &dff, const std::string &txd, bool character,
 	if(gServerDir.empty())
 		gServerDir = server;
 	std::vector<std::string> problems;
-	addModel(id, baseId, dffName, txdName, false, 0, 0, character, problems);
+	addModel(id, baseId, dffName, txdName, false, 0, 0, character, problems, true);
 	if(!problems.empty()){
 		err = problems[0];
 		return -1;
@@ -709,24 +729,27 @@ DrawAddCustomModelDialog(void)
 	if(!gDialog.open)
 		return;
 	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 30.0f, 0.0f), ImGuiCond_Appearing);
-	if(!ImGui::Begin("Add Custom Model (SA-MP 0.3.DL / open.mp)###addcustommodel", &gDialog.open,
+	// ###addcustommodel, not L(): the ID the window has always had, so saved layouts stay.
+	char title[160];
+	snprintf(title, sizeof(title), "%s###addcustommodel", _("Add Custom Model (SA-MP 0.3.DL / open.mp)"));
+	if(!ImGui::Begin(title, &gDialog.open,
 	   ImGuiWindowFlags_NoCollapse)){
 		ImGui::End();
 		return;
 	}
-	ImGui::TextWrapped("Copies the DFF and TXD into the server's models folder and adds them to "
+	ImGui::TextWrapped("%s", _("Copies the DFF and TXD into the server's models folder and adds them to "
 		"models/artconfig.txt, so SA-MP 0.3.DL and open.mp send them to players. "
-		"Nothing is written into the game folder.");
+		"Nothing is written into the game folder."));
 	ImGui::Spacing();
 
-	float browseWidth = ImGui::CalcTextSize("Browse...").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+	float browseWidth = ImGui::CalcTextSize(_("Browse...")).x + ImGui::GetStyle().FramePadding.x * 2.0f;
 	std::string server = serverDirForWriting();
 	if(server.empty()){
 		// Asked here when nothing says which server: it becomes the workspace.
-		ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.4f, 1.0f), "Which server are these models for?");
-		if(ImGui::Button("Choose the server folder...")){
+		ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.4f, 1.0f), "%s", _("Which server are these models for?"));
+		if(ImGui::Button(L("Choose the server folder..."))){
 			char picked[1024] = "";
-			if(PickFolderDialog(picked, sizeof(picked), "Server folder (has gamemodes/, models/)", nil)){
+			if(PickFolderDialog(picked, sizeof(picked), _("Server folder (has gamemodes/, models/)"), nil)){
 				SetWorkspaceDir(picked);
 				LoadCustomModelsForMap(nil, std::string());
 			}
@@ -734,7 +757,7 @@ DrawAddCustomModelDialog(void)
 		ImGui::End();
 		return;
 	}
-	ImGui::TextDisabled("Server: %s", server.c_str());
+	ImGui::TextDisabled(_("Server: %s"), server.c_str());
 	const char *labels[2] = { "DFF", "TXD" };
 	char *fields[2] = { gDialog.dff, gDialog.txd };
 	for(int i = 0; i < 2; i++){
@@ -742,43 +765,43 @@ DrawAddCustomModelDialog(void)
 		ImGui::SetNextItemWidth(-browseWidth - ImGui::GetStyle().ItemSpacing.x - ImGui::CalcTextSize("TXD").x - 8.0f);
 		ImGui::InputText(i == 0 ? "##dff" : "##txd", fields[i], sizeof(gDialog.dff));
 		ImGui::SameLine();
-		if(ImGui::Button("Browse..."))
+		if(ImGui::Button(L("Browse...")))
 			pickFile(fields[i], sizeof(gDialog.dff), i == 0 ? "dff" : "txd");
 		ImGui::SameLine();
 		ImGui::TextUnformatted(labels[i]);
 		ImGui::PopID();
 	}
 
-	if(ImGui::RadioButton("Object (AddSimpleModel)", !gDialog.character)){
+	if(ImGui::RadioButton(L("Object (AddSimpleModel)"), !gDialog.character)){
 		gDialog.character = false;
 		gDialog.id = nextFreeId(false);
 		gDialog.baseId = 19379;
 	}
 	ImGui::SameLine();
-	if(ImGui::RadioButton("Skin (AddCharModel)", gDialog.character)){
+	if(ImGui::RadioButton(L("Skin (AddCharModel)"), gDialog.character)){
 		gDialog.character = true;
 		gDialog.id = nextFreeId(true);
 		gDialog.baseId = 7;
 	}
 	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 8.0f);
 	ImGui::InputInt("ID", &gDialog.id);
-	ImGui::SetItemTooltip(gDialog.character ? "20001 to 30000: the skin ID scripts use." :
-		"-1000 to -30000: the model ID scripts use, as in CreateObject(-1000, ...).");
+	ImGui::SetItemTooltip("%s", gDialog.character ? _("20001 to 30000: the skin ID scripts use.") :
+		_("-1000 to -30000: the model ID scripts use, as in CreateObject(-1000, ...)."));
 	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 8.0f);
-	ImGui::InputInt(gDialog.character ? "Base skin" : "Base model", &gDialog.baseId);
-	ImGui::SetItemTooltip(gDialog.character ? "The game skin whose settings the new skin takes." :
-		"The game object whose settings the new model takes (19379 is a common choice).");
+	ImGui::InputInt(gDialog.character ? L("Base skin") : L("Base model"), &gDialog.baseId);
+	ImGui::SetItemTooltip("%s", gDialog.character ? _("The game skin whose settings the new skin takes.") :
+		_("The game object whose settings the new model takes (19379 is a common choice)."));
 
 	if(gDialog.error[0])
 		ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.4f, 1.0f), "%s", gDialog.error);
 	ImGui::Spacing();
-	if(ImGui::Button("Add to server")){
+	if(ImGui::Button(L("Add to server"))){
 		gDialog.error[0] = '\0';
 		bool idOk = gDialog.character ? gDialog.id >= 20001 && gDialog.id <= 30000 :
 			gDialog.id <= -1000 && gDialog.id >= -30000;
 		if(!idOk)
-			snprintf(gDialog.error, sizeof(gDialog.error), gDialog.character ?
-				"Skin IDs go from 20001 to 30000." : "Object IDs go from -1000 to -30000.");
+			snprintf(gDialog.error, sizeof(gDialog.error), "%s", gDialog.character ?
+				_("Skin IDs go from 20001 to 30000.") : _("Object IDs go from -1000 to -30000."));
 		else{
 			std::string err;
 			int editorId = addModelToServer(gDialog.dff, gDialog.txd, gDialog.character,
@@ -788,7 +811,7 @@ DrawAddCustomModelDialog(void)
 			else{
 				if(!gDialog.character)
 					SetSpawnObjectId(editorId);
-				Toast(TOAST_SPAWN, "Added %d to the server: Object Browser > Custom models", gDialog.id);
+				Toast(TOAST_SPAWN, _("Added %d to the server: Object Browser > Custom models"), gDialog.id);
 				gDialog.open = false;
 			}
 		}

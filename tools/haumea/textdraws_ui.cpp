@@ -4,6 +4,7 @@
 #include "textdraws.h"
 #include "icons.h"
 #include "shortcuts.h"
+#include "i18n.h"
 #include "imgui/imgui_internal.h"
 
 #include <ctype.h>
@@ -751,7 +752,7 @@ DrawTextDrawsOverlay(void)
 			resizing = false;
 		}
 		if(ImGui::IsItemHovered())
-			ImGui::SetTooltip("%s", td.name[0] ? td.name : "textdraw");
+			ImGui::SetTooltip("%s", td.name[0] ? td.name : _("textdraw"));
 		if(dragging == i && !resizing && ImGui::IsItemActive()){
 			ImVec2 d = ImGui::GetIO().MouseDelta;
 			if(d.x != 0.0f || d.y != 0.0f){
@@ -873,7 +874,7 @@ spritePicker(TextDraw &td)
 	}
 	std::vector<std::string> txds;
 	listSpriteTxds(txds);
-	if(ImGui::BeginCombo("Sprite TXD", txdName.c_str(), ImGuiComboFlags_HeightLarge)){
+	if(ImGui::BeginCombo(L("Sprite TXD"), txdName.c_str(), ImGuiComboFlags_HeightLarge)){
 		for(size_t i = 0; i < txds.size(); i++)
 			if(ImGui::Selectable(txds[i].c_str(), rw::strcmp_ci(txds[i].c_str(), txdName.c_str()) == 0))
 				txdName = txds[i];
@@ -899,7 +900,7 @@ spritePicker(TextDraw &td)
 		ImGui::PopID();
 	}
 	if(count == 0)
-		ImGui::TextDisabled("No textures in %s.", txdName.c_str());
+		ImGui::TextDisabled(_("No textures in %s."), txdName.c_str());
 	ImGui::EndChild();
 }
 
@@ -908,22 +909,26 @@ properties(TextDraw &td)
 {
 	// What it is, what it shows, then where; the style is closed by default.
 	bool changed = false;
-	ImGui::InputText("Variable", td.name, sizeof(td.name));
+	ImGui::InputText(L("Variable"), td.name, sizeof(td.name));
 	if(ImGui::IsItemDeactivatedAfterEdit()) changed = true;
-	ImGui::SetItemTooltip("The Pawn variable. Empty or not a plain name makes one up.");
+	ImGui::SetItemTooltip("%s", _("The Pawn variable. Empty or not a plain name makes one up."));
 	int scope = td.perPlayer ? 1 : 0;
-	if(ImGui::Combo("Shown", &scope, "To everyone (TextDrawCreate)\0Per player (CreatePlayerTextDraw)\0")){
+	const char *scopes[] = { _("To everyone (TextDrawCreate)"), _("Per player (CreatePlayerTextDraw)") };
+	if(ImGui::Combo(L("Shown"), &scope, scopes, IM_ARRAYSIZE(scopes))){
 		td.perPlayer = scope == 1;
 		changed = true;
 	}
-	static const char *fonts[] = { "0 Beckett (gothic)", "1 Aharoni", "2 Bank Gothic (capitals)",
-		"3 Pricedown (capitals)", "4 Sprite", "5 Model preview" };
-	changed |= ImGui::Combo("Font", &td.font, fonts, IM_ARRAYSIZE(fonts));
+	static const char *fonts[] = { N_("0 Beckett (gothic)"), N_("1 Aharoni"), N_("2 Bank Gothic (capitals)"),
+		N_("3 Pricedown (capitals)"), N_("4 Sprite"), N_("5 Model preview") };
+	const char *fontNames[IM_ARRAYSIZE(fonts)];
+	for(int i = 0; i < IM_ARRAYSIZE(fonts); i++)
+		fontNames[i] = _(fonts[i]);
+	changed |= ImGui::Combo(L("Font"), &td.font, fontNames, IM_ARRAYSIZE(fonts));
 	bool isText = td.font != TD_FONT_SPRITE && td.font != TD_FONT_PREVIEW;
 	if(td.font == TD_FONT_SPRITE){
 		char buf[256];
 		snprintf(buf, sizeof(buf), "%s", td.text.c_str());
-		if(ImGui::InputText("Sprite", buf, sizeof(buf))){
+		if(ImGui::InputText(L("Sprite"), buf, sizeof(buf))){
 			td.text = buf;
 			changed = true;
 		}
@@ -931,67 +936,68 @@ properties(TextDraw &td)
 	}else if(isText){
 		char buf[1024];
 		snprintf(buf, sizeof(buf), "%s", td.text.c_str());
-		if(ImGui::InputTextMultiline("Text", buf, sizeof(buf), ImVec2(-FLT_MIN, ImGui::GetFontSize() * 3.5f))){
+		if(ImGui::InputTextMultiline(L("Text"), buf, sizeof(buf), ImVec2(-FLT_MIN, ImGui::GetFontSize() * 3.5f))){
 			td.text = buf;
 			changed = true;
 		}
-		ImGui::SetItemTooltip("~n~ new line, ~r~ ~g~ ~b~ ~y~ ~p~ ~w~ ~l~ colours, ~h~ lighter, _ blank");
+		ImGui::SetItemTooltip("%s", _("~n~ new line, ~r~ ~g~ ~b~ ~y~ ~p~ ~w~ ~l~ colours, ~h~ lighter, _ blank"));
 	}else{
-		changed |= ImGui::InputInt("Model", &td.previewModel);
+		changed |= ImGui::InputInt(L("Model"), &td.previewModel);
 		float rot[3] = { td.previewRotX, td.previewRotY, td.previewRotZ };
-		if(ImGui::DragFloat3("Rotation", rot, 1.0f, -360.0f, 360.0f, "%.1f")){
+		if(ImGui::DragFloat3(L("Rotation"), rot, 1.0f, -360.0f, 360.0f, "%.1f")){
 			td.previewRotX = rot[0]; td.previewRotY = rot[1]; td.previewRotZ = rot[2];
 			changed = true;
 		}
-		changed |= ImGui::DragFloat("Zoom", &td.previewZoom, 0.01f, 0.1f, 10.0f, "%.2f");
+		changed |= ImGui::DragFloat(L("Zoom"), &td.previewZoom, 0.01f, 0.1f, 10.0f, "%.2f");
 		int cols[2] = { td.previewColour1, td.previewColour2 };
-		if(ImGui::InputInt2("Vehicle colours", cols)){
+		if(ImGui::InputInt2(L("Vehicle colours"), cols)){
 			td.previewColour1 = cols[0]; td.previewColour2 = cols[1];
 			changed = true;
 		}
 	}
-	changed |= colourEdit(td.font == TD_FONT_SPRITE ? "Tint" : "Colour", &td.colour);
+	changed |= colourEdit(td.font == TD_FONT_SPRITE ? L("Tint") : L("Colour"), &td.colour);
 
-	ImGui::SeparatorText("Position");
+	ImGui::SeparatorText(_("Position"));
 	float pos[2] = { td.x, td.y };
-	if(ImGui::DragFloat2("Position", pos, 0.5f, -100.0f, 740.0f, "%.2f")){
+	if(ImGui::DragFloat2(L("Position"), pos, 0.5f, -100.0f, 740.0f, "%.2f")){
 		td.x = pos[0]; td.y = pos[1];
 		changed = true;
 	}
-	ImGui::SetItemTooltip("On the 640x448 canvas every resolution is scaled to.");
+	ImGui::SetItemTooltip("%s", _("On the 640x448 canvas every resolution is scaled to."));
 	float size[2] = { td.sizeX, td.sizeY };
-	if(ImGui::DragFloat2("Text size", size, 0.5f, -1280.0f, 1280.0f, "%.2f")){
+	if(ImGui::DragFloat2(L("Text size"), size, 0.5f, -1280.0f, 1280.0f, "%.2f")){
 		td.sizeX = size[0]; td.sizeY = size[1];
 		changed = true;
 	}
-	ImGui::SetItemTooltip(td.font >= TD_FONT_SPRITE ? "Width and height." :
-		"Left: the box's right edge. Centre: width and height are swapped (the second is the width).\n"
-		"Right: the box's left edge. Text wraps there.");
+	ImGui::SetItemTooltip("%s", td.font >= TD_FONT_SPRITE ? _("Width and height.") :
+		_("Left: the box's right edge. Centre: width and height are swapped (the second is the width).\n"
+		"Right: the box's left edge. Text wraps there."));
 
-	if(ImGui::CollapsingHeader("Style")){
+	if(ImGui::CollapsingHeader(L("Style"))){
 		if(isText){
 			float letter[2] = { td.letterX, td.letterY };
-			if(ImGui::DragFloat2("Letter size", letter, 0.005f, 0.0f, 10.0f, "%.3f")){
+			if(ImGui::DragFloat2(L("Letter size"), letter, 0.005f, 0.0f, 10.0f, "%.3f")){
 				td.letterX = letter[0]; td.letterY = letter[1];
 				changed = true;
 			}
 			int align = td.alignment - 1;
-			if(ImGui::Combo("Alignment", &align, "Left\0Centre\0Right\0")){
+			const char *aligns[] = { _("Left"), _("Centre"), _("Right") };
+			if(ImGui::Combo(L("Alignment"), &align, aligns, IM_ARRAYSIZE(aligns))){
 				td.alignment = align + 1;
 				changed = true;
 			}
-			changed |= ImGui::Checkbox("Proportional", &td.proportional);
-			ImGui::SetItemTooltip("Letters take their own width instead of a fixed one.");
+			changed |= ImGui::Checkbox(L("Proportional"), &td.proportional);
+			ImGui::SetItemTooltip("%s", _("Letters take their own width instead of a fixed one."));
 			ImGui::SameLine();
-			changed |= ImGui::Checkbox("Box", &td.useBox);
+			changed |= ImGui::Checkbox(L("Box"), &td.useBox);
 			if(td.useBox)
-				changed |= colourEdit("Box colour", &td.boxColour);
-			changed |= ImGui::SliderInt("Shadow", &td.shadow, 0, 10);
-			changed |= ImGui::SliderInt("Outline", &td.outline, 0, 10);
+				changed |= colourEdit(L("Box colour"), &td.boxColour);
+			changed |= ImGui::SliderInt(L("Shadow"), &td.shadow, 0, 10);
+			changed |= ImGui::SliderInt(L("Outline"), &td.outline, 0, 10);
 		}
-		changed |= colourEdit(td.font == TD_FONT_PREVIEW ? "Background" : "Shadow/outline colour", &td.backgroundColour);
-		changed |= ImGui::Checkbox("Selectable", &td.selectable);
-		ImGui::SetItemTooltip("Players can click it while SelectTextDraw is on (OnPlayerClickTextDraw).");
+		changed |= colourEdit(td.font == TD_FONT_PREVIEW ? L("Background") : L("Shadow/outline colour"), &td.backgroundColour);
+		changed |= ImGui::Checkbox(L("Selectable"), &td.selectable);
+		ImGui::SetItemTooltip("%s", _("Players can click it while SelectTextDraw is on (OnPlayerClickTextDraw)."));
 	}
 	if(changed)
 		TextDrawsChanged();
@@ -1007,13 +1013,13 @@ static bool gOpenMovePrompt;
 static char gMovePath[1024];
 
 static void
-afterFileChange(const char *verb)
+afterFileChange(const char *toast)
 {
 	gSelected = -1;
 	AddRecentTextDrawFile(GetTextDrawFilePath());
 	SaveEditorSettings();
-	if(verb)
-		Toast(TOAST_SAVE, "%s %s", verb, GetTextDrawFileName());
+	if(toast)
+		Toast(TOAST_SAVE, toast, GetTextDrawFileName());
 }
 
 static void
@@ -1021,11 +1027,11 @@ openFile(const char *path)
 {
 	std::string error;
 	if(!OpenTextDrawFile(path, &error)){
-		ToastFor(TOAST_SAVE, 5.0f, "Could not open %s", path);
+		ToastFor(TOAST_SAVE, 5.0f, _("Could not open %s"), path);
 		gRecent.erase(std::remove(gRecent.begin(), gRecent.end(), std::string(path)), gRecent.end());
 		return;
 	}
-	afterFileChange("Opened");
+	afterFileChange(_("Opened %s"));
 }
 
 static bool
@@ -1033,10 +1039,10 @@ saveFile(const char *path)
 {
 	std::string error;
 	if(!SaveTextDrawFile(path, &error)){
-		ToastFor(TOAST_SAVE, 5.0f, "Could not save the textdraws: %s", error.c_str());
+		ToastFor(TOAST_SAVE, 5.0f, _("Could not save the textdraws: %s"), error.c_str());
 		return false;
 	}
-	afterFileChange("Saved");
+	afterFileChange(_("Saved %s"));
 	if(gAfterClose){
 		void (*then)(void) = gAfterClose;
 		gAfterClose = nil;
@@ -1073,7 +1079,7 @@ newFile(void)
 {
 	NewTextDrawFile();
 	afterFileChange(nil);
-	Toast(TOAST_SAVE, "New textdraws");
+	Toast(TOAST_SAVE, "%s", _("New textdraws"));
 }
 
 static void
@@ -1112,11 +1118,11 @@ moveMapTextDraws(void)
 	std::string error;
 	int moved = MoveMapTextDrawsToFile(GetTextDrawFilePath()[0] ? nil : gMovePath, &error);
 	if(moved < 0){
-		ToastFor(TOAST_SAVE, 6.0f, "Could not move the textdraws: %s", error.c_str());
+		ToastFor(TOAST_SAVE, 6.0f, _("Could not move the textdraws: %s"), error.c_str());
 		return;
 	}
 	afterFileChange(nil);
-	ToastFor(TOAST_SAVE, 6.0f, "Moved %d textdraw(s) to %s. Save the map to take them out of it.",
+	ToastFor(TOAST_SAVE, 6.0f, _("Textdraws moved: %d, into %s. Save the map to take them out of it."),
 		moved, GetTextDrawFileName());
 }
 
@@ -1124,19 +1130,19 @@ static void
 drawPopups(void)
 {
 	if(gOpenUnsavedPrompt){
-		ImGui::OpenPopup("Unsaved textdraws");
+		ImGui::OpenPopup(L("Unsaved textdraws"));
 		gOpenUnsavedPrompt = false;
 	}
-	if(ImGui::BeginPopupModal("Unsaved textdraws", nil, ImGuiWindowFlags_AlwaysAutoResize)){
-		ImGui::Text("Save changes to %s?", GetTextDrawFileName());
-		ImGui::TextDisabled("Your textdraw changes are lost if you don't save them.");
+	if(ImGui::BeginPopupModal(L("Unsaved textdraws"), nil, ImGuiWindowFlags_AlwaysAutoResize)){
+		ImGui::Text(_("Save changes to %s?"), GetTextDrawFileName());
+		ImGui::TextDisabled("%s", _("Your textdraw changes are lost if you don't save them."));
 		ImGui::Spacing();
-		if(ImGui::Button("Save", ImVec2(110, 0))){
+		if(ImGui::Button(L("Save"), ImVec2(110, 0))){
 			ImGui::CloseCurrentPopup();
 			saveOrAsk();	// continues once the file is written
 		}
 		ImGui::SameLine();
-		if(ImGui::Button("Don't Save", ImVec2(110, 0))){
+		if(ImGui::Button(L("Don't Save"), ImVec2(110, 0))){
 			ImGui::CloseCurrentPopup();
 			void (*then)(void) = gAfterClose;
 			gAfterClose = nil;
@@ -1144,7 +1150,7 @@ drawPopups(void)
 				then();
 		}
 		ImGui::SameLine();
-		if(ImGui::Button("Cancel", ImVec2(110, 0)) || ImGui::IsKeyPressed(ImGuiKey_Escape)){
+		if(ImGui::Button(L("Cancel"), ImVec2(110, 0)) || ImGui::IsKeyPressed(ImGuiKey_Escape)){
 			gAfterClose = nil;
 			ImGui::CloseCurrentPopup();
 		}
@@ -1152,35 +1158,37 @@ drawPopups(void)
 	}
 
 	if(gOpenMovePrompt){
-		ImGui::OpenPopup("Move textdraws");
+		ImGui::OpenPopup(L("Move textdraws"));
 		gOpenMovePrompt = false;
 	}
-	if(ImGui::BeginPopupModal("Move textdraws", nil, ImGuiWindowFlags_AlwaysAutoResize)){
+	if(ImGui::BeginPopupModal(L("Move textdraws"), nil, ImGuiWindowFlags_AlwaysAutoResize)){
 		int count = (int)GetMapTextDraws().size();
-		ImGui::Text("This map has %d textdraw%s.", count, count == 1 ? "" : "s");
-		ImGui::TextDisabled("Textdraws now have their own file, which Test in game includes.\n"
-			"Left in the map they are read-only.");
+		ImGui::Text(_("Textdraws in this map: %d."), count);
+		ImGui::TextDisabled("%s", _("Textdraws now have their own file, which Test in game includes.\n"
+			"Left in the map they are read-only."));
 		ImGui::Spacing();
 		if(GetTextDrawFilePath()[0])
-			ImGui::Text("They go into %s.", GetTextDrawFileName());
+			ImGui::Text(_("They go into %s."), GetTextDrawFileName());
 		else{
 			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 30.0f);
-			ImGui::InputText("File", gMovePath, sizeof(gMovePath));
+			ImGui::InputText(L("File"), gMovePath, sizeof(gMovePath));
 		}
 		ImGui::Spacing();
-		if(ImGui::Button("Move textdraws to a separate file")){
+		if(ImGui::Button(L("Move textdraws to a separate file"))){
 			ImGui::CloseCurrentPopup();
 			moveMapTextDraws();
 		}
 		ImGui::SameLine();
-		if(ImGui::Button("Keep them read-only") || ImGui::IsKeyPressed(ImGuiKey_Escape))
+		if(ImGui::Button(L("Keep them read-only")) || ImGui::IsKeyPressed(ImGuiKey_Escape))
 			ImGui::CloseCurrentPopup();
-		ImGui::SetItemTooltip("They stay in the map and are saved with it. TextDraws can move them later.");
+		ImGui::SetItemTooltip("%s", _("They stay in the map and are saved with it. TextDraws can move them later."));
 		ImGui::EndPopup();
 	}
 
 	if(gShowFileDialog){
-		const char *title = gFileDialogSave ? "Save TextDraws As###tdfile" : "Open TextDraws###tdfile";
+		// ###tdfile: one window for both, with the ID it has always had.
+		char title[128];
+		snprintf(title, sizeof(title), "%s###tdfile", gFileDialogSave ? _("Save TextDraws As") : _("Open TextDraws"));
 		ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 		if(gFileDialogFocus){
 			ImGui::SetNextWindowFocus();
@@ -1188,16 +1196,16 @@ drawPopups(void)
 		}
 		if(ImGui::Begin(title, &gShowFileDialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse |
 			ImGuiWindowFlags_NoDocking)){
-			ImGui::TextDisabled("A .pwn or .inc file with only textdraws; your gamemode includes it.");
+			ImGui::TextDisabled("%s", _("A .pwn or .inc file with only textdraws; your gamemode includes it."));
 			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 30.0f);
-			ImGui::InputText("Path", gFileDialogPath, sizeof(gFileDialogPath));
+			ImGui::InputText(L("Path"), gFileDialogPath, sizeof(gFileDialogPath));
 			ImGui::SameLine();
-			if(ImGui::Button("Browse...")){
+			if(ImGui::Button(L("Browse..."))){
 				char picked[1024];
 				if(PickPawnFile(picked, sizeof(picked), gFileDialogSave, gFileDialogPath[0] ? gFileDialogPath : nil))
 					snprintf(gFileDialogPath, sizeof(gFileDialogPath), "%s", picked);
 			}
-			if(ImGui::Button(gFileDialogSave ? "Save" : "Open", ImVec2(110, 0)) && gFileDialogPath[0]){
+			if(ImGui::Button(gFileDialogSave ? L("Save") : L("Open"), ImVec2(110, 0)) && gFileDialogPath[0]){
 				gShowFileDialog = false;
 				if(gFileDialogSave)
 					saveFile(gFileDialogPath);
@@ -1205,7 +1213,7 @@ drawPopups(void)
 					openFile(gFileDialogPath);
 			}
 			ImGui::SameLine();
-			if(ImGui::Button("Cancel", ImVec2(110, 0))){
+			if(ImGui::Button(L("Cancel"), ImVec2(110, 0))){
 				gShowFileDialog = false;
 				gAfterClose = nil;
 			}
@@ -1229,15 +1237,15 @@ drawBanner(void)
 		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav |
 		ImGuiWindowFlags_NoDocking)){
 		ImGui::AlignTextToFramePadding();
-		ImGui::TextColored(ImVec4(0.95f, 0.75f, 0.20f, 1.0f), ICON_FA_FONT " TextDraw mode");
+		ImGui::TextColored(ImVec4(0.95f, 0.75f, 0.20f, 1.0f), "%s", TI(ICON_FA_FONT, "TextDraw mode"));
 		ImGui::SameLine();
 		ImGui::Text("%s%s", GetTextDrawFileName(), TextDrawFileHasUnsavedChanges() ? " *" : "");
 		ImGui::SameLine();
-		ImGui::TextDisabled("Map editing is off.");
+		ImGui::TextDisabled("%s", _("Map editing is off."));
 		ImGui::SameLine();
-		if(ImGui::Button(ICON_FA_XMARK " Exit"))
+		if(ImGui::Button(LI(ICON_FA_XMARK, "Exit")))
 			ExitTextDrawMode();
-		ImGui::SetItemTooltip("Back to the map (%s)", ShortcutLabel(SC_CANCEL));
+		ImGui::SetItemTooltip(_("Back to the map (%s)"), ShortcutLabel(SC_CANCEL));
 	}
 	ImGui::End();
 }
@@ -1252,11 +1260,11 @@ TextDrawModeShortcut(int action)
 	switch(action){
 	case SC_UNDO:
 		if(UndoTextDraws())
-			Toast(TOAST_UNDO_REDO, "Undo");
+			Toast(TOAST_UNDO_REDO, "%s", _("Undo"));
 		return true;
 	case SC_REDO:
 		if(RedoTextDraws())
-			Toast(TOAST_UNDO_REDO, "Redo");
+			Toast(TOAST_UNDO_REDO, "%s", _("Redo"));
 		return true;
 	case SC_NEW_MAP: RequestTextDrawFileClose(newFile); return true;
 	case SC_OPEN_MAP: RequestTextDrawFileClose(showOpenDialog); return true;
@@ -1292,24 +1300,24 @@ TextDrawModeShortcut(int action)
 static void
 fileBar(void)
 {
-	if(ImGui::Button(ICON_FA_FILE " New"))
+	if(ImGui::Button(LI(ICON_FA_FILE, "New")))
 		RequestTextDrawFileClose(newFile);
 	ImGui::SameLine();
-	if(ImGui::Button(ICON_FA_FOLDER_OPEN " Open..."))
+	if(ImGui::Button(LI(ICON_FA_FOLDER_OPEN, "Open...")))
 		RequestTextDrawFileClose(showOpenDialog);
 	ImGui::SameLine();
-	if(ImGui::Button(ICON_FA_FLOPPY_DISK " Save"))
+	if(ImGui::Button(LI(ICON_FA_FLOPPY_DISK, "Save")))
 		saveOrAsk();
 	ImGui::SetItemTooltip("%s", ShortcutLabel(SC_SAVE_MAP));
 	ImGui::SameLine();
-	if(ImGui::Button("Save As..."))
+	if(ImGui::Button(L("Save As...")))
 		showFileDialog(true);
 	ImGui::SameLine();
 	ImGui::BeginDisabled(gRecent.empty());
 	if(ImGui::Button(ICON_FA_CLOCK_ROTATE_LEFT "##recent"))
 		ImGui::OpenPopup("recent");
 	ImGui::EndDisabled();
-	ImGui::SetItemTooltip("Recent textdraw files");
+	ImGui::SetItemTooltip("%s", _("Recent textdraw files"));
 	if(ImGui::BeginPopup("recent")){
 		static std::string chosen;
 		for(size_t i = 0; i < gRecent.size(); i++){
@@ -1323,17 +1331,17 @@ fileBar(void)
 			ImGui::PopID();
 		}
 		ImGui::Separator();
-		if(ImGui::MenuItem("Clear list")){
+		if(ImGui::MenuItem(L("Clear list"))){
 			gRecent.clear();
 			SaveEditorSettings();
 		}
 		ImGui::EndPopup();
 	}
-	ImGui::TextDisabled("%s%s", TextDrawFileHasUnsavedChanges() ? "Unsaved changes - " : "Saved - ",
+	ImGui::TextDisabled(TextDrawFileHasUnsavedChanges() ? _("Unsaved changes - %s") : _("Saved - %s"),
 		GetTextDrawFileName());
 	if(GetTextDrawFilePath()[0])
-		ImGui::SetItemTooltip("%s\nInclude it in your gamemode and call %s_CreateTextDraws()\n"
-			"from OnGameModeInit and %s_ShowTextDraws(playerid).", GetTextDrawFilePath(),
+		ImGui::SetItemTooltip(_("%s\nInclude it in your gamemode and call %s_CreateTextDraws()\n"
+			"from OnGameModeInit and %s_ShowTextDraws(playerid)."), GetTextDrawFilePath(),
 			TextDrawFilePrefix(GetTextDrawFilePath()).c_str(), TextDrawFilePrefix(GetTextDrawFilePath()).c_str());
 }
 
@@ -1347,7 +1355,10 @@ DrawTextDrawsWindow(void)
 	drawBanner();
 	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 24.0f, ImGui::GetFontSize() * 34.0f), ImGuiCond_FirstUseEver);
 	bool open = true;
-	if(!ImGui::Begin(ICON_FA_FONT " TextDraws###textdraws", &open)){
+	// ###textdraws, not LI(): the ID the window has always had, so saved layouts stay.
+	char title[64];
+	snprintf(title, sizeof(title), ICON_FA_FONT " %s###textdraws", _("TextDraws"));
+	if(!ImGui::Begin(title, &open)){
 		ImGui::End();
 		if(!open)
 			ExitTextDrawMode();
@@ -1358,7 +1369,8 @@ DrawTextDrawsWindow(void)
 
 	int background = gBackground;
 	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 9.0f);
-	if(ImGui::Combo("Background", &background, "Plain\0Still frame\0")){
+	const char *backgrounds[] = { _("Plain"), _("Still frame") };
+	if(ImGui::Combo(L("Background"), &background, backgrounds, IM_ARRAYSIZE(backgrounds))){
 		gBackground = background;
 		if(gBackground == TD_BACKGROUND_STILL && gStillFrame == nil){
 			// Taken from the world on the next frame.
@@ -1366,7 +1378,7 @@ DrawTextDrawsWindow(void)
 		}
 		SaveEditorSettings();
 	}
-	ImGui::SetItemTooltip("Still frame: the world as the camera saw it when TextDraw mode started.");
+	ImGui::SetItemTooltip("%s", _("Still frame: the world as the camera saw it when TextDraw mode started."));
 	if(gBackground == TD_BACKGROUND_PLAIN){
 		ImGui::SameLine();
 		if(colourEdit("##canvas", &gCanvasColour))
@@ -1376,29 +1388,31 @@ DrawTextDrawsWindow(void)
 	const std::vector<TextDraw> &mapTds = GetMapTextDraws();
 	if(!mapTds.empty()){
 		ImGui::Separator();
-		ImGui::TextColored(ImVec4(1.0f, 0.78f, 0.25f, 1.0f), ICON_FA_TRIANGLE_EXCLAMATION " %d in the map (read-only)", (int)mapTds.size());
-		ImGui::SetItemTooltip("From a map made before textdraws had their own file. They are saved\n"
-			"back with the map as they are; move them here to edit them.");
+		char inMap[128];
+		snprintf(inMap, sizeof(inMap), _("%d in the map (read-only)"), (int)mapTds.size());
+		ImGui::TextColored(ImVec4(1.0f, 0.78f, 0.25f, 1.0f), ICON_FA_TRIANGLE_EXCLAMATION " %s", inMap);
+		ImGui::SetItemTooltip("%s", _("From a map made before textdraws had their own file. They are saved\n"
+			"back with the map as they are; move them here to edit them."));
 		ImGui::SameLine();
-		if(ImGui::SmallButton("Move to a separate file..."))
+		if(ImGui::SmallButton(L("Move to a separate file...")))
 			OfferMoveMapTextDraws(GetPawnMapPath());
 	}
 	ImGui::Separator();
 
-	if(ImGui::Button(ICON_FA_PLUS " Text")) addTextDraw(TD_FONT_AHARONI);
+	if(ImGui::Button(LI(ICON_FA_PLUS, "Text##add"))) addTextDraw(TD_FONT_AHARONI);
 	ImGui::SameLine();
-	if(ImGui::Button(ICON_FA_PLUS " Box")) addTextDraw(-1);
+	if(ImGui::Button(LI(ICON_FA_PLUS, "Box##add"))) addTextDraw(-1);
 	ImGui::SameLine();
-	if(ImGui::Button(ICON_FA_PLUS " Sprite")) addTextDraw(TD_FONT_SPRITE);
+	if(ImGui::Button(LI(ICON_FA_PLUS, "Sprite##add"))) addTextDraw(TD_FONT_SPRITE);
 	ImGui::SameLine();
-	if(ImGui::Button(ICON_FA_PLUS " Model")) addTextDraw(TD_FONT_PREVIEW);
+	if(ImGui::Button(LI(ICON_FA_PLUS, "Model##add"))) addTextDraw(TD_FONT_PREVIEW);
 
 	ImGui::BeginChild("list", ImVec2(0, ImGui::GetFontSize() * 8.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY);
 	for(size_t i = 0; i < tds.size(); i++){
 		const TextDraw &td = tds[i];
 		char label[160];
-		const char *kind = td.font == TD_FONT_SPRITE ? "sprite" : td.font == TD_FONT_PREVIEW ? "model" :
-			td.useBox ? "box" : "text";
+		const char *kind = td.font == TD_FONT_SPRITE ? _("sprite") : td.font == TD_FONT_PREVIEW ? _("model") :
+			td.useBox ? _("box") : _("text");
 		std::string preview = td.text.substr(0, 28);
 		std::replace(preview.begin(), preview.end(), '\n', ' ');
 		snprintf(label, sizeof(label), "%s %s  %s##td%d", td.perPlayer ? ICON_FA_USER : ICON_FA_GLOBE,
@@ -1407,11 +1421,11 @@ DrawTextDrawsWindow(void)
 			gSelected = (int)i;
 	}
 	if(tds.empty())
-		ImGui::TextDisabled("No textdraws yet.");
+		ImGui::TextDisabled("%s", _("No textdraws yet."));
 	ImGui::EndChild();
 
 	if(gSelected >= 0 && gSelected < (int)tds.size()){
-		if(ImGui::Button(ICON_FA_COPY " Duplicate")){
+		if(ImGui::Button(LI(ICON_FA_COPY, "Duplicate"))){
 			TextDraw copy = tds[gSelected];
 			copy.name[0] = '\0';
 			copy.x += 10.0f; copy.y += 10.0f;
@@ -1420,21 +1434,21 @@ DrawTextDrawsWindow(void)
 			TextDrawsChanged();
 		}
 		ImGui::SameLine();
-		if(ImGui::Button("Up") && gSelected > 0){
+		if(ImGui::Button(L("Up")) && gSelected > 0){
 			std::swap(tds[gSelected], tds[gSelected-1]);
 			gSelected--;
 			TextDrawsChanged();
 		}
-		ImGui::SetItemTooltip("Drawn earlier, so under the others.");
+		ImGui::SetItemTooltip("%s", _("Drawn earlier, so under the others."));
 		ImGui::SameLine();
-		if(ImGui::Button("Down") && gSelected + 1 < (int)tds.size()){
+		if(ImGui::Button(L("Down")) && gSelected + 1 < (int)tds.size()){
 			std::swap(tds[gSelected], tds[gSelected+1]);
 			gSelected++;
 			TextDrawsChanged();
 		}
-		ImGui::SetItemTooltip("Drawn later, so over the others.");
+		ImGui::SetItemTooltip("%s", _("Drawn later, so over the others."));
 		ImGui::SameLine();
-		if(ImGui::Button(ICON_FA_TRASH " Delete")){
+		if(ImGui::Button(LI(ICON_FA_TRASH, "Delete"))){
 			tds.erase(tds.begin() + gSelected);
 			gSelected = -1;
 			TextDrawsChanged();

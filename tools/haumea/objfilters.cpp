@@ -25,16 +25,16 @@ enum { TYPE_OBJECT, TYPE_BUILDING, TYPE_DYNAMIC, TYPE_BREAKABLE, TYPE_TIMED, TYP
 	TYPE_INTERIOR, TYPE_EXTERIOR, TYPE_ALPHA, NUM_TYPES };
 const char *const kTypeKeys[NUM_TYPES] = { "object", "building", "dynamic", "breakable", "timed", "animated",
 	"upgrade", "interior", "exterior", "alpha" };
-const char *const kTypeNames[NUM_TYPES] = { "Object", "Building", "Moves when hit", "Breakable", "Timed (day or night)",
-	"Animated", "Vehicle upgrade part", "Interior model", "Exterior model", "See-through (alpha)" };
+const char *const kTypeNames[NUM_TYPES] = { N_("Object"), N_("Building"), N_("Moves when hit"), N_("Breakable"), N_("Timed (day or night)"),
+	N_("Animated"), N_("Vehicle upgrade part"), N_("Interior model"), N_("Exterior model"), N_("See-through (alpha)") };
 const char *const kSourceKeys[NUM_MODEL_SOURCES] = { "gta", "samp", "custom" };
 const char *const kCityKeys[NUM_MODEL_CITIES] = { "los_santos", "san_fierro", "las_venturas", "countryside",
 	"interiors" };
 enum { MINE_FAVOURITES, MINE_RECENT, MINE_OPEN_MAP, MINE_WORKSPACE, NUM_MINE };
 const char *const kMineKeys[NUM_MINE] = { "favourites", "recent", "open_map", "workspace" };
-const char *const kMineNames[NUM_MINE] = { "Favourites", "Recently placed", "In the open map", "In the workspace's maps" };
+const char *const kMineNames[NUM_MINE] = { N_("Favourites"), N_("Recently placed"), N_("In the open map"), N_("In the workspace's maps") };
 const char *const kSortKeys[NUM_OBJECT_SORTS] = { "id", "name", "size", "polygons", "draw_distance", "recent" };
-const char *const kSortNames[NUM_OBJECT_SORTS] = { "ID", "Name", "Size", "Polygons", "Draw distance", "Recently used" };
+const char *const kSortNames[NUM_OBJECT_SORTS] = { N_("ID"), N_("Name"), N_("Size"), N_("Polygons"), N_("Draw distance"), N_("Recently used") };
 
 struct Filters
 {
@@ -474,14 +474,14 @@ rangeInputs(const char *label, Range &r, float step)
 {
 	ImGui::PushID(label);
 	bool changed = false;
-	float w = (ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize(label).x) * 0.5f - ImGui::GetStyle().ItemSpacing.x;
+	float w = (ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize(label, nil, true).x) * 0.5f - ImGui::GetStyle().ItemSpacing.x;
 	ImGui::SetNextItemWidth(std::max(w, 40.0f));
 	changed |= ImGui::InputFloat("##min", &r.lo, 0.0f, 0.0f, r.lo > 0.0f ? "%g" : _("any"));
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(std::max(w, 40.0f));
 	changed |= ImGui::InputFloat("##max", &r.hi, 0.0f, 0.0f, r.hi > 0.0f ? "%g" : _("any"));
 	ImGui::SameLine();
-	ImGui::TextUnformatted(label);
+	ImGui::TextUnformatted(label, strstr(label, "##"));	// an L() label: without its ID
 	(void)step;
 	r.lo = std::max(r.lo, 0.0f);
 	r.hi = std::max(r.hi, 0.0f);
@@ -518,27 +518,27 @@ quickChips(void)
 			[lo, hi](Filters &f, bool on){ f.size = on ? Range{ lo, hi } : Range(); } };
 	};
 	return {
-		sizeQuick(_("Small (under 2 m)"), 0.0f, 2.0f),
-		sizeQuick(_("Medium (2-10 m)"), 2.0f, 10.0f),
-		sizeQuick(_("Large (10-50 m)"), 10.0f, 50.0f),
-		sizeQuick(_("Huge (over 50 m)"), 50.0f, 0.0f),
-		{ _("Has collision"), [](const Filters &f){ return f.collision == 1; },
+		sizeQuick(L("Small (under 2 m)"), 0.0f, 2.0f),
+		sizeQuick(L("Medium (2-10 m)"), 2.0f, 10.0f),
+		sizeQuick(L("Large (10-50 m)"), 10.0f, 50.0f),
+		sizeQuick(L("Huge (over 50 m)"), 50.0f, 0.0f),
+		{ L("Has collision"), [](const Filters &f){ return f.collision == 1; },
 		  [](Filters &f, bool on){ f.collision = on ? 1 : 0; } },
-		{ _("No collision"), [](const Filters &f){ return f.collision == 2; },
+		{ L("No collision"), [](const Filters &f){ return f.collision == 2; },
 		  [](Filters &f, bool on){ f.collision = on ? 2 : 0; } },
-		{ _("Full detail only"), [](const Filters &f){ return f.lod == 1; },
+		{ L("Full detail only"), [](const Filters &f){ return f.lod == 1; },
 		  [](Filters &f, bool on){ f.lod = on ? 1 : 0; } },
-		{ _("SA-MP"), [](const Filters &f){ return f.sources == 1u << MODEL_SOURCE_SAMP; },
+		{ L("SA-MP"), [](const Filters &f){ return f.sources == 1u << MODEL_SOURCE_SAMP; },
 		  [](Filters &f, bool on){ f.sources = on ? 1u << MODEL_SOURCE_SAMP : 0; } },
-		{ _("Not placed"), [](const Filters &f){ return f.notPlaced; },
+		{ L("Not placed"), [](const Filters &f){ return f.notPlaced; },
 		  [](Filters &f, bool on){ f.notPlaced = on; } },
-		{ _("Breakable"), [](const Filters &f){ return (f.types & 1u << TYPE_BREAKABLE) != 0; },
+		{ L("Breakable"), [](const Filters &f){ return (f.types & 1u << TYPE_BREAKABLE) != 0; },
 		  [](Filters &f, bool on){ f.types = on ? f.types | 1u << TYPE_BREAKABLE : f.types & ~(1u << TYPE_BREAKABLE); } },
-		{ _("Night-time"), [](const Filters &f){ return f.hour == 0; },
+		{ L("Night-time"), [](const Filters &f){ return f.hour == 0; },
 		  [](Filters &f, bool on){ f.hour = on ? 0 : -1; } },
-		{ _("Favourites"), [](const Filters &f){ return (f.mine & 1u << MINE_FAVOURITES) != 0; },
+		{ L("Favourites"), [](const Filters &f){ return (f.mine & 1u << MINE_FAVOURITES) != 0; },
 		  [](Filters &f, bool on){ f.mine = on ? f.mine | 1u << MINE_FAVOURITES : f.mine & ~(1u << MINE_FAVOURITES); } },
-		{ _("In the open map"), [](const Filters &f){ return (f.mine & 1u << MINE_OPEN_MAP) != 0; },
+		{ L("In the open map"), [](const Filters &f){ return (f.mine & 1u << MINE_OPEN_MAP) != 0; },
 		  [](Filters &f, bool on){ f.mine = on ? f.mine | 1u << MINE_OPEN_MAP : f.mine & ~(1u << MINE_OPEN_MAP); } },
 	};
 }
@@ -726,8 +726,8 @@ uiObjectFiltersPanel(void)
 			if(ImGui::SmallButton(label.c_str()))
 				chips[i].clear(f);
 		}
-		flowSameLine(_("Clear all"), false, right);
-		if(ImGui::SmallButton(_("Clear all")))
+		flowSameLine(L("Clear all"), false, right);
+		if(ImGui::SmallButton(L("Clear all")))
 			ClearObjectFilters();
 	}
 	if(needsDetails(f) && ModelMetaDetailsProgress() < 1.0f)
@@ -749,45 +749,45 @@ uiObjectFiltersPanel(void)
 		if(on) ImGui::PopStyleColor();
 	}
 
-	if(ImGui::TreeNode(_("Size"))){
-		rangeInputs(_("Longest side (m)"), f.size, 1.0f);
-		rangeInputs(_("Width X (m)"), f.width, 1.0f);
-		rangeInputs(_("Depth Y (m)"), f.depth, 1.0f);
-		rangeInputs(_("Height Z (m)"), f.height, 1.0f);
-		rangeInputs(_("Volume (m\xC2\xB3)"), f.volume, 10.0f);
-		rangeInputs(_("Footprint (m\xC2\xB2)"), f.footprint, 10.0f);
+	if(ImGui::TreeNode(L("Size"))){
+		rangeInputs(L("Longest side (m)"), f.size, 1.0f);
+		rangeInputs(L("Width X (m)"), f.width, 1.0f);
+		rangeInputs(L("Depth Y (m)"), f.depth, 1.0f);
+		rangeInputs(L("Height Z (m)"), f.height, 1.0f);
+		rangeInputs(L("Volume (m\xC2\xB3)"), f.volume, 10.0f);
+		rangeInputs(L("Footprint (m\xC2\xB2)"), f.footprint, 10.0f);
 		ImGui::TreePop();
 	}
-	if(ImGui::TreeNode(_("Source"))){
+	if(ImGui::TreeNode(L("Source"))){
 		for(int s = 0; s < NUM_MODEL_SOURCES; s++)
 			bitCheckbox(GetModelSourceName(s), f.sources, s);
-		textInput(_("IDE file contains"), f.ide);
+		textInput(L("IDE file contains"), f.ide);
 		ImGui::TreePop();
 	}
-	if(ImGui::TreeNode(_("Collision and detail"))){
-		ImGui::RadioButton(_("Any collision"), &f.collision, 0);
+	if(ImGui::TreeNode(L("Collision and detail"))){
+		ImGui::RadioButton(L("Any collision"), &f.collision, 0);
 		ImGui::SameLine();
-		ImGui::RadioButton(_("Has collision"), &f.collision, 1);
+		ImGui::RadioButton(L("Has collision"), &f.collision, 1);
 		ImGui::SameLine();
-		ImGui::RadioButton(_("None"), &f.collision, 2);
-		ImGui::Checkbox(_("Two-sided (no backface culling)"), &f.twoSided);
-		ImGui::RadioButton(_("Any detail"), &f.lod, 0);
+		ImGui::RadioButton(L("None"), &f.collision, 2);
+		ImGui::Checkbox(L("Two-sided (no backface culling)"), &f.twoSided);
+		ImGui::RadioButton(L("Any detail"), &f.lod, 0);
 		ImGui::SameLine();
-		ImGui::RadioButton(_("Full detail"), &f.lod, 1);
+		ImGui::RadioButton(L("Full detail"), &f.lod, 1);
 		ImGui::SameLine();
-		ImGui::RadioButton(_("Far versions (LOD)"), &f.lod, 2);
-		ImGui::RadioButton(_("With or without a far version"), &f.hasLod, 0);
-		ImGui::RadioButton(_("Has a far version"), &f.hasLod, 1);
+		ImGui::RadioButton(L("Far versions (LOD)"), &f.lod, 2);
+		ImGui::RadioButton(L("With or without a far version"), &f.hasLod, 0);
+		ImGui::RadioButton(L("Has a far version"), &f.hasLod, 1);
 		ImGui::SameLine();
-		ImGui::RadioButton(_("Has none"), &f.hasLod, 2);
-		rangeInputs(_("Draw distance (m)"), f.drawDistance, 10.0f);
+		ImGui::RadioButton(L("Has none"), &f.hasLod, 2);
+		rangeInputs(L("Draw distance (m)"), f.drawDistance, 10.0f);
 		ImGui::TreePop();
 	}
-	if(ImGui::TreeNode(_("Type"))){
+	if(ImGui::TreeNode(L("Type"))){
 		for(int t = 0; t < NUM_TYPES; t++)
-			bitCheckbox(_(kTypeNames[t]), f.types, t);
+			bitCheckbox(L(kTypeNames[t]), f.types, t);
 		bool atHour = f.hour >= 0;
-		if(ImGui::Checkbox(_("Shown at"), &atHour))
+		if(ImGui::Checkbox(L("Shown at"), &atHour))
 			f.hour = atHour ? 0 : -1;
 		if(atHour){
 			ImGui::SameLine();
@@ -797,33 +797,33 @@ uiObjectFiltersPanel(void)
 		}
 		ImGui::TreePop();
 	}
-	if(ImGui::TreeNode(_("Appearance"))){
-		textInput(_("TXD contains"), f.txd);
-		textInput(_("A texture contains"), f.texture);
-		rangeInputs(_("Polygons"), f.polygons, 100.0f);
-		rangeInputs(_("Materials"), f.materials, 1.0f);
+	if(ImGui::TreeNode(L("Appearance"))){
+		textInput(L("TXD contains"), f.txd);
+		textInput(L("A texture contains"), f.texture);
+		rangeInputs(L("Polygons"), f.polygons, 100.0f);
+		rangeInputs(L("Materials"), f.materials, 1.0f);
 		ImGui::TreePop();
 	}
-	if(ImGui::TreeNode(_("Where it's used"))){
+	if(ImGui::TreeNode(L("Where it's used"))){
 		uiWhereUsed(f);
 		ImGui::TreePop();
 	}
-	if(ImGui::TreeNode(_("Mine"))){
+	if(ImGui::TreeNode(L("Mine"))){
 		for(int w = 0; w < NUM_MINE; w++)
-			bitCheckbox(_(kMineNames[w]), f.mine, w);
+			bitCheckbox(L(kMineNames[w]), f.mine, w);
 		ImGui::TreePop();
 	}
 
 	// Sort, and presets.
 	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.45f);
-	if(ImGui::BeginCombo(_("Sort by"), _(kSortNames[f.sort]))){
+	if(ImGui::BeginCombo(L("Sort by"), _(kSortNames[f.sort]))){
 		for(int s = 0; s < NUM_OBJECT_SORTS; s++)
-			if(ImGui::Selectable(_(kSortNames[s]), s == f.sort))
+			if(ImGui::Selectable(L(kSortNames[s]), s == f.sort))
 				f.sort = s;
 		ImGui::EndCombo();
 	}
 	ImGui::SameLine();
-	ImGui::Checkbox(_("Descending"), &f.descending);
+	ImGui::Checkbox(L("Descending"), &f.descending);
 	uiPresets();
 	ImGui::PopID();
 }
