@@ -907,7 +907,8 @@ enum MaterialTextureCheck {
 	MATERIAL_TEXTURE_WARNING,	// the texture won't show
 	MATERIAL_TEXTURE_ERROR,	// the client ignores the whole call
 };
-int CheckMaterialTexture(const ObjectMaterialOverride &material, char *buf, size_t size);
+int CheckMaterialTexture(const ObjectMaterialOverride &material, char *buf, size_t size,
+	bool translated = false);	// true: in the UI's language
 // MTA:SA .map and IPL text maps (mapimport.cpp), opened like Texture Studio's .db.
 bool IsForeignMapFile(const char *path);
 int ImportForeignMap(const char *path, int *numSkipped = nil);

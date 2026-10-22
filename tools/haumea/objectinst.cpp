@@ -2968,19 +2968,19 @@ const char*
 GetSampElementKindName(int kind)
 {
 	switch(kind){
-	case SAMP_ELEMENT_PICKUP: return _("Pickup");
-	case SAMP_ELEMENT_LABEL: return _("3D text label");
-	case SAMP_ELEMENT_ACTOR: return _("Actor");
-	case SAMP_ELEMENT_CLASS: return _("Player class");
-	case SAMP_ELEMENT_GANGZONE: return _("Gang zone");
-	case SAMP_ELEMENT_MAPICON: return _("Map icon");
-	case SAMP_ELEMENT_NPC: return _("NPC");
-	case SAMP_ELEMENT_PATHPOINT: return _("NPC path point");
-	case SAMP_ELEMENT_SOUND: return _("Sound");
-	case SAMP_ELEMENT_CHECKPOINT: return _("Checkpoint");
-	case SAMP_ELEMENT_AREA: return _("Dynamic area");
+	case SAMP_ELEMENT_PICKUP: return N_("Pickup");
+	case SAMP_ELEMENT_LABEL: return N_("3D text label");
+	case SAMP_ELEMENT_ACTOR: return N_("Actor");
+	case SAMP_ELEMENT_CLASS: return N_("Player class");
+	case SAMP_ELEMENT_GANGZONE: return N_("Gang zone");
+	case SAMP_ELEMENT_MAPICON: return N_("Map icon");
+	case SAMP_ELEMENT_NPC: return N_("NPC");
+	case SAMP_ELEMENT_PATHPOINT: return N_("NPC path point");
+	case SAMP_ELEMENT_SOUND: return N_("Sound");
+	case SAMP_ELEMENT_CHECKPOINT: return N_("Checkpoint");
+	case SAMP_ELEMENT_AREA: return N_("Dynamic area");
 	}
-	return _("Object");
+	return N_("Object");
 }
 
 int
@@ -10355,51 +10355,59 @@ txdChainContains(int txdSlot, int wantedSlot)
 	return false;
 }
 
+// The messages are English for the agent and Map Check; the UI asks for them
+// translated.
+static const char *
+materialTextureText(const char *english, bool translated)
+{
+	return translated ? Translate(english) : english;
+}
+
 int
-CheckMaterialTexture(const ObjectMaterialOverride &material, char *buf, size_t size)
+CheckMaterialTexture(const ObjectMaterialOverride &material, char *buf, size_t size, bool translated)
 {
 	int model = material.hasTexture ? material.sourceModel : -1;
 	if(model < 0){
-		snprintf(buf, size, _("Model -1: keeps the original texture; only the color applies."));
+		snprintf(buf, size, materialTextureText(N_("Model -1: keeps the original texture; only the color applies."), translated));
 		return MATERIAL_TEXTURE_OK;
 	}
 	if(model == 0){
-		snprintf(buf, size, _("Model 0: SA-MP's plain white \"blanktex\"; TXD and texture names are ignored."));
+		snprintf(buf, size, materialTextureText(N_("Model 0: SA-MP's plain white \"blanktex\"; TXD and texture names are ignored."), translated));
 		return MATERIAL_TEXTURE_OK;
 	}
 	ObjectDef *source = GetObjectDef(model);
 	int pawnModel = PawnModelId(model);
 	if(source == nil){
-		snprintf(buf, size, _("Model %d does not exist, so SA-MP ignores the whole call (color too)."), pawnModel);
+		snprintf(buf, size, materialTextureText(N_("Model %d does not exist, so SA-MP ignores the whole call (color too)."), translated), pawnModel);
 		return MATERIAL_TEXTURE_ERROR;
 	}
 	if(IsCustomModel(model)){
 		// A 0.3.DL / open.mp custom model's TXD has no stock name; its own is used.
 		if(FindTextureInTxd(source->m_txdSlot, material.textureName) == nil){
-			snprintf(buf, size, _("\"%s\" is not in custom model %d's TXD; the original texture stays."),
+			snprintf(buf, size, materialTextureText(N_("\"%s\" is not in custom model %d's TXD; the original texture stays."), translated),
 				material.textureName, pawnModel);
 			return MATERIAL_TEXTURE_WARNING;
 		}
-		snprintf(buf, size, _("Resolves in game: custom model %d's TXD has %s."), pawnModel, material.textureName);
+		snprintf(buf, size, materialTextureText(N_("Resolves in game: custom model %d's TXD has %s."), translated), pawnModel, material.textureName);
 		return MATERIAL_TEXTURE_OK;
 	}
 	int txdSlot = FindTxdSlot(material.txdName);
 	if(txdSlot < 0){
-		snprintf(buf, size, _("TXD \"%s\" was not found; the original texture stays."), material.txdName);
+		snprintf(buf, size, materialTextureText(N_("TXD \"%s\" was not found; the original texture stays."), translated), material.txdName);
 		return MATERIAL_TEXTURE_WARNING;
 	}
 	if(FindTextureInTxd(txdSlot, material.textureName) == nil){
-		snprintf(buf, size, _("\"%s\" is not in TXD \"%s\" (or its parents); the original texture stays."),
+		snprintf(buf, size, materialTextureText(N_("\"%s\" is not in TXD \"%s\" (or its parents); the original texture stays."), translated),
 			material.textureName, material.txdName);
 		return MATERIAL_TEXTURE_WARNING;
 	}
 	if(!txdChainContains(source->m_txdSlot, txdSlot)){
-		snprintf(buf, size, _("Model %d (%s) does not use TXD \"%s\". SA-MP loads the model's TXD, "
-			"then looks the texture up by TXD name, so this only works if \"%s\" is already loaded."),
+		snprintf(buf, size, materialTextureText(N_("Model %d (%s) does not use TXD \"%s\". SA-MP loads the model's TXD, "
+			"then looks the texture up by TXD name, so this only works if \"%s\" is already loaded."), translated),
 			pawnModel, source->m_name, material.txdName, material.txdName);
 		return MATERIAL_TEXTURE_NOTE;
 	}
-	snprintf(buf, size, _("Resolves in game: model %d loads %s:%s."), pawnModel,
+	snprintf(buf, size, materialTextureText(N_("Resolves in game: model %d loads %s:%s."), translated), pawnModel,
 		material.txdName, material.textureName);
 	return MATERIAL_TEXTURE_OK;
 }
@@ -10520,9 +10528,10 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 		if(gPawnUnresolvedMacros.size() > 8)
 			names += ", ...";
 		char note[2048];
-		snprintf(note, sizeof(note), _("Text uses %s, defined neither in this map nor in the workspace's "
+		// English: the agent reads the notes too.
+		snprintf(note, sizeof(note), "Text uses %s, defined neither in this map nor in the workspace's "
 			"gamemodes or includes, so it shows without them (often a colour such as {FF6347}). "
-			"Saving writes the text without them too."), names.c_str());
+			"Saving writes the text without them too.", names.c_str());
 		report.notes.push_back(note);
 	}
 	// Textdraws now have their own file; a map's stay read-only until moved there.

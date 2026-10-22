@@ -5633,7 +5633,7 @@ uiMaterialMode(const ObjectMaterialOverride &material)
 static bool
 uiMaterialTextureStatus(const ObjectMaterialOverride &material, char *buf, size_t size)
 {
-	return CheckMaterialTexture(material, buf, size) == MATERIAL_TEXTURE_OK;
+	return CheckMaterialTexture(material, buf, size, true) == MATERIAL_TEXTURE_OK;
 }
 
 static void
