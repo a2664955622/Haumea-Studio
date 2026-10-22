@@ -126,7 +126,7 @@ def install(bundle, venv, allow_network):
         try:
             venv.rename(old)
         except OSError as error:
-            fail('the Namaka install is in use (%s). Close the apps using Namaka (Claude) and try again.' % error)
+            fail('the Namaka install is in use (%s). Close the apps using Namaka (your AI assistant: Claude, Codex...) and try again.' % error)
     else:
         say('STEP 1/%d Preparing' % steps)
     venv.parent.mkdir(parents=True, exist_ok=True)
@@ -231,7 +231,7 @@ def uninstall(venv):
     try:
         shutil.rmtree(venv)
     except OSError as error:
-        fail('could not remove it (%s). Close the apps using Namaka (Claude) and try again.' % error)
+        fail('could not remove it (%s). Close the apps using Namaka (your AI assistant: Claude, Codex...) and try again.' % error)
     say('DONE Namaka is uninstalled.')
 
 

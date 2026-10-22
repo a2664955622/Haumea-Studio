@@ -52,10 +52,59 @@ workspace. Check that the agent can reach the editor:
 .venv-agent/bin/haumeactl ping
 ```
 
-## Connect an MCP host
+## Connect an AI assistant
 
-Point the host at the absolute path of the bundled environment's `haumea-mcp`
-command. For Claude Code, an example configuration is:
+Namaka works with any MCP client: Claude Code, Codex, Claude Desktop and
+others. Each one runs the bundled environment's `haumea-mcp` command (use its
+absolute path) with `HAUMEA_ENGINE_SOCKET` set to the exact socket path used to
+launch Haumea. Haumea's **Windows → Namaka** panel copies these settings for
+its own install: **Copy for Claude Code**, **Copy for Codex** and **Copy MCP
+JSON**.
+
+### Claude Code
+
+First remove an old entry with the same name, then add the server:
+
+```sh
+claude mcp remove haumea --scope user
+claude mcp add --scope user haumea \
+  -e HAUMEA_ENGINE_SOCKET="$HOME/.cache/haumea-agent.sock" -- \
+  "/path/to/this-bundle/.venv-agent/bin/haumea-mcp"
+```
+
+Restart Claude Code; `/mcp` lists `haumea` as connected while the editor runs.
+
+### Codex
+
+The Codex CLI, its IDE extension and the ChatGPT desktop app share
+`~/.codex/config.toml`. Remove an old entry, then add the server:
+
+```sh
+codex mcp remove haumea
+codex mcp add haumea \
+  --env HAUMEA_ENGINE_SOCKET="$HOME/.cache/haumea-agent.sock" -- \
+  "/path/to/this-bundle/.venv-agent/bin/haumea-mcp"
+codex mcp list
+```
+
+Or write the entry in `~/.codex/config.toml` yourself:
+
+```toml
+[mcp_servers.haumea]
+command = "/path/to/this-bundle/.venv-agent/bin/haumea-mcp"
+args = []
+
+[mcp_servers.haumea.env]
+HAUMEA_ENGINE_SOCKET = "/home/USER/.cache/haumea-agent.sock"
+```
+
+Start a new Codex session after adding it.
+
+### Other MCP clients
+
+Clients configured with JSON (Claude Desktop's `claude_desktop_config.json`,
+and most others) take an `mcpServers` entry like this one, which **Copy MCP
+JSON** puts on the clipboard:
 
 ```json
 {
@@ -71,17 +120,9 @@ command. For Claude Code, an example configuration is:
 }
 ```
 
-Replace the socket value with the exact path used to launch Haumea. To add the
-server from a terminal, first remove an old entry with the same name, then run:
-
-```sh
-claude mcp remove haumea --scope user
-claude mcp add --scope user haumea \
-  -e HAUMEA_ENGINE_SOCKET="$HOME/.cache/haumea-agent.sock" -- \
-  "/path/to/this-bundle/.venv-agent/bin/haumea-mcp"
-```
-
-Restart Claude Code; `/mcp` lists `haumea` as connected while the editor runs.
+Replace the paths with the bundle's location and the socket used to launch
+Haumea. A client that starts MCP servers some other way needs the same three
+things: the command, no arguments, and that one environment variable.
 
 The CLI can index the GTA installation for local asset search:
 

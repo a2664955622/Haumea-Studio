@@ -102,8 +102,9 @@ the Haumea map editor; what changed for its users is in
 **Namaka** (formerly Agent Alpha), the AI assistant companion, installs from
 **Windows → Namaka**: offline with Python 3.14, or downloading only a few
 parts on 3.10-3.13. It has Repair, Update, Uninstall, a log, and copies the
-MCP setup for Claude Code or Claude Desktop. Its install sits in the config
-folder, so editor updates don't move it. Once it is installed, Haumea listens for it on
+MCP setup for Claude Code, Codex, Claude Desktop or any other MCP client
+(JSON). Its install sits in the config folder, so editor updates don't move
+it. Once it is installed, Haumea listens for it on
 every start (Preferences > Namaka > "Let Namaka connect" turns that off), and
 a second Haumea never takes over the first one's connection.
 

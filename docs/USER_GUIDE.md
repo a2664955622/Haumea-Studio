@@ -281,8 +281,8 @@ and the SA-MP 0.3.7 includes.
 
 ## Namaka (AI assistant)
 
-Namaka, named after Haumea's inner moon, lets an AI assistant (Claude Code, Claude Desktop or
-another MCP host) look at and edit the open map through a local socket. It used to be called
+Namaka, named after Haumea's inner moon, lets an AI assistant (Claude Code, Codex, Claude Desktop
+or any other MCP client) look at and edit the open map through a local socket. It used to be called
 Agent Alpha.
 
 **Windows → Namaka** installs it. It needs Python 3.10 or newer; the panel says which Python it
@@ -300,8 +300,13 @@ log** shows what happened. Namaka goes in the config folder (`~/.config/haumea/n
   editor update.
 - **Uninstall** removes it.
 
-**Copy for Claude Code** puts a `claude mcp add` command on the clipboard, and **Copy for Claude
-Desktop** an entry for `claude_desktop_config.json`, both for this install.
+The copy buttons put this install's MCP setup on the clipboard:
+
+- **Copy for Claude Code**: a `claude mcp add` command.
+- **Copy for Codex**: a `codex mcp add` command (Codex's CLI, IDE extension and desktop app share
+  `~/.codex/config.toml`).
+- **Copy for Claude Desktop**: an entry for `claude_desktop_config.json`.
+- **Copy MCP JSON**: the same `mcpServers` entry, for any other MCP client configured with JSON.
 
 Once Namaka is installed, Haumea listens for it whenever it starts: on Linux and macOS through
 `~/.cache/haumea-agent.sock`, which only you can use, and on Windows on a local port with a new key
