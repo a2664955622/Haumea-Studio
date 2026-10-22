@@ -6313,9 +6313,11 @@ loadSaveSettings(void)
 		}else if(strcmp(key, "shortcut") == 0){
 			ShortcutParseSetting(value);
 		}else if(strcmp(key, "language") == 0){
+			// A code like pt-BR: trimmed, no quotes.
 			char language[64];
-			if(parseQuotedStringValue(value, language, sizeof(language)))
-				I18nSetLanguage(language);
+			snprintf(language, sizeof(language), "%s", value + strspn(value, " \t"));
+			language[strcspn(language, " \t\r\n")] = '\0';
+			I18nSetLanguage(language);
 		}else if(strcmp(key, "ui_scale") == 0){
 			if(parseFloatSetting(value, &gUiScale)){
 				gUiScale = clamp(gUiScale, 0.6f, 2.5f);
@@ -6717,7 +6719,7 @@ saveSaveSettings(void)
 	fprintf(f, "outline_map_objects %d\n", gOutlineMapObjects ? 1 : 0);
 	fprintf(f, "outline_selection %d\n", gOutlineSelection ? 1 : 0);
 	fprintf(f, "ui_scale %.3g\n", gUiScale);
-	writeQuotedSetting(f, "language", I18nGetLanguage());
+	fprintf(f, "language %s\n", I18nGetLanguage());
 	ShortcutWriteSettings(f);
 	fprintf(f, "pawn_save_format %d\n", gPawnSaveFormat);
 	fprintf(f, "settings_version %d\n", SAVE_SETTINGS_VERSION);
