@@ -12,10 +12,11 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <dirent.h>
 #include <sys/stat.h>
 #ifdef _WIN32
 #include <windows.h>
+#else
+#include <dirent.h>	// MSVC has none
 #endif
 
 static std::unordered_map<std::string, std::string> catalog;
@@ -258,11 +259,26 @@ scanLanguages(void)
 	std::string dir = langDir();
 	if(dir.empty())
 		return;
+	std::vector<std::string> names;
+#ifdef _WIN32
+	WIN32_FIND_DATAA fd;
+	HANDLE h = FindFirstFileA((dir + "/*.po").c_str(), &fd);
+	if(h == INVALID_HANDLE_VALUE)
+		return;
+	do
+		if(!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+			names.push_back(fd.cFileName);
+	while(FindNextFileA(h, &fd));
+	FindClose(h);
+#else
 	DIR *d = opendir(dir.c_str());
 	if(d == nil)
 		return;
-	while(struct dirent *e = readdir(d)){
-		std::string name = e->d_name;
+	while(struct dirent *e = readdir(d))
+		names.push_back(e->d_name);
+	closedir(d);
+#endif
+	for(const std::string &name : names){
 		if(name.size() < 4 || name.compare(name.size() - 3, 3, ".po") != 0)
 			continue;
 		I18nLanguage lang;
@@ -281,7 +297,6 @@ scanLanguages(void)
 		}
 		languages.push_back(lang);
 	}
-	closedir(d);
 	std::sort(languages.begin(), languages.end(),
 		[](const I18nLanguage &a, const I18nLanguage &b){ return a.code < b.code; });
 }

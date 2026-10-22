@@ -226,7 +226,7 @@ float
 fade(double since, float hold, float fadeTime)
 {
 	if(since < hold) return 1.0f;
-	return std::max(0.0f, 1.0f - (float)(since - hold) / fadeTime);
+	return (std::max)(0.0f, 1.0f - (float)(since - hold) / fadeTime);	// (): windows.h defines max
 }
 
 // The part of the main window the 3D view shows, between the docked panels.
@@ -409,7 +409,7 @@ KeycastLoadSetting(const char *key, const char *value)
 	else if(strcmp(key, "keycast_agent") == 0)
 		gShowAgent = atoi(value) != 0;
 	else if(strcmp(key, "keycast_corner") == 0)
-		gCorner = std::max(0, std::min(atoi(value), NUM_CORNERS - 1));
+		gCorner = (std::max)(0, (std::min)(atoi(value), NUM_CORNERS - 1));
 	else
 		return false;
 	return true;
