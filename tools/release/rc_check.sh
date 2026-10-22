@@ -63,10 +63,14 @@ row() { printf '%s|%s|%s|%s\n' "$1" "$2" "$3" "$4" >> "$WORK/rows"; }
 # step name log command...: run it, record PASS or FAIL by its exit status.
 step() {
 	name=$1; log=$LOGS/$2; shift 2
+	step_name=$name; step_log=$log
 	echo "== $name"
 	start=$(date +%s)
 	"$@" > "$log" 2>&1
 	rc=$?
+	# sh has no locals: the step's command may reuse these names (asan's
+	# loop did), so the row uses the copies saved before it ran.
+	name=$step_name; log=$step_log
 	secs=$(( $(date +%s) - start ))
 	if [ $rc = 0 ]; then row "$name" PASS "$secs" "$(basename "$log")"; else row "$name" FAIL "$secs" "$(basename "$log") (exit $rc)"; fi
 	return $rc
@@ -101,15 +105,15 @@ asan() {
 	mkdir -p "$WORK/asan/config"
 	failed=0
 	for map in "$TESTS"/pawn/maps/*.pwn; do
-		name=$(basename "$map")
+		mapname=$(basename "$map")
 		XDG_CONFIG_HOME=$WORK/asan/config "$BIN" --game "$HAUMEA_GAME_DIR" \
-			--pawn-roundtrip "$map" "$WORK/asan/$name" > "$WORK/asan/$name.log" 2>&1
-		if grep -q 'ERROR: AddressSanitizer' "$WORK/asan/$name.log" || [ ! -f "$WORK/asan/$name" ]; then
-			echo "FAIL $name"; cat "$WORK/asan/$name.log" | grep -A20 'AddressSanitizer' | head -40; failed=1
-		elif ! cmp -s "$WORK/asan/$name" "$TESTS/pawn/expected/$name"; then
-			echo "FAIL $name: output differs from pawn/expected"; failed=1
+			--pawn-roundtrip "$map" "$WORK/asan/$mapname" > "$WORK/asan/$mapname.log" 2>&1
+		if grep -q 'ERROR: AddressSanitizer' "$WORK/asan/$mapname.log" || [ ! -f "$WORK/asan/$mapname" ]; then
+			echo "FAIL $mapname"; cat "$WORK/asan/$mapname.log" | grep -A20 'AddressSanitizer' | head -40; failed=1
+		elif ! cmp -s "$WORK/asan/$mapname" "$TESTS/pawn/expected/$mapname"; then
+			echo "FAIL $mapname: output differs from pawn/expected"; failed=1
 		else
-			echo "ok   $name"
+			echo "ok   $mapname"
 		fi
 	done
 	XDG_CONFIG_HOME=$WORK/asan/config "$BIN" --game "$HAUMEA_GAME_DIR" --undo-selftest \
