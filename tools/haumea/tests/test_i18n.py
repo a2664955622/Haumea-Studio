@@ -83,8 +83,26 @@ except ImportError:
     BINARY = XVFB = None
 
 ICONS = (ROOT / 'tools' / 'haumea' / 'icons.h').read_text()
-WRENCH = re.search(r'ICON_FA_WRENCH\s+"((?:\\x[0-9a-f]{2})+)"', ICONS).group(1)
-WRENCH = bytes(int(x, 16) for x in re.findall(r'\\x([0-9a-f]{2})', WRENCH)).decode('utf-8')
+
+
+def icon_text(name):
+    """The UTF-8 of ICON_FA_<name> from icons.h."""
+    m = re.search(r'#define\s+%s\s+"((?:\\x[0-9a-fA-F]{2})+)"' % re.escape(name), ICONS)
+    return bytes(int(x, 16) for x in re.findall(r'\\x([0-9a-fA-F]{2})', m.group(1))).decode('utf-8') if m else None
+
+
+def old_titles():
+    """{'###Tools': '<icon> Tools'}: the title each LI(ICON, "Text") window had
+    before its label became an ID, read from the source so no window is missed."""
+    out = {}
+    pattern = re.compile(r'\bLI\(\s*(ICON_FA_\w+)\s*,\s*"((?:[^"\\]|\\.)*)"')
+    for path in (ROOT / 'tools' / 'haumea').glob('*.cpp'):
+        for icon, text in pattern.findall(path.read_text(encoding='utf-8', errors='replace')):
+            glyph = icon_text(icon)
+            if glyph:
+                out['###' + text] = glyph + ' ' + text
+    return out
+
 
 XX_PO = '''msgid ""
 msgstr ""
@@ -158,7 +176,7 @@ class EditorTests(unittest.TestCase):
         if not marked:
             self.skipTest('no window uses L()/LI() yet')
         # Write it as the old editor did: each window under its old title.
-        icon_of = {'###Tools': WRENCH + ' Tools'}
+        icon_of = old_titles()
         old = ini_a
         for name in marked:
             title = icon_of.get(name, name[3:])
