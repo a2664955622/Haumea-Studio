@@ -139,7 +139,7 @@ class UpdaterTests(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def run_editor(self, *args, current='1.0.0.10', url=None, skip=None, channel='production', go_back=False,
-                   build=None):
+                   build='production'):
         env = editor_env(str(self.tmp))
         env.pop('HAUMEA_NO_UPDATE', None)
         headless(env, str(self.tmp))
@@ -150,8 +150,9 @@ class UpdaterTests(unittest.TestCase):
             env['HAUMEA_UPDATE_SKIP'] = skip
         if go_back:
             env['HAUMEA_UPDATE_GO_BACK'] = '1'
-        if build:
-            env['HAUMEA_UPDATE_BUILD'] = build	# the build's own channel: production, beta, dev, pr
+        # The build's own channel: production, beta, dev, pr. Official unless a test
+        # says so, whatever the binary was built as (CI builds dev).
+        env['HAUMEA_UPDATE_BUILD'] = build
         report = self.tmp / 'report.json'
         report.unlink(missing_ok=True)
         result = subprocess.run([BINARY, *args, str(report)], env=env, capture_output=True, text=True,

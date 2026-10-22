@@ -71,7 +71,7 @@ struct Sha256 {
 		const uint8_t *p = (const uint8_t*)data;
 		length += size;
 		while(size > 0){
-			size_t n = std::min(size, 64 - used);
+			size_t n = (std::min)(size, 64 - used);	// windows.h defines min
 			memcpy(block + used, p, n);
 			used += n; p += n; size -= n;
 			if(used == 64){

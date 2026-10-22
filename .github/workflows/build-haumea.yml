@@ -310,7 +310,8 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential g++ make libgl-dev libglfw3-dev \
             xvfb xauth libgl1-mesa-dri libglx-mesa0 \
-            libc6:i386 libgcc-s1:i386 libatomic1:i386
+            libc6:i386 libgcc-s1:i386 libatomic1:i386 \
+            python3-pil
 
       - name: Install Premake5
         run: |

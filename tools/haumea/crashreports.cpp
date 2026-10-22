@@ -30,7 +30,11 @@
 #include <pthread.h>
 #include <signal.h>
 #include <sys/utsname.h>
+#ifdef __APPLE__
+#include <sys/ucontext.h>	// <ucontext.h> wants _XOPEN_SOURCE there; only the type is used
+#else
 #include <ucontext.h>
+#endif
 #include <unistd.h>
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
@@ -1194,7 +1198,9 @@ CrashReportsStartup(void)
 		for(int i = 1; i < sk::args.argc; i++){
 			const char *arg = sk::args.argv[i];
 			if(strcmp(arg, "--crash-test=error") == 0){
-				for(int k = 0; k < 2; k++)	// one place twice: one report, counted
+				// One place twice: one report, counted. volatile: an unrolled loop
+				// would be two places (two signatures) in a Release build.
+				for(volatile int k = 0; k < 2; k++)
 					CrashReportsError("crash test", "a deliberate error from %s", GetGameDir());
 			}else if(strcmp(arg, "--crash-test=abort") == 0){
 				log("Crash reports: aborting on purpose (--crash-test=abort)\n");
