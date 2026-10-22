@@ -396,10 +396,10 @@ ComputeTrainCars(int engineModel, rw::V3d position, float angle, TrainCar *cars,
 		const CarShape &shape = carShape(models[c]);
 		rw::V3d p1 = pointOnTrack(track, wrapRail(track, rails[c]), &hint);
 		int hint2 = hint;
-		float far = rails[c] + shape.length;
-		if(far > track.total)
-			far -= track.total;
-		rw::V3d p2 = pointOnTrack(track, far, &hint2);
+		float farRail = rails[c] + shape.length;
+		if(farRail > track.total)
+			farRail -= track.total;
+		rw::V3d p2 = pointOnTrack(track, farRail, &hint2);
 		TrainCar &car = cars[c];
 		car.model = models[c];
 		car.position = rw::scale(rw::add(p1, p2), 0.5f);
