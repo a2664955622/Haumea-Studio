@@ -196,7 +196,8 @@ ids(const std::vector<ObjectInst*> &insts)
 {
 	std::vector<int> out;
 	for(ObjectInst *inst : insts)
-		out.push_back(inst->m_id);
+		if(!IsRadarArtStandIn(inst))	// not in the map to select
+			out.push_back(inst->m_id);
 	return out;
 }
 
@@ -252,6 +253,13 @@ RunMapCheck(int pawnFormat, MapCheckResult *result, bool translated)
 		if(props->name[0])
 			variables[props->name].push_back(inst);
 	}
+	// Radar art's zones count as the gang zones the Pawn file makes of them.
+	struct StandIns {
+		std::vector<ObjectInst*> list;
+		~StandIns() { FreeRadarArtStandIns(list); }
+	} standIns;
+	MakeRadarArtStandIns(standIns.list);
+	byKind[SAMP_ELEMENT_GANGZONE].insert(byKind[SAMP_ELEMENT_GANGZONE].end(), standIns.list.begin(), standIns.list.end());
 
 	// --- Limits ---
 	const char *LIMITS = tr(N_("Limits"));

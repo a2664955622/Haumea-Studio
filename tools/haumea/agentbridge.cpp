@@ -2480,7 +2480,7 @@ handleRadarArt(const std::string &requestId, std::map<std::string, std::string> 
 	RadarArtDefaults(&params);
 	// Every key is checked: a typo or a value that doesn't parse is an
 	// error, not a default the agent didn't ask for.
-	static const char *keys[] = { "ids", "group", "cell", "fit", "colours", "colour", "num_colours", "alpha",
+	static const char *keys[] = { "ids", "group", "cell", "shape", "above_water", "fit", "colours", "colour", "num_colours", "alpha",
 		"outline", "outline_colour", "height_shading", "height_levels", "zone_mode", "out_group", "replace", "apply" };
 	std::string error;
 	for(std::map<std::string, std::string>::iterator it = f.begin(); it != f.end() && error.empty(); ++it)
@@ -2518,7 +2518,14 @@ handleRadarArt(const std::string &requestId, std::map<std::string, std::string> 
 		if(c == "one") params.colourMode = RADAR_COLOUR_ONE;
 		else if(c == "group") params.colourMode = RADAR_COLOUR_GROUP;
 		else if(c == "texture") params.colourMode = RADAR_COLOUR_TEXTURE;
-		else bad("colours", "one, group or texture");
+		else if(c == "radar") params.colourMode = RADAR_COLOUR_RADAR;
+		else bad("colours", "radar, one, group or texture");
+	}
+	if(f.count("shape")){
+		std::string s = lowercase(f["shape"].c_str());
+		if(s == "model") params.shape = RADAR_SHAPE_MESH;
+		else if(s == "collision") params.shape = RADAR_SHAPE_COLLISION;
+		else bad("shape", "model or collision");
 	}
 	colour("colour", &params.colour);
 	colour("outline_colour", &params.outlineColour);
@@ -2528,6 +2535,7 @@ handleRadarArt(const std::string &requestId, std::map<std::string, std::string> 
 	boolean("outline", &params.outline);
 	boolean("height_shading", &params.heightShading);
 	boolean("replace", &params.replace);
+	boolean("above_water", &params.aboveWater);
 	bool apply = true;
 	boolean("apply", &apply);
 	if(f.count("zone_mode")){

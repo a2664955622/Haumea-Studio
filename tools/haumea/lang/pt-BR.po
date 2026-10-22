@@ -1874,6 +1874,9 @@ msgstr "Clique para selecionar, clique duas vezes para ir até lá."
 msgid "Click to select it."
 msgstr "Clique para selecionar."
 
+msgid "Click to show the zones in the 3D view. The radar (Windows > Show Radar) always shows them."
+msgstr "Clique para mostrar as zonas na vista 3D. O radar (Janelas > Mostrar radar) sempre as mostra."
+
 msgid "Close"
 msgstr "Fechar"
 
@@ -1885,6 +1888,9 @@ msgstr "Cluckin' Bell"
 
 msgid "Code Glass"
 msgstr "Vidro de código"
+
+msgid "Collision"
+msgstr "Colisão"
 
 msgid "Collision and detail"
 msgstr "Colisão e detalhe"
@@ -2297,6 +2303,9 @@ msgstr "Exclui a predefinição com este nome."
 #, c-format
 msgid "Delete the view \"%s\"?"
 msgstr "Excluir a vista \"%s\"?"
+
+msgid "Delete this radar art (Ctrl+Z brings it back)."
+msgstr "Apagar esta radar art (Ctrl+Z a traz de volta)."
 
 msgid "Deleted"
 msgstr "Excluídos"
@@ -3011,13 +3020,6 @@ msgstr "Daqui"
 msgid "From textures"
 msgstr "Das texturas"
 
-msgid ""
-"From textures: each model's colour seen from above, from its\n"
-"textures, reduced to a few colours so neighbouring cells merge."
-msgstr ""
-"Das texturas: a cor de cada modelo vista de cima, a partir das\n"
-"texturas, reduzida a poucas cores para as células vizinhas se juntarem."
-
 msgid "From the workspace's models/artconfig.txt."
 msgstr "Do models/artconfig.txt do workspace."
 
@@ -3288,9 +3290,6 @@ msgstr "Haumea Studio é software livre sob a Licença Pública Geral GNU, vers�
 
 msgid "Haumea can't find its own folder."
 msgstr "O Haumea não encontra a própria pasta."
-
-msgid "Haumea has no model to draw gang zones with"
-msgstr "O Haumea não tem modelo para desenhar gang zones"
 
 msgid "Haumea starts listening for Namaka from its next start."
 msgstr "O Haumea começa a escutar o Namaka na próxima vez que abrir."
@@ -3813,6 +3812,9 @@ msgstr "Iniciar o jogo entra nele. Depois de mudanças, Recarregar mapa na janel
 msgid "Leave TextDraw mode first."
 msgstr "Saia do modo TextDraw primeiro."
 
+msgid "Leave out what's under water"
+msgstr "Deixar de fora o que está debaixo d'água"
+
 msgid "Leave place, prefab, brush, path or TextDraw mode"
 msgstr "Sair do modo de colocar, prefab, pincel, caminho ou TextDraw"
 
@@ -4270,6 +4272,13 @@ msgstr "O nome de modelo %s é longo demais para o nome interno/exportação do 
 
 msgid "Model/TXD names must use only letters, digits, and underscores."
 msgstr "Nomes de modelo/TXD devem usar só letras, dígitos e sublinhados."
+
+msgid ""
+"Model: the objects as they are drawn, seen from above.\n"
+"Collision: their collision, which is often boxes (a tree only its trunk)."
+msgstr ""
+"Modelo: os objetos como são desenhados, vistos de cima.\n"
+"Colisão: a colisão deles, que muitas vezes são caixas (uma árvore só o tronco)."
 
 msgid "Models"
 msgstr "Modelos"
@@ -5189,6 +5198,13 @@ msgstr "Paraquedas"
 msgid "Parachute opening"
 msgstr "Paraquedas abrindo"
 
+msgid ""
+"Parts of the objects below the water's surface (a rock's\n"
+"wide base, a pier's legs) aren't drawn, as the radar shows the water there."
+msgstr ""
+"Partes dos objetos abaixo da superfície da água (a base larga de uma\n"
+"rocha, as pernas de um píer) não são desenhadas, pois o radar mostra a água ali."
+
 msgid "Paste"
 msgstr "Colar"
 
@@ -5711,6 +5727,10 @@ msgstr "Corrida: luz verde"
 msgid "Race: red light (start)"
 msgstr "Corrida: luz vermelha (largada)"
 
+#, c-format
+msgid "Radar art \"%s\": %d zones, %s"
+msgstr "Radar art \"%s\": %d zonas, %s"
+
 msgid "Radar art from objects"
 msgstr "Radar art a partir de objetos"
 
@@ -5721,6 +5741,20 @@ msgstr "Radar art: %d gang zone(s) em \"%s\""
 #, c-format
 msgid "Radar art: %s"
 msgstr "Radar art: %s"
+
+msgid "Radar colours"
+msgstr "Cores do radar"
+
+msgid ""
+"Radar colours: the game's own map colours, by what each surface is\n"
+"(roads, grass, sand, rock, water...), from its collision and texture names.\n"
+"From textures: each model's colour seen from above, from its\n"
+"textures, reduced to a few colours so neighbouring cells merge."
+msgstr ""
+"Cores do radar: as cores do próprio mapa do jogo, pelo que cada superfície é\n"
+"(estradas, grama, areia, rocha, água...), pela colisão e pelos nomes das texturas.\n"
+"Das texturas: a cor de cada modelo vista de cima, a partir das\n"
+"texturas, reduzida a poucas cores para que células vizinhas se juntem."
 
 msgid "Radial"
 msgstr "Radial"
@@ -6590,6 +6624,9 @@ msgstr "Mostrado como"
 
 msgid "Shown at"
 msgstr "Exibido às"
+
+msgid "Shown in the 3D view: click to hide."
+msgstr "Mostrada na vista 3D: clique para esconder."
 
 msgid ""
 "Shown only to players inside this dynamic area (the streamer's areaid).\n"
@@ -8305,6 +8342,9 @@ msgstr "passageiro da frente"
 msgid "gang zones"
 msgstr "gang zones"
 
+msgid "global"
+msgstr "global"
+
 msgid "has a '{' that isn't a {RRGGBB} colour code."
 msgstr "tem um '{' que não é um código de cor {RRGGBB}."
 
@@ -8464,6 +8504,9 @@ msgstr "abrindo um mapa"
 msgid "other sound"
 msgstr "outro som"
 
+msgid "per player"
+msgstr "por jogador"
+
 msgid "pick a folder first"
 msgstr "escolha uma pasta primeiro"
 
@@ -8541,6 +8584,9 @@ msgstr "sprite"
 
 msgid "starting a new map"
 msgstr "começando um mapa novo"
+
+msgid "streamed"
+msgstr "streamed"
 
 msgid "streamer"
 msgstr "streamer"

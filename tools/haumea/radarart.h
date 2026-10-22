@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
-// Radar art: gang zones drawn from the objects' top-down collision
-// footprints. The footprints are rasterised into a grid, cells of one colour
+// Radar art: gang zones drawn from the objects' top-down footprints (their
+// meshes, or their collision). The footprints are rasterised into a grid, cells of one colour
 // are merged into rectangles, and each rectangle becomes one gang zone.
 
 enum {
@@ -15,15 +16,23 @@ enum {
 };
 
 enum {
+	RADAR_SHAPE_MESH,	// the model as drawn, every triangle seen from above
+	RADAR_SHAPE_COLLISION,	// its collision: often boxes, a tree only its trunk
+};
+
+enum {
 	RADAR_COLOUR_ONE,
 	RADAR_COLOUR_GROUP,	// one colour per object group
 	RADAR_COLOUR_TEXTURE,	// the model's top textures, quantised
+	RADAR_COLOUR_RADAR,	// the game's radar colours: roads, grass, sand... by surface
 };
 
 struct RadarArtParams {
 	int source;
 	char group[48];	// RADAR_SOURCE_GROUP
 	float cellSize;	// metres
+	int shape;	// RADAR_SHAPE_*
+	bool aboveWater;	// leave out cells whose top is under the water
 	int colourMode;
 	uint32 colour;	// 0xRRGGBB00: RADAR_COLOUR_ONE, ungrouped objects
 	int numColours;	// RADAR_COLOUR_TEXTURE: quantised to this many
@@ -56,8 +65,35 @@ void RadarArtDefaults(RadarArtParams *params);
 bool RadarArtBuild(const RadarArtParams &params, RadarArtResult *result, std::string *error);
 // The smallest cell size (to 0.1 m) whose art needs at most maxZones zones.
 bool RadarArtFitCellSize(const RadarArtParams &params, int maxZones, float *cellSize, std::string *error);
-// Builds and makes the zones in one undo step; how many, or -1 with *error.
+// Builds the zones into the map's radar art layer for params.outGroup, in
+// one undo step; how many, or -1 with *error.
 int RadarArtApply(const RadarArtParams &params, std::string *error);
+
+// The map's radar art: thousands of rectangles, so they are kept as one
+// layer per group instead of as gang zone elements, and only become gang
+// zones in the Pawn file ("// radar art" after each, which reading the file
+// back takes into a layer again).
+struct RadarArtLayer {
+	char group[48];
+	int zoneMode;	// SAMP_ZONE_*
+	std::vector<RadarArtZone> zones;
+};
+const std::vector<RadarArtLayer> &GetRadarArtLayers(void);
+int CountRadarArtZones(void);
+// Replaces every layer (one undo step when recordUndo).
+void SetRadarArtLayers(const std::vector<RadarArtLayer> &layers, bool recordUndo);
+void ClearRadarArtLayers(void);	// a new or reopened map: no undo
+void RestoreRadarArtLayers(const std::shared_ptr<void> &snapshot);	// undo and redo
+// Gang zone stand-ins for the Pawn writer and Map Check, one per zone, not
+// in the map; FreeRadarArtStandIns deletes them.
+void MakeRadarArtStandIns(std::vector<struct ObjectInst*> &out);
+void FreeRadarArtStandIns(std::vector<struct ObjectInst*> &standIns);
+bool IsRadarArtStandIn(const struct ObjectInst *inst);
+// The layers in the 3D view (View > Radar Art in 3D) and Map Objects' rows.
+void RenderRadarArtLayers(void);
+void RadarArtLayersOutliner(void);
+bool RadarArtLayersShownIn3D(void);
+void SetRadarArtLayersShownIn3D(bool on);
 // The Tools window's section, and the preview it draws.
 void RadarArtPanel(void);
 

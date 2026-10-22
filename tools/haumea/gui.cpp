@@ -11828,6 +11828,7 @@ uiMapObjectsWindow(void)
 	uiNextPanelSizeConstraints();
 	if(ImGui::Begin(LI(ICON_FA_LAYER_GROUP, "Map Objects"), &showMapObjectsWindow)){
 		uiFitItemsToPanel();
+		RadarArtLayersOutliner();
 		uiMapObjectsList();
 	}
 	ImGui::End();

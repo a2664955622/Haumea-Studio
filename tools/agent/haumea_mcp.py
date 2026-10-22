@@ -1015,12 +1015,15 @@ def map_tool(op: Literal["array", "mirror", "align", "distribute", "snap_rotatio
 	  length) along points [[x,y,z], ...], facing along the line (+heading degrees);
 	  along_length (default true) turns models longer in X, like fences, to run along
 	  it; follow_slope tilts them, on_ground (default true) drops them.
-	radar_art (ids optional): gang zones drawn from the objects' top-down collision
+	radar_art (ids optional): gang zones drawn from the objects' top-down
 	  footprints, grouped "radar art", one undo step. The objects are ids, else
 	  radar_art.group, else every scripted object. radar_art keys: cell [4 m] or fit
-	  (the smallest cell needing at most that many zones), colours [texture; one, group],
+	  (the smallest cell needing at most that many zones), shape [model; collision],
+	  above_water [true: leave out what is below the water's surface],
+	  colours [radar: the game's map colours by surface; texture, one, group],
 	  colour [0x8C8C8C00; one colour, or the fallback], num_colours [6], alpha [200],
-	  outline [false], outline_colour [0x20202000], height_shading [true],
+	  outline [false], outline_colour [0x20202000], height_shading [true; not with
+	  radar colours],
 	  height_levels [3], zone_mode [global (1024 on the server); player or streamed:
 	  per-player zones, open.mp only], out_group ["radar art"], replace [true: delete
 	  that group's zones first; locked ones stop it], apply [true; false only counts].

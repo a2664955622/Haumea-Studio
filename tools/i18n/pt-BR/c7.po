@@ -1640,14 +1640,6 @@ msgstr "Congelar"
 msgid "From textures"
 msgstr "Das texturas"
 
-#: tools/haumea/radarart.cpp:886
-msgid ""
-"From textures: each model's colour seen from above, from its\n"
-"textures, reduced to a few colours so neighbouring cells merge."
-msgstr ""
-"Das texturas: a cor de cada modelo vista de cima, a partir das\n"
-"texturas, reduzida a poucas cores para as células vizinhas se juntarem."
-
 #: tools/haumea/gui.cpp:8319
 msgid "Front passenger"
 msgstr "Passageiro da frente"
@@ -1821,10 +1813,6 @@ msgstr "Portas do hangar"
 #: tools/haumea/licenses.cpp:60
 msgid "Haumea Studio is free software under the GNU General Public License, version 2 or any later version. It includes components under their own licenses."
 msgstr "Haumea Studio é software livre sob a Licença Pública Geral GNU, versão 2 ou qualquer versão posterior. Ele inclui componentes sob as próprias licenças."
-
-#: tools/haumea/radarart.cpp:656
-msgid "Haumea has no model to draw gang zones with"
-msgstr "O Haumea não tem modelo para desenhar gang zones"
 
 #: tools/haumea/maptools.cpp:971
 msgid "Heading"
@@ -4681,3 +4669,43 @@ msgstr "anda pelo NODES%d.DAT a partir do ponto %d"
 #: tools/haumea/gui.cpp:8515
 msgid "{RRGGBB} changes the colour from there on, as in game."
 msgstr "{RRGGBB} muda a cor daí em diante, como no jogo."
+
+msgid "Click to show the zones in the 3D view. The radar (Windows > Show Radar) always shows them."
+msgstr "Clique para mostrar as zonas na vista 3D. O radar (Janelas > Mostrar radar) sempre as mostra."
+
+msgid "Collision"
+msgstr "Colisão"
+
+msgid "Delete this radar art (Ctrl+Z brings it back)."
+msgstr "Apagar esta radar art (Ctrl+Z a traz de volta)."
+
+msgid "Leave out what's under water"
+msgstr "Deixar de fora o que está debaixo d'água"
+
+msgid "Model: the objects as they are drawn, seen from above.\nCollision: their collision, which is often boxes (a tree only its trunk)."
+msgstr "Modelo: os objetos como são desenhados, vistos de cima.\nColisão: a colisão deles, que muitas vezes são caixas (uma árvore só o tronco)."
+
+msgid "Parts of the objects below the water's surface (a rock's\nwide base, a pier's legs) aren't drawn, as the radar shows the water there."
+msgstr "Partes dos objetos abaixo da superfície da água (a base larga de uma\nrocha, as pernas de um píer) não são desenhadas, pois o radar mostra a água ali."
+
+#, c-format
+msgid "Radar art \"%s\": %d zones, %s"
+msgstr "Radar art \"%s\": %d zonas, %s"
+
+msgid "Radar colours"
+msgstr "Cores do radar"
+
+msgid "Radar colours: the game's own map colours, by what each surface is\n(roads, grass, sand, rock, water...), from its collision and texture names.\nFrom textures: each model's colour seen from above, from its\ntextures, reduced to a few colours so neighbouring cells merge."
+msgstr "Cores do radar: as cores do próprio mapa do jogo, pelo que cada superfície é\n(estradas, grama, areia, rocha, água...), pela colisão e pelos nomes das texturas.\nDas texturas: a cor de cada modelo vista de cima, a partir das\ntexturas, reduzida a poucas cores para que células vizinhas se juntem."
+
+msgid "Shown in the 3D view: click to hide."
+msgstr "Mostrada na vista 3D: clique para esconder."
+
+msgid "global"
+msgstr "global"
+
+msgid "per player"
+msgstr "por jogador"
+
+msgid "streamed"
+msgstr "streamed"

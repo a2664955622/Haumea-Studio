@@ -2763,6 +2763,7 @@ ResetPawnMap(void)
 	// A new or reopened map has nothing left out yet.
 	ClearLastPawnImportReport();
 	ResetMapTextDraws();
+	ClearRadarArtLayers();
 	gAreaRemovals.clear();
 	ClearSelection();
 	for(CPtrNode *p = instances.first; p; p = p->next){
@@ -5464,6 +5465,16 @@ UndoRecordNodes(const std::vector<int> &areas, const std::vector<std::shared_ptr
 	pushUndo(&a);
 }
 
+void
+UndoRecordRadarArt(const std::shared_ptr<void> &before, const std::shared_ptr<void> &after)
+{
+	UndoAction a = {};
+	a.type = UNDO_RADAR_ART;
+	a.radarBefore = before;
+	a.radarAfter = after;
+	pushUndo(&a);
+}
+
 static void undoStep(void);
 static void redoStep(void);
 
@@ -5535,6 +5546,9 @@ undoStep(void)
 	case UNDO_NODES:
 		SAPaths::RestoreNodeAreas(a->nodeAreas, a->nodesBefore);
 		break;
+	case UNDO_RADAR_ART:
+		RestoreRadarArtLayers(a->radarBefore);
+		break;
 	}
 }
 
@@ -5585,6 +5599,9 @@ redoStep(void)
 		break;
 	case UNDO_NODES:
 		SAPaths::RestoreNodeAreas(a->nodeAreas, a->nodesAfter);
+		break;
+	case UNDO_RADAR_ART:
+		RestoreRadarArtLayers(a->radarAfter);
 		break;
 	}
 }
@@ -7169,7 +7186,10 @@ pawnWriteElementCall(FILE *f, const ObjectInst *inst, PawnCodeFormat format,
 		float minX, minY, maxX, maxY;
 		pawnGangZoneBounds(inst, properties, &minX, &minY, &maxX, &maxY);
 		fprintf(f, "GangZoneCreate(%.6f, %.6f, %.6f, %.6f);", minX, minY, maxX, maxY);
-		pawnWriteTrailingTags(f, "gangzone", " [gang zone]", properties);
+		if(IsRadarArtStandIn(inst))
+			pawnWriteTrailingTags(f, "radar art", "", properties);
+		else
+			pawnWriteTrailingTags(f, "gangzone", " [gang zone]", properties);
 		break;
 	}
 	case SAMP_ELEMENT_CHECKPOINT:
@@ -7502,6 +7522,15 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 {
 	std::vector<ObjectInst*> insts;
 	pawnCollectInstances(selectedOnly, insts, numSkipped);
+	// The radar art layers' zones, written as the gang zones they become.
+	struct StandIns {
+		std::vector<ObjectInst*> list;
+		~StandIns() { FreeRadarArtStandIns(list); }
+	} standIns;
+	if(!selectedOnly){
+		MakeRadarArtStandIns(standIns.list);
+		insts.insert(insts.end(), standIns.list.begin(), standIns.list.end());
+	}
 
 	char prefix[96];
 	pawnBuildFunctionPrefix(path, prefix, sizeof(prefix));
@@ -7947,7 +7976,7 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 				fprintf(f, "\t%s_%s(%.6f, %.6f, %.6f, %.6f, 0x%08X);", prefix,
 					properties->zoneMode == SAMP_ZONE_PLAYER ? "AddPlayerZone" : "AddStreamedZone",
 					minX, minY, maxX, maxY, properties->zoneColor);
-				pawnWriteTrailingTags(f, "gangzone", "", properties);
+				pawnWriteTrailingTags(f, IsRadarArtStandIn(inst) ? "radar art" : "gangzone", "", properties);
 				continue;
 			}
 			std::unordered_map<const ObjectInst*, std::string>::iterator it = handles.find(inst);
@@ -8084,7 +8113,7 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 			const ObjectPawnProperties *properties = GetObjectPawnProperties(gangZones[i]);
 			fprintf(f, "\tGangZoneShowForPlayer(playerid, %s, 0x%08X);",
 				handles[gangZones[i]].c_str(), properties->zoneColor);
-			pawnWriteTrailingTags(f, "gangzone", "", properties);
+			pawnWriteTrailingTags(f, IsRadarArtStandIn(gangZones[i]) ? "radar art" : "gangzone", "", properties);
 		}
 		for(size_t i = 0; i < nativeMapIcons.size(); i++){
 			ObjectInst *inst = nativeMapIcons[i];
@@ -8226,6 +8255,7 @@ struct PawnImportEntry
 	int world;
 	char group[PAWN_OBJECT_GROUP_LEN];
 	char note[PAWN_OBJECT_COMMENT_LEN];
+	bool radarArt;	// "// radar art": a zone of a radar art layer
 	// SA-MP elements: kind and settings, applied over the fields above.
 	int elementKind;
 	ObjectPawnProperties element;
@@ -9020,6 +9050,8 @@ pawnReadObjectTags(const std::string &rawSource, size_t afterCall, PawnImportEnt
 	if(comment == std::string::npos)
 		return;
 	line = line.substr(comment + 2);
+	size_t word = line.find_first_not_of(" \t");
+	entry->radarArt = word != std::string::npos && line.compare(word, 9, "radar art") == 0;
 	struct Tag { const char *name; char *out; size_t size; };
 	Tag tags[] = {
 		{ "@group(", entry->group, sizeof(entry->group) },
@@ -10598,12 +10630,40 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 
 	std::vector<ObjectInst*> created;
 	std::vector<ObjectInst*> createdForEntry(entries.size(), nil);
+	// Radar art's zones go back into layers, not into the map as elements;
+	// zones grouped "radar art" by an older Haumea too.
+	std::vector<RadarArtLayer> radarLayers;
+	std::unordered_map<size_t, std::pair<size_t, size_t>> radarZoneForEntry;	// entry: layer, zone
+	int radarZones = 0;
 	if(!entries.empty()){
 		SetCustomPlacementIpl(DEFAULT_CUSTOM_IPL_PATH, nil, false);
 		GameFile *file = GetOrCreateCustomIplFile();
 		int maxIdx = GetMaxIplIndexForFile(file);
 		for(size_t i = 0; i < entries.size(); i++){
 			PawnImportEntry &e = entries[i];
+			// An older Haumea's "radar art" zones join a layer too, unless they
+			// carry something a layer can't keep: a note or a hand-written name.
+			bool generatedHandle = e.handle[0] == '\0' ||
+				(strncmp(e.handle, "Haumea_", 7) == 0 && strstr(e.handle, "_zone_"));
+			bool olderRadarArt = strcmp(e.group, "radar art") == 0 && e.note[0] == '\0' && generatedHandle;
+			if(e.elementKind == SAMP_ELEMENT_GANGZONE && (e.radarArt || olderRadarArt)){
+				size_t l = 0;
+				while(l < radarLayers.size() && (strcmp(radarLayers[l].group, e.group) != 0 ||
+				      radarLayers[l].zoneMode != e.element.zoneMode))
+					l++;
+				if(l == radarLayers.size()){
+					radarLayers.emplace_back();
+					snprintf(radarLayers[l].group, sizeof(radarLayers[l].group), "%s",
+						e.group[0] ? e.group : "radar art");
+					radarLayers[l].zoneMode = e.element.zoneMode;
+				}
+				float hx = e.element.zoneSizeX * 0.5f, hy = e.element.zoneSizeY * 0.5f;
+				RadarArtZone z = { e.x - hx, e.y - hy, e.x + hx, e.y + hy, 0.0f, e.element.zoneColor };
+				radarZoneForEntry[i] = { l, radarLayers[l].zones.size() };
+				radarLayers[l].zones.push_back(z);
+				radarZones++;
+				continue;
+			}
 			ObjectDef *obj = GetObjectDef(e.objectId);
 			if(obj == nil && RemapLegacyModel(e.objectId) >= 0){
 				e.objectId = RemapLegacyModel(e.objectId);	// an old import, now a custom model
@@ -10730,6 +10790,12 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 	}
 	for(size_t i = 0; i < setters.size(); i++){
 		const PawnElementSetterEntry &setter = setters[i];
+		auto radarZone = radarZoneForEntry.find(setter.entryIndex);
+		if(radarZone != radarZoneForEntry.end()){
+			if(setter.field == PawnElementSetterEntry::ZONE_COLOR)
+				radarLayers[radarZone->second.first].zones[radarZone->second.second].colour = setter.color;
+			continue;
+		}
 		ObjectInst *target = createdForEntry[setter.entryIndex];
 		int kind = GetSampElementKind(target);
 		bool zoneSetter = setter.field == PawnElementSetterEntry::ZONE_COLOR;
@@ -10798,20 +10864,36 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 	ClearSelection();
 	for(size_t i = 0; i < created.size(); i++)
 		created[i]->Select();
+	UndoBeginGroup();
 	if(!created.empty()){
 		UndoRecordPaste(&created[0], (int)created.size());
 	}
+	if(!radarLayers.empty()){
+		// Added to the map's layers: a merge's zones join a layer of the same group.
+		std::vector<RadarArtLayer> layers = GetRadarArtLayers();
+		for(const RadarArtLayer &in : radarLayers){
+			size_t l = 0;
+			while(l < layers.size() && (strcmp(layers[l].group, in.group) != 0 || layers[l].zoneMode != in.zoneMode))
+				l++;
+			if(l == layers.size())
+				layers.push_back(in);
+			else
+				layers[l].zones.insert(layers[l].zones.end(), in.zones.begin(), in.zones.end());
+		}
+		SetRadarArtLayers(layers, true);
+	}
+	UndoEndGroup();
 	if(numSkipped) *numSkipped = skipped;
 	if(created.size() > MAX_BATCH_OBJECTS)
 		Toast(TOAST_SPAWN, _("Undo limited to first %d of %d imported objects"), MAX_BATCH_OBJECTS, (int)created.size());
 	report.placed = (int)created.size();
 	report.removed = numRemoved;
 	std::sort(report.unknownModels.begin(), report.unknownModels.end());
-	log("ImportPawnCode: placed %d object(s), removed %d world object(s), skipped %d from %s\n",
-		(int)created.size(), numRemoved, skipped, path);
-	if(created.empty() && numRemoved == 0)
+	log("ImportPawnCode: placed %d object(s), %d radar art zone(s), removed %d world object(s), skipped %d from %s\n",
+		(int)created.size(), radarZones, numRemoved, skipped, path);
+	if(created.empty() && numRemoved == 0 && radarZones == 0)
 		return 0;
-	return (int)created.size() + numRemoved;
+	return (int)created.size() + numRemoved + radarZones;
 }
 
 static bool

@@ -7,6 +7,7 @@
 #include "shortcuts.h"
 #include "playerview.h"
 #include "keycast.h"
+#include "radarart.h"
 #include "i18n.h"
 #include "imgui/imgui_internal.h"
 
@@ -714,7 +715,7 @@ keycastAssert(const std::string &what, const std::string &text, std::string &why
 	return true;
 }
 
-// assert objects|selected|textdraws <op> N
+// assert objects|selected|textdraws|radar_zones <op> N
 // assert selected.model|selected.x|selected.y|selected.z <op> N
 // assert selected.texture <slot> "name"
 // assert pawn_contains "text" [streamer]   (and pawn_lacks)
@@ -742,12 +743,13 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 	bool result;
 	if(keycastAssert(what, arg(1), why, &result))
 		return result;
-	if(what == "objects" || what == "selected" || what == "textdraws" ||
+	if(what == "objects" || what == "selected" || what == "textdraws" || what == "radar_zones" ||
 	   what == "selected.model" || what == "selected.x" || what == "selected.y" || what == "selected.z"){
 		double v = 0;
 		if(what == "objects") v = countObjects();
 		else if(what == "selected") v = countSelected();
 		else if(what == "textdraws") v = GetTextDraws().size();
+		else if(what == "radar_zones") v = CountRadarArtZones();
 		else if(sel == nil){ why = "nothing selected"; return false; }
 		else if(what == "selected.model") v = PawnModelId(sel->m_objectId);
 		else if(what == "selected.x") v = sel->m_translation.x;

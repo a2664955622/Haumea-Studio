@@ -699,6 +699,7 @@ enum UndoType {
 	UNDO_PROPERTIES,
 	UNDO_VEHICLE,
 	UNDO_NODES,
+	UNDO_RADAR_ART,	// the radar art layers (radarart.cpp)
 };
 
 enum UndoTransformFlags {
@@ -765,6 +766,8 @@ struct UndoAction {
 	std::vector<int> nodeAreas;
 	std::vector<std::shared_ptr<void>> nodesBefore;
 	std::vector<std::shared_ptr<void>> nodesAfter;
+	// For radar art: the layers before and after
+	std::shared_ptr<void> radarBefore, radarAfter;
 };
 
 void UndoRecordMove(ObjectInst *inst, rw::V3d oldPos, ObjectInst *lodInst, rw::V3d lodOldPos);
@@ -778,6 +781,7 @@ void UndoRecordVehicle(ObjectInst *inst, const VehicleState &before);	// after i
 int GetUndoPosition(void);	// undo steps recorded so far, for tests
 void UndoRecordNodes(const std::vector<int> &areas, const std::vector<std::shared_ptr<void>> &before,
 	const std::vector<std::shared_ptr<void>> &after);
+void UndoRecordRadarArt(const std::shared_ptr<void> &before, const std::shared_ptr<void> &after);
 void Undo(void);
 void Redo(void);
 // Actions recorded between these are undone as one step (they nest).
@@ -1819,6 +1823,9 @@ namespace WaterLevel
 
 	void Initialise(void);
 	void Render(void);
+	// The water's surface at x, y (SA: water.dat, and the sea beyond it);
+	// false where there is none.
+	bool GetWaterHeight(float x, float y, float *z);
 };
 
 namespace Clouds

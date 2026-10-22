@@ -6,6 +6,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <ctype.h>
 #include <string.h>
 #include <algorithm>
 #include <map>
@@ -14,8 +15,8 @@
 #include <vector>
 
 // Radar art: the objects seen from above, as gang zones. Each object's
-// collision (triangles, boxes, spheres; its bounding box without any) is
-// rasterised into a grid of square cells, keeping the highest surface in
+// mesh (or its collision: triangles, boxes, spheres; its bounding box
+// without any) is rasterised into a grid of square cells, keeping the highest surface in
 // each cell and the object it belongs to. The cells get their colour, and
 // runs of one colour are merged greedily into rectangles, one gang zone each.
 
@@ -30,7 +31,9 @@ RadarArtDefaults(RadarArtParams *params)
 	memset(params, 0, sizeof(*params));
 	params->source = RADAR_SOURCE_ALL;
 	params->cellSize = 4.0f;
-	params->colourMode = RADAR_COLOUR_TEXTURE;
+	params->shape = RADAR_SHAPE_MESH;
+	params->aboveWater = true;
+	params->colourMode = RADAR_COLOUR_RADAR;
 	params->colour = 0x8C8C8C00;
 	params->numColours = 6;
 	params->alpha = 200;
@@ -70,10 +73,103 @@ collectSources(const RadarArtParams &params, std::vector<ObjectInst*> &out)
 
 // ---- footprints ---------------------------------------------------------------
 
-struct Tri { rw::V3d v[3]; };
+// What the game's radar draws a surface as, and its colour there: black
+// roads, white buildings, grey paved ground, dark red railways (LongWayDrivers'
+// minimap terrains, picked from the radar tiles).
+enum RadarClass : uint8 {
+	RC_NONE, RC_WATER, RC_ROAD, RC_RAIL, RC_SAND, RC_DIRT, RC_DESERT, RC_ROCK, RC_GRASS, RC_FIELD,
+	RC_FOREST, RC_PAVED, RC_BUILDING, RC_SNOW, NUM_RADAR_CLASSES,
+	RC_HIDDEN = 0xFF,	// an invisible material: not drawn, so not on the radar
+};
+static const uint32 radarPalette[NUM_RADAR_CLASSES] = {
+	0x9F9C9F,	// none: as paved
+	0x728AAD,	// water
+	0x020000,	// road
+	0x3A1111,	// rail
+	0xE6C164,	// sand
+	0x746553,	// dirt
+	0x9C8672,	// desert
+	0x736651,	// rock (dark desert)
+	0x7B8A3A,	// grass
+	0x7B8A3A,	// field
+	0x3A6929,	// forest (dark grass)
+	0x9F9C9F,	// paved
+	0xFEFBFF,	// building
+	0xE4E8EC,	// snow: whiter than the ground, greyer than the buildings
+};
+
+// eSurfaceType (gta-reversed): the collision's material.
+static uint8
+surfaceClass(int surface)
+{
+	switch(surface){
+	case 1: case 2: case 3: return RC_ROAD;
+	case 4: case 5: case 7: case 8: case 34: case 85: case 89: case 134: case 135: case 136: case 137:
+	case 138: case 144: case 161: case 165: return RC_PAVED;
+	case 9: case 10: case 11: case 15: case 16: case 17: case 19: case 20: case 80: case 81: case 87:
+	case 115: case 117: case 118: case 120: case 133: case 146: case 147: case 148: case 149: case 150:
+	case 151: case 152: case 160: return RC_GRASS;
+	case 12: case 13: case 14: case 21: case 40: case 82: case 116: case 119: case 125: case 145:
+	case 153: case 176: return RC_FIELD;
+	case 22: case 23: case 41: case 83: case 84: case 111: case 112: case 113: case 114: case 122:
+	case 128: case 129: case 130: case 132: case 143: return RC_FOREST;
+	case 6: case 24: case 25: case 26: case 27: case 88: case 101: case 123: case 124:
+	case 139: case 140: case 141: case 142: return RC_DIRT;
+	case 86: return RC_DESERT;
+	case 28: case 29: case 30: case 31: case 32: case 33: case 74: case 75: case 76: case 77: case 78:
+	case 79: return RC_SAND;
+	case 18: case 35: case 36: case 37: case 109: case 121: case 131: case 154: return RC_ROCK;
+	case 38: case 39: case 96: case 97: case 98: case 99: case 100: case 110: case 126: case 127:
+	case 155: case 156: case 157: return RC_WATER;
+	case 178: return RC_RAIL;
+	}
+	return RC_NONE;
+}
+
+// A material by its model, TXD and texture names, as LongWayDrivers'
+// minimap_autogen.py does it: the first group with a word in them.
+static uint8
+nameClass(const char *model, const char *txd, const char *texture)
+{
+	static const struct { uint8 cls; const char *words[12]; } groups[] = {
+		{ RC_HIDDEN, { "invisible", "nocol", "transparent" } },
+		{ RC_WATER, { "water", "river", "ocean", "canal", "pool", "lake", "sea_" } },
+		{ RC_RAIL, { "rail", "traintrack", "tracks" } },
+		{ RC_ROAD, { "road", "asphalt", "tarmac", "freeway", "highway", "hiway", "street", "junction",
+			"runway", "motorway" } },
+		{ RC_SNOW, { "snow", "ice_", "frost" } },
+		{ RC_SAND, { "sand", "beach" } },
+		{ RC_ROCK, { "rock", "cliff", "stone", "boulder", "mount" } },
+		// The radar draws no trees or bushes, only the ground under them.
+		{ RC_HIDDEN, { "tree", "pine", "leaf", "leaves", "bush", "hedge", "foliage", "palm", "branch", "shrub", "bark", "trunk" } },
+		{ RC_FOREST, { "forest", "woodland" } },
+		{ RC_GRASS, { "grass", "lawn", "meadow", "turf" } },
+		{ RC_FIELD, { "field", "crop", "hay", "corn" } },
+		{ RC_DESERT, { "desert", "des_" } },
+		{ RC_DIRT, { "dirt", "mud", "gravel", "soil" } },
+		{ RC_PAVED, { "concrete", "conc", "pavement", "pave", "cement", "slab", "carpark", "parking",
+			"plaza", "sidewalk", "floor" } },
+		{ RC_BUILDING, { "roof", "shingle", "brick", "window", "wall" } },
+	};
+	char text[192];
+	snprintf(text, sizeof(text), "%s %s %s", model ? model : "", txd ? txd : "", texture ? texture : "");
+	for(char *p = text; *p; p++)
+		*p = (char)tolower((unsigned char)*p);
+	for(const auto &g : groups)
+		for(const char *w : g.words)
+			if(w && strstr(text, w))
+				return g.cls;
+	return RC_NONE;
+}
+
+struct Tri {
+	rw::V3d v[3];
+	uint8 cls = RC_NONE;
+	uint8 mat = 0xFF;	// the geometry's material: the Pawn material slot
+};
 
 static void
-addBox(std::vector<Tri> &tris, const rw::V3d &mn, const rw::V3d &mx)
+addBox(std::vector<Tri> &tris, const rw::V3d &mn, const rw::V3d &mx, uint8 cls = RC_NONE)
 {
 	rw::V3d c[8];
 	for(int i = 0; i < 8; i++)
@@ -82,34 +178,136 @@ addBox(std::vector<Tri> &tris, const rw::V3d &mn, const rw::V3d &mx)
 		{ 0, 1, 3, 2 }, { 4, 5, 7, 6 }, { 0, 1, 5, 4 }, { 2, 3, 7, 6 }, { 0, 2, 6, 4 }, { 1, 3, 7, 5 },
 	};
 	for(int f = 0; f < 6; f++){
-		tris.push_back({ { c[faces[f][0]], c[faces[f][1]], c[faces[f][2]] } });
-		tris.push_back({ { c[faces[f][0]], c[faces[f][2]], c[faces[f][3]] } });
+		tris.push_back({ { c[faces[f][0]], c[faces[f][1]], c[faces[f][2]] }, cls });
+		tris.push_back({ { c[faces[f][0]], c[faces[f][2]], c[faces[f][3]] }, cls });
 	}
 }
 
-// A model's footprint in its own frame: its collision, else its collision
-// bounding box, else its mesh's box.
+static void
+addGeometry(std::vector<Tri> &tris, rw::Geometry *geo, const rw::Matrix *m, ObjectDef *obj)
+{
+	if(geo == nil || geo->morphTargets == nil || geo->morphTargets[0].vertices == nil || geo->triangles == nil)
+		return;
+	const TxdDef *txd = GetTxdDef(obj->m_txdSlot);
+	std::vector<uint8> matClass(geo->matList.numMaterials, RC_NONE);
+	for(int k = 0; k < geo->matList.numMaterials; k++){
+		rw::Material *mat = geo->matList.materials[k];
+		matClass[k] = nameClass(obj->m_name, txd ? txd->name : nil, mat && mat->texture ? mat->texture->name : nil);
+	}
+	const rw::V3d *verts = geo->morphTargets[0].vertices;
+	for(int i = 0; i < geo->numTriangles; i++){
+		Tri tri;
+		int mat = geo->triangles[i].matId;
+		tri.cls = mat < (int)matClass.size() ? matClass[mat] : RC_NONE;
+		tri.mat = (uint8)std::min(mat, 0xFF);
+		for(int k = 0; k < 3; k++){
+			const rw::V3d &v = verts[geo->triangles[i].v[k]];
+			if(m)
+				rw::V3d::transformPoints(&tri.v[k], &v, 1, m);
+			else
+				tri.v[k] = v;
+		}
+		tris.push_back(tri);
+	}
+}
+
+// The model's triangles as drawn: its most detailed atomic, or every atomic
+// of a clump where its frames put them.
+static void
+addMesh(std::vector<Tri> &tris, ObjectDef *obj)
+{
+	if(obj == nil)
+		return;
+	if(!obj->IsLoaded() && !obj->m_cantLoad)
+		obj->Load();
+	if(obj->m_type == ObjectDef::ATOMIC && obj->m_atomics[0])
+		addGeometry(tris, obj->m_atomics[0]->geometry, nil, obj);
+	else if(obj->m_type == ObjectDef::CLUMP && obj->m_clump){
+		rw::Frame *root = obj->m_clump->getFrame();
+		rw::Matrix inv;
+		if(root)
+			rw::Matrix::invert(&inv, root->getLTM());
+		FORLIST(lnk, obj->m_clump->atomics){
+			rw::Atomic *atomic = rw::Atomic::fromClump(lnk);
+			rw::Frame *frame = atomic->getFrame();
+			if(frame == nil){
+				addGeometry(tris, atomic->geometry, nil, obj);
+				continue;
+			}
+			// The atomic's frame relative to the clump's.
+			rw::Matrix m = *frame->getLTM();
+			if(root){
+				rw::Matrix ltm = m;
+				rw::Matrix::mult(&m, &ltm, &inv);
+			}
+			addGeometry(tris, atomic->geometry, &m, obj);
+		}
+	}
+}
+
+// What most of a model's collision is, by area seen from above: for the
+// mesh triangles whose names say nothing.
+static uint8
+collisionClass(ObjectDef *obj)
+{
+	CColModel *col = obj ? obj->m_colModel : nil;
+	if(col == nil)
+		return RC_NONE;
+	double area[NUM_RADAR_CLASSES] = {};
+	for(int i = 0; i < col->numTriangles; i++){
+		const CColTriangle *t = &col->triangles[i];
+		rw::V3d v[3];
+		int idx[3] = { t->a, t->b, t->c };
+		for(int k = 0; k < 3; k++)
+			v[k] = col->flags & 0x80 ? col->compVertices[idx[k]].Uncompress() : col->vertices[idx[k]];
+		area[surfaceClass(t->surface)] += fabs((v[1].x - v[0].x) * (v[2].y - v[0].y) - (v[2].x - v[0].x) * (v[1].y - v[0].y));
+	}
+	for(int i = 0; i < col->numBoxes; i++){
+		const CColBox &b = col->boxes[i];
+		area[surfaceClass(b.surface)] += 2.0 * (b.box.max.x - b.box.min.x) * (b.box.max.y - b.box.min.y);
+	}
+	int best = RC_NONE;
+	for(int c = RC_NONE + 1; c < NUM_RADAR_CLASSES; c++)
+		if(area[c] > area[best])
+			best = c;
+	return (uint8)best;
+}
+
+// A model's footprint in its own frame: its mesh or its collision, else its
+// collision bounding box, else its mesh's box.
 static const std::vector<Tri> &
-modelFootprint(int model)
+modelFootprint(int model, int shape)
 {
 	static std::unordered_map<int, std::vector<Tri>> cache;
-	std::unordered_map<int, std::vector<Tri>>::iterator it = cache.find(model);
+	int key = model * 2 + (shape == RADAR_SHAPE_COLLISION);
+	std::unordered_map<int, std::vector<Tri>>::iterator it = cache.find(key);
 	if(it != cache.end())
 		return it->second;
-	std::vector<Tri> &tris = cache[model];
+	std::vector<Tri> &tris = cache[key];
 	ObjectDef *obj = GetObjectDef(model);
+	if(shape == RADAR_SHAPE_MESH){
+		addMesh(tris, obj);
+		if(!tris.empty()){
+			uint8 fallback = collisionClass(obj);
+			for(Tri &t : tris)
+				if(t.cls == RC_NONE)
+					t.cls = fallback;
+			return tris;
+		}
+	}
 	CColModel *col = obj ? obj->m_colModel : nil;
 	if(col){
 		for(int i = 0; i < col->numTriangles; i++){
 			const CColTriangle *t = &col->triangles[i];
 			Tri tri;
+			tri.cls = surfaceClass(t->surface);
 			int idx[3] = { t->a, t->b, t->c };
 			for(int k = 0; k < 3; k++)
 				tri.v[k] = col->flags & 0x80 ? col->compVertices[idx[k]].Uncompress() : col->vertices[idx[k]];
 			tris.push_back(tri);
 		}
 		for(int i = 0; i < col->numBoxes; i++)
-			addBox(tris, col->boxes[i].box.min, col->boxes[i].box.max);
+			addBox(tris, col->boxes[i].box.min, col->boxes[i].box.max, surfaceClass(col->boxes[i].surface));
 		for(int i = 0; i < col->numSpheres; i++){
 			// The top of the sphere as an octagon.
 			const CSphere &s = col->spheres[i].sph;
@@ -118,7 +316,7 @@ modelFootprint(int model)
 				float a0 = k * (float)M_PI / 4.0f, a1 = (k + 1) * (float)M_PI / 4.0f;
 				rw::V3d p0 = { s.center.x + cosf(a0) * s.radius, s.center.y + sinf(a0) * s.radius, s.center.z };
 				rw::V3d p1 = { s.center.x + cosf(a1) * s.radius, s.center.y + sinf(a1) * s.radius, s.center.z };
-				tris.push_back({ { top, p0, p1 } });
+				tris.push_back({ { top, p0, p1 }, surfaceClass(col->spheres[i].surface) });
 			}
 		}
 		if(tris.empty())
@@ -431,20 +629,35 @@ RadarArtBuild(const RadarArtParams &params, RadarArtResult *result, std::string 
 	std::vector<std::vector<Tri>> world(sources.size());
 	rw::V3d mn = { 1e30f, 1e30f, 1e30f }, mx = { -1e30f, -1e30f, -1e30f };
 	for(size_t s = 0; s < sources.size(); s++){
-		const std::vector<Tri> &local = modelFootprint(sources[s]->m_objectId);
+		const std::vector<Tri> &local = modelFootprint(sources[s]->m_objectId, params.shape);
 		if(local.empty()){
 			result->skipped++;
 			continue;
 		}
 		rw::Matrix m = basisOf(sources[s]->m_rotation);
+		// SetObjectMaterial: a slot's texture says what the surface is now
+		// (snow, road, an invisible texture...).
+		uint8 slotClass[MAX_PAWN_MATERIALS];
+		std::fill(std::begin(slotClass), std::end(slotClass), (uint8)RC_NONE);
+		for(int k = 0; k < MAX_PAWN_MATERIALS; k++){
+			const ObjectMaterialOverride *o = GetObjectMaterialOverride((const ObjectInst*)sources[s], k);
+			if(o && o->active && !o->textEnabled && o->hasTexture && o->sourceModel != 0)
+				slotClass[k] = nameClass(nil, o->txdName, o->textureName);
+		}
 		world[s].resize(local.size());
-		for(size_t t = 0; t < local.size(); t++)
+		for(size_t t = 0; t < local.size(); t++){
+			// A road stays a road (black, or brown when dirt) under snow or any
+			// other texture, as on the radar; only an invisible one hides it.
+			uint8 own = local[t].cls, over = local[t].mat < MAX_PAWN_MATERIALS ? slotClass[local[t].mat] : RC_NONE;
+			bool road = own == RC_ROAD || own == RC_RAIL;
+			world[s][t].cls = over == RC_NONE || (road && over != RC_HIDDEN && over != RC_DIRT) ? own : over;
 			for(int k = 0; k < 3; k++){
 				rw::V3d v = toWorld(m, sources[s]->m_translation, local[t].v[k]);
 				world[s][t].v[k] = v;
 				mn = { std::min(mn.x, v.x), std::min(mn.y, v.y), std::min(mn.z, v.z) };
 				mx = { std::max(mx.x, v.x), std::max(mx.y, v.y), std::max(mx.z, v.z) };
 			}
+		}
 	}
 	if(mn.x > mx.x){
 		if(error) *error = N_("none of the objects has a footprint");
@@ -469,11 +682,14 @@ RadarArtBuild(const RadarArtParams &params, RadarArtResult *result, std::string 
 	size_t numCells = (size_t)(cols * rows);
 	std::vector<float> top(numCells, -1e30f);
 	std::vector<int> owner(numCells, -1);
+	std::vector<uint8> cellClass(numCells, RC_NONE);
 	for(size_t s = 0; s < sources.size(); s++){
 		if(world[s].empty())
 			continue;
 		result->objects++;
 		for(const Tri &t : world[s]){
+			if(t.cls == RC_HIDDEN)
+				continue;
 			const rw::V3d &a = t.v[0], &b = t.v[1], &c = t.v[2];
 			float area = (b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y);
 			if(fabsf(area) < 1e-6f)
@@ -496,6 +712,7 @@ RadarArtBuild(const RadarArtParams &params, RadarArtResult *result, std::string 
 					if(z > top[i]){
 						top[i] = z;
 						owner[i] = (int)s;
+						cellClass[i] = t.cls;
 					}
 				}
 		}
@@ -514,10 +731,17 @@ RadarArtBuild(const RadarArtParams &params, RadarArtResult *result, std::string 
 	}
 	for(size_t i = 0; i < numCells; i++){
 		filled[i] = owner[i] >= 0;
+		if(filled[i] && params.aboveWater){
+			// Under the water the radar shows the water, not the object.
+			float wz;
+			size_t cx = i % (size_t)cols, cy = i / (size_t)cols;
+			if(WaterLevel::GetWaterHeight(x0 + (cx + 0.5f) * cs, y0 + (cy + 0.5f) * cs, &wz) && top[i] < wz)
+				filled[i] = false;
+		}
 		if(!filled[i])
 			continue;
 		result->cells++;
-		colour[i] = sourceColour[owner[i]];
+		colour[i] = params.colourMode == RADAR_COLOUR_RADAR ? radarPalette[cellClass[i]] : sourceColour[owner[i]];
 		zmin = std::min(zmin, top[i]);
 		zmax = std::max(zmax, top[i]);
 	}
@@ -527,8 +751,10 @@ RadarArtBuild(const RadarArtParams &params, RadarArtResult *result, std::string 
 	}
 	if(params.colourMode == RADAR_COLOUR_TEXTURE)
 		quantise(colour, filled, clamp(params.numColours, 1, 64));
+	// The radar's colours are flat; its roads have black edges.
+	bool radar = params.colourMode == RADAR_COLOUR_RADAR;
 	int levels = clamp(params.heightLevels, 2, 16);
-	if(params.heightShading && zmax - zmin > 0.5f)
+	if(params.heightShading && !radar && zmax - zmin > 0.5f)
 		for(size_t i = 0; i < numCells; i++){
 			if(!filled[i])
 				continue;
@@ -636,6 +862,195 @@ RadarArtFitCellSize(const RadarArtParams &params, int maxZones, float *cellSize,
 
 // ---- applying -------------------------------------------------------------------
 
+// ---- the map's layers -------------------------------------------------------------
+
+static std::vector<RadarArtLayer> gLayers;
+static bool gLayersIn3D;
+static int gLayersVersion;	// the 3D batch is rebuilt when it changes
+
+const std::vector<RadarArtLayer> &
+GetRadarArtLayers(void)
+{
+	return gLayers;
+}
+
+int
+CountRadarArtZones(void)
+{
+	int n = 0;
+	for(const RadarArtLayer &l : gLayers)
+		n += (int)l.zones.size();
+	return n;
+}
+
+static void
+setLayers(const std::vector<RadarArtLayer> &layers)
+{
+	gLayers = layers;
+	gLayersVersion++;
+	BumpChangeSeq();
+}
+
+void
+SetRadarArtLayers(const std::vector<RadarArtLayer> &layers, bool recordUndo)
+{
+	std::shared_ptr<void> before = std::make_shared<std::vector<RadarArtLayer>>(gLayers);
+	setLayers(layers);
+	if(recordUndo)
+		UndoRecordRadarArt(before, std::make_shared<std::vector<RadarArtLayer>>(gLayers));
+}
+
+void
+ClearRadarArtLayers(void)
+{
+	gLayers.clear();
+	gLayersVersion++;
+}
+
+void
+RestoreRadarArtLayers(const std::shared_ptr<void> &snapshot)
+{
+	if(snapshot)
+		setLayers(*(const std::vector<RadarArtLayer>*)snapshot.get());
+}
+
+// Above any id the map hands out, so they sort after the map's own zones.
+static const int32 STAND_IN_ID = 0x40000000;
+
+void
+MakeRadarArtStandIns(std::vector<ObjectInst*> &out)
+{
+	int proxy = GetSampElementProxyModel(SAMP_ELEMENT_GANGZONE);
+	int32 id = STAND_IN_ID;
+	for(const RadarArtLayer &l : gLayers)
+		for(const RadarArtZone &z : l.zones){
+			ObjectInst *inst = new ObjectInst;
+			memset(inst, 0, sizeof(ObjectInst));
+			inst->m_id = id++;
+			inst->m_objectId = proxy;
+			inst->m_imageIndex = -1;
+			inst->m_binInstIndex = -1;
+			inst->m_lodId = -1;
+			inst->m_rotation.w = 1.0f;
+			inst->m_translation = { (z.minX + z.maxX) * 0.5f, (z.minY + z.maxY) * 0.5f, z.z };
+			ObjectPawnProperties *p = new ObjectPawnProperties;
+			InitObjectPawnProperties(p);
+			p->elementKind = SAMP_ELEMENT_GANGZONE;
+			p->zoneSizeX = z.maxX - z.minX;
+			p->zoneSizeY = z.maxY - z.minY;
+			p->zoneColor = z.colour;
+			p->zoneMode = l.zoneMode;
+			snprintf(p->group, sizeof(p->group), "%s", l.group);
+			inst->m_pawnProperties = p;
+			out.push_back(inst);
+		}
+}
+
+void
+FreeRadarArtStandIns(std::vector<ObjectInst*> &standIns)
+{
+	for(ObjectInst *inst : standIns)
+		delete inst;
+	standIns.clear();
+}
+
+bool
+IsRadarArtStandIn(const ObjectInst *inst)
+{
+	return inst && inst->m_id >= STAND_IN_ID;
+}
+
+bool
+RadarArtLayersShownIn3D(void)
+{
+	return gLayersIn3D;
+}
+
+void
+SetRadarArtLayersShownIn3D(bool on)
+{
+	gLayersIn3D = on;
+}
+
+// Every zone as a flat quad a little over its top, in one batch.
+void
+RenderRadarArtLayers(void)
+{
+	if(!gLayersIn3D || gLayers.empty())
+		return;
+	static std::vector<rw::RWDEVICE::Im3DVertex> verts;
+	static std::vector<uint16> indices;
+	static int builtVersion = -1;
+	if(builtVersion != gLayersVersion){
+		builtVersion = gLayersVersion;
+		verts.clear();
+		for(const RadarArtLayer &l : gLayers)
+			for(const RadarArtZone &z : l.zones){
+				float x[4] = { z.minX, z.maxX, z.maxX, z.minX }, y[4] = { z.minY, z.minY, z.maxY, z.maxY };
+				for(int k = 0; k < 4; k++){
+					rw::RWDEVICE::Im3DVertex v;
+					v.setX(x[k]); v.setY(y[k]); v.setZ(z.z + 0.3f);
+					v.setColor(z.colour >> 24 & 0xFF, z.colour >> 16 & 0xFF, z.colour >> 8 & 0xFF,
+						std::min(160u, z.colour & 0xFF));
+					v.setU(0.0f); v.setV(0.0f);
+					verts.push_back(v);
+				}
+			}
+		indices.clear();
+		for(int q = 0; q < 16384; q++){
+			uint16 b = (uint16)(q * 4);
+			uint16 ix[6] = { b, (uint16)(b + 1), (uint16)(b + 2), b, (uint16)(b + 2), (uint16)(b + 3) };
+			indices.insert(indices.end(), ix, ix + 6);
+		}
+	}
+	rw::SetRenderStatePtr(rw::TEXTURERASTER, nil);
+	rw::SetRenderState(rw::VERTEXALPHA, 1);
+	rw::SetRenderState(rw::ZWRITEENABLE, 0);
+	rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
+	// 16-bit indices: at most 16384 quads a batch.
+	for(size_t first = 0; first < verts.size(); first += 16384 * 4){
+		int n = (int)std::min(verts.size() - first, (size_t)16384 * 4);
+		rw::im3d::Transform(&verts[first], n, nil, rw::im3d::EVERYTHING);
+		rw::im3d::RenderIndexedPrimitive(rw::PRIMTYPETRILIST, indices.data(), n / 4 * 6);
+		rw::im3d::End();
+	}
+	rw::SetRenderState(rw::ZWRITEENABLE, 1);
+}
+
+// Map Objects: a row for each layer above the map's objects.
+void
+RadarArtLayersOutliner(void)
+{
+	if(gLayers.empty())
+		return;
+	static const char *modes[] = { N_("global"), N_("per player"), N_("streamed") };
+	int remove = -1;
+	for(size_t i = 0; i < gLayers.size(); i++){
+		const RadarArtLayer &l = gLayers[i];
+		ImGui::PushID((int)i);
+		ImGui::TextUnformatted(ICON_FA_VECTOR_SQUARE);
+		ImGui::SameLine();
+		ImGui::Text(_("Radar art \"%s\": %d zones, %s"), l.group, (int)l.zones.size(),
+			_(modes[std::min(std::max(l.zoneMode, 0), 2)]));
+		ImGui::SameLine();
+		if(ImGui::SmallButton(gLayersIn3D ? ICON_FA_EYE "##radar_layer_3d" : ICON_FA_EYE_SLASH "##radar_layer_3d"))
+			gLayersIn3D = !gLayersIn3D;
+		ImGui::SetItemTooltip("%s", gLayersIn3D ? _("Shown in the 3D view: click to hide.") :
+			_("Click to show the zones in the 3D view. The radar (Windows > Show Radar) always shows them."));
+		ImGui::SameLine();
+		if(ImGui::SmallButton(ICON_FA_TRASH "##radar_layer_delete"))
+			remove = (int)i;
+		ImGui::SetItemTooltip("%s", _("Delete this radar art (Ctrl+Z brings it back)."));
+		ImGui::PopID();
+	}
+	ImGui::Separator();
+	if(remove >= 0){
+		std::vector<RadarArtLayer> layers = gLayers;
+		layers.erase(layers.begin() + remove);
+		SetRadarArtLayers(layers, true);
+	}
+}
+
 int
 RadarArtApply(const RadarArtParams &params, std::string *error)
 {
@@ -651,14 +1066,17 @@ RadarArtApply(const RadarArtParams &params, std::string *error)
 			std::to_string((int)MAX_RADAR_ZONES) + "; use bigger cells";
 		return -1;
 	}
-	int proxy = GetSampElementProxyModel(SAMP_ELEMENT_GANGZONE);
-	if(GetObjectDef(proxy) == nil){
-		if(error) *error = N_("Haumea has no model to draw gang zones with");
+	if(result.zones.empty()){
+		if(error) *error = N_("could not make the zones");
 		return -1;
 	}
-	ClearSelection();
 	UndoBeginGroup();
+	std::vector<RadarArtLayer> layers = gLayers;
 	if(params.replace){
+		layers.erase(std::remove_if(layers.begin(), layers.end(), [&](const RadarArtLayer &l){
+			return strcmp(l.group, params.outGroup) == 0;
+		}), layers.end());
+		// Gang zone elements in that group, from before radar art had layers.
 		std::vector<ObjectInst*> old;
 		for(CPtrNode *p = instances.first; p; p = p->next){
 			ObjectInst *inst = (ObjectInst*)p->item;
@@ -671,39 +1089,14 @@ RadarArtApply(const RadarArtParams &params, std::string *error)
 		if(!old.empty())
 			UndoRecordDelete(old.data(), (int)old.size());
 	}
-	int oldSpawnId = GetSpawnObjectId(), oldSpawnKind = GetSpawnElementKind();
-	SetSpawnObjectId(proxy);
-	SetSpawnElementKind(SAMP_ELEMENT_GANGZONE);
-	std::vector<ObjectInst*> made;
-	for(size_t i = 0; i < result.zones.size(); i++){
-		const RadarArtZone &z = result.zones[i];
-		rw::V3d pos = { (z.minX + z.maxX) * 0.5f, (z.minY + z.maxY) * 0.5f, z.z };
-		rw::Quat rot = MakeObjectRotationDegrees({ 0.0f, 0.0f, 0.0f });
-		ObjectInst *spawned[4] = {};
-		int n = SpawnPlaceObjectNoUndo(pos, &rot, spawned, 4);
-		if(n == 0)
-			continue;
-		ObjectInst *inst = spawned[n - 1];
-		ObjectPawnProperties p = *GetObjectPawnProperties(inst);
-		p.zoneSizeX = z.maxX - z.minX;
-		p.zoneSizeY = z.maxY - z.minY;
-		p.zoneColor = z.colour;
-		p.zoneMode = params.zoneMode;
-		snprintf(p.group, sizeof(p.group), "%s", params.outGroup);
-		SetObjectPawnProperties(inst, p, false);
-		made.insert(made.end(), spawned, spawned + n);
-	}
-	SetSpawnObjectId(oldSpawnId);
-	SetSpawnElementKind(oldSpawnKind);
-	if(!made.empty())
-		UndoRecordPaste(made.data(), (int)made.size());
+	RadarArtLayer layer;
+	snprintf(layer.group, sizeof(layer.group), "%s", params.outGroup);
+	layer.zoneMode = params.zoneMode;
+	layer.zones = result.zones;
+	layers.push_back(layer);
+	SetRadarArtLayers(layers, true);
 	UndoEndGroup();
-	ClearSelection();
-	if(made.empty()){
-		if(error) *error = N_("could not make the zones");
-		return -1;
-	}
-	return (int)made.size();
+	return (int)result.zones.size();
 }
 
 // ---- streamed grid ----------------------------------------------------------------
@@ -862,6 +1255,13 @@ RadarArtPanel(void)
 		}
 	}
 
+	static const char *shapes[] = { N_("Model"), N_("Collision") };
+	UiCombo(_("Shape"), &p.shape, shapes, IM_ARRAYSIZE(shapes));
+	ImGui::SetItemTooltip(_("Model: the objects as they are drawn, seen from above.\n"
+		"Collision: their collision, which is often boxes (a tree only its trunk)."));
+	ImGui::Checkbox(_("Leave out what's under water"), &p.aboveWater);
+	ImGui::SetItemTooltip(_("Parts of the objects below the water's surface (a rock's\n"
+		"wide base, a pier's legs) aren't drawn, as the radar shows the water there."));
 	ImGui::DragFloat(_("Cell size"), &p.cellSize, 0.1f, 0.5f, 1000.0f, "%.1f m");
 	ImGui::SetItemTooltip(_("The art's pixel size. Smaller cells follow the shapes more\n"
 		"closely and take more gang zones."));
@@ -881,18 +1281,23 @@ RadarArtPanel(void)
 	ImGui::SetItemTooltip(_("Picks the smallest cell size whose art needs at most this many zones."));
 
 	ImGui::SeparatorText(_("Colours"));
-	static const char *colourModes[] = { N_("One colour"), N_("By group"), N_("From textures") };
+	static const char *colourModes[] = { N_("One colour"), N_("By group"), N_("From textures"), N_("Radar colours") };
 	UiCombo(_("Colour"), &p.colourMode, colourModes, IM_ARRAYSIZE(colourModes));
-	ImGui::SetItemTooltip(_("From textures: each model's colour seen from above, from its\n"
+	ImGui::SetItemTooltip(_("Radar colours: the game's own map colours, by what each surface is\n"
+		"(roads, grass, sand, rock, water...), from its collision and texture names.\n"
+		"From textures: each model's colour seen from above, from its\n"
 		"textures, reduced to a few colours so neighbouring cells merge."));
 	if(p.colourMode == RADAR_COLOUR_TEXTURE){
 		ImGui::SliderInt(_("Colours"), &p.numColours, 1, 16);
 		ImGui::SetItemTooltip(_("Fewer colours make fewer zones."));
 	}
-	colourEdit(p.colourMode == RADAR_COLOUR_ONE ? _("Zone colour") : _("Fallback colour"), &p.colour);
-	if(p.colourMode != RADAR_COLOUR_ONE)
-		ImGui::SetItemTooltip("%s", p.colourMode == RADAR_COLOUR_GROUP ? _("For objects without a group.") :
-			_("For models whose textures can't be read."));
+	bool radar = p.colourMode == RADAR_COLOUR_RADAR;
+	if(!radar){
+		colourEdit(p.colourMode == RADAR_COLOUR_ONE ? _("Zone colour") : _("Fallback colour"), &p.colour);
+		if(p.colourMode != RADAR_COLOUR_ONE)
+			ImGui::SetItemTooltip("%s", p.colourMode == RADAR_COLOUR_GROUP ? _("For objects without a group.") :
+				_("For models whose textures can't be read."));
+	}
 	ImGui::SliderInt(_("Opacity"), &p.alpha, 0, 255);
 	ImGui::Checkbox(_("Outline"), &p.outline);
 	ImGui::SetItemTooltip(_("Draws the footprints' edge cells in their own colour."));
@@ -900,10 +1305,12 @@ RadarArtPanel(void)
 		ImGui::SameLine();
 		colourEdit("##outline_colour", &p.outlineColour);
 	}
-	ImGui::Checkbox(_("Height shading"), &p.heightShading);
-	ImGui::SetItemTooltip(_("Higher surfaces are lighter, in a few steps."));
-	if(p.heightShading)
-		ImGui::SliderInt(_("Steps"), &p.heightLevels, 2, 8);
+	if(!radar){
+		ImGui::Checkbox(_("Height shading"), &p.heightShading);
+		ImGui::SetItemTooltip(_("Higher surfaces are lighter, in a few steps."));
+		if(p.heightShading)
+			ImGui::SliderInt(_("Steps"), &p.heightLevels, 2, 8);
+	}
 
 	ImGui::SeparatorText(_("Zones"));
 	static const char *modes[] = { N_("Global zones"), N_("Per-player zones"), N_("Streamed per-player zones") };

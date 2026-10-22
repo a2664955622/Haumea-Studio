@@ -115,8 +115,8 @@ stock Haumea_hv_zones_CreateObjects()
 	hv_zones_gate = GangZoneCreate(1590.000000, -1910.000000, 1630.000000, -1870.000000); // gangzone [gang zone]
 
 	// ---- radar art ----
-	Haumea_hv_zones_AddPlayerZone(1500.000000, -1700.000000, 1520.000000, -1680.000000, 0x4E79A7C8); // gangzone @group("radar art")
 	Haumea_hv_zones_AddPlayerZone(1520.000000, -1700.000000, 1530.000000, -1660.000000, 0x59A14FC8); // gangzone @group("radar art") @note("park")
+	Haumea_hv_zones_AddPlayerZone(1500.000000, -1700.000000, 1520.000000, -1680.000000, 0x4E79A7C8); // radar art @group("radar art")
 
 	// ---- streamed art ----
 	Haumea_hv_zones_AddStreamedZone(1000.000000, -1000.000000, 1010.000000, -990.000000, 0xE15759C8); // gangzone @group("streamed art")

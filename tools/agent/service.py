@@ -449,7 +449,9 @@ class HaumeaService:
 		return self.engine("maptool", [op, *lines])
 
 	# map_tool radar_art's settings: kind of value each takes.
-	RADAR_ART_KEYS = {"cell": "number", "fit": "count", "colours": ("one", "group", "texture"),
+	RADAR_ART_KEYS = {"cell": "number", "shape": ("model", "collision"),
+	                  "above_water": "bool", "fit": "count",
+	                  "colours": ("radar", "one", "group", "texture"),
 	                  "colour": "colour", "num_colours": "count", "alpha": "count",
 	                  "outline": "bool", "outline_colour": "colour", "height_shading": "bool",
 	                  "height_levels": "count", "zone_mode": ("global", "player", "streamed"),

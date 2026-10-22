@@ -364,6 +364,48 @@ RenderEditorWaterQuad(float x0, float y0, float x1, float y1, float z,
 	TempIndexBuffer[TempBufferIndicesStored++] = i+3;
 }
 
+// z on the triangle a b c at x, y, when x, y is inside it seen from above.
+static bool
+heightOnTriangle(const rw::V3d &a, const rw::V3d &b, const rw::V3d &c, float x, float y, float *z)
+{
+	float area = (b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y);
+	if(fabsf(area) < 1e-6f)
+		return false;
+	float w0 = ((b.x - x) * (c.y - y) - (c.x - x) * (b.y - y)) / area;
+	float w1 = ((c.x - x) * (a.y - y) - (a.x - x) * (c.y - y)) / area;
+	float w2 = 1.0f - w0 - w1;
+	if(w0 < -1e-4f || w1 < -1e-4f || w2 < -1e-4f)
+		return false;
+	*z = w0 * a.z + w1 * b.z + w2 * c.z;
+	return true;
+}
+
+bool
+GetWaterHeight(float x, float y, float *z)
+{
+	if(params.water != GAME_SA)
+		return false;
+	// water.dat's quads are v0 v1 along one edge, v2 v3 along the other.
+	for(int i = 0; i < numWaterQuads; i++){
+		const int *n = waterQuads[i].indices;
+		const rw::V3d &a = waterVertices[n[0]].pos, &b = waterVertices[n[1]].pos;
+		const rw::V3d &c = waterVertices[n[2]].pos, &d = waterVertices[n[3]].pos;
+		if(heightOnTriangle(a, b, c, x, y, z) || heightOnTriangle(b, d, c, x, y, z))
+			return true;
+	}
+	for(int i = 0; i < numWaterTris; i++){
+		const int *n = waterTris[i].indices;
+		if(heightOnTriangle(waterVertices[n[0]].pos, waterVertices[n[1]].pos, waterVertices[n[2]].pos, x, y, z))
+			return true;
+	}
+	// Beyond water.dat's area the sea goes on, at sea level.
+	if(fabsf(x) >= SA_GAME_WATER_BOUND || fabsf(y) >= SA_GAME_WATER_BOUND){
+		*z = 0.0f;
+		return true;
+	}
+	return false;
+}
+
 static void
 RenderEditorWaterExtension(void)
 {

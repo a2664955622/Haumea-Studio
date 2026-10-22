@@ -1,6 +1,7 @@
 #define WITH_D3D
 #include "haumea.h"
 #include "editoricons.h"
+#include "radarart.h"
 #include "trains.h"
 #include "playerview.h"
 #include "templates.h"
@@ -838,6 +839,7 @@ RenderTransparent(void)
 	}else{
 		RenderCheckpointMarkers((float)ImGui::GetTime());
 		RenderElementIcons();
+		RenderRadarArtLayers();
 	}
 }
 
