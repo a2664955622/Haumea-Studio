@@ -61,6 +61,7 @@ OBJECTS = {
 }
 # SA-MP's own objects live in SAMP/SAMP.img with SAMP/SAMP.ide.
 SAMP_OBJECTS = {
+	18990: ('Tube25m90Bend1', 'MatTextures', 299, 0),	# hv_areas.pwn's canal tubes
 	19297: ('PointLight17', 'MatLights', 120, 4),
 	19353: ('wall001', 'all_walls', 100, 0),
 	19377: ('wall025', 'all_walls', 100, 0),
