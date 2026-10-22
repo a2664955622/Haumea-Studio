@@ -29,7 +29,7 @@ h1{margin:0;font-size:22px;font-weight:600}h2{margin:0;font-size:16px;font-weigh
 h3{margin:0;font-size:12px;font-weight:500;color:#9AA1AD;text-transform:uppercase;letter-spacing:.04em}
 .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
 .brand{display:flex;align-items:center;gap:14px}.brand a{color:inherit}
-.logo{width:40px;height:40px;border-radius:10px;background:#1F2A3D;display:flex;align-items:center;justify-content:center}
+.mark{flex:none;display:block}
 .tools{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
 .seg{display:flex;gap:2px;background:#171A20;border:1px solid #262A33;border-radius:10px;padding:4px}
 .seg a{padding:9px 14px;border-radius:7px;color:#B4BAC4;font-size:13px}
@@ -99,9 +99,19 @@ footer{font-size:12px;color:#9AA1AD;display:flex;flex-wrap:wrap;gap:16px;justify
 @media (max-width:640px){.page{padding:20px 16px 40px}.split .name{flex-basis:110px}}
 '''
 
-LOGO = ('<div class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8AB6FF" '
-        'stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle>'
-        '<path d="M12 3v18M3 12h18"></path></svg></div>')
+# assets/haumea-mark.svg, inline (the page loads nothing else); the heading
+# beside it names it, so it is decoration here.
+LOGO = ('<svg class="mark" width="40" height="40" viewBox="0 0 128 128" aria-hidden="true">'
+        '<defs><linearGradient id="mark-tile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#151c35"/>'
+        '<stop offset="1" stop-color="#0a0e1d"/></linearGradient><radialGradient id="mark-body" cx="36%" cy="30%" '
+        'r="80%"><stop offset="0" stop-color="#f6f8ff"/><stop offset=".45" stop-color="#b9c2de"/>'
+        '<stop offset="1" stop-color="#3a4370"/></radialGradient></defs>'
+        '<rect x="1" y="1" width="126" height="126" rx="28" fill="url(#mark-tile)" stroke="#2a3560" '
+        'stroke-width="1.5"/><g transform="rotate(-18 64 64)"><path d="M14 64 A50 13 0 0 1 114 64" fill="none" '
+        'stroke="#7cc4ff" stroke-opacity=".45" stroke-width="4" stroke-linecap="round"/><ellipse cx="64" cy="64" '
+        'rx="33" ry="21" fill="url(#mark-body)"/><ellipse cx="75" cy="60" rx="6.5" ry="4.2" fill="#b4506a" '
+        'fill-opacity=".85"/><path d="M14 64 A50 13 0 0 0 114 64" fill="none" stroke="#a9dcff" stroke-width="4" '
+        'stroke-linecap="round"/></g></svg>')
 SHIELD = ('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4CC38A" stroke-width="2" '
           'stroke-linecap="round" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z">'
           '</path><path d="M9 12l2 2 4-4"></path></svg>')
