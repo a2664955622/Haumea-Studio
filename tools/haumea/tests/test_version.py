@@ -172,6 +172,8 @@ class ReleaseTagTests(unittest.TestCase):
 			run = lambda *a: subprocess.run(a, cwd=clone, env=env, capture_output=True, text=True)
 			count = run('git', 'rev-list', '--count', 'HEAD').stdout.strip()
 			major, minor, patch = gen_buildinfo.base_version(clone)
+			# The clone starts with the real repository's own tags (its releases).
+			inherited = set(run('git', 'tag', '--list', 'v*').stdout.split())
 			made = run('sh', script, '--create')	# production by default
 			self.assertEqual(made.returncode, 0, made.stderr)
 			tag = f'v{major}.{minor}.{patch}.{count}-production'
@@ -200,7 +202,8 @@ class ReleaseTagTests(unittest.TestCase):
 			self.assertIn('version.h says',
 			              run(sys.executable, str(clone / 'tools/release/check_tag.py'), wrong).stderr)
 			# Never pushed: the real repository has none of the tags made here.
-			made_here = run('git', 'tag', '--list', 'v*').stdout.split()
+			made_here = set(run('git', 'tag', '--list', 'v*').stdout.split()) - inherited
+			self.assertTrue(made_here)
 			real = subprocess.run(['git', '-C', str(ROOT), 'tag', '--list', 'v*'], capture_output=True,
 			                      text=True).stdout.split()
 			self.assertFalse(set(made_here) & set(real))
