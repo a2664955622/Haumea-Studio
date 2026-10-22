@@ -132,8 +132,11 @@ don't grow without end.
 Crash reports carry offsets, not function names. When a report comes in, the
 service fetches that release's `haumea-symbols-<version>.zip` from GitHub once
 (into `/var/lib/haumea-server/symbols/`), and then shows names and lines in
-the dashboard and links the same crash across versions. Dev and PR builds
-have no release, so their stacks stay as offsets. To read a report by hand:
+the dashboard and links the same crash across versions. Names are only given
+to reports from the release's own binaries: the report's build ID must match
+the zip's `BUILD_IDS.txt`. Dev and PR builds, local builds and the MinGW engine
+in the Namaka companion keep their stacks as offsets. To read a report by hand
+(`--any-build` skips the build ID check):
 
 ```sh
 python3 /opt/haumea-server/symbolize.py report.json haumea-symbols-1.0.0.57.zip

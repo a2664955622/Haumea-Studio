@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0-or-later
-"""symbolize.py REPORT.json SYMBOLS: a crash report's stack with function
-names and source lines.
+"""symbolize.py REPORT.json SYMBOLS [--any-build]: a crash report's stack
+with function names and source lines.
 
 SYMBOLS is the release's haumea-symbols-<version>.zip (or the folder it
 unpacks to). Needs addr2line for Linux builds and llvm-symbolizer for
-Windows (PDB) and macOS (dSYM) builds.
+Windows (PDB) and macOS (dSYM) builds. The report's build_id must be the one
+the zip's BUILD_IDS.txt lists for its platform, or the names would be another
+binary's; --any-build symbolizes anyway.
 """
 import json
 import sys
@@ -17,6 +19,8 @@ import symbols  # noqa: E402
 
 
 def main(argv):
+	any_build = '--any-build' in argv
+	argv = [a for a in argv if a != '--any-build']
 	if len(argv) != 3:
 		print(__doc__.strip(), file=sys.stderr)
 		return 2
@@ -27,6 +31,10 @@ def main(argv):
 		if source.is_file():
 			folder = Path(tmp) / 'symbols'
 			symbols.unpack(source, folder)
+		if not any_build and not symbols.build_id_matches(folder, report['os'], report.get('build_id')):
+			print(f"build_id {report.get('build_id') or '(none)'} is not this release's "
+			      f"{symbols.PLATFORM[report['os']]} build: --any-build to symbolize anyway", file=sys.stderr)
+			return 1
 		debug = symbols.debug_file(folder, report['os'])
 		if not debug:
 			print(f'no {symbols.PLATFORM[report["os"]]} symbols in {source}', file=sys.stderr)

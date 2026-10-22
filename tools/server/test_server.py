@@ -59,6 +59,10 @@ class FakeWebhook(http.server.BaseHTTPRequestHandler):
 		self.end_headers()
 
 
+# The build-id the fake release's BUILD_IDS.txt lists for linux-amd64.
+BUILD_ID = '0123456789abcdef0123456789abcdef01234567'
+
+
 def report(version='1.0.0.10', frames=None, kind='crash', rid=None, channel='production', **extra):
 	frames = frames or [{'module': 'haumea', 'offset': '0x1a2b3c', 'symbol': ''},
 	                    {'module': 'libc.so.6', 'offset': '0x2a1f0', 'symbol': ''},
@@ -67,7 +71,7 @@ def report(version='1.0.0.10', frames=None, kind='crash', rid=None, channel='pro
 	r = {'schema': 1, 'id': rid or os.urandom(16).hex(), 'kind': kind, 'created': '2026-10-21T19:40:00Z',
 	     'version': version, 'commit': 'abc1234', 'channel': channel, 'os': 'linux',
 	     'os_version': 'Ubuntu 24.04', 'arch': 'x86_64', 'gl_renderer': 'llvmpipe', 'gl_version': '4.5',
-	     'frames': frames, 'log': ['started', 'opened <WORKSPACE>/gamemodes/map.pwn'],
+	     'build_id': BUILD_ID, 'frames': frames, 'log': ['started', 'opened <WORKSPACE>/gamemodes/map.pwn'],
 	     'context': {'mode': 'map', 'window': 'Object Info'}}
 	if kind == 'crash':
 		r['crash'] = {'signal': 'SIGSEGV', 'address': '0x0'}
@@ -120,12 +124,19 @@ class ServerTests(unittest.TestCase):
 		subprocess.run(['cc', '-g', '-O0', '-fPIE', '-pie', str(src), '-o', str(exe)], check=True)
 		syms = {l.split()[2]: l.split()[0] for l in subprocess.run(['nm', str(exe)], capture_output=True,
 		        text=True).stdout.splitlines() if len(l.split()) == 3}
+		ids = f'linux-amd64 {BUILD_ID}\nwindows-gl3 {"A" * 33}\n'
 		for version in ('1.0.0.20', '1.0.0.21', '1.0.0.22'):
 			folder = cls.symbols_dir / version / 'linux-amd64'
 			folder.mkdir(parents=True)
 			shutil.copy(exe, folder / 'haumea.debug')
+			(folder.parent / 'BUILD_IDS.txt').write_text(ids)
+		# The same symbols without BUILD_IDS.txt: nothing says whose they are.
+		folder = cls.symbols_dir / '1.0.0.23' / 'linux-amd64'
+		folder.mkdir(parents=True)
+		shutil.copy(exe, folder / 'haumea.debug')
 		with zipfile.ZipFile(cls.tmp / 'haumea-symbols-1.0.0.20.zip', 'w') as z:
 			z.write(exe, 'linux-amd64/haumea.debug')
+			z.writestr('BUILD_IDS.txt', ids)
 		return {name: '0x' + syms[name].lstrip('0') for name in ('crash_here', 'caller')}
 
 	def post(self, path, body, content_type='application/json', headers=None):
@@ -328,6 +339,24 @@ class ServerTests(unittest.TestCase):
 		self.assertIn('1.0.0.22', page)	# the same issue in another version
 
 	@unittest.skipUnless(shutil.which('cc') and shutil.which('addr2line'), 'needs cc and addr2line')
+	def test_names_only_for_the_release_binary(self):
+		# Names come only for the binary BUILD_IDS.txt lists; another build
+		# (a dev build, the companion's MinGW engine, no build_id, a zip
+		# without the file) keeps its offsets rather than get wrong names.
+		f = self.functions
+		frames = [{'module': 'haumea', 'offset': f['crash_here']}, {'module': 'haumea', 'offset': f['caller']}]
+		cache = self.service.symbols
+		good = haumea_server.validate_report(report(version='1.0.0.20', frames=frames))
+		self.assertIn('crash_here', cache.symbolize(good)[0])
+		self.assertEqual(cache.function_names(good)[:1], ['crash_here'])
+		for other in (dict(build_id='f' * 40), dict(build_id=''), dict(os='windows')):
+			r = haumea_server.validate_report(report(version='1.0.0.20', frames=frames, **other))
+			self.assertIsNone(cache.symbolize(r), other)
+			self.assertEqual(cache.function_names(r), [], other)
+		unlisted = haumea_server.validate_report(report(version='1.0.0.23', frames=frames))
+		self.assertIsNone(cache.symbolize(unlisted))
+
+	@unittest.skipUnless(shutil.which('cc') and shutil.which('addr2line'), 'needs cc and addr2line')
 	def test_symbolize_cli(self):
 		f = self.functions
 		r = report(version='1.0.0.20', frames=[{'module': 'haumea', 'offset': f['crash_here']},
@@ -339,6 +368,15 @@ class ServerTests(unittest.TestCase):
 		self.assertEqual(out.returncode, 0, out.stderr)
 		self.assertIn('crash_here', out.stdout)
 		self.assertIn('fake.c:1', out.stdout)
+		# Another build's report is refused unless asked.
+		path.write_text(json.dumps(dict(r, build_id='f' * 40)))
+		args = [sys.executable, str(HERE / 'symbolize.py'), str(path), str(self.tmp / 'haumea-symbols-1.0.0.20.zip')]
+		out = subprocess.run(args, capture_output=True, text=True)
+		self.assertEqual(out.returncode, 1)
+		self.assertIn('--any-build', out.stderr)
+		out = subprocess.run(args + ['--any-build'], capture_output=True, text=True)
+		self.assertEqual(out.returncode, 0, out.stderr)
+		self.assertIn('crash_here', out.stdout)
 
 
 if __name__ == '__main__':

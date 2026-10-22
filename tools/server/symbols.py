@@ -7,7 +7,11 @@ haumea-symbols-<version>.zip:
     macos-arm64/haumea.dSYM/    llvm-symbolizer on the DWARF, at 0x100000000 + offset
 
 Frame offsets are from the module's load base, so they go to the tools as
-they are (plus the Mach-O base on macOS). Zips are cached in a folder and,
+they are (plus the Mach-O base on macOS). Only a report from the very binary
+the symbols belong to gets names: its build_id must be the one BUILD_IDS.txt
+lists for its platform ("<platform> <id>"). Anything else (a dev build, the
+MinGW engine in the Namaka companion, a zip without the file) keeps its
+offsets, as names from another binary would be wrong. Zips are cached in a folder and,
 when allowed, fetched once from the GitHub release v<version>-<channel>.
 """
 import shutil
@@ -32,6 +36,19 @@ def debug_file(folder, os_name):
 	else:
 		f = base / 'haumea.dSYM' / 'Contents' / 'Resources' / 'DWARF' / 'haumea'
 	return f if f.is_file() else None
+
+
+def build_id_matches(folder, os_name, build_id):
+	"""True when BUILD_IDS.txt in the symbols folder lists exactly this
+	build_id for the report's platform."""
+	ids = Path(folder) / 'BUILD_IDS.txt'
+	if not build_id or not ids.is_file():
+		return False
+	for line in ids.read_text(errors='replace').splitlines():
+		parts = line.split()
+		if len(parts) == 2 and parts[0] == PLATFORM.get(os_name):
+			return parts[1] == build_id
+	return False
 
 
 def run_symbolizer(debug, os_name, offsets):
@@ -88,11 +105,17 @@ class SymbolCache:
 			unpack(zip_path, target)
 		return target
 
+	def debug_for(self, report):
+		"""The debug file for the report's own binary, or None."""
+		folder = self.symbols_dir(report['version'], report['channel'])
+		if not folder or not build_id_matches(folder, report['os'], report.get('build_id')):
+			return None
+		return debug_file(folder, report['os'])
+
 	def symbolize(self, report):
 		"""Function names for every frame of the report ('' for frames
 		outside haumea or without symbols); None without symbols."""
-		folder = self.symbols_dir(report['version'], report['channel'])
-		debug = debug_file(folder, report['os']) if folder else None
+		debug = self.debug_for(report)
 		if not debug:
 			return None
 		own = [i for i, f in enumerate(report['frames']) if f['module'] in OWN]
@@ -105,8 +128,7 @@ class SymbolCache:
 	def function_names(self, report):
 		"""The function names of the haumea frames, innermost first (for the
 		cross-version issue key); [] without symbols."""
-		folder = self.symbols_dir(report['version'], report['channel'])
-		debug = debug_file(folder, report['os']) if folder else None
+		debug = self.debug_for(report)
 		if not debug:
 			return []
 		offsets = [f['offset'] for f in report['frames'] if f['module'] in OWN]
