@@ -1470,6 +1470,15 @@ msgstr "Negrito"
 msgid "Bomb"
 msgstr "Bomba"
 
+msgid "Bottom"
+msgstr "Embaixo"
+
+msgid "Bottom left"
+msgstr "Embaixo à esquerda"
+
+msgid "Bottom right"
+msgstr "Embaixo à direita"
+
 msgid "Box"
 msgstr "Caixa"
 
@@ -6547,6 +6556,9 @@ msgstr "Mostrar"
 msgid "Show All"
 msgstr "Mostrar tudo"
 
+msgid "Show Pressed Keys"
+msgstr "Mostrar teclas pressionadas"
+
 msgid "Show all"
 msgstr "Mostrar todos"
 
@@ -6559,6 +6571,12 @@ msgstr "Mostrar tudo o que está oculto"
 
 msgid "Show getting started card on empty maps"
 msgstr "Mostrar o cartão de primeiros passos em mapas vazios"
+
+msgid "Show pressed keys (for tutorials and recordings)"
+msgstr "Mostrar teclas pressionadas (para tutoriais e gravações)"
+
+msgid "Show what Namaka is doing"
+msgstr "Mostrar o que o Namaka está fazendo"
 
 #, c-format
 msgid "Showing %d hidden instance(s)"
@@ -6582,6 +6600,16 @@ msgstr ""
 
 msgid "Shows the first-steps card while the map is empty."
 msgstr "Mostra o cartão de primeiros passos enquanto o mapa está vazio."
+
+msgid "Shows the keys and mouse buttons you press over the 3D view, for tutorials and recordings."
+msgstr "Mostra sobre a vista 3D as teclas e os botões do mouse que você pressiona, para tutoriais e gravações."
+
+msgid ""
+"Shows the keys and mouse buttons you press over the 3D view.\n"
+"While you type in a field only shortcuts show, never the text."
+msgstr ""
+"Mostra sobre a vista 3D as teclas e os botões do mouse que você pressiona.\n"
+"Enquanto você digita num campo, só os atalhos aparecem, nunca o texto."
 
 msgid "Shows the mirror and where the objects go before you apply."
 msgstr "Mostra o espelho e para onde os objetos vão antes de aplicar."
@@ -7430,6 +7458,12 @@ msgstr "Alternar a seleção do objeto"
 msgid "Tools"
 msgstr "Ferramentas"
 
+msgid "Top left"
+msgstr "Em cima à esquerda"
+
+msgid "Top right"
+msgstr "Em cima à direita"
+
 msgid "Toreno's ranch"
 msgstr "Rancho do Toreno"
 
@@ -7831,6 +7865,12 @@ msgstr "Novidades"
 msgid "What's new in %s"
 msgstr "Novidades da %s"
 
+msgid "Wheel down"
+msgstr "Roda para baixo"
+
+msgid "Wheel up"
+msgstr "Roda para cima"
+
 msgid ""
 "When Namaka is installed, Haumea listens for it on its own socket\n"
 "(only your user can use it). Changes apply from the next start."
@@ -7847,6 +7887,12 @@ msgstr ""
 
 msgid "When off, flying (W/A/S/D with the look button held) goes at the constant fly speed below."
 msgstr "Desligado, o voo (W/A/S/D com o botão de olhar segurado) vai na velocidade de voo constante abaixo."
+
+msgid "Where"
+msgstr "Onde"
+
+msgid "Where in the 3D view the pressed keys and Namaka's actions show."
+msgstr "Em que lugar da vista 3D aparecem as teclas pressionadas e as ações do Namaka."
 
 msgid "Where it's used"
 msgstr "Onde é usado"
@@ -7886,6 +7932,9 @@ msgstr ""
 "1 = Fase Norte-Sul (usa LightForCars1)\n"
 "2 = Fase Oeste-Leste (usa LightForCars2)\n"
 "3 = Não usado no SA original (comportamento indefinido)"
+
+msgid "While Namaka works in the editor, a line over the 3D view says what it is doing."
+msgstr "Enquanto o Namaka trabalha no editor, uma linha sobre a vista 3D diz o que ele está fazendo."
 
 msgid ""
 "While dragging on the ground, turn the object to match the slope.\n"
@@ -8192,6 +8241,9 @@ msgstr "cilindro"
 
 msgid "default"
 msgstr "padrão"
+
+msgid "drag"
+msgstr "arrastar"
 
 msgid "driver"
 msgstr "motorista"
