@@ -33,7 +33,7 @@ msgid ""
 msgstr ""
 "%s\n"
 "TXD %s, modelo %d\n"
-"Clique para aplicar; clique direito para guardar nos Favoritos."
+"Clique para aplicar; clique direito para salvar nos Favoritos."
 
 #: tools/haumea/texbrowser.cpp:519
 #, c-format
@@ -44,7 +44,7 @@ msgid ""
 msgstr ""
 "%s\n"
 "TXD %s, modelo %d (nenhum modelo carrega esta TXD)\n"
-"Clique para aplicar; clique direito para guardar nos Favoritos."
+"Clique para aplicar; clique direito para salvar nos Favoritos."
 
 #: tools/haumea/nodes_ui.cpp:212
 msgid "(other file)"
@@ -252,7 +252,7 @@ msgstr "Aplica-se a %d selecionados"
 
 #: tools/haumea/nodes_ui.cpp:254
 msgid "Area grid"
-msgstr "Grade de áreas"
+msgstr "Grade"
 
 #: tools/haumea/sapaths.cpp:6838
 msgid "Area has unsaved edits"

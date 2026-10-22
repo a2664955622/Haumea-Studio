@@ -63,6 +63,9 @@ class CatalogTests(unittest.TestCase):
     def test_no_conflicts_between_staging_files(self):
         self.assertEqual(merge.build()[1], [])
 
+    def test_no_unused_msgids(self):
+        self.assertEqual(merge.build()[2], [], 'staging msgids no source file marks; remove them')
+
     def test_pt_br_is_complete(self):
         """Every marked string has a pt-BR translation (lang/pt-BR.po or a staging file)."""
         done = extract.translated(extract.pt_br_paths())
@@ -197,6 +200,37 @@ class EditorTests(unittest.TestCase):
             self.assertIn(name, after, name + ' lost its saved settings')
             self.assertEqual(after[name].get('DockId'), windows[name].get('DockId'), name + ' undocked')
         self.assertEqual(re.findall(r'Selected=0x\w+', ini_b), re.findall(r'Selected=0x\w+', ini_a))
+
+    def panels(self, titles):
+        return self.PANELS.replace('exit\n', ''.join('assert window "%s"\n' % t for t in titles) + 'exit\n')
+
+    PANELS = ('open "$UI_FIXTURES/ui_floor.pwn"\nwait 50\n' +
+              ''.join('shortcut window_%s\n' % w for w in (
+                  'camera', 'changes', 'pawn_code', 'textures', 'nodes')) +
+              'wait 60\nassert clipped_items >= 0\n'
+              'shortcut window_shortcuts\nwait 20\nassert clipped_items >= 0\n'
+              'shortcut window_preferences\nwait 20\nassert clipped_items >= 0\n' +
+              ''.join("click_item 'Preferences' '%s'\nwait 10\nassert clipped_items >= 0\n" % tab
+                      for tab in ('Shortcuts', 'Camera', 'Test server', 'Privacy', 'Updates')) +
+              'exit\n')
+
+    PANEL_FLAGS = ''.join('show_%s_window 1\n' % w for w in (
+        'instance', 'browser', 'map_objects', 'view', 'time_weather'))
+
+    @staticmethod
+    def clipped(output):
+        """The labels the script logged as cut off. Not by window: its title is translated too."""
+        return set(re.findall(r"clipped '(.*?)' in '", output))
+
+    def test_pt_br_labels_and_overflow(self):
+        """The same panels in pt-BR: the labels are Portuguese, and none runs past its
+        window unless it already does in English."""
+        _, _, english = self.editor(self.panels(['Object Browser', 'Preferences']), savesettings='language en\n' + self.PANEL_FLAGS)
+        _, _, portuguese = self.editor(self.panels(['Navegador de objetos', 'Informações do objeto', 'Objetos do mapa', 'Preferências']),
+                                     savesettings='language pt-BR\n' + self.PANEL_FLAGS)
+        grew = sorted(self.clipped(portuguese) - self.clipped(english))
+        self.assertEqual(grew, [], 'labels cut off in pt-BR only (shorten the translation):\n' +
+                         '\n'.join(grew))
 
     def test_catalog_and_picker(self):
         """A catalog in HAUMEA_LANG_DIR is a language: the setting loads it, a

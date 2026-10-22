@@ -161,7 +161,7 @@ uma fonte que não está instalada.
 
 ## Modelos personalizados (open.mp e SA-MP 0.3.DL)
 
-**Arquivo → Importar → Modelo personalizado** coloca um DFF e um TXD na pasta `models` do workspace
+**Arquivo → Importar → Modelo personalizado... (0.3.DL)** coloca um DFF e um TXD na pasta `models` do workspace
 e no `artconfig.txt`, para que jogadores do open.mp e do 0.3.DL os baixem. Os modelos
 personalizados aparecem em **Modelos personalizados** no navegador e mantêm os IDs negativos no
 mapa salvo.
@@ -284,7 +284,7 @@ do open.mp quanto com os do SA-MP 0.3.7.
 - **Grupos e notas** são salvos depois de cada objeto como `// model @group("...") @note("...")`.
   Mantenha esses comentários quando editar o arquivo à mão.
 - **Autosave**: enquanto um mapa tem mudanças não salvas, o Haumea salva cópias na pasta de
-  configuração dele. **Arquivo → Recuperar autosave** as abre.
+  configuração dele. **Arquivo → Recuperar salvamento automático** as abre.
 - **Código Pawn ao vivo** (em Janelas) mostra o código enquanto você edita.
 
 ## Namaka (assistente de IA)
@@ -333,7 +333,7 @@ dela, **Atualizar agora** a baixa em segundo plano, e ela é instalada na próxi
 iniciar (ou na hora com **Reiniciar agora**, depois que as suas mudanças forem salvas). O Haumea
 confere o download com os checksums da versão e substitui só os próprios arquivos; os seus mapas,
 configurações e qualquer outra coisa na pasta dele ficam como estão, e um arquivo do Haumea que
-você alterou é guardado como `<arquivo>.local`. **Ajuda → Voltar versão** restaura a versão
+você alterou é guardado como `<arquivo>.local`. **Ajuda → Voltar para a versão anterior** restaura a versão
 anterior. **Preferências → Atualizações** liga ou desliga a verificação e os downloads automáticos
 e escolhe o canal; **Ajuda → Procurar atualizações** verifica na hora.
 

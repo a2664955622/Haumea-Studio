@@ -871,6 +871,24 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		why = "last toast: " + gLastToast;
 		return gLastToast.find(arg(1)) != std::string::npos;
 	}
+	if(what == "clipped_items"){
+		// clipped_items <op> <n>: labelled items on screen whose box runs past the
+		// side of their window (a label that grew, in a language with longer words).
+		int count = 0;
+		for(const UiItem &it : gPrevItems){
+			if(it.label.empty() || it.clip.GetWidth() <= 0 || it.bb.GetWidth() <= 0)
+				continue;
+			bool seenRow = it.bb.Min.y >= it.clip.Min.y && it.bb.Max.y <= it.clip.Max.y;
+			if(seenRow && (it.bb.Max.x > it.clip.Max.x + 1.0f || it.bb.Min.x < it.clip.Min.x - 1.0f)){
+				say("  clipped '%s' in '%s' (%.0f..%.0f of %.0f..%.0f)", it.label.c_str(), it.window.c_str(),
+					it.bb.Min.x, it.bb.Max.x, it.clip.Min.x, it.clip.Max.x);
+				count++;
+			}
+		}
+		snprintf(buf, sizeof(buf), "clipped_items is %d", count);
+		why = buf;
+		return compare(count, arg(1), atof(arg(2).c_str()));
+	}
 	if(what == "window" || what == "no_window"){
 		bool open = windowOpen(arg(1));
 		why = open ? "open" : "not open";

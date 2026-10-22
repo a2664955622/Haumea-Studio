@@ -1667,7 +1667,7 @@ msgstr "Para as ruas do jogo, escolha \"Andar pelos nós\" (Janelas > Nós, %s).
 
 #: gui.cpp:4655
 msgid "Use custom models"
-msgstr "Uso modelos personalizados"
+msgstr "Usar modelos personalizados"
 
 #: gui.cpp:4656
 msgid "SA-MP 0.3.DL and open.mp clients download custom models."

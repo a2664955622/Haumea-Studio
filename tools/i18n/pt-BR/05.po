@@ -1598,7 +1598,7 @@ msgstr "Essa pasta não existe."
 
 #: tools/haumea/haumea.cpp:2265
 msgid "The SA-MP tab places pickups, 3D labels, actors, classes, gang zones and map icons."
-msgstr "A aba SA-MP coloca pickups, 3D labels, atores, classes, gang zones e ícones de mapa."
+msgstr "A aba SA-MP coloca pickups, 3D labels, atores, classes, gang zones e map icons."
 
 #: tools/haumea/haumea.cpp:2345
 msgid "The all-in-one editor for open.mp and SA-MP"
@@ -1892,7 +1892,7 @@ msgstr "o texto passa do limite de 800 caracteres."
 
 #: tools/haumea/mapcheck.cpp:332
 msgid "map icons"
-msgstr "ícones de mapa"
+msgstr "map icons"
 
 #: tools/haumea/startscreen.cpp:587
 msgid "no workspace"
