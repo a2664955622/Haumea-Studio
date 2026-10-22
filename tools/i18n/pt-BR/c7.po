@@ -1,0 +1,4687 @@
+# pt-BR translations of the strings in: gui.cpp interiors.cpp licenses.cpp maptools.cpp radarart.cpp testserver.cpp
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: tools/haumea/gui.cpp:11368
+msgid "  (in the map, read-only)"
+msgstr "  (no mapa, somente leitura)"
+
+#: tools/haumea/gui.cpp:11675
+#, c-format
+msgid "\"%s\" isn't a Pawn variable name"
+msgstr "\"%s\" não é um nome de variável Pawn"
+
+#: tools/haumea/gui.cpp:11927
+#, c-format
+msgid "%-3s %-20s  %.1f, %.1f, %.1f  (%.1f deg)"
+msgstr "%-3s %-20s  %.1f, %.1f, %.1f  (%.1f graus)"
+
+#: tools/haumea/gui.cpp:11932
+#, c-format
+msgid "%-3s %-20s  material override(s)"
+msgstr "%-3s %-20s  substituição(ões) de material"
+
+#: tools/haumea/gui.cpp:9771
+#, c-format
+msgid ""
+"%d  %s\n"
+"Double-click to place"
+msgstr ""
+"%d  %s\n"
+"Clique duas vezes para colocar"
+
+#: tools/haumea/gui.cpp:10084
+#, c-format
+msgid ""
+"%d SA-MP element(s), %d vehicle(s)\n"
+"%s"
+msgstr ""
+"%d elemento(s) SA-MP, %d veículo(s)\n"
+"%s"
+
+#: tools/haumea/gui.cpp:11841
+#, c-format
+msgid "%d added, %d deleted, %d moved, %d rotated, %d material"
+msgstr "%d adicionado(s), %d excluído(s), %d movido(s), %d girado(s), %d de material"
+
+#: tools/haumea/gui.cpp:8944
+#, c-format
+msgid "%d audio streams: a player hears one at a time, the last one started."
+msgstr "%d audio streams: o jogador ouve um de cada vez, o último iniciado."
+
+#: tools/haumea/gui.cpp:12005
+#, c-format
+msgid "%d characters | %s"
+msgstr "%d caracteres | %s"
+
+#: tools/haumea/gui.cpp:8880
+#, c-format
+msgid "%d corner(s)"
+msgstr "%d canto(s)"
+
+#: tools/haumea/gui.cpp:12165
+#, c-format
+msgid "%d element(s) are in another virtual world or interior"
+msgstr "%d elemento(s) estão em outro virtual world ou interior"
+
+#: tools/haumea/gui.cpp:10553
+#, c-format
+msgid "%d favourites"
+msgstr "%d favoritos"
+
+#: tools/haumea/gui.cpp:12120
+#, c-format
+msgid "%d hidden"
+msgstr "%d ocultos"
+
+#: tools/haumea/gui.cpp:10368
+#, c-format
+msgid "%d in map"
+msgstr "%d no mapa"
+
+#: tools/haumea/gui.cpp:11181
+#, c-format
+msgid "%d item(s) only inside it"
+msgstr "%d item(ns) só dentro dela"
+
+#: tools/haumea/gui.cpp:12167
+#, c-format
+msgid "%d item(s) only show inside a dynamic area the camera is outside"
+msgstr "%d item(ns) só aparecem dentro de uma dynamic area onde a câmera não está"
+
+#: tools/haumea/gui.cpp:8900
+#, c-format
+msgid "%d item(s) shown only inside it"
+msgstr "%d item(ns) mostrados só dentro dela"
+
+#: tools/haumea/gui.cpp:10527 tools/haumea/gui.cpp:10627 tools/haumea/gui.cpp:11708
+#, c-format
+msgid "%d objects"
+msgstr "%d objetos"
+
+#: tools/haumea/gui.cpp:12161
+#, c-format
+msgid "%d objects visible / %d created (native, limit 1000)"
+msgstr "%d objetos visíveis / %d criados (nativo, limite 1000)"
+
+#: tools/haumea/gui.cpp:12158
+#, c-format
+msgid "%d objects visible / %d streamed (of %d in stream range, limit 1000)"
+msgstr "%d objetos visíveis / %d no stream (de %d no alcance, limite 1000)"
+
+#: tools/haumea/radarart.cpp:955
+#, c-format
+msgid "%d objects, %d x %d cells"
+msgstr "%d objetos, %d x %d células"
+
+#: tools/haumea/radarart.cpp:954
+#, c-format
+msgid "%d objects, %d x %d cells (some without a footprint)"
+msgstr "%d objetos, %d x %d células (alguns sem área de base)"
+
+#: tools/haumea/gui.cpp:9419
+#, c-format
+msgid "%d selected world object(s) will be replaced in the map."
+msgstr "%d objeto(s) do mundo selecionado(s) serão substituídos no mapa."
+
+#: tools/haumea/gui.cpp:9121
+#, c-format
+msgid "%d selected, %d of this kind"
+msgstr "%d selecionados, %d deste tipo"
+
+#: tools/haumea/gui.cpp:12091
+#, c-format
+msgid "%d selected: drag the gizmo (%s move, %s rotate), %s drops to ground, %s focuses, %s duplicates, %s deletes. Settings are in Object Info (%s)."
+msgstr "%d selecionado(s): arraste o gizmo (%s move, %s gira), %s põe no chão, %s foca, %s duplica, %s exclui. As configurações ficam em Informações do objeto (%s)."
+
+#: tools/haumea/gui.cpp:11569
+#, c-format
+msgid "%d shown"
+msgstr "%d mostrados"
+
+#: tools/haumea/gui.cpp:11567
+#, c-format
+msgid "%d shown, GTA buildings removed: %d"
+msgstr "%d mostrados, construções do GTA removidas: %d"
+
+#: tools/haumea/gui.cpp:12162
+#, c-format
+msgid "%d vehicles, %d actors streamed  |  virtual world %d, interior %d"
+msgstr "%d veículos, %d atores no stream  |  virtual world %d, interior %d"
+
+#: tools/haumea/radarart.cpp:945
+#, c-format
+msgid "%d zones"
+msgstr "%d zonas"
+
+#: tools/haumea/radarart.cpp:942
+#, c-format
+msgid "%d zones, at most %d around a player"
+msgstr "%d zonas, no máximo %d perto de um jogador"
+
+#: tools/haumea/gui.cpp:9941
+#, c-format
+msgid ""
+"%s\n"
+"%d instance(s), %d SA-MP element(s), %d vehicle(s)\n"
+"%s\n"
+"Double-click to place"
+msgstr ""
+"%s\n"
+"%d instância(s), %d elemento(s) SA-MP, %d veículo(s)\n"
+"%s\n"
+"Clique duas vezes para colocar"
+
+#: tools/haumea/gui.cpp:9945
+#, c-format
+msgid ""
+"%s\n"
+"%d instance(s), %d SA-MP element(s), %d vehicle(s)\n"
+"Tags: %s\n"
+"%s\n"
+"Double-click to place"
+msgstr ""
+"%s\n"
+"%d instância(s), %d elemento(s) SA-MP, %d veículo(s)\n"
+"Tags: %s\n"
+"%s\n"
+"Clique duas vezes para colocar"
+
+#: tools/haumea/gui.cpp:12196
+#, c-format
+msgid ""
+"%s\n"
+"Maps, custom models and the test server use this server folder."
+msgstr ""
+"%s\n"
+"Mapas, modelos personalizados e o servidor de teste usam esta pasta do servidor."
+
+#: tools/haumea/gui.cpp:8192
+#, c-format
+msgid "%s  (%d points)"
+msgstr "%s  (%d pontos)"
+
+#: tools/haumea/gui.cpp:9393
+#, c-format
+msgid "%s  model %d"
+msgstr "%s  modelo %d"
+
+#: tools/haumea/gui.cpp:9155
+#, c-format
+msgid "%s (missing)"
+msgstr "%s (ausente)"
+
+#: tools/haumea/gui.cpp:8399
+#, c-format
+msgid "%s already sits there."
+msgstr "%s já está nesse assento."
+
+#: tools/haumea/gui.cpp:9213
+#, c-format
+msgid "%s already uses this name."
+msgstr "%s já usa este nome."
+
+#: tools/haumea/licenses.cpp:70
+#, c-format
+msgid "%s isn't next to the editor. It ships with every release, and is in the source at https://github.com/itsneufox/haumea."
+msgstr "%s não está junto do editor. Ele vem com toda versão e está no código-fonte em https://github.com/itsneufox/haumea."
+
+#: tools/haumea/gui.cpp:12098
+#, c-format
+msgid "%s picks an object to place, %s lists what is in the map, click an object to select it, %s saves. %s lists every shortcut."
+msgstr "%s escolhe um objeto para colocar, %s lista o que há no mapa, clique num objeto para selecioná-lo, %s salva. %s lista todos os atalhos."
+
+#: tools/haumea/gui.cpp:12112
+#, c-format
+msgid "%s%s  |  Objects: %d%s  |  %.0f FPS"
+msgstr "%s%s  |  Objetos: %d%s  |  %.0f FPS"
+
+#: tools/haumea/gui.cpp:10083
+#, c-format
+msgid "%s, %d instance(s)"
+msgstr "%s, %d instância(s)"
+
+#: tools/haumea/maptools.cpp:700
+#, c-format
+msgid "%s: %d object(s)"
+msgstr "%s: %d objeto(s)"
+
+#: tools/haumea/gui.cpp:9397
+#, c-format
+msgid "(+%d more selected)"
+msgstr "(+%d selecionados)"
+
+#: tools/haumea/gui.cpp:8358
+msgid "(deleted vehicle)"
+msgstr "(veículo excluído)"
+
+#: tools/haumea/gui.cpp:10870
+msgid "(no URL)"
+msgstr "(sem URL)"
+
+#: tools/haumea/gui.cpp:7967
+msgid "(no group)"
+msgstr "(sem grupo)"
+
+#: tools/haumea/gui.cpp:8117
+msgid "(no model)"
+msgstr "(sem modelo)"
+
+#: tools/haumea/gui.cpp:11310
+msgid "(no name)"
+msgstr "(sem nome)"
+
+#: tools/haumea/gui.cpp:7927
+msgid "(none)"
+msgstr "(nenhum)"
+
+#: tools/haumea/radarart.cpp:949
+msgid "(over 1024)"
+msgstr "(acima de 1024)"
+
+#: tools/haumea/radarart.cpp:855
+msgid "(pick one)"
+msgstr "(escolha um)"
+
+#: tools/haumea/gui.cpp:12110
+#, c-format
+msgid ", %d removed"
+msgstr ", %d removidos"
+
+#: tools/haumea/gui.cpp:11843
+#, c-format
+msgid ", %d restored"
+msgstr ", %d restaurados"
+
+#: tools/haumea/gui.cpp:9258
+msgid ""
+"-1 shows it in every world (with the streamer; native labels and\n"
+"actors use world 0 then)."
+msgstr ""
+"-1 mostra em todos os worlds (com o streamer; 3D text labels e atores\n"
+"nativos usam o world 0 então)."
+
+#: tools/haumea/gui.cpp:8231
+msgid "0  Normal"
+msgstr "0  Normal"
+
+#: tools/haumea/gui.cpp:8004
+msgid "0  Not pickupable"
+msgstr "0  Não coletável"
+
+#: tools/haumea/gui.cpp:8004
+msgid "1  Always there, cannot be picked up by script"
+msgstr "1  Sempre presente, não pode ser coletado por script"
+
+#: tools/haumea/gui.cpp:8231
+msgid "1  Finish"
+msgstr "1  Chegada"
+
+#: tools/haumea/gui.cpp:12198
+msgid "1.  Set your server folder: File > Workspace."
+msgstr "1.  Defina a pasta do servidor: Arquivo > Workspace."
+
+#: tools/haumea/gui.cpp:12195
+#, c-format
+msgid "1.  Workspace: %s"
+msgstr "1.  Workspace: %s"
+
+#: tools/haumea/gui.cpp:8007
+msgid "11  Blows up vehicles"
+msgstr "11  Explode veículos"
+
+#: tools/haumea/gui.cpp:8007
+msgid "12  Blows up vehicles"
+msgstr "12  Explode veículos"
+
+#: tools/haumea/gui.cpp:8008
+msgid "13  Slows vehicles down"
+msgstr "13  Deixa veículos lentos"
+
+#: tools/haumea/gui.cpp:8008
+msgid "14  Picked up from vehicles only"
+msgstr "14  Coletado só de dentro de veículos"
+
+#: tools/haumea/gui.cpp:8009
+msgid "15  Respawns 30 s after pickup"
+msgstr "15  Reaparece 30 s após a coleta"
+
+#: tools/haumea/gui.cpp:8009
+msgid "19  Disappears, plays pickup sound"
+msgstr "19  Some e toca o som de coleta"
+
+#: tools/haumea/gui.cpp:8231
+msgid "2  Nothing"
+msgstr "2  Nada"
+
+#: tools/haumea/gui.cpp:8005
+msgid "2  Respawns 30 s after pickup"
+msgstr "2  Reaparece 30 s após a coleta"
+
+#: tools/haumea/gui.cpp:12199
+#, c-format
+msgid ""
+"2.  Place objects from the Object Browser (%s); pickups, actors, sounds\n"
+"     and more are on its SA-MP tab."
+msgstr ""
+"2.  Coloque objetos pelo Navegador de objetos (%s); pickups, atores, sons\n"
+"     e mais ficam na aba SA-MP dele."
+
+#: tools/haumea/gui.cpp:8010
+msgid "22  Respawns after death"
+msgstr "22  Reaparece após a morte"
+
+#: tools/haumea/gui.cpp:8010
+msgid "23  Disappears, can be walked through"
+msgstr "23  Some, dá para atravessar"
+
+#: tools/haumea/gui.cpp:8231
+msgid "3  Air normal"
+msgstr "3  Aéreo normal"
+
+#: tools/haumea/gui.cpp:8005
+msgid "3  Respawns after death"
+msgstr "3  Reaparece após a morte"
+
+#: tools/haumea/gui.cpp:8577
+msgid "3-24 characters: letters, digits and [ ] ( ) $ @ . _ ="
+msgstr "3 a 24 caracteres: letras, dígitos e [ ] ( ) $ @ . _ ="
+
+#: tools/haumea/gui.cpp:12201
+msgid "3.  NPCs: place an NPC and NPC path points there too."
+msgstr "3.  NPCs: coloque um NPC e pontos de caminho de NPC por lá também."
+
+#: tools/haumea/gui.cpp:11270
+msgid "3D text labels"
+msgstr "3D text labels"
+
+#: tools/haumea/gui.cpp:8231
+msgid "4  Air finish"
+msgstr "4  Chegada aérea"
+
+#: tools/haumea/gui.cpp:8006
+msgid "4  Disappears 15-20 s after creation"
+msgstr "4  Some 15-20 s após ser criado"
+
+#: tools/haumea/gui.cpp:12204
+msgid "4.  Textdraws: Windows > TextDraws. They go in a file of their own."
+msgstr "4.  Textdraws: Janelas > TextDraws. Ficam num arquivo próprio."
+
+#: tools/haumea/gui.cpp:8232
+msgid "5  Air (rotates and stops)"
+msgstr "5  Aéreo (gira e para)"
+
+#: tools/haumea/gui.cpp:12205
+#, c-format
+msgid "5.  Test in game (%s) and Map check (%s) before you ship it."
+msgstr "5.  Teste no jogo (%s) e Verificação do mapa (%s) antes de publicar."
+
+#: tools/haumea/gui.cpp:8232
+msgid "6  Air (grows, shrinks, disappears)"
+msgstr "6  Aéreo (cresce, encolhe, some)"
+
+#: tools/haumea/gui.cpp:12207
+#, c-format
+msgid "6.  %s saves the map."
+msgstr "6.  %s salva o mapa."
+
+#: tools/haumea/gui.cpp:8233
+msgid "7  Air (swings down and up)"
+msgstr "7  Aéreo (balança para baixo e para cima)"
+
+#: tools/haumea/gui.cpp:8233
+msgid "8  Air (swings up and down)"
+msgstr "8  Aéreo (balança para cima e para baixo)"
+
+#: tools/haumea/gui.cpp:8006
+msgid "8  Disappears without effect"
+msgstr "8  Some sem efeito"
+
+#: tools/haumea/gui.cpp:9115
+#, c-format
+msgid ""
+"A field you change here is set on every selected instance that has it,\n"
+"and Position & Rotation move and turn the whole selection, keeping its layout\n"
+"(the first selected is the pivot). Other fields keep their own values.\n"
+"%s undoes the whole change."
+msgstr ""
+"Um campo alterado aqui vale para toda instância selecionada que o tenha,\n"
+"e Posição e rotação movem e giram a seleção inteira, mantendo o arranjo\n"
+"(o primeiro selecionado é o pivô). Os outros campos mantêm seus valores.\n"
+"%s desfaz a mudança inteira."
+
+#: tools/haumea/radarart.cpp:840
+msgid "A group"
+msgstr "Um grupo"
+
+#: tools/haumea/radarart.cpp:952
+msgid "A player sees at most 1024 gang zones. Use bigger cells or fewer colours."
+msgstr "Um jogador vê no máximo 1024 gang zones. Use células maiores ou menos cores."
+
+#: tools/haumea/gui.cpp:8897
+msgid "A polygon needs at least 3 corners."
+msgstr "Um polígono precisa de pelo menos 3 cantos."
+
+#: tools/haumea/gui.cpp:8018
+msgid "AK-47"
+msgstr "AK-47"
+
+#: tools/haumea/gui.cpp:7826
+msgid "Accelerate fly movement"
+msgstr "Acelerar o voo"
+
+#: tools/haumea/gui.cpp:7672
+msgid "Action"
+msgstr "Ação"
+
+#: tools/haumea/gui.cpp:10891
+#, c-format
+msgid "Actor  skin %d"
+msgstr "Ator  skin %d"
+
+#: tools/haumea/gui.cpp:11267
+msgid "Actors"
+msgstr "Atores"
+
+#: tools/haumea/gui.cpp:8832
+msgid "Add checkpoints"
+msgstr "Adicionar checkpoints"
+
+#: tools/haumea/gui.cpp:8883
+msgid "Add corners"
+msgstr "Adicionar cantos"
+
+#: tools/haumea/gui.cpp:8763
+msgid "Add points"
+msgstr "Adicionar pontos"
+
+#: tools/haumea/gui.cpp:9594 tools/haumea/gui.cpp:10197
+msgid "Add to Favourites"
+msgstr "Adicionar aos favoritos"
+
+#: tools/haumea/gui.cpp:10332
+msgid "AddPlayerClass: a spawn point with a skin and weapons"
+msgstr "AddPlayerClass: um ponto de spawn com skin e armas"
+
+#: tools/haumea/gui.cpp:11849
+msgid "Added"
+msgstr "Adicionados"
+
+#: tools/haumea/maptools.cpp:972
+msgid "Added to the line's direction, in degrees: 90 turns them sideways."
+msgstr "Somado à direção da linha, em graus: 90 os vira de lado."
+
+#: tools/haumea/gui.cpp:7994
+msgid "Adrenaline"
+msgstr "Adrenalina"
+
+#: tools/haumea/gui.cpp:8268
+msgid "Air conditioning"
+msgstr "Ar-condicionado"
+
+#: tools/haumea/gui.cpp:8267
+msgid "Air horn"
+msgstr "Buzina a ar"
+
+#: tools/haumea/gui.cpp:8267
+msgid "Air horn (long)"
+msgstr "Buzina a ar (longa)"
+
+#: tools/haumea/gui.cpp:8026
+msgid "Airyard"
+msgstr "Airyard"
+
+#: tools/haumea/maptools.cpp:850
+msgid "Align"
+msgstr "Alinhar"
+
+#: tools/haumea/maptools.cpp:1014
+msgid "Align & distribute"
+msgstr "Alinhar e distribuir"
+
+#: tools/haumea/gui.cpp:7473
+msgid "Align to surface"
+msgstr "Alinhar à superfície"
+
+#: tools/haumea/gui.cpp:11847
+msgid "All"
+msgstr "Todos"
+
+#: tools/haumea/gui.cpp:10034
+#, c-format
+msgid "All (%d)"
+msgstr "Todos (%d)"
+
+#: tools/haumea/gui.cpp:10604 tools/haumea/gui.cpp:10607
+msgid "All IDE files"
+msgstr "Todos os arquivos IDE"
+
+#: tools/haumea/gui.cpp:11509 tools/haumea/gui.cpp:11513
+msgid "All kinds"
+msgstr "Todos os tipos"
+
+#: tools/haumea/gui.cpp:10479 tools/haumea/gui.cpp:10484 tools/haumea/radarart.cpp:840
+msgid "All objects"
+msgstr "Todos os objetos"
+
+#: tools/haumea/maptools.cpp:988 tools/haumea/maptools.cpp:1018
+msgid "Along a line"
+msgstr "Ao longo de uma linha"
+
+#: tools/haumea/maptools.cpp:968
+msgid "Along its length"
+msgstr "No sentido do comprimento"
+
+#: tools/haumea/gui.cpp:7674
+msgid "Also"
+msgstr "Também"
+
+#: tools/haumea/gui.cpp:7725
+#, c-format
+msgid "Also used by \"%s\" (%s). Both run when it is pressed."
+msgstr "Também usado por \"%s\" (%s). Os dois rodam ao pressionar."
+
+#: tools/haumea/gui.cpp:8026
+msgid "Ammu-Nation"
+msgstr "Ammu-Nation"
+
+#: tools/haumea/gui.cpp:8274
+msgid "Ammu-Nation interior (0.3.7-R2)"
+msgstr "Interior da Ammu-Nation (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:10342
+msgid "An audio stream or game sound players hear near this place"
+msgstr "Um audio stream ou som do jogo que os jogadores ouvem perto deste lugar"
+
+#: tools/haumea/gui.cpp:8727
+msgid "An on-foot recording: the NPC has to be on foot."
+msgstr "Uma gravação a pé: o NPC precisa estar a pé."
+
+#: tools/haumea/maptools.cpp:754
+msgid "Angle"
+msgstr "Ângulo"
+
+#: tools/haumea/gui.cpp:8420
+msgid "Animation"
+msgstr "Animação"
+
+#: tools/haumea/gui.cpp:8579
+msgid "Another NPC is already called that."
+msgstr "Outro NPC já tem esse nome."
+
+#: tools/haumea/gui.cpp:11677
+#, c-format
+msgid "Another object is already called %s"
+msgstr "Outro objeto já se chama %s"
+
+#: tools/haumea/maptools.cpp:761 tools/haumea/maptools.cpp:803 tools/haumea/maptools.cpp:984 tools/haumea/radarart.cpp:961
+msgid "Apply"
+msgstr "Aplicar"
+
+#: tools/haumea/gui.cpp:10815
+#, c-format
+msgid "Area %s (%s, %d item(s))"
+msgstr "Área %s (%s, %d item(ns))"
+
+#: tools/haumea/gui.cpp:8275
+msgid "Area 51 interior (0.3.7-R2)"
+msgstr "Interior da Área 51 (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:7993 tools/haumea/gui.cpp:8596
+msgid "Armour"
+msgstr "Colete"
+
+#: tools/haumea/maptools.cpp:786
+msgid "Around"
+msgstr "Em torno de"
+
+#: tools/haumea/maptools.cpp:763 tools/haumea/maptools.cpp:1010
+msgid "Array"
+msgstr "Matriz"
+
+#: tools/haumea/gui.cpp:7999
+msgid "Arrow"
+msgstr "Seta"
+
+#: tools/haumea/gui.cpp:10103
+msgid "As a group"
+msgstr "Como grupo"
+
+#: tools/haumea/maptools.cpp:783
+msgid "At"
+msgstr "Em"
+
+#: tools/haumea/gui.cpp:9313
+#, c-format
+msgid "Attach %s to this"
+msgstr "Anexar %s a este"
+
+#: tools/haumea/gui.cpp:9310
+#, c-format
+msgid "Attach this to %s"
+msgstr "Anexar este a %s"
+
+#: tools/haumea/gui.cpp:9284
+#, c-format
+msgid "Attached to %s"
+msgstr "Anexado a %s"
+
+#: tools/haumea/gui.cpp:9450
+msgid "Attachment"
+msgstr "Anexo"
+
+#: tools/haumea/gui.cpp:8918
+msgid "Audio stream"
+msgstr "Audio stream"
+
+#: tools/haumea/gui.cpp:10870
+#, c-format
+msgid "Audio stream  %s"
+msgstr "Audio stream  %s"
+
+#: tools/haumea/gui.cpp:8920
+msgid ""
+"Audio stream: a URL every player hears near here, in every world.\n"
+"Game sound: a GTA sound played when a player walks in. It needs _SoundTick on a\n"
+"timer, or _SoundArea with the streamer; the saved file's header says how."
+msgstr ""
+"Audio stream: uma URL que todo jogador ouve por perto, em todos os worlds.\n"
+"Som do jogo: um som do GTA tocado quando o jogador entra. Precisa de _SoundTick num\n"
+"timer, ou _SoundArea com o streamer; o cabeçalho do arquivo salvo explica como."
+
+#: tools/haumea/gui.cpp:8412 tools/haumea/i18n.cpp:549 tools/haumea/i18n.cpp:562
+msgid "Auto"
+msgstr "Automático"
+
+#: tools/haumea/gui.cpp:7774
+msgid "Autosave unsaved maps"
+msgstr "Salvar automaticamente mapas não salvos"
+
+#: tools/haumea/maptools.cpp:784 tools/haumea/maptools.cpp:842
+msgid "Axis"
+msgstr "Eixo"
+
+#: tools/haumea/gui.cpp:12074
+msgid "BRUSH"
+msgstr "PINCEL"
+
+#: tools/haumea/gui.cpp:8667
+msgid "Back and forth"
+msgstr "Ida e volta"
+
+#: tools/haumea/gui.cpp:8319
+msgid "Back left"
+msgstr "Traseiro esquerdo"
+
+#: tools/haumea/gui.cpp:8319
+msgid "Back right"
+msgstr "Traseiro direito"
+
+#: tools/haumea/gui.cpp:7741
+#, c-format
+msgid "Back to the default: %s%s%s"
+msgstr "Voltar ao padrão: %s%s%s"
+
+#: tools/haumea/gui.cpp:8258
+msgid "Background music"
+msgstr "Música de fundo"
+
+#: tools/haumea/gui.cpp:8269
+msgid "Bandit wheel start"
+msgstr "Início da roleta"
+
+#: tools/haumea/gui.cpp:8279
+msgid "Bar (0.3.7-R2)"
+msgstr "Bar (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:8026
+msgid "Barber"
+msgstr "Barbeiro"
+
+#: tools/haumea/gui.cpp:8270
+msgid "Barber's electric razor"
+msgstr "Máquina de barbear do barbeiro"
+
+#: tools/haumea/gui.cpp:8014
+msgid "Baseball bat"
+msgstr "Taco de beisebol"
+
+#: tools/haumea/gui.cpp:10209
+msgid "Benches, bins and street furniture"
+msgstr "Bancos, lixeiras e mobiliário urbano"
+
+#: tools/haumea/gui.cpp:8026
+msgid "Big Smoke"
+msgstr "Big Smoke"
+
+#: tools/haumea/gui.cpp:8266
+msgid "Bike and boat school results music"
+msgstr "Música do resultado da escola de moto e barco"
+
+#: tools/haumea/gui.cpp:8271
+msgid "Blast door sliding"
+msgstr "Porta blindada deslizando"
+
+#: tools/haumea/gui.cpp:8271
+msgid "Bling"
+msgstr "Bling"
+
+#: tools/haumea/gui.cpp:8253
+msgid "Blip A"
+msgstr "Bipe A"
+
+#: tools/haumea/gui.cpp:8254
+msgid "Blip B"
+msgstr "Bipe B"
+
+#: tools/haumea/gui.cpp:8257
+msgid "Blip C"
+msgstr "Bipe C"
+
+#: tools/haumea/gui.cpp:8026
+msgid "Boatyard"
+msgstr "Boatyard"
+
+#: tools/haumea/gui.cpp:7998
+msgid "Bomb"
+msgstr "Bomba"
+
+#: tools/haumea/gui.cpp:10210
+msgid "Boxes and crates"
+msgstr "Caixas e engradados"
+
+#: tools/haumea/gui.cpp:8014
+msgid "Brass knuckles"
+msgstr "Soco-inglês"
+
+#: tools/haumea/gui.cpp:7994
+msgid "Bribe (star)"
+msgstr "Suborno (estrela)"
+
+#: tools/haumea/gui.cpp:7995
+msgid "Briefcase"
+msgstr "Maleta"
+
+#: tools/haumea/gui.cpp:9498
+msgid "Browse"
+msgstr "Procurar"
+
+#: tools/haumea/gui.cpp:12209
+msgid "Browse objects"
+msgstr "Procurar objetos"
+
+#: tools/haumea/gui.cpp:7434 tools/haumea/gui.cpp:10185
+msgid "Brush"
+msgstr "Pincel"
+
+#: tools/haumea/gui.cpp:7481
+msgid ""
+"Brush disc size. 0 = single object under cursor.\n"
+"When > 0, each click scatters Count objects inside this radius."
+msgstr ""
+"Tamanho do disco do pincel. 0 = um objeto sob o cursor.\n"
+"Quando > 0, cada clique espalha Quantidade objetos dentro deste raio."
+
+#: tools/haumea/gui.cpp:10209
+msgid "Building blocks"
+msgstr "Blocos de construção"
+
+#: tools/haumea/gui.cpp:8026
+msgid "Burger Shot"
+msgstr "Burger Shot"
+
+#: tools/haumea/gui.cpp:10208
+msgid "Bushes and plants"
+msgstr "Arbustos e plantas"
+
+#: tools/haumea/radarart.cpp:884
+msgid "By group"
+msgstr "Por grupo"
+
+#: tools/haumea/gui.cpp:8027
+msgid "C.R.A.S.H."
+msgstr "C.R.A.S.H."
+
+#: tools/haumea/gui.cpp:8029
+msgid "Caligula's"
+msgstr "Caligula's"
+
+#: tools/haumea/gui.cpp:8268
+msgid "Calling tone"
+msgstr "Tom de chamada"
+
+#: tools/haumea/gui.cpp:6898 tools/haumea/gui.cpp:6902 tools/haumea/gui.cpp:7863 tools/haumea/gui.cpp:7998
+msgid "Camera"
+msgstr "Câmera"
+
+#: tools/haumea/gui.cpp:8260
+msgid "Camera click"
+msgstr "Clique de câmera"
+
+#: tools/haumea/gui.cpp:6900
+msgid "Camera speed and controls are in Windows > Preferences."
+msgstr "Velocidade e controles da câmera ficam em Janelas > Preferências."
+
+#: tools/haumea/maptools.cpp:752 tools/haumea/maptools.cpp:793
+msgid "Camera target"
+msgstr "Alvo da câmera"
+
+#: tools/haumea/gui.cpp:6948 tools/haumea/gui.cpp:6965 tools/haumea/gui.cpp:11765 tools/haumea/gui.cpp:11794
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: tools/haumea/gui.cpp:8016
+msgid "Cane"
+msgstr "Bengala"
+
+#: tools/haumea/gui.cpp:8263
+msgid "Car horn"
+msgstr "Buzina de carro"
+
+#: tools/haumea/gui.cpp:8027
+msgid "Carl Johnson"
+msgstr "Carl Johnson"
+
+#: tools/haumea/gui.cpp:8033
+msgid "Cash"
+msgstr "Dinheiro"
+
+#: tools/haumea/gui.cpp:8270
+msgid "Casino blip A"
+msgstr "Bipe do cassino A"
+
+#: tools/haumea/gui.cpp:8270
+msgid "Casino blip B"
+msgstr "Bipe do cassino B"
+
+#: tools/haumea/gui.cpp:8277
+msgid "Casino music (0.3.7-R2)"
+msgstr "Música do cassino (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:8027
+msgid "Catalina"
+msgstr "Catalina"
+
+#: tools/haumea/radarart.cpp:865
+msgid "Cell size"
+msgstr "Tamanho da célula"
+
+#: tools/haumea/maptools.cpp:747 tools/haumea/maptools.cpp:844
+msgid "Centre"
+msgstr "Centro"
+
+#: tools/haumea/gui.cpp:8027
+msgid "Cesar"
+msgstr "Cesar"
+
+#: tools/haumea/gui.cpp:8015
+msgid "Chainsaw"
+msgstr "Motosserra"
+
+#: tools/haumea/gui.cpp:11816
+msgid "Changes for Pawn Export"
+msgstr "Mudanças para a exportação Pawn"
+
+#: tools/haumea/gui.cpp:7550
+msgid "Check again"
+msgstr "Verificar de novo"
+
+#: tools/haumea/gui.cpp:8780
+msgid "Checkpoint"
+msgstr "Checkpoint"
+
+#: tools/haumea/gui.cpp:10844
+#, c-format
+msgid "Checkpoint  size %.1f"
+msgstr "Checkpoint  tamanho %.1f"
+
+#: tools/haumea/gui.cpp:8825
+#, c-format
+msgid "Checkpoint %d of %d. Each points at the next one up; the last at none."
+msgstr "Checkpoint %d de %d. Cada um aponta para o próximo; o último, para nenhum."
+
+#: tools/haumea/gui.cpp:11269
+msgid "Checkpoints and races"
+msgstr "Checkpoints e corridas"
+
+#: tools/haumea/gui.cpp:8814
+msgid "Checkpoints of one race point at each other in order."
+msgstr "Os checkpoints de uma corrida apontam uns para os outros em ordem."
+
+#: tools/haumea/gui.cpp:8850
+msgid "Circle"
+msgstr "Círculo"
+
+#: tools/haumea/gui.cpp:8861
+msgid ""
+"Circle and rectangle cover every height. The others go up from where the\n"
+"area stands (a sphere is around it)."
+msgstr ""
+"Círculo e retângulo cobrem qualquer altura. Os outros sobem de onde a\n"
+"área está (uma esfera fica em volta dela)."
+
+#: tools/haumea/gui.cpp:10913
+#, c-format
+msgid "Class %d  skin %d"
+msgstr "Classe %d  skin %d"
+
+#: tools/haumea/gui.cpp:10910
+#, c-format
+msgid "Class %d  skin %d  team %d"
+msgstr "Classe %d  skin %d  time %d"
+
+#: tools/haumea/gui.cpp:6995 tools/haumea/gui.cpp:6998 tools/haumea/maptools.cpp:941
+msgid "Clear"
+msgstr "Limpar"
+
+#: tools/haumea/testserver.cpp:1266
+msgid "Clear log"
+msgstr "Limpar registro"
+
+#: tools/haumea/gui.cpp:7654
+msgid "Click a key to change it, then press the new key with any Ctrl, Shift or Alt. Right-click a key to clear it. Shortcuts never fire while you type in a field."
+msgstr "Clique numa tecla para mudá-la e pressione a nova tecla com Ctrl, Shift ou Alt, se quiser. Clique com o botão direito para limpá-la. Atalhos nunca disparam enquanto você digita num campo."
+
+#: tools/haumea/interiors.cpp:272
+msgid "Click an interior to go there and show it. Right-click to copy it as Pawn."
+msgstr "Clique num interior para ir até ele e mostrá-lo. Botão direito para copiá-lo como Pawn."
+
+#: tools/haumea/gui.cpp:9495
+msgid "Click an object in the world to edit it. Shift+drag selects several."
+msgstr "Clique num objeto no mundo para editá-lo. Shift+arrastar seleciona vários."
+
+#: tools/haumea/gui.cpp:8889
+msgid ""
+"Click in the world to add a corner; Shift+click keeps adding.\n"
+"Esc or a right click stops. Drag a corner's handle to move it."
+msgstr ""
+"Clique no mundo para adicionar um canto; Shift+clique continua adicionando.\n"
+"Esc ou o botão direito para. Arraste a alça de um canto para movê-lo."
+
+#: tools/haumea/gui.cpp:8836
+msgid ""
+"Click in the world to add checkpoints to the end of this race.\n"
+"Shift+click keeps placing."
+msgstr ""
+"Clique no mundo para adicionar checkpoints ao fim desta corrida.\n"
+"Shift+clique continua colocando."
+
+#: tools/haumea/gui.cpp:8767
+msgid ""
+"Click in the world to add points to the end of this path.\n"
+"Shift+click keeps placing."
+msgstr ""
+"Clique no mundo para adicionar pontos ao fim deste caminho.\n"
+"Shift+clique continua colocando."
+
+#: tools/haumea/gui.cpp:10180
+#, c-format
+msgid ""
+"Click in the world to place it (%s to stop).\n"
+"Double-clicking a tile does the same."
+msgstr ""
+"Clique no mundo para colocá-lo (%s para parar).\n"
+"Clicar duas vezes num bloco faz o mesmo."
+
+#: tools/haumea/gui.cpp:10095
+msgid ""
+"Click in the world to place it. Q/E (or , and .) and the wheel turn it, Shift\n"
+"in smaller steps; Shift+click keeps placing; Esc stops."
+msgstr ""
+"Clique no mundo para colocá-lo. Q/E (ou , e .) e a roda giram, Shift\n"
+"em passos menores; Shift+clique continua colocando; Esc para."
+
+#: tools/haumea/maptools.cpp:938
+msgid ""
+"Click points in the world one after another.\n"
+"Right-click or Esc stops."
+msgstr ""
+"Clique pontos no mundo, um depois do outro.\n"
+"Botão direito ou Esc para."
+
+#: tools/haumea/gui.cpp:9934
+msgid "Click to place. Q/E or the wheel turn it, Esc stops."
+msgstr "Clique para colocar. Q/E ou a roda giram, Esc para."
+
+#: tools/haumea/gui.cpp:7604
+msgid "Click to select it, double-click to go there."
+msgstr "Clique para selecionar, clique duas vezes para ir até lá."
+
+#: tools/haumea/gui.cpp:11729
+msgid "Click to select it."
+msgstr "Clique para selecionar."
+
+#: tools/haumea/gui.cpp:7997 tools/haumea/gui.cpp:8032
+msgid "Clothes"
+msgstr "Roupas"
+
+#: tools/haumea/gui.cpp:8027
+msgid "Cluckin' Bell"
+msgstr "Cluckin' Bell"
+
+#: tools/haumea/gui.cpp:8516 tools/haumea/gui.cpp:8957 tools/haumea/gui.cpp:8976 tools/haumea/radarart.cpp:885
+msgid "Colour"
+msgstr "Cor"
+
+#: tools/haumea/radarart.cpp:883 tools/haumea/radarart.cpp:889
+msgid "Colours"
+msgstr "Cores"
+
+#: tools/haumea/gui.cpp:8017
+msgid "Colt 45"
+msgstr "Colt 45"
+
+#: tools/haumea/gui.cpp:8018
+msgid "Combat shotgun"
+msgstr "Escopeta de combate"
+
+#: tools/haumea/testserver.cpp:1270
+msgid "Compiler"
+msgstr "Compilador"
+
+#: tools/haumea/testserver.cpp:1035
+msgid "Compiling..."
+msgstr "Compilando..."
+
+#: tools/haumea/gui.cpp:7792
+msgid "Confirm before reloading game files"
+msgstr "Confirmar antes de recarregar os arquivos do jogo"
+
+#: tools/haumea/gui.cpp:8251
+msgid "Constant machinery noise"
+msgstr "Ruído constante de máquina"
+
+#: tools/haumea/gui.cpp:8271
+msgid "Continuous buzz"
+msgstr "Zumbido contínuo"
+
+#: tools/haumea/gui.cpp:12292
+#, c-format
+msgid "Copied %d instance(s) | %s: paste at camera | %s: paste in place"
+msgstr "%d instância(s) copiada(s) | %s: colar na câmera | %s: colar no lugar"
+
+#: tools/haumea/maptools.cpp:898
+#, c-format
+msgid "Copied %d object(s) as Pawn"
+msgstr "%d objeto(s) copiado(s) como Pawn"
+
+#: tools/haumea/maptools.cpp:737
+msgid "Copies"
+msgstr "Cópias"
+
+#: tools/haumea/maptools.cpp:739
+msgid "Copies of the selection, not counting it."
+msgstr "Cópias da seleção, sem contar ela."
+
+#: tools/haumea/gui.cpp:9488
+#, c-format
+msgid "Copies the selected models' files to %s"
+msgstr "Copia os arquivos dos modelos selecionados para %s"
+
+#: tools/haumea/maptools.cpp:902
+msgid ""
+"Copies the selection as AttachObjectToObject calls on the first\n"
+"selected object, with offsets in its frame."
+msgstr ""
+"Copia a seleção como chamadas AttachObjectToObject no primeiro\n"
+"objeto selecionado, com deslocamentos no espaço dele."
+
+#: tools/haumea/maptools.cpp:904
+msgid ""
+"Copies the selection as CreateObject calls at x, y, z plus each\n"
+"object's offset from the first selected one."
+msgstr ""
+"Copia a seleção como chamadas CreateObject em x, y, z mais o\n"
+"deslocamento de cada objeto em relação ao primeiro selecionado."
+
+#: tools/haumea/gui.cpp:7785
+msgid "Copies to keep"
+msgstr "Cópias a manter"
+
+#: tools/haumea/gui.cpp:6918 tools/haumea/interiors.cpp:301
+msgid "Copy as Pawn"
+msgstr "Copiar como Pawn"
+
+#: tools/haumea/maptools.cpp:891
+msgid "Copy as attachments"
+msgstr "Copiar como anexos"
+
+#: tools/haumea/maptools.cpp:891
+msgid "Copy as offsets"
+msgstr "Copiar como deslocamentos"
+
+#: tools/haumea/gui.cpp:11996
+msgid "Copy code"
+msgstr "Copiar código"
+
+#: tools/haumea/gui.cpp:10163
+msgid "Copy model ID"
+msgstr "Copiar ID do modelo"
+
+#: tools/haumea/gui.cpp:10154
+msgid "Copy model name"
+msgstr "Copiar nome do modelo"
+
+#: tools/haumea/gui.cpp:9342
+#, c-format
+msgid "Copy streaming to %d selected"
+msgstr "Copiar streaming para %d selecionados"
+
+#: tools/haumea/maptools.cpp:895
+#, c-format
+msgid "Copy: %s"
+msgstr "Copiar: %s"
+
+#: tools/haumea/gui.cpp:11987
+msgid "Could not generate Pawn code."
+msgstr "Não foi possível gerar o código Pawn."
+
+#: tools/haumea/testserver.cpp:933
+msgid "Could not start omp-server"
+msgstr "Não foi possível iniciar o omp-server"
+
+#: tools/haumea/gui.cpp:7485
+msgid "Count / click"
+msgstr "Quantidade / clique"
+
+#: tools/haumea/gui.cpp:8019
+msgid "Country rifle"
+msgstr "Rifle de caça"
+
+#: tools/haumea/gui.cpp:8251
+msgid "Crash"
+msgstr "Batida"
+
+#: tools/haumea/gui.cpp:8262
+msgid "Crash A"
+msgstr "Batida A"
+
+#: tools/haumea/gui.cpp:8262
+msgid "Crash B"
+msgstr "Batida B"
+
+#: tools/haumea/gui.cpp:8263
+msgid "Crash C"
+msgstr "Batida C"
+
+#: tools/haumea/gui.cpp:10339
+msgid "Create3DTextLabel / CreateDynamic3DTextLabel"
+msgstr "Create3DTextLabel / CreateDynamic3DTextLabel"
+
+#: tools/haumea/gui.cpp:10331
+msgid "CreateActor / CreateDynamicActor: a ped that stands or plays an animation"
+msgstr "CreateActor / CreateDynamicActor: um ped parado ou fazendo uma animação"
+
+#: tools/haumea/gui.cpp:10344
+msgid "CreateDynamicCP / CreateDynamicRaceCP: a checkpoint, or a race of them"
+msgstr "CreateDynamicCP / CreateDynamicRaceCP: um checkpoint, ou uma corrida deles"
+
+#: tools/haumea/gui.cpp:10346
+msgid "CreateDynamicCuboid and the other shapes: items limited to it are shown only to players inside"
+msgstr "CreateDynamicCuboid e as outras formas: itens limitados a ela só aparecem para jogadores dentro"
+
+#: tools/haumea/gui.cpp:9235
+msgid ""
+"CreateObject DrawDistance / streamer drawdistance. 0 uses the default\n"
+"(the model's own distance natively, STREAMER_OBJECT_DD for the streamer)."
+msgstr ""
+"DrawDistance do CreateObject / drawdistance do streamer. 0 usa o padrão\n"
+"(a distância do próprio modelo no nativo, STREAMER_OBJECT_DD no streamer)."
+
+#: tools/haumea/gui.cpp:10338
+msgid "CreatePickup / CreateDynamicPickup"
+msgstr "CreatePickup / CreateDynamicPickup"
+
+#: tools/haumea/gui.cpp:8965 tools/haumea/radarart.cpp:916
+msgid "CreatePlayerGangZone is an open.mp native; SA-MP 0.3.7 has no per-player zones."
+msgstr "CreatePlayerGangZone é uma native do open.mp; o SA-MP 0.3.7 não tem zonas por jogador."
+
+#: tools/haumea/gui.cpp:8850
+msgid "Cube"
+msgstr "Cubo"
+
+#: tools/haumea/gui.cpp:8850
+msgid "Cuboid"
+msgstr "Cuboide"
+
+#: tools/haumea/gui.cpp:12300
+#, c-format
+msgid "Cut %d instance(s)"
+msgstr "%d instância(s) recortada(s)"
+
+#: tools/haumea/gui.cpp:8850
+msgid "Cylinder"
+msgstr "Cilindro"
+
+#: tools/haumea/gui.cpp:8032
+msgid "Date disco"
+msgstr "Encontro: discoteca"
+
+#: tools/haumea/gui.cpp:8033
+msgid "Date drink"
+msgstr "Encontro: bebida"
+
+#: tools/haumea/gui.cpp:8033
+msgid "Date food"
+msgstr "Encontro: comida"
+
+#: tools/haumea/gui.cpp:7512
+msgid "Delay (ms)"
+msgstr "Atraso (ms)"
+
+#: tools/haumea/gui.cpp:6939 tools/haumea/gui.cpp:6943 tools/haumea/gui.cpp:9405 tools/haumea/gui.cpp:11440
+msgid "Delete"
+msgstr "Excluir"
+
+#: tools/haumea/gui.cpp:6942
+#, c-format
+msgid "Delete the view \"%s\"?"
+msgstr "Excluir a vista \"%s\"?"
+
+#: tools/haumea/gui.cpp:9401 tools/haumea/gui.cpp:11851
+msgid "Deleted"
+msgstr "Excluídos"
+
+#: tools/haumea/gui.cpp:12329
+#, c-format
+msgid "Deleted %d instance(s)"
+msgstr "%d instância(s) excluída(s)"
+
+#: tools/haumea/gui.cpp:8476
+msgid "Delta"
+msgstr "Delta"
+
+#: tools/haumea/gui.cpp:8017
+msgid "Desert Eagle"
+msgstr "Desert Eagle"
+
+#: tools/haumea/gui.cpp:9290 tools/haumea/gui.cpp:9302
+msgid "Detach"
+msgstr "Desanexar"
+
+#: tools/haumea/gui.cpp:8020
+msgid "Detonator"
+msgstr "Detonador"
+
+#: tools/haumea/gui.cpp:7999
+msgid "Diamond (entrance)"
+msgstr "Diamante (entrada)"
+
+#: tools/haumea/gui.cpp:8015
+msgid "Dildo"
+msgstr "Dildo"
+
+#: tools/haumea/gui.cpp:8028
+msgid "Diner"
+msgstr "Lanchonete"
+
+#: tools/haumea/gui.cpp:8276
+msgid "Diner music (0.3.7-R2)"
+msgstr "Música da lanchonete (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:8277
+msgid "Disco, electro (0.3.7-R2)"
+msgstr "Discoteca, eletrônica (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:8279
+msgid "Disco, hip-hop (0.3.7-R2)"
+msgstr "Discoteca, hip-hop (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:8275
+msgid "Disco, rock (0.3.7-R2)"
+msgstr "Discoteca, rock (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:8933
+msgid "Distance"
+msgstr "Distância"
+
+#: tools/haumea/maptools.cpp:858 tools/haumea/maptools.cpp:860
+msgid "Distribute"
+msgstr "Distribuir"
+
+#: tools/haumea/gui.cpp:8615
+msgid "Does"
+msgstr "Faz"
+
+#: tools/haumea/gui.cpp:7995
+msgid "Dollar sign"
+msgstr "Cifrão"
+
+#: tools/haumea/gui.cpp:8273
+msgid "Door buzzer"
+msgstr "Campainha da porta"
+
+#: tools/haumea/gui.cpp:9531
+msgid "Double-click to place again."
+msgstr "Clique duas vezes para colocar de novo."
+
+#: tools/haumea/gui.cpp:7408
+msgid "Dragging"
+msgstr "Arrastar"
+
+#: tools/haumea/gui.cpp:8517 tools/haumea/gui.cpp:9234 tools/haumea/objfilters.cpp:412
+msgid "Draw distance"
+msgstr "Distância de desenho"
+
+#: tools/haumea/gui.cpp:10169
+#, c-format
+msgid "Draw distance %.0f"
+msgstr "Distância de desenho %.0f"
+
+#: tools/haumea/gui.cpp:10167
+#, c-format
+msgid "Draw distance %.0f  |  LOD %s"
+msgstr "Distância de desenho %.0f  |  LOD %s"
+
+#: tools/haumea/radarart.cpp:898
+msgid "Draws the footprints' edge cells in their own colour."
+msgstr "Desenha as células da borda das áreas de base com uma cor própria."
+
+#: tools/haumea/gui.cpp:8412
+msgid "Drive"
+msgstr "Dirigir"
+
+#: tools/haumea/gui.cpp:8630
+msgid "Drive needs the NPC in a vehicle."
+msgstr "Dirigir precisa do NPC num veículo."
+
+#: tools/haumea/gui.cpp:8319
+msgid "Driver"
+msgstr "Motorista"
+
+#: tools/haumea/gui.cpp:8265
+msgid "Driving school results music"
+msgstr "Música do resultado da autoescola"
+
+#: tools/haumea/maptools.cpp:1016
+msgid "Drop & copy as Pawn"
+msgstr "Pôr no chão e copiar como Pawn"
+
+#: tools/haumea/gui.cpp:11633
+msgid "Drop objects here to move them into this group."
+msgstr "Solte objetos aqui para movê-los para este grupo."
+
+#: tools/haumea/maptools.cpp:881 tools/haumea/maptools.cpp:883
+msgid "Drop to ground"
+msgstr "Pôr no chão"
+
+#: tools/haumea/gui.cpp:11439
+msgid "Duplicate"
+msgstr "Duplicar"
+
+#: tools/haumea/gui.cpp:12314
+#, c-format
+msgid "Duplicated %d instance(s)"
+msgstr "%d instância(s) duplicada(s)"
+
+#: tools/haumea/gui.cpp:11272
+msgid "Dynamic areas"
+msgstr "Dynamic areas"
+
+#: tools/haumea/gui.cpp:9114
+msgid "Edit all selected"
+msgstr "Editar todos os selecionados"
+
+#: tools/haumea/gui.cpp:12070
+#, c-format
+msgid "Editing %s: drag a textdraw to move it, its corner to resize it. %s saves the textdraws, %s goes back to the map."
+msgstr "Editando %s: arraste um textdraw para movê-lo, o canto dele para redimensionar. %s salva os textdraws, %s volta ao mapa."
+
+#: tools/haumea/gui.cpp:8272
+msgid "Electricity"
+msgstr "Eletricidade"
+
+#: tools/haumea/gui.cpp:8028
+msgid "Emmet"
+msgstr "Emmet"
+
+#: tools/haumea/gui.cpp:8028
+msgid "Enemy attack"
+msgstr "Ataque inimigo"
+
+#: tools/haumea/gui.cpp:7781
+msgid "Every (minutes)"
+msgstr "A cada (minutos)"
+
+#: tools/haumea/gui.cpp:9157 tools/haumea/gui.cpp:9159
+msgid "Everywhere"
+msgstr "Em todo lugar"
+
+#: tools/haumea/gui.cpp:7442
+#, c-format
+msgid "Exit Brush (%s)"
+msgstr "Sair do pincel (%s)"
+
+#: tools/haumea/testserver.cpp:1181
+msgid "Exited"
+msgstr "Encerrado"
+
+#: tools/haumea/gui.cpp:8264
+msgid "Explosion"
+msgstr "Explosão"
+
+#: tools/haumea/gui.cpp:9469
+msgid "Export DFF"
+msgstr "Exportar DFF"
+
+#: tools/haumea/gui.cpp:9479
+msgid "Export TXD"
+msgstr "Exportar TXD"
+
+#: tools/haumea/gui.cpp:9474
+#, c-format
+msgid "Exported %d DFF(s) to %s"
+msgstr "%d DFF(s) exportado(s) para %s"
+
+#: tools/haumea/gui.cpp:9473
+#, c-format
+msgid "Exported %d DFF(s) to %s (some skipped)"
+msgstr "%d DFF(s) exportado(s) para %s (alguns ignorados)"
+
+#: tools/haumea/gui.cpp:9484
+#, c-format
+msgid "Exported %d TXD(s) to %s"
+msgstr "%d TXD(s) exportado(s) para %s"
+
+#: tools/haumea/gui.cpp:9483
+#, c-format
+msgid "Exported %d TXD(s) to %s (some skipped)"
+msgstr "%d TXD(s) exportado(s) para %s (alguns ignorados)"
+
+#: tools/haumea/gui.cpp:6907
+msgid "FOV"
+msgstr "FOV"
+
+#: tools/haumea/gui.cpp:7833
+msgid "FOV wheel step"
+msgstr "Passo do FOV na roda"
+
+#: tools/haumea/gui.cpp:8704
+msgid "Face the way it walks"
+msgstr "Virar para onde anda"
+
+#: tools/haumea/gui.cpp:9476
+msgid "Failed to export DFF(s)"
+msgstr "Falha ao exportar DFF(s)"
+
+#: tools/haumea/gui.cpp:9486
+msgid "Failed to export TXD(s)"
+msgstr "Falha ao exportar TXD(s)"
+
+#: tools/haumea/testserver.cpp:1239
+#, c-format
+msgid "Failed: %s"
+msgstr "Falhou: %s"
+
+#: tools/haumea/radarart.cpp:892
+msgid "Fallback colour"
+msgstr "Cor reserva"
+
+#: tools/haumea/gui.cpp:8269
+msgid "Falling coins"
+msgstr "Moedas caindo"
+
+#: tools/haumea/gui.cpp:8278
+msgid "Fan (0.3.7-R2)"
+msgstr "Ventilador (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:7831
+msgid "Fast (Shift)"
+msgstr "Rápido (Shift)"
+
+#: tools/haumea/gui.cpp:10535 tools/haumea/objfilters.cpp:539
+msgid "Favourites"
+msgstr "Favoritos"
+
+#: tools/haumea/gui.cpp:10208
+msgid "Fences, walls and barriers"
+msgstr "Cercas, muros e barreiras"
+
+#: tools/haumea/radarart.cpp:890
+msgid "Fewer colours make fewer zones."
+msgstr "Menos cores fazem menos zonas."
+
+#: tools/haumea/gui.cpp:7665
+msgid "Filter by action or key"
+msgstr "Filtrar por ação ou tecla"
+
+#: tools/haumea/gui.cpp:6993
+msgid "Find objects by model or TXD"
+msgstr "Achar objetos por modelo ou TXD"
+
+#: tools/haumea/gui.cpp:8028
+msgid "Fire"
+msgstr "Fogo"
+
+#: tools/haumea/gui.cpp:8021
+msgid "Fire extinguisher"
+msgstr "Extintor"
+
+#: tools/haumea/gui.cpp:8014
+msgid "Fist"
+msgstr "Punho"
+
+#: tools/haumea/maptools.cpp:964
+msgid "Fit"
+msgstr "Ajustar"
+
+#: tools/haumea/radarart.cpp:873
+msgid "Fit to this many zones"
+msgstr "Ajustar a este número de zonas"
+
+#: tools/haumea/gui.cpp:8033
+msgid "Flag"
+msgstr "Bandeira"
+
+#: tools/haumea/gui.cpp:8020
+msgid "Flamethrower"
+msgstr "Lança-chamas"
+
+#: tools/haumea/gui.cpp:8266
+msgid "Flight school results music"
+msgstr "Música do resultado da escola de voo"
+
+#: tools/haumea/gui.cpp:8016
+msgid "Flowers"
+msgstr "Flores"
+
+#: tools/haumea/gui.cpp:7829
+msgid "Fly speed"
+msgstr "Velocidade de voo"
+
+#: tools/haumea/gui.cpp:12396
+#, c-format
+msgid "Fly speed %.2f"
+msgstr "Velocidade de voo %.2f"
+
+#: tools/haumea/gui.cpp:7825
+msgid "Flying"
+msgstr "Voo"
+
+#: tools/haumea/gui.cpp:11434
+msgid "Focus"
+msgstr "Focar"
+
+#: tools/haumea/gui.cpp:10066
+#, c-format
+msgid "Folder: %s"
+msgstr "Pasta: %s"
+
+#: tools/haumea/gui.cpp:8605
+msgid "Follow a path"
+msgstr "Seguir um caminho"
+
+#: tools/haumea/maptools.cpp:973
+msgid "Follow slope"
+msgstr "Seguir a inclinação"
+
+#: tools/haumea/gui.cpp:7859
+msgid ""
+"Fonts for material text: SA-MP's own and the free stand-ins are put\n"
+"there; add other .ttf files to it."
+msgstr ""
+"Fontes para texto de material: as do próprio SA-MP e as substitutas livres ficam\n"
+"lá; adicione outros arquivos .ttf a ela."
+
+#: tools/haumea/radarart.cpp:895
+msgid "For models whose textures can't be read."
+msgstr "Para modelos cujas texturas não podem ser lidas."
+
+#: tools/haumea/radarart.cpp:894
+msgid "For objects without a group."
+msgstr "Para objetos sem grupo."
+
+#: tools/haumea/gui.cpp:8484
+msgid "Freeze"
+msgstr "Congelar"
+
+#: tools/haumea/radarart.cpp:884
+msgid "From textures"
+msgstr "Das texturas"
+
+#: tools/haumea/radarart.cpp:886
+msgid ""
+"From textures: each model's colour seen from above, from its\n"
+"textures, reduced to a few colours so neighbouring cells merge."
+msgstr ""
+"Das texturas: a cor de cada modelo vista de cima, a partir das\n"
+"texturas, reduzida a poucas cores para as células vizinhas se juntarem."
+
+#: tools/haumea/gui.cpp:8319
+msgid "Front passenger"
+msgstr "Passageiro da frente"
+
+#: tools/haumea/gui.cpp:10210
+msgid "Furniture"
+msgstr "Móveis"
+
+#: tools/haumea/gui.cpp:7999
+msgid "GTA III sign"
+msgstr "Placa do GTA III"
+
+#: tools/haumea/gui.cpp:9413
+msgid "GTA world object"
+msgstr "Objeto do mundo do GTA"
+
+#: tools/haumea/gui.cpp:8918
+msgid "Game sound"
+msgstr "Som do jogo"
+
+#: tools/haumea/gui.cpp:9251
+msgid ""
+"Game sounds only: -1 plays it in every world. The interior is set\n"
+"under Position."
+msgstr ""
+"Só sons do jogo: -1 toca em todos os worlds. O interior fica\n"
+"em Posição."
+
+#: tools/haumea/gui.cpp:8034
+msgid "Gang (Ballas)"
+msgstr "Gangue (Ballas)"
+
+#: tools/haumea/gui.cpp:8035
+msgid "Gang (Grove)"
+msgstr "Gangue (Grove)"
+
+#: tools/haumea/gui.cpp:8035
+msgid "Gang (neutral)"
+msgstr "Gangue (neutra)"
+
+#: tools/haumea/gui.cpp:8034
+msgid "Gang (purple)"
+msgstr "Gangue (roxa)"
+
+#: tools/haumea/gui.cpp:8034
+msgid "Gang (yellow)"
+msgstr "Gangue (amarela)"
+
+#: tools/haumea/gui.cpp:10806
+#, c-format
+msgid "Gang zone %.0f x %.0f"
+msgstr "Gang zone %.0f x %.0f"
+
+#: tools/haumea/gui.cpp:11270
+msgid "Gang zones"
+msgstr "Gang zones"
+
+#: tools/haumea/gui.cpp:10340
+msgid "GangZoneCreate: a coloured square on the radar"
+msgstr "GangZoneCreate: um quadrado colorido no radar"
+
+#: tools/haumea/gui.cpp:8253
+msgid "Garage door opening"
+msgstr "Porta da garagem abrindo"
+
+#: tools/haumea/gui.cpp:7854
+msgid "General"
+msgstr "Geral"
+
+#: tools/haumea/gui.cpp:8728
+msgid "Get out"
+msgstr "Sair"
+
+#: tools/haumea/gui.cpp:8028
+msgid "Girlfriend"
+msgstr "Namorada"
+
+#: tools/haumea/gui.cpp:8959
+msgid "Global"
+msgstr "Global"
+
+#: tools/haumea/gui.cpp:8039
+msgid "Global (MAPICON_GLOBAL)"
+msgstr "Global (MAPICON_GLOBAL)"
+
+#: tools/haumea/gui.cpp:8040
+msgid "Global checkpoint (MAPICON_GLOBAL_CHECKPOINT)"
+msgstr "Checkpoint global (MAPICON_GLOBAL_CHECKPOINT)"
+
+#: tools/haumea/radarart.cpp:909
+msgid "Global zones"
+msgstr "Zonas globais"
+
+#: tools/haumea/gui.cpp:8961
+msgid ""
+"Global: GangZoneCreate, 1024 on the whole server.\n"
+"Per player: CreatePlayerGangZone for every player, 1024 each.\n"
+"Streamed: per-player zones made around each player as they move (streamer areas)."
+msgstr ""
+"Global: GangZoneCreate, 1024 no servidor inteiro.\n"
+"Por jogador: CreatePlayerGangZone para cada jogador, 1024 cada.\n"
+"Streamed: zonas por jogador criadas em volta de cada jogador enquanto ele anda (streamer areas)."
+
+#: tools/haumea/radarart.cpp:911
+#, c-format
+msgid ""
+"Global: GangZoneCreate, 1024 on the whole server.\n"
+"Per-player: CreatePlayerGangZone for every player, 1024 each.\n"
+"Streamed: per-player zones made around each player as they move,\n"
+"in %.0f m cells (streamer areas), so a map can have many more."
+msgstr ""
+"Global: GangZoneCreate, 1024 no servidor inteiro.\n"
+"Por jogador: CreatePlayerGangZone para cada jogador, 1024 cada.\n"
+"Streamed: zonas por jogador criadas em volta de cada jogador enquanto ele anda,\n"
+"em células de %.0f m (streamer areas), assim um mapa pode ter muito mais."
+
+#: tools/haumea/interiors.cpp:303
+msgid "Go there"
+msgstr "Ir até lá"
+
+#: tools/haumea/gui.cpp:8014
+msgid "Golf club"
+msgstr "Taco de golfe"
+
+#: tools/haumea/gui.cpp:8016
+msgid "Grenade"
+msgstr "Granada"
+
+#: tools/haumea/gui.cpp:9222 tools/haumea/gui.cpp:11784 tools/haumea/gui.cpp:11787 tools/haumea/radarart.cpp:855
+msgid "Group"
+msgstr "Grupo"
+
+#: tools/haumea/gui.cpp:9329
+#, c-format
+msgid "Group %d selected"
+msgstr "Agrupar %d selecionados"
+
+#: tools/haumea/gui.cpp:9461
+msgid "Group & note"
+msgstr "Grupo e nota"
+
+#: tools/haumea/gui.cpp:11777 tools/haumea/gui.cpp:11781
+msgid "Group selected"
+msgstr "Agrupar seleção"
+
+#: tools/haumea/gui.cpp:11438
+msgid "Group selected..."
+msgstr "Agrupar seleção..."
+
+#: tools/haumea/gui.cpp:9459
+#, c-format
+msgid "Group: %s"
+msgstr "Grupo: %s"
+
+#: tools/haumea/gui.cpp:11505
+msgid "Groups"
+msgstr "Grupos"
+
+#: tools/haumea/gui.cpp:9223
+msgid "Groups sort Map Objects and get a heading comment in the .pwn."
+msgstr "Grupos organizam os Objetos do mapa e ganham um comentário de título no .pwn."
+
+#: tools/haumea/gui.cpp:8033
+msgid "Gym"
+msgstr "Academia"
+
+#: tools/haumea/gui.cpp:8265
+msgid "Hangar doors"
+msgstr "Portas do hangar"
+
+#: tools/haumea/licenses.cpp:60
+msgid "Haumea Studio is free software under the GNU General Public License, version 2 or any later version. It includes components under their own licenses."
+msgstr "Haumea Studio é software livre sob a Licença Pública Geral GNU, versão 2 ou qualquer versão posterior. Ele inclui componentes sob as próprias licenças."
+
+#: tools/haumea/radarart.cpp:656
+msgid "Haumea has no model to draw gang zones with"
+msgstr "O Haumea não tem modelo para desenhar gang zones"
+
+#: tools/haumea/maptools.cpp:971
+msgid "Heading"
+msgstr "Direção"
+
+#: tools/haumea/gui.cpp:8523 tools/haumea/gui.cpp:8595
+msgid "Health"
+msgstr "Vida"
+
+#: tools/haumea/gui.cpp:7993
+msgid "Health (heart)"
+msgstr "Vida (coração)"
+
+#: tools/haumea/gui.cpp:8019
+msgid "Heat-seeking RPG"
+msgstr "RPG teleguiado"
+
+#: tools/haumea/gui.cpp:8272
+msgid "Heavy door"
+msgstr "Porta pesada"
+
+#: tools/haumea/gui.cpp:8875 tools/haumea/objfilters.cpp:411
+msgid "Height"
+msgstr "Altura"
+
+#: tools/haumea/radarart.cpp:903
+msgid "Height shading"
+msgstr "Sombreamento por altura"
+
+#: tools/haumea/gui.cpp:12220
+msgid "Help"
+msgstr "Ajuda"
+
+#: tools/haumea/gui.cpp:12227
+msgid "Help > Getting started shows it again."
+msgstr "Ajuda > Primeiros passos mostra de novo."
+
+#: tools/haumea/gui.cpp:12377
+#, c-format
+msgid "Hid %d instance(s) | %s: show all"
+msgstr "%d instância(s) oculta(s) | %s: mostrar todas"
+
+#: tools/haumea/gui.cpp:11656
+msgid "Hidden in the viewport. Click to show it."
+msgstr "Oculto na viewport. Clique para mostrar."
+
+#: tools/haumea/gui.cpp:11432 tools/haumea/gui.cpp:12223
+msgid "Hide"
+msgstr "Ocultar"
+
+#: tools/haumea/gui.cpp:11487
+msgid "Hide all"
+msgstr "Ocultar todos"
+
+#: tools/haumea/gui.cpp:8518
+msgid "Hide behind walls (test LOS)"
+msgstr "Esconder atrás de paredes (test LOS)"
+
+#: tools/haumea/gui.cpp:11657
+msgid "Hide in the viewport. Only the editor hides it; the map keeps it."
+msgstr "Ocultar na viewport. Só o editor esconde; o mapa mantém."
+
+#: tools/haumea/gui.cpp:8261
+msgid "High blip"
+msgstr "Bipe agudo"
+
+#: tools/haumea/radarart.cpp:904
+msgid "Higher surfaces are lighter, in a few steps."
+msgstr "Superfícies mais altas ficam mais claras, em poucos passos."
+
+#: tools/haumea/gui.cpp:7000
+msgid "Highlight matches"
+msgstr "Destacar resultados"
+
+#: tools/haumea/gui.cpp:8261
+msgid "Hit"
+msgstr "Pancada"
+
+#: tools/haumea/gui.cpp:8259
+msgid "Hit wooden object"
+msgstr "Pancada em objeto de madeira"
+
+#: tools/haumea/gui.cpp:7767
+msgid "Hold Alt while dragging to place a panel freely."
+msgstr "Segure Alt ao arrastar para posicionar um painel livremente."
+
+#: tools/haumea/gui.cpp:7823
+msgid ""
+"Hold it and drag to look, and fly with W/A/S/D while it's held;\n"
+"a click without dragging still selects."
+msgstr ""
+"Segure e arraste para olhar, e voe com W/A/S/D enquanto segura;\n"
+"um clique sem arrastar ainda seleciona."
+
+#: tools/haumea/gui.cpp:7820
+msgid ""
+"Hold it and drag to look, and fly with W/A/S/D while it's held;\n"
+"a click without dragging still selects.\n"
+"While brushing, LMB paints, so hold RMB to look."
+msgstr ""
+"Segure e arraste para olhar, e voe com W/A/S/D enquanto segura;\n"
+"um clique sem arrastar ainda seleciona.\n"
+"Com o pincel, o LMB pinta, então segure o RMB para olhar."
+
+#: tools/haumea/gui.cpp:8485
+msgid "Hold the last frame when it ends."
+msgstr "Mantém o último quadro quando termina."
+
+#: tools/haumea/gui.cpp:8280
+msgid "Horse race (0.3.7-R2)"
+msgstr "Corrida de cavalos (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:8028
+msgid "Hospital"
+msgstr "Hospital"
+
+#: tools/haumea/gui.cpp:7996
+msgid "House (blue)"
+msgstr "Casa (azul)"
+
+#: tools/haumea/gui.cpp:7996
+msgid "House (green)"
+msgstr "Casa (verde)"
+
+#: tools/haumea/gui.cpp:10210
+msgid "Houses"
+msgstr "Casas"
+
+#: tools/haumea/gui.cpp:7418
+#, c-format
+msgid ""
+"How close another object has to be for object snap (%s, the\n"
+"crosshair button on the toolbar) to line them up."
+msgstr ""
+"Quão perto outro objeto precisa estar para o encaixe em objetos (%s, o\n"
+"botão de mira na barra de ferramentas) alinhá-los."
+
+#: tools/haumea/gui.cpp:8759
+msgid "How close the NPC has to get before it heads for the next point."
+msgstr "Quão perto o NPC precisa chegar antes de seguir para o próximo ponto."
+
+#: tools/haumea/maptools.cpp:742
+msgid "How far each copy moves from the one before, in metres."
+msgstr "Quanto cada cópia se move em relação à anterior, em metros."
+
+#: tools/haumea/gui.cpp:8490
+msgid "How long it plays; 0 plays until stopped."
+msgstr "Quanto tempo toca; 0 toca até ser parada."
+
+#: tools/haumea/maptools.cpp:744
+msgid ""
+"How much each copy turns from the one before, in degrees\n"
+"around the world X, Y and Z axes, about the selection's centre."
+msgstr ""
+"Quanto cada cópia gira em relação à anterior, em graus\n"
+"nos eixos X, Y e Z do mundo, em torno do centro da seleção."
+
+#: tools/haumea/gui.cpp:7834
+msgid "How much the field of view changes per mouse wheel step."
+msgstr "Quanto o campo de visão muda a cada passo da roda do mouse."
+
+#: tools/haumea/gui.cpp:8067 tools/haumea/interiors.cpp:283
+msgid "ID"
+msgstr "ID"
+
+#: tools/haumea/gui.cpp:10156
+#, c-format
+msgid "ID %d  |  TXD %s"
+msgstr "ID %d  |  TXD %s"
+
+#: tools/haumea/gui.cpp:10578 tools/haumea/objfilters.cpp:423
+msgid "IDE"
+msgstr "IDE"
+
+#: tools/haumea/gui.cpp:8974
+msgid "Icon"
+msgstr "Ícone"
+
+#: tools/haumea/gui.cpp:9177
+msgid "Ignored: this map is native code."
+msgstr "Ignorado: este mapa é código nativo."
+
+#: tools/haumea/gui.cpp:8033
+msgid "Impound"
+msgstr "Pátio de apreensão"
+
+#: tools/haumea/gui.cpp:8359
+msgid "In vehicle"
+msgstr "No veículo"
+
+#: tools/haumea/gui.cpp:7993
+msgid "Info"
+msgstr "Info"
+
+#: tools/haumea/gui.cpp:7897
+msgid "Install, repair or update Namaka, and connect Claude."
+msgstr "Instale, repare ou atualize o Namaka e conecte o Claude."
+
+#: tools/haumea/gui.cpp:7757
+msgid "Interface"
+msgstr "Interface"
+
+#: tools/haumea/gui.cpp:7631
+#, c-format
+msgid "Interface size %.0f%%"
+msgstr "Tamanho da interface %.0f%%"
+
+#: tools/haumea/interiors.cpp:263
+msgid "Interiors"
+msgstr "Interiores"
+
+#: tools/haumea/gui.cpp:8522 tools/haumea/gui.cpp:8597
+msgid "Invulnerable"
+msgstr "Invulnerável"
+
+#: tools/haumea/gui.cpp:11433
+msgid "Isolate"
+msgstr "Isolar"
+
+#: tools/haumea/gui.cpp:12382
+#, c-format
+msgid "Isolated the selection, %d other instance(s) hidden | %s: show all"
+msgstr "Seleção isolada, %d outra(s) instância(s) oculta(s) | %s: mostrar todas"
+
+#: tools/haumea/gui.cpp:8949
+msgid "It plays when a player walks within this distance."
+msgstr "Toca quando um jogador chega a esta distância."
+
+#: tools/haumea/gui.cpp:8573
+msgid "Its player name, shown over its head and in the player list."
+msgstr "O nome de jogador dele, mostrado sobre a cabeça e na lista de jogadores."
+
+#: tools/haumea/gui.cpp:8412
+msgid "Jog"
+msgstr "Trotar"
+
+#: tools/haumea/gui.cpp:8015
+msgid "Katana"
+msgstr "Katana"
+
+#: tools/haumea/maptools.cpp:796
+msgid "Keep original"
+msgstr "Manter o original"
+
+#: tools/haumea/gui.cpp:10100
+msgid "Keep placing"
+msgstr "Continuar colocando"
+
+#: tools/haumea/gui.cpp:7673
+msgid "Key"
+msgstr "Tecla"
+
+#: tools/haumea/gui.cpp:8781 tools/haumea/gui.cpp:8919
+msgid "Kind"
+msgstr "Tipo"
+
+#: tools/haumea/gui.cpp:11507
+msgid "Kinds"
+msgstr "Tipos"
+
+#: tools/haumea/gui.cpp:8014
+msgid "Knife"
+msgstr "Faca"
+
+#: tools/haumea/gui.cpp:7465
+#, c-format
+msgid "LMB = paint   ·   %s-drag = look around   ·   Esc = cancel"
+msgstr "LMB = pintar   ·   %s+arrastar = olhar em volta   ·   Esc = cancelar"
+
+#: tools/haumea/gui.cpp:7463
+msgid "LMB = paint   ·   MMB-drag = look around   ·   Esc = cancel"
+msgstr "LMB = pintar   ·   MMB+arrastar = olhar em volta   ·   Esc = cancelar"
+
+#: tools/haumea/gui.cpp:7405
+msgid "Land on ground"
+msgstr "Pousar no chão"
+
+#: tools/haumea/gui.cpp:7403
+msgid "Land on objects"
+msgstr "Pousar em objetos"
+
+#: tools/haumea/gui.cpp:8666
+msgid "Last point first (reversed)"
+msgstr "Último ponto primeiro (invertido)"
+
+#: tools/haumea/testserver.cpp:1263
+msgid "Launch game"
+msgstr "Abrir o jogo"
+
+#: tools/haumea/gui.cpp:8435
+msgid "Library"
+msgstr "Biblioteca"
+
+#: tools/haumea/licenses.cpp:56
+msgid "Licenses"
+msgstr "Licenças"
+
+#: tools/haumea/gui.cpp:8273
+msgid "Lift bell"
+msgstr "Sino do elevador"
+
+#: tools/haumea/gui.cpp:8034
+msgid "Light (red dot)"
+msgstr "Luz (ponto vermelho)"
+
+#: tools/haumea/gui.cpp:10210
+msgid "Lights"
+msgstr "Luzes"
+
+#: tools/haumea/maptools.cpp:922
+msgid "Line"
+msgstr "Linha"
+
+#: tools/haumea/maptools.cpp:729
+msgid "Linear"
+msgstr "Linear"
+
+#: tools/haumea/maptools.cpp:735
+msgid ""
+"Linear: each copy moves and turns by the same step.\n"
+"Radial: copies go around a centre point."
+msgstr ""
+"Linear: cada cópia se move e gira o mesmo passo.\n"
+"Radial: as cópias vão em volta de um ponto central."
+
+#: tools/haumea/maptools.cpp:852
+#, c-format
+msgid ""
+"Lines up the %s of each object's box with the first\n"
+"selected object's, along the axis."
+msgstr ""
+"Alinha %s da caixa de cada objeto com a do primeiro\n"
+"objeto selecionado, ao longo do eixo."
+
+#: tools/haumea/gui.cpp:10447
+msgid "List"
+msgstr "Lista"
+
+#: tools/haumea/gui.cpp:11965
+msgid "Live Pawn Code"
+msgstr "Código Pawn ao vivo"
+
+#: tools/haumea/gui.cpp:8039
+msgid "Local (MAPICON_LOCAL)"
+msgstr "Local (MAPICON_LOCAL)"
+
+#: tools/haumea/gui.cpp:8040
+msgid "Local checkpoint (MAPICON_LOCAL_CHECKPOINT)"
+msgstr "Checkpoint local (MAPICON_LOCAL_CHECKPOINT)"
+
+#: tools/haumea/gui.cpp:8480
+msgid "Lock X"
+msgstr "Travar X"
+
+#: tools/haumea/gui.cpp:8482
+msgid "Lock Y"
+msgstr "Travar Y"
+
+#: tools/haumea/gui.cpp:8028
+msgid "Loco"
+msgstr "Loco"
+
+#: tools/haumea/gui.cpp:7807
+msgid "Look around with"
+msgstr "Olhar em volta com"
+
+#: tools/haumea/gui.cpp:8478 tools/haumea/gui.cpp:8667
+msgid "Loop"
+msgstr "Repetir"
+
+#: tools/haumea/gui.cpp:8258
+msgid "Loud hit"
+msgstr "Pancada forte"
+
+#: tools/haumea/gui.cpp:8019
+msgid "M4"
+msgstr "M4"
+
+#: tools/haumea/gui.cpp:8029
+msgid "MC Strap"
+msgstr "MC Strap"
+
+#: tools/haumea/gui.cpp:8018
+msgid "MP5"
+msgstr "MP5"
+
+#: tools/haumea/gui.cpp:8252
+msgid "Machinery"
+msgstr "Maquinário"
+
+#: tools/haumea/gui.cpp:8029
+msgid "Madd Dogg"
+msgstr "Madd Dogg"
+
+#: tools/haumea/radarart.cpp:970
+msgid "Makes the zones, as one undo step."
+msgstr "Cria as zonas, num único passo de desfazer."
+
+#: tools/haumea/gui.cpp:7545
+msgid "Map Check"
+msgstr "Verificação do mapa"
+
+#: tools/haumea/gui.cpp:7161 tools/haumea/gui.cpp:11805
+msgid "Map Objects"
+msgstr "Objetos do mapa"
+
+#: tools/haumea/gui.cpp:9504
+#, c-format
+msgid "Map Objects (%s): everything placed in this map."
+msgstr "Objetos do mapa (%s): tudo o que foi colocado neste mapa."
+
+#: tools/haumea/gui.cpp:7535
+#, c-format
+msgid "Map check before saving: %s. %s opens the list."
+msgstr "Verificação do mapa antes de salvar: %s. %s abre a lista."
+
+#: tools/haumea/gui.cpp:7536
+#, c-format
+msgid "Map check before testing: %s. %s opens the list."
+msgstr "Verificação do mapa antes de testar: %s. %s abre a lista."
+
+#: tools/haumea/gui.cpp:10916
+#, c-format
+msgid "Map icon %d  %s"
+msgstr "Map icon %d  %s"
+
+#: tools/haumea/gui.cpp:11271
+msgid "Map icons"
+msgstr "Map icons"
+
+#: tools/haumea/gui.cpp:9502
+msgid "Map objects"
+msgstr "Objetos do mapa"
+
+#: tools/haumea/gui.cpp:8257
+msgid "Map: place a marker"
+msgstr "Mapa: colocar um marcador"
+
+#: tools/haumea/gui.cpp:8257
+msgid "Map: remove a marker"
+msgstr "Mapa: remover um marcador"
+
+#: tools/haumea/gui.cpp:7772
+msgid "Maps"
+msgstr "Mapas"
+
+#: tools/haumea/gui.cpp:8276
+msgid "Marco's Bistro music (0.3.7-R2)"
+msgstr "Música do Marco's Bistro (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:8025
+msgid "Marker (colour)"
+msgstr "Marcador (cor)"
+
+#: tools/haumea/gui.cpp:11857
+msgid "Material"
+msgstr "Material"
+
+#: tools/haumea/gui.cpp:9453 tools/haumea/objfilters.cpp:413 tools/haumea/objfilters.cpp:804
+msgid "Materials"
+msgstr "Materiais"
+
+#: tools/haumea/maptools.cpp:844
+msgid "Max"
+msgstr "Máx"
+
+#: tools/haumea/gui.cpp:8258
+msgid "Metal fence rattle A"
+msgstr "Chocalho de cerca de metal A"
+
+#: tools/haumea/gui.cpp:8259
+msgid "Metal fence rattle B"
+msgstr "Chocalho de cerca de metal B"
+
+#: tools/haumea/gui.cpp:8018
+msgid "Micro SMG / Uzi"
+msgstr "Micro SMG / Uzi"
+
+#: tools/haumea/maptools.cpp:844
+msgid "Min"
+msgstr "Mín"
+
+#: tools/haumea/gui.cpp:8020
+msgid "Minigun"
+msgstr "Minigun"
+
+#: tools/haumea/gui.cpp:7515
+msgid ""
+"Minimum time between drag-paint bursts, in milliseconds.\n"
+"0 = no delay. Combines with Spacing — both constraints must pass."
+msgstr ""
+"Tempo mínimo entre rajadas ao pintar arrastando, em milissegundos.\n"
+"0 = sem atraso. Combina com Espaçamento: as duas condições precisam passar."
+
+#: tools/haumea/gui.cpp:7508
+msgid ""
+"Minimum world distance between drag-paint bursts.\n"
+"0 disables the distance gate (delay alone controls the rate).\n"
+"Single clicks always fire regardless."
+msgstr ""
+"Distância mínima no mundo entre rajadas ao pintar arrastando.\n"
+"0 desliga o limite de distância (só o atraso controla o ritmo).\n"
+"Cliques únicos sempre disparam."
+
+#: tools/haumea/maptools.cpp:805 tools/haumea/maptools.cpp:1012
+msgid "Mirror"
+msgstr "Espelhar"
+
+#: tools/haumea/maptools.cpp:797
+msgid "Mirrors a copy, for symmetric builds: the selection stays."
+msgstr "Espelha uma cópia, para construções simétricas: a seleção fica."
+
+#: tools/haumea/gui.cpp:8282
+msgid "Mission passed theme (0.3.7-R2)"
+msgstr "Tema de missão cumprida (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:8029
+msgid "Mod garage"
+msgstr "Oficina de modificação"
+
+#: tools/haumea/maptools.cpp:730
+msgid "Mode"
+msgstr "Modo"
+
+#: tools/haumea/gui.cpp:8503 tools/haumea/gui.cpp:10404 tools/haumea/maptools.cpp:951
+msgid "Model"
+msgstr "Modelo"
+
+#: tools/haumea/gui.cpp:10398
+#, c-format
+msgid "Model %d is not loaded"
+msgstr "O modelo %d não está carregado"
+
+#: tools/haumea/gui.cpp:8506
+#, c-format
+msgid "Model %d is not loaded; the pickup is drawn as model %d."
+msgstr "O modelo %d não está carregado; o pickup é desenhado como o modelo %d."
+
+#: tools/haumea/gui.cpp:6994
+msgid "Model (inc,-exc)"
+msgstr "Modelo (inc,-exc)"
+
+#: tools/haumea/gui.cpp:9465
+msgid "Model details"
+msgstr "Detalhes do modelo"
+
+#: tools/haumea/gui.cpp:8017
+msgid "Molotov"
+msgstr "Molotov"
+
+#: tools/haumea/gui.cpp:7994
+msgid "Money"
+msgstr "Dinheiro"
+
+#: tools/haumea/gui.cpp:7995
+msgid "Money bag"
+msgstr "Saco de dinheiro"
+
+#: tools/haumea/gui.cpp:8252
+msgid "Motor, stopping"
+msgstr "Motor parando"
+
+#: tools/haumea/gui.cpp:7806
+msgid "Mouse"
+msgstr "Mouse"
+
+#: tools/haumea/gui.cpp:8628
+msgid "Move"
+msgstr "Mover"
+
+#: tools/haumea/gui.cpp:7422
+msgid "Move step"
+msgstr "Passo de movimento"
+
+#: tools/haumea/gui.cpp:11853
+msgid "Moved"
+msgstr "Movidos"
+
+#: tools/haumea/gui.cpp:8609
+msgid "Movement"
+msgstr "Movimento"
+
+#: tools/haumea/gui.cpp:9299
+msgid "Moving this object updates the offset; moving the parent carries it along."
+msgstr "Mover este objeto atualiza o deslocamento; mover o pai o leva junto."
+
+#: tools/haumea/gui.cpp:8031
+msgid "Mystery"
+msgstr "Mistério"
+
+#: tools/haumea/gui.cpp:8680
+#, c-format
+msgid "NODES%d.DAT in the server's scriptfiles/NPCs/nodes."
+msgstr "NODES%d.DAT em scriptfiles/NPCs/nodes do servidor."
+
+#: tools/haumea/gui.cpp:8699
+#, c-format
+msgid "NODES%d.DAT point %d"
+msgstr "NODES%d.DAT ponto %d"
+
+#: tools/haumea/gui.cpp:11149
+#, c-format
+msgid "NPC %s"
+msgstr "NPC %s"
+
+#: tools/haumea/gui.cpp:10905
+#, c-format
+msgid "NPC %s  skin %d"
+msgstr "NPC %s  skin %d"
+
+#: tools/haumea/gui.cpp:9518
+msgid "NPC node (NODES*.DAT)"
+msgstr "Nó de NPC (NODES*.DAT)"
+
+#: tools/haumea/maptools.cpp:927
+#, c-format
+msgid "NPC path %s"
+msgstr "Caminho de NPC %s"
+
+#: tools/haumea/gui.cpp:11268
+msgid "NPC paths"
+msgstr "Caminhos de NPC"
+
+#: tools/haumea/gui.cpp:10335
+msgid "NPC_AddPointToPath: click point after point; NPCs walk the path"
+msgstr "NPC_AddPointToPath: clique ponto após ponto; os NPCs andam pelo caminho"
+
+#: tools/haumea/gui.cpp:10333
+msgid "NPC_Create + NPC_Spawn: a bot player"
+msgstr "NPC_Create + NPC_Spawn: um jogador bot"
+
+#: tools/haumea/gui.cpp:8658
+msgid "NPC_MoveByPath: once spawned, the NPC moves along this path once."
+msgstr "NPC_MoveByPath: após o spawn, o NPC percorre este caminho uma vez."
+
+#: tools/haumea/gui.cpp:8371
+msgid ""
+"NPC_PutInVehicle, written once the NPC and the vehicle exist.\n"
+"Select the NPC and a vehicle together to pick it from the world."
+msgstr ""
+"NPC_PutInVehicle, escrito quando o NPC e o veículo já existem.\n"
+"Selecione o NPC e um veículo juntos para escolhê-lo no mundo."
+
+#: tools/haumea/gui.cpp:8685
+msgid "NPC_SetNodePoint. The NPC is moved onto this point and walks on from it."
+msgstr "NPC_SetNodePoint. O NPC é movido para este ponto e segue a partir dele."
+
+#: tools/haumea/gui.cpp:9245
+msgid ""
+"NPC_SetVirtualWorld. NPCs are in one world; the interior is set\n"
+"under Position."
+msgstr ""
+"NPC_SetVirtualWorld. Os NPCs ficam num world; o interior fica\n"
+"em Posição."
+
+#: tools/haumea/gui.cpp:11268
+msgid "NPCs"
+msgstr "NPCs"
+
+#: tools/haumea/gui.cpp:8571 tools/haumea/gui.cpp:11753 tools/haumea/interiors.cpp:284
+msgid "Name"
+msgstr "Nome"
+
+#: tools/haumea/gui.cpp:10419
+msgid "Name a race to place race checkpoints that point at each other."
+msgstr "Dê nome a uma corrida para colocar race checkpoints que apontam uns para os outros."
+
+#: tools/haumea/interiors.cpp:271
+msgid "Name, key or ID"
+msgstr "Nome, chave ou ID"
+
+#: tools/haumea/gui.cpp:11536
+msgid "Names, models, kinds, groups and comments; or IDs like 1337, 19000-19100."
+msgstr "Nomes, modelos, tipos, grupos e comentários; ou IDs como 1337, 19000-19100."
+
+#: tools/haumea/gui.cpp:11990
+msgid "Native"
+msgstr "Nativo"
+
+#: tools/haumea/gui.cpp:8847
+msgid ""
+"Native code has no dynamic areas. Save the map as streamer code to keep\n"
+"them, and the items limited to them."
+msgstr ""
+"Código nativo não tem dynamic areas. Salve o mapa como código streamer para mantê-las,\n"
+"e também os itens limitados a elas."
+
+#: tools/haumea/gui.cpp:8776
+msgid ""
+"Native code has no map checkpoints: a player has one checkpoint at a\n"
+"time there (SetPlayerCheckpoint / SetPlayerRaceCheckpoint). Save the map\n"
+"as streamer code to keep them."
+msgstr ""
+"Código nativo não tem checkpoints de mapa: lá um jogador tem um checkpoint\n"
+"por vez (SetPlayerCheckpoint / SetPlayerRaceCheckpoint). Salve o mapa\n"
+"como código streamer para mantê-los."
+
+#: tools/haumea/gui.cpp:10418
+msgid "New checkpoints go on the end of this race."
+msgstr "Novos checkpoints vão para o fim desta corrida."
+
+#: tools/haumea/gui.cpp:7406
+msgid "New objects sit on the ground under the cursor."
+msgstr "Novos objetos ficam no chão sob o cursor."
+
+#: tools/haumea/gui.cpp:7404
+msgid "New objects sit on top of the object under the cursor."
+msgstr "Novos objetos ficam em cima do objeto sob o cursor."
+
+#: tools/haumea/gui.cpp:10411
+msgid "New points go on the end of this path."
+msgstr "Novos pontos vão para o fim deste caminho."
+
+#: tools/haumea/testserver.cpp:1312
+msgid "Nickname"
+msgstr "Apelido"
+
+#: tools/haumea/gui.cpp:8021
+msgid "Night vision"
+msgstr "Visão noturna"
+
+#: tools/haumea/gui.cpp:8014
+msgid "Nightstick"
+msgstr "Cassetete"
+
+#: tools/haumea/gui.cpp:8928
+msgid "No URL yet."
+msgstr "Ainda sem URL."
+
+#: tools/haumea/gui.cpp:8431
+msgid "No animation libraries found (anim/ped.ifp, anim/anim.img)."
+msgstr "Nenhuma biblioteca de animação encontrada (anim/ped.ifp, anim/anim.img)."
+
+#: tools/haumea/gui.cpp:11836
+msgid "No changes requiring Pawn export."
+msgstr "Nenhuma mudança que exija exportação Pawn."
+
+#: tools/haumea/gui.cpp:9169
+msgid "No dynamic areas: place one from the SA-MP tab."
+msgstr "Nenhuma dynamic area: coloque uma pela aba SA-MP."
+
+#: tools/haumea/gui.cpp:10551
+#, c-format
+msgid "No favourites yet. Pick an object and click %s to keep it here."
+msgstr "Nenhum favorito ainda. Escolha um objeto e clique em %s para guardá-lo aqui."
+
+#: tools/haumea/interiors.cpp:278
+msgid "No interiors found in the game's data/maps IPL files."
+msgstr "Nenhum interior encontrado nos arquivos IPL de data/maps do jogo."
+
+#: tools/haumea/radarart.cpp:860
+msgid "No object is in a group."
+msgstr "Nenhum objeto está num grupo."
+
+#: tools/haumea/gui.cpp:7450
+msgid "No object selected"
+msgstr "Nenhum objeto selecionado"
+
+#: tools/haumea/gui.cpp:8665
+msgid "No points yet: place NPC path points from the SA-MP tab."
+msgstr "Ainda sem pontos: coloque pontos de caminho de NPC pela aba SA-MP."
+
+#: tools/haumea/gui.cpp:10122
+msgid "No prefabs yet: select objects and use File > Export > Selection as Prefab."
+msgstr "Nenhum prefab ainda: selecione objetos e use Arquivo > Exportar > Seleção como prefab."
+
+#: tools/haumea/gui.cpp:8341
+msgid "No vehicles in the map yet."
+msgstr "Ainda não há veículos no mapa."
+
+#: tools/haumea/gui.cpp:8676
+msgid "Node file"
+msgstr "Arquivo de nós"
+
+#: tools/haumea/gui.cpp:8183 tools/haumea/gui.cpp:8184 tools/haumea/gui.cpp:8412 tools/haumea/gui.cpp:8472
+msgid "None"
+msgstr "Nenhum"
+
+#: tools/haumea/gui.cpp:8492
+msgid "None: the skin stands still."
+msgstr "Nenhum: a skin fica parada."
+
+#: tools/haumea/gui.cpp:8799
+msgid ""
+"Normal shows an arrow to the next checkpoint; Finish a flag.\n"
+"The Air types are rings for planes."
+msgstr ""
+"Normal mostra uma seta para o próximo checkpoint; Chegada, uma bandeira.\n"
+"Os tipos Aéreo são anéis para aviões."
+
+#: tools/haumea/gui.cpp:8025
+msgid "North"
+msgstr "Norte"
+
+#: tools/haumea/testserver.cpp:302
+msgid "Not running"
+msgstr "Não está em execução"
+
+#: tools/haumea/gui.cpp:8775 tools/haumea/gui.cpp:8846
+msgid "Not saved: this map is native code."
+msgstr "Não salvo: este mapa é código nativo."
+
+#: tools/haumea/gui.cpp:9224
+msgid "Note"
+msgstr "Nota"
+
+#: tools/haumea/gui.cpp:7555
+msgid "Notes"
+msgstr "Notas"
+
+#: tools/haumea/gui.cpp:9511
+#, c-format
+msgid "Nothing copied yet: select objects and press %s"
+msgstr "Nada copiado ainda: selecione objetos e pressione %s"
+
+#: tools/haumea/gui.cpp:11747
+msgid "Nothing matches."
+msgstr "Nada corresponde."
+
+#: tools/haumea/gui.cpp:11747
+msgid "Nothing placed yet. Pick an object in the Object Browser and click Place."
+msgstr "Nada colocado ainda. Escolha um objeto no Navegador de objetos e clique em Colocar."
+
+#: tools/haumea/gui.cpp:9493
+msgid "Nothing selected"
+msgstr "Nada selecionado"
+
+#: tools/haumea/gui.cpp:7560
+msgid "Nothing that will break in game."
+msgstr "Nada que vá quebrar no jogo."
+
+#: tools/haumea/gui.cpp:8651
+msgid "Nothing to walk yet: pick a path with points, or a node."
+msgstr "Nada para andar ainda: escolha um caminho com pontos, ou um nó."
+
+#: tools/haumea/gui.cpp:7795
+msgid "Notifications"
+msgstr "Notificações"
+
+#: tools/haumea/gui.cpp:7488
+msgid ""
+"Number of objects scattered per click when Radius > 0.\n"
+"Capped at 128 to keep a single click undoable as one step."
+msgstr ""
+"Número de objetos espalhados por clique quando Raio > 0.\n"
+"Limitado a 128 para que um clique se desfaça num único passo."
+
+#: tools/haumea/gui.cpp:8029
+msgid "OG Loc"
+msgstr "OG Loc"
+
+#: tools/haumea/gui.cpp:7159 tools/haumea/gui.cpp:10440
+msgid "Object Browser"
+msgstr "Navegador de objetos"
+
+#: tools/haumea/gui.cpp:9500
+#, c-format
+msgid "Object Browser (%s): pick something to place."
+msgstr "Navegador de objetos (%s): escolha algo para colocar."
+
+#: tools/haumea/gui.cpp:7158 tools/haumea/gui.cpp:9367
+msgid "Object Info"
+msgstr "Informações do objeto"
+
+#: tools/haumea/gui.cpp:12362
+msgid "Object snap mode disabled"
+msgstr "Encaixe em objetos desligado"
+
+#: tools/haumea/gui.cpp:12362
+msgid "Object snap mode enabled"
+msgstr "Encaixe em objetos ligado"
+
+#: tools/haumea/gui.cpp:10466 tools/haumea/gui.cpp:11266 tools/haumea/gui.cpp:11516 tools/haumea/radarart.cpp:841
+msgid "Objects"
+msgstr "Objetos"
+
+#: tools/haumea/maptools.cpp:807
+msgid ""
+"Objects are turned, not flipped: ramps and stairs rise the\n"
+"mirrored way, but a model that is lopsided both ways keeps its left and right."
+msgstr ""
+"Os objetos são girados, não invertidos: rampas e escadas sobem do lado\n"
+"espelhado, mas um modelo assimétrico nos dois sentidos mantém sua esquerda e direita."
+
+#: tools/haumea/gui.cpp:10213
+msgid "Objects you place show up here. Search above, or start with a category:"
+msgstr "Os objetos que você coloca aparecem aqui. Busque acima ou comece por uma categoria:"
+
+#: tools/haumea/gui.cpp:8735
+msgid ""
+"Off plays it where it was recorded. On moves the whole route so it\n"
+"starts where the NPC stands (NPC_StartPlayback's start position)."
+msgstr ""
+"Desligado toca onde foi gravado. Ligado move a rota inteira para que ela\n"
+"comece onde o NPC está (a posição inicial do NPC_StartPlayback)."
+
+#: tools/haumea/gui.cpp:9294 tools/haumea/maptools.cpp:741
+msgid "Offset"
+msgstr "Deslocamento"
+
+#: tools/haumea/gui.cpp:8358 tools/haumea/gui.cpp:8360
+msgid "On foot"
+msgstr "A pé"
+
+#: tools/haumea/maptools.cpp:976
+msgid "On ground"
+msgstr "No chão"
+
+#: tools/haumea/gui.cpp:8930
+msgid ""
+"On: it gets louder as the player walks up to it and fades out at\n"
+"the distance. Off: the player hears it everywhere at full volume."
+msgstr ""
+"Ligado: fica mais alto conforme o jogador se aproxima e some na\n"
+"distância. Desligado: o jogador ouve em todo lugar no volume máximo."
+
+#: tools/haumea/gui.cpp:9297
+msgid ""
+"On: the object turns with its parent. Off: it keeps the rotation above\n"
+"in world space (AttachObjectToObject's SyncRotation)."
+msgstr ""
+"Ligado: o objeto gira com o pai. Desligado: mantém a rotação acima\n"
+"no espaço do mundo (SyncRotation do AttachObjectToObject)."
+
+#: tools/haumea/gui.cpp:8667
+msgid "Once"
+msgstr "Uma vez"
+
+#: tools/haumea/radarart.cpp:884
+msgid "One colour"
+msgstr "Uma cor"
+
+#: tools/haumea/gui.cpp:11538
+msgid "Only hidden objects."
+msgstr "Só objetos ocultos."
+
+#: tools/haumea/gui.cpp:9158
+msgid "Only inside area"
+msgstr "Só dentro da área"
+
+#: tools/haumea/gui.cpp:11541
+msgid "Only objects with a Map check problem."
+msgstr "Só objetos com problema na Verificação do mapa."
+
+#: tools/haumea/gui.cpp:11541
+msgid "Only objects with a Map check problem. Runs Map check first."
+msgstr "Só objetos com problema na Verificação do mapa. Roda a verificação antes."
+
+#: tools/haumea/gui.cpp:8977
+msgid "Only used by icons 0 and 1 (the coloured markers)."
+msgstr "Usado só pelos ícones 0 e 1 (os marcadores coloridos)."
+
+#: tools/haumea/radarart.cpp:896
+msgid "Opacity"
+msgstr "Opacidade"
+
+#: tools/haumea/gui.cpp:7895
+msgid "Open Namaka..."
+msgstr "Abrir o Namaka..."
+
+#: tools/haumea/gui.cpp:12212
+msgid "Open a map..."
+msgstr "Abrir um mapa..."
+
+#: tools/haumea/gui.cpp:7857
+msgid "Open fonts folder"
+msgstr "Abrir pasta de fontes"
+
+#: tools/haumea/gui.cpp:11740
+msgid "Opens it in TextDraw mode."
+msgstr "Abre no modo TextDraw."
+
+#: tools/haumea/gui.cpp:8752 tools/haumea/gui.cpp:8821
+msgid "Order"
+msgstr "Ordem"
+
+#: tools/haumea/radarart.cpp:897
+msgid "Outline"
+msgstr "Contorno"
+
+#: tools/haumea/gui.cpp:12084
+msgid "PLACE"
+msgstr "COLOCAR"
+
+#: tools/haumea/gui.cpp:12079
+msgid "PREFAB"
+msgstr "PREFAB"
+
+#: tools/haumea/gui.cpp:10187
+msgid ""
+"Paint copies onto surfaces: click for one, drag to paint.\n"
+"Spacing and alignment are in the Tools window."
+msgstr ""
+"Pinta cópias nas superfícies: clique para uma, arraste para pintar.\n"
+"Espaçamento e alinhamento ficam na janela Ferramentas."
+
+#: tools/haumea/gui.cpp:12076
+#, c-format
+msgid "Painting %s: click or drag on a surface. %s stops."
+msgstr "Pintando %s: clique ou arraste numa superfície. %s para."
+
+#: tools/haumea/gui.cpp:7448
+#, c-format
+msgid "Painting: %s"
+msgstr "Pintando: %s"
+
+#: tools/haumea/gui.cpp:8000 tools/haumea/gui.cpp:8021
+msgid "Parachute"
+msgstr "Paraquedas"
+
+#: tools/haumea/gui.cpp:8253
+msgid "Parachute opening"
+msgstr "Paraquedas abrindo"
+
+#: tools/haumea/gui.cpp:9506
+msgid "Paste"
+msgstr "Colar"
+
+#: tools/haumea/gui.cpp:9513
+#, c-format
+msgid "Paste copied objects in front of the camera (%s)."
+msgstr "Cola os objetos copiados na frente da câmera (%s)."
+
+#: tools/haumea/gui.cpp:9509 tools/haumea/gui.cpp:12308
+#, c-format
+msgid "Pasted %d instance(s)"
+msgstr "%d instância(s) colada(s)"
+
+#: tools/haumea/gui.cpp:12308
+#, c-format
+msgid "Pasted %d instance(s) at original position"
+msgstr "%d instância(s) colada(s) na posição original"
+
+#: tools/haumea/gui.cpp:8657 tools/haumea/gui.cpp:8744 tools/haumea/gui.cpp:10409
+msgid "Path"
+msgstr "Caminho"
+
+#: tools/haumea/gui.cpp:11309
+#, c-format
+msgid "Path %s"
+msgstr "Caminho %s"
+
+#: tools/haumea/gui.cpp:11971
+msgid "Pawn export is available while editing GTA San Andreas."
+msgstr "A exportação Pawn está disponível ao editar o GTA San Andreas."
+
+#: tools/haumea/gui.cpp:9205
+msgid ""
+"Pawn variable for this object, e.g. bank_door. Leave empty and Haumea\n"
+"names it only when materials or attachments need a handle."
+msgstr ""
+"Variável Pawn deste objeto, ex.: bank_door. Deixe vazio e o Haumea\n"
+"só dá um nome quando materiais ou anexos precisam de uma referência."
+
+#: tools/haumea/gui.cpp:8035
+msgid "Pay 'n' Spray"
+msgstr "Pay 'n' Spray"
+
+#: tools/haumea/gui.cpp:8959
+msgid "Per player"
+msgstr "Por jogador"
+
+#: tools/haumea/radarart.cpp:909
+msgid "Per-player zones"
+msgstr "Zonas por jogador"
+
+#: tools/haumea/gui.cpp:11785
+msgid "Pick a group or type a new name. Empty: ungrouped."
+msgstr "Escolha um grupo ou digite um nome novo. Vazio: sem grupo."
+
+#: tools/haumea/gui.cpp:8435
+msgid "Pick a library"
+msgstr "Escolha uma biblioteca"
+
+#: tools/haumea/gui.cpp:8662
+msgid "Pick a path, or type a new name and place its points."
+msgstr "Escolha um caminho, ou digite um nome novo e coloque os pontos dele."
+
+#: tools/haumea/maptools.cpp:936
+msgid "Pick points"
+msgstr "Escolher pontos"
+
+#: tools/haumea/gui.cpp:8901
+msgid ""
+"Pick this area in an object's World & streaming, under \"Only inside area\".\n"
+"Items name the area by its variable (Name above)."
+msgstr ""
+"Escolha esta área em Mundo e streaming de um objeto, em \"Só dentro da área\".\n"
+"Os itens citam a área pela variável dela (Nome acima)."
+
+#: tools/haumea/maptools.cpp:921 tools/haumea/maptools.cpp:923
+msgid "Picked points"
+msgstr "Pontos escolhidos"
+
+#: tools/haumea/radarart.cpp:881
+msgid "Picks the smallest cell size whose art needs at most this many zones."
+msgstr "Escolhe o menor tamanho de célula cuja arte precise de no máximo este número de zonas."
+
+#: tools/haumea/gui.cpp:10888
+#, c-format
+msgid "Pickup  type %d"
+msgstr "Pickup  tipo %d"
+
+#: tools/haumea/gui.cpp:11269
+msgid "Pickups"
+msgstr "Pickups"
+
+#: tools/haumea/gui.cpp:10089 tools/haumea/gui.cpp:10175 tools/haumea/gui.cpp:10383 tools/haumea/gui.cpp:10385
+msgid "Place"
+msgstr "Colocar"
+
+#: tools/haumea/gui.cpp:10327
+msgid "Place, then click in the world. Esc stops."
+msgstr "Clique em Colocar e depois no mundo. Esc para."
+
+#: tools/haumea/gui.cpp:7402
+msgid "Placing"
+msgstr "Colocação"
+
+#: tools/haumea/gui.cpp:12081 tools/haumea/gui.cpp:12086
+#, c-format
+msgid "Placing %s: click to place, Shift+click to keep going. Right-click or %s stops."
+msgstr "Colocando %s: clique para colocar, Shift+clique para continuar. Botão direito ou %s para."
+
+#: tools/haumea/gui.cpp:8278
+msgid "Plane interior hum (0.3.7-R2)"
+msgstr "Zumbido dentro do avião (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:8606
+msgid "Play a recording"
+msgstr "Tocar uma gravação"
+
+#: tools/haumea/gui.cpp:8926
+msgid "PlayAudioStreamForPlayer. Started for each player in _ShowForPlayer."
+msgstr "PlayAudioStreamForPlayer. Iniciado para cada jogador em _ShowForPlayer."
+
+#: tools/haumea/gui.cpp:8477
+msgid "Playback speed in game (4.1 is normal). The editor plays at normal speed."
+msgstr "Velocidade no jogo (4.1 é a normal). O editor toca na velocidade normal."
+
+#: tools/haumea/gui.cpp:8025
+msgid "Player"
+msgstr "Jogador"
+
+#: tools/haumea/gui.cpp:11267
+msgid "Player classes"
+msgstr "Classes de jogador"
+
+#: tools/haumea/gui.cpp:8025
+msgid "Player menu map"
+msgstr "Mapa do menu do jogador"
+
+#: tools/haumea/gui.cpp:12155
+msgid "Player view"
+msgstr "Visão do jogador"
+
+#: tools/haumea/gui.cpp:12372
+msgid "Player view off"
+msgstr "Visão do jogador desligada"
+
+#: tools/haumea/gui.cpp:12372
+msgid "Player view on: what a player at the camera would see"
+msgstr "Visão do jogador ligada: o que um jogador na câmera veria"
+
+#: tools/haumea/gui.cpp:8947
+msgid "PlayerPlaySound. Any ID from the game's data/AudioEvents.txt works."
+msgstr "PlayerPlaySound. Qualquer ID de data/AudioEvents.txt do jogo funciona."
+
+#: tools/haumea/gui.cpp:10424
+msgid "Players"
+msgstr "Jogadores"
+
+#: tools/haumea/gui.cpp:8470
+#, c-format
+msgid "Plays %s / %s"
+msgstr "Toca %s / %s"
+
+#: tools/haumea/gui.cpp:8951
+msgid "Plays sound 0, which stops the sound playing. Use it for music and loops."
+msgstr "Toca o som 0, que para o som que estiver tocando. Use para músicas e loops."
+
+#: tools/haumea/gui.cpp:8756
+#, c-format
+msgid "Point %d of %d. Points are walked from the lowest order up."
+msgstr "Ponto %d de %d. Os pontos são percorridos da menor ordem para cima."
+
+#: tools/haumea/maptools.cpp:933
+msgid "Points you click in the world, or an NPC path's points in order."
+msgstr "Pontos que você clica no mundo, ou os pontos de um caminho de NPC em ordem."
+
+#: tools/haumea/gui.cpp:8030
+msgid "Police"
+msgstr "Polícia"
+
+#: tools/haumea/gui.cpp:8850
+msgid "Polygon"
+msgstr "Polígono"
+
+#: tools/haumea/gui.cpp:8015
+msgid "Pool cue"
+msgstr "Taco de sinuca"
+
+#: tools/haumea/testserver.cpp:1310
+msgid "Port"
+msgstr "Porta"
+
+#: tools/haumea/gui.cpp:6903 tools/haumea/gui.cpp:9444 tools/haumea/interiors.cpp:285
+msgid "Position"
+msgstr "Posição"
+
+#: tools/haumea/gui.cpp:9443
+msgid "Position & Rotation"
+msgstr "Posição e rotação"
+
+#: tools/haumea/gui.cpp:10569
+msgid "Prefabs"
+msgstr "Prefabs"
+
+#: tools/haumea/gui.cpp:10120
+#, c-format
+msgid "Prefabs: %d"
+msgstr "Prefabs: %d"
+
+#: tools/haumea/gui.cpp:7846
+msgid "Preferences"
+msgstr "Preferências"
+
+#: tools/haumea/gui.cpp:7707
+msgid "Press a key..."
+msgstr "Pressione uma tecla..."
+
+#: tools/haumea/gui.cpp:7728
+msgid "Press the new key. Click again to keep the old one."
+msgstr "Pressione a nova tecla. Clique de novo para manter a antiga."
+
+#: tools/haumea/maptools.cpp:758 tools/haumea/maptools.cpp:798 tools/haumea/maptools.cpp:978 tools/haumea/radarart.cpp:958
+msgid "Preview"
+msgstr "Prévia"
+
+#: tools/haumea/gui.cpp:8647
+msgid "Preview movement"
+msgstr "Prévia do movimento"
+
+#: tools/haumea/gui.cpp:7886
+msgid "Privacy"
+msgstr "Privacidade"
+
+#: tools/haumea/gui.cpp:8030
+msgid "Property (free)"
+msgstr "Propriedade (livre)"
+
+#: tools/haumea/gui.cpp:8030
+msgid "Property (taken)"
+msgstr "Propriedade (ocupada)"
+
+#: tools/haumea/gui.cpp:8259
+msgid "Punch A"
+msgstr "Soco A"
+
+#: tools/haumea/gui.cpp:8261
+msgid "Punch B"
+msgstr "Soco B"
+
+#: tools/haumea/gui.cpp:8015
+msgid "Purple dildo"
+msgstr "Dildo roxo"
+
+#: tools/haumea/gui.cpp:8387
+#, c-format
+msgid "Put in %s"
+msgstr "Pôr em %s"
+
+#: tools/haumea/gui.cpp:10104
+msgid "Put what is placed in a group named after the prefab."
+msgstr "Coloca o que for colocado num grupo com o nome do prefab."
+
+#: tools/haumea/maptools.cpp:885
+msgid "Puts each object on the ground below it."
+msgstr "Põe cada objeto no chão abaixo dele."
+
+#: tools/haumea/maptools.cpp:977
+msgid "Puts each object on the ground below the line."
+msgstr "Põe cada objeto no chão abaixo da linha."
+
+#: tools/haumea/gui.cpp:8716
+msgid "Puts the NPC in a vehicle as its driver."
+msgstr "Põe o NPC num veículo como motorista."
+
+#: tools/haumea/gui.cpp:8027
+msgid "Quarry"
+msgstr "Pedreira"
+
+#: tools/haumea/gui.cpp:12096
+msgid "READY"
+msgstr "PRONTO"
+
+#: tools/haumea/gui.cpp:8019
+msgid "RPG"
+msgstr "RPG"
+
+#: tools/haumea/gui.cpp:8030 tools/haumea/gui.cpp:8803
+msgid "Race"
+msgstr "Corrida"
+
+#: tools/haumea/gui.cpp:11309
+#, c-format
+msgid "Race %s"
+msgstr "Corrida %s"
+
+#: tools/haumea/gui.cpp:8780
+msgid "Race checkpoint"
+msgstr "Race checkpoint"
+
+#: tools/haumea/gui.cpp:8254
+msgid "Race: green light"
+msgstr "Corrida: luz verde"
+
+#: tools/haumea/gui.cpp:8254
+msgid "Race: red light (start)"
+msgstr "Corrida: luz vermelha (largada)"
+
+#: tools/haumea/radarart.cpp:833
+msgid "Radar art from objects"
+msgstr "Radar art a partir de objetos"
+
+#: tools/haumea/radarart.cpp:967
+#, c-format
+msgid "Radar art: %d gang zone(s) in \"%s\""
+msgstr "Radar art: %d gang zone(s) em \"%s\""
+
+#: tools/haumea/radarart.cpp:879 tools/haumea/radarart.cpp:965
+#, c-format
+msgid "Radar art: %s"
+msgstr "Radar art: %s"
+
+#: tools/haumea/maptools.cpp:729
+msgid "Radial"
+msgstr "Radial"
+
+#: tools/haumea/gui.cpp:8702 tools/haumea/gui.cpp:8865 tools/haumea/gui.cpp:8948
+msgid "Radius"
+msgstr "Raio"
+
+#: tools/haumea/gui.cpp:7478
+msgid "Radius (m)"
+msgstr "Raio (m)"
+
+#: tools/haumea/gui.cpp:8280
+msgid "Rain (0.3.7-R2)"
+msgstr "Chuva (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:8703
+msgid "Random sideways offset from the node line, so NPCs do not walk in single file."
+msgstr "Deslocamento lateral aleatório da linha dos nós, para os NPCs não andarem em fila."
+
+#: tools/haumea/interiors.cpp:276
+msgid "Read the interiors from the game files again."
+msgstr "Ler os interiores dos arquivos do jogo de novo."
+
+#: tools/haumea/gui.cpp:10063
+msgid "Read the prefab folders again."
+msgstr "Ler as pastas de prefabs de novo."
+
+#: tools/haumea/gui.cpp:7458
+#, c-format
+msgid "Ready: %s"
+msgstr "Pronto: %s"
+
+#: tools/haumea/gui.cpp:9530 tools/haumea/gui.cpp:10477 tools/haumea/gui.cpp:10482
+msgid "Recently placed"
+msgstr "Colocados recentemente"
+
+#: tools/haumea/gui.cpp:8850
+msgid "Rectangle"
+msgstr "Retângulo"
+
+#: tools/haumea/testserver.cpp:1250
+msgid "Reload map"
+msgstr "Recarregar mapa"
+
+#: tools/haumea/gui.cpp:9591 tools/haumea/gui.cpp:10197
+msgid "Remove from Favourites"
+msgstr "Remover dos favoritos"
+
+#: tools/haumea/gui.cpp:8892
+msgid "Remove last"
+msgstr "Remover último"
+
+#: tools/haumea/gui.cpp:11754
+msgid "Rename"
+msgstr "Renomear"
+
+#: tools/haumea/gui.cpp:11751 tools/haumea/gui.cpp:11752
+msgid "Rename group"
+msgstr "Renomear grupo"
+
+#: tools/haumea/gui.cpp:11493
+msgid "Rename group..."
+msgstr "Renomear grupo..."
+
+#: tools/haumea/gui.cpp:11436
+msgid "Rename variable"
+msgstr "Renomear variável"
+
+#: tools/haumea/gui.cpp:7773
+msgid "Reopen last map on startup"
+msgstr "Reabrir o último mapa ao iniciar"
+
+#: tools/haumea/gui.cpp:8668
+msgid "Repeat"
+msgstr "Repetir"
+
+#: tools/haumea/gui.cpp:8272
+msgid "Repeating siren"
+msgstr "Sirene repetida"
+
+#: tools/haumea/gui.cpp:6953 tools/haumea/gui.cpp:6958
+msgid "Replace"
+msgstr "Substituir"
+
+#: tools/haumea/gui.cpp:6957
+#, c-format
+msgid "Replace \"%s\" with the current view?"
+msgstr "Substituir \"%s\" pela vista atual?"
+
+#: tools/haumea/radarart.cpp:924
+msgid "Replace this group's zones"
+msgstr "Substituir as zonas deste grupo"
+
+#: tools/haumea/gui.cpp:6910
+msgid "Reset"
+msgstr "Redefinir"
+
+#: tools/haumea/gui.cpp:7656
+msgid "Reset all to defaults"
+msgstr "Redefinir tudo para o padrão"
+
+#: tools/haumea/gui.cpp:7769
+msgid "Reset panel layout"
+msgstr "Redefinir disposição dos painéis"
+
+#: tools/haumea/testserver.cpp:1259
+msgid "Restart"
+msgstr "Reiniciar"
+
+#: tools/haumea/gui.cpp:6912
+msgid "Restore the default camera FOV (70°)."
+msgstr "Restaura o FOV padrão da câmera (70°)."
+
+#: tools/haumea/gui.cpp:11860
+msgid "Restored"
+msgstr "Restaurados"
+
+#: tools/haumea/gui.cpp:8268
+msgid "Ringing bell (continuous)"
+msgstr "Sino tocando (contínuo)"
+
+#: tools/haumea/gui.cpp:8280
+msgid "Riot (0.3.7-R2)"
+msgstr "Tumulto (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:10209
+msgid "Roads"
+msgstr "Estradas"
+
+#: tools/haumea/gui.cpp:10208
+msgid "Rocks and cliffs"
+msgstr "Rochas e penhascos"
+
+#: tools/haumea/maptools.cpp:743
+msgid "Rotate"
+msgstr "Girar"
+
+#: tools/haumea/gui.cpp:7474
+msgid ""
+"Rotate placed objects so their up-axis matches the surface normal.\n"
+"Use with care — some tree models look better upright on slopes."
+msgstr ""
+"Gira os objetos colocados para o eixo de cima seguir a normal da superfície.\n"
+"Use com cuidado: alguns modelos de árvore ficam melhor retos em encostas."
+
+#: tools/haumea/gui.cpp:7426
+msgid "Rotate step"
+msgstr "Passo de rotação"
+
+#: tools/haumea/gui.cpp:11855
+msgid "Rotated"
+msgstr "Girados"
+
+#: tools/haumea/gui.cpp:9295
+msgid "Rotation"
+msgstr "Rotação"
+
+#: tools/haumea/maptools.cpp:873
+msgid "Rounds every rotation angle to this step."
+msgstr "Arredonda cada ângulo de rotação para este passo."
+
+#: tools/haumea/testserver.cpp:939
+msgid "Running"
+msgstr "Em execução"
+
+#: tools/haumea/testserver.cpp:1241
+#, c-format
+msgid "Running on 127.0.0.1:%d"
+msgstr "Rodando em 127.0.0.1:%d"
+
+#: tools/haumea/gui.cpp:8034
+msgid "Runway"
+msgstr "Pista"
+
+#: tools/haumea/gui.cpp:8030
+msgid "Ryder"
+msgstr "Ryder"
+
+#: tools/haumea/gui.cpp:8282
+msgid "SA intro music (0.3.7-R2)"
+msgstr "Música de abertura do SA (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:10560 tools/haumea/objfilters.cpp:531
+msgid "SA-MP"
+msgstr "SA-MP"
+
+#: tools/haumea/gui.cpp:12089
+msgid "SELECT"
+msgstr "SELECIONAR"
+
+#: tools/haumea/gui.cpp:8020
+msgid "Satchel charge"
+msgstr "Carga explosiva"
+
+#: tools/haumea/gui.cpp:6925
+msgid "Save"
+msgstr "Salvar"
+
+#: tools/haumea/gui.cpp:11999
+msgid "Save Pawn Map"
+msgstr "Salvar mapa Pawn"
+
+#: tools/haumea/gui.cpp:7996
+msgid "Save disk"
+msgstr "Disquete de salvar"
+
+#: tools/haumea/gui.cpp:8030
+msgid "Save house"
+msgstr "Casa segura"
+
+#: tools/haumea/gui.cpp:12006
+msgid "Saved"
+msgstr "Salvo"
+
+#: tools/haumea/gui.cpp:8773
+msgid "Saved as CreateDynamicCP / CreateDynamicRaceCP."
+msgstr "Salvo como CreateDynamicCP / CreateDynamicRaceCP."
+
+#: tools/haumea/gui.cpp:8843
+msgid ""
+"Saved as CreateDynamicCircle .. CreateDynamicPolygon. Streamer items\n"
+"limited to it are shown only to players inside it."
+msgstr ""
+"Salvo como CreateDynamicCircle .. CreateDynamicPolygon. Itens do streamer\n"
+"limitados a ela só aparecem para jogadores dentro dela."
+
+#: tools/haumea/gui.cpp:8561
+msgid ""
+"Saved as NPC_Create and NPC_Spawn. SA-MP 0.3.7 servers have no\n"
+"NPC natives; there NPCs are separate npcmodes scripts."
+msgstr ""
+"Salvo como NPC_Create e NPC_Spawn. Servidores SA-MP 0.3.7 não têm\n"
+"natives de NPC; lá os NPCs são scripts npcmodes separados."
+
+#: tools/haumea/gui.cpp:8743
+msgid "Saved as NPC_CreatePath and NPC_AddPointToPath."
+msgstr "Salvo como NPC_CreatePath e NPC_AddPointToPath."
+
+#: tools/haumea/gui.cpp:6922
+msgid "Saved views"
+msgstr "Vistas salvas"
+
+#: tools/haumea/gui.cpp:11735
+msgid ""
+"Saved with the map as it is. Move it to a textdraw file to edit it:\n"
+"TextDraws > Move to a separate file."
+msgstr ""
+"Salvo com o mapa como está. Mova-o para um arquivo de textdraws para editá-lo:\n"
+"TextDraws > Mover para um arquivo separado."
+
+#: tools/haumea/gui.cpp:6955
+msgid "Saves the current view over this one, named as in the field above."
+msgstr "Salva a vista atual por cima desta, com o nome do campo acima."
+
+#: tools/haumea/gui.cpp:8018
+msgid "Sawn-off"
+msgstr "Cano serrado"
+
+#: tools/haumea/gui.cpp:8031
+msgid "School"
+msgstr "Escola"
+
+#: tools/haumea/gui.cpp:8273
+msgid "Seagulls"
+msgstr "Gaivotas"
+
+#: tools/haumea/gui.cpp:10539
+msgid "Search favourites   (Ctrl+F)"
+msgstr "Buscar favoritos   (Ctrl+F)"
+
+#: tools/haumea/gui.cpp:10470 tools/haumea/gui.cpp:10582
+msgid "Search name, ID or IDs (1337, 19000-19100)   (Ctrl+F)"
+msgstr "Buscar nome, ID ou IDs (1337, 19000-19100)   (Ctrl+F)"
+
+#: tools/haumea/gui.cpp:11534
+msgid "Search name, model, ID, kind, variable"
+msgstr "Buscar nome, modelo, ID, tipo, variável"
+
+#: tools/haumea/gui.cpp:10057
+msgid "Search names, tags and folders"
+msgstr "Buscar nomes, tags e pastas"
+
+#: tools/haumea/gui.cpp:8394
+msgid "Seat"
+msgstr "Assento"
+
+#: tools/haumea/gui.cpp:8701
+msgid "Select a node in the Nodes window (Windows > Nodes) first."
+msgstr "Selecione um nó na janela Nós (Janelas > Nós) antes."
+
+#: tools/haumea/gui.cpp:9091 tools/haumea/gui.cpp:11481
+msgid "Select all"
+msgstr "Selecionar todos"
+
+#: tools/haumea/gui.cpp:7460
+msgid "Select an object in the Browser first"
+msgstr "Selecione um objeto no Navegador antes"
+
+#: tools/haumea/gui.cpp:9099
+#, c-format
+msgid "Select every %s in the map, to edit them together."
+msgstr "Selecionar todo(a) %s do mapa, para editá-los juntos."
+
+#: tools/haumea/gui.cpp:9285
+msgid "Select parent"
+msgstr "Selecionar pai"
+
+#: tools/haumea/gui.cpp:8673
+msgid "Select the path's points"
+msgstr "Selecionar os pontos do caminho"
+
+#: tools/haumea/gui.cpp:8905
+msgid "Select them"
+msgstr "Selecioná-los"
+
+#: tools/haumea/gui.cpp:10378
+msgid "Select them all, to edit them together in Object Info."
+msgstr "Selecionar todos, para editá-los juntos em Informações do objeto."
+
+#: tools/haumea/gui.cpp:9318
+msgid "Select two objects to attach them."
+msgstr "Selecione dois objetos para anexá-los."
+
+#: tools/haumea/gui.cpp:8404
+msgid "Select vehicle"
+msgstr "Selecionar veículo"
+
+#: tools/haumea/gui.cpp:11779
+msgid "Select what to group first"
+msgstr "Selecione o que agrupar antes"
+
+#: tools/haumea/gui.cpp:8760
+msgid "Select whole path"
+msgstr "Selecionar o caminho inteiro"
+
+#: tools/haumea/gui.cpp:8829
+msgid "Select whole race"
+msgstr "Selecionar a corrida inteira"
+
+#: tools/haumea/maptools.cpp:956
+msgid "Selected"
+msgstr "Selecionado"
+
+#: tools/haumea/gui.cpp:8255 tools/haumea/gui.cpp:9324 tools/haumea/radarart.cpp:840
+msgid "Selection"
+msgstr "Seleção"
+
+#: tools/haumea/gui.cpp:8264
+msgid "Selection B"
+msgstr "Seleção B"
+
+#: tools/haumea/maptools.cpp:749 tools/haumea/maptools.cpp:783
+msgid "Selection centre"
+msgstr "Centro da seleção"
+
+#: tools/haumea/testserver.cpp:1279
+msgid "Server log"
+msgstr "Registro do servidor"
+
+#: tools/haumea/testserver.cpp:1306
+msgid "Server package"
+msgstr "Pacote do servidor"
+
+#: tools/haumea/gui.cpp:10341
+msgid "SetPlayerMapIcon / CreateDynamicMapIcon"
+msgstr "SetPlayerMapIcon / CreateDynamicMapIcon"
+
+#: tools/haumea/gui.cpp:8851
+msgid "Shape"
+msgstr "Forma"
+
+#: tools/haumea/gui.cpp:7469
+msgid ""
+"Shift along Z after ground snap.\n"
+"Negative sinks the object into the ground (useful for trees on slopes).\n"
+"Positive lifts it off the surface."
+msgstr ""
+"Desloca no eixo Z depois de encaixar no chão.\n"
+"Negativo afunda o objeto no chão (útil para árvores em encostas).\n"
+"Positivo o levanta da superfície."
+
+#: tools/haumea/gui.cpp:7875
+msgid "Shortcuts"
+msgstr "Atalhos"
+
+#: tools/haumea/gui.cpp:8018
+msgid "Shotgun"
+msgstr "Escopeta"
+
+#: tools/haumea/gui.cpp:8015
+msgid "Shovel"
+msgstr "Pá"
+
+#: tools/haumea/gui.cpp:11490 tools/haumea/gui.cpp:12123 tools/haumea/gui.cpp:12131
+msgid "Show all"
+msgstr "Mostrar todos"
+
+#: tools/haumea/gui.cpp:12133
+#, c-format
+msgid "Show every hidden object (%s)"
+msgstr "Mostrar todo objeto oculto (%s)"
+
+#: tools/haumea/gui.cpp:7768
+msgid "Show getting started card on empty maps"
+msgstr "Mostrar o cartão de primeiros passos em mapas vazios"
+
+#: tools/haumea/gui.cpp:12388
+#, c-format
+msgid "Showing %d hidden instance(s)"
+msgstr "Mostrando %d instância(s) oculta(s)"
+
+#: tools/haumea/gui.cpp:8960 tools/haumea/radarart.cpp:910
+msgid "Shown as"
+msgstr "Mostrado como"
+
+#: tools/haumea/gui.cpp:9172
+msgid ""
+"Shown only to players inside this dynamic area (the streamer's areaid).\n"
+"Select several items to set it on all of them."
+msgstr ""
+"Mostrado só a jogadores dentro desta dynamic area (o areaid do streamer).\n"
+"Selecione vários itens para defini-la em todos."
+
+#: tools/haumea/maptools.cpp:799
+msgid "Shows the mirror and where the objects go before you apply."
+msgstr "Mostra o espelho e para onde os objetos vão antes de aplicar."
+
+#: tools/haumea/maptools.cpp:759
+msgid "Shows where the copies go before you apply."
+msgstr "Mostra para onde as cópias vão antes de aplicar."
+
+#: tools/haumea/gui.cpp:10210
+msgid "Signs and statues"
+msgstr "Placas e estátuas"
+
+#: tools/haumea/gui.cpp:8017
+msgid "Silenced pistol"
+msgstr "Pistola com silenciador"
+
+#: tools/haumea/gui.cpp:8016
+msgid "Silver vibrator"
+msgstr "Vibrador prateado"
+
+#: tools/haumea/gui.cpp:8791 tools/haumea/objfilters.cpp:410 tools/haumea/objfilters.cpp:752
+msgid "Size"
+msgstr "Tamanho"
+
+#: tools/haumea/gui.cpp:8868 tools/haumea/gui.cpp:8956
+msgid "Size (X, Y)"
+msgstr "Tamanho (X, Y)"
+
+#: tools/haumea/gui.cpp:8871
+msgid "Size (X, Y, Z)"
+msgstr "Tamanho (X, Y, Z)"
+
+#: tools/haumea/gui.cpp:8521 tools/haumea/gui.cpp:8527 tools/haumea/gui.cpp:8584 tools/haumea/gui.cpp:10425
+msgid "Skin"
+msgstr "Skin"
+
+#: tools/haumea/gui.cpp:7997
+msgid "Skull"
+msgstr "Caveira"
+
+#: tools/haumea/gui.cpp:8267
+msgid "Slap"
+msgstr "Tapa"
+
+#: tools/haumea/gui.cpp:7832
+msgid "Slow (Alt)"
+msgstr "Lento (Alt)"
+
+#: tools/haumea/gui.cpp:7417
+msgid "Snap distance"
+msgstr "Distância de encaixe"
+
+#: tools/haumea/gui.cpp:7766
+msgid "Snap panels to edges and each other"
+msgstr "Encaixar painéis nas bordas e uns nos outros"
+
+#: tools/haumea/maptools.cpp:869 tools/haumea/maptools.cpp:871
+msgid "Snap rotations"
+msgstr "Encaixar rotações"
+
+#: tools/haumea/gui.cpp:7415
+msgid "Snapping"
+msgstr "Encaixe"
+
+#: tools/haumea/gui.cpp:8019
+msgid "Sniper rifle"
+msgstr "Rifle de precisão"
+
+#: tools/haumea/gui.cpp:8946
+msgid "Sound"
+msgstr "Som"
+
+#: tools/haumea/gui.cpp:10873
+#, c-format
+msgid "Sound %d  %s"
+msgstr "Som %d  %s"
+
+#: tools/haumea/gui.cpp:11271
+msgid "Sounds"
+msgstr "Sons"
+
+#: tools/haumea/maptools.cpp:862
+msgid ""
+"Spaces the objects evenly along the axis between the two\n"
+"outermost ones, which stay where they are."
+msgstr ""
+"Distribui os objetos por igual ao longo do eixo entre os dois\n"
+"mais afastados, que ficam onde estão."
+
+#: tools/haumea/maptools.cpp:960
+msgid "Spacing"
+msgstr "Espaçamento"
+
+#: tools/haumea/gui.cpp:7506
+msgid "Spacing (m)"
+msgstr "Espaçamento (m)"
+
+#: tools/haumea/gui.cpp:8632
+msgid "Speed for the move type"
+msgstr "Velocidade do tipo de movimento"
+
+#: tools/haumea/gui.cpp:8850
+msgid "Sphere"
+msgstr "Esfera"
+
+#: tools/haumea/gui.cpp:8262
+msgid "Splash"
+msgstr "Respingo"
+
+#: tools/haumea/gui.cpp:8261
+msgid "Spray can"
+msgstr "Lata de spray"
+
+#: tools/haumea/gui.cpp:8020
+msgid "Spraycan"
+msgstr "Lata de spray"
+
+#: tools/haumea/gui.cpp:8412
+msgid "Sprint"
+msgstr "Correr"
+
+#: tools/haumea/gui.cpp:8262
+msgid "Stadium crowd"
+msgstr "Torcida do estádio"
+
+#: tools/haumea/gui.cpp:8605
+msgid "Stand still"
+msgstr "Ficar parado"
+
+#: tools/haumea/gui.cpp:7453
+msgid "Start Brush"
+msgstr "Iniciar pincel"
+
+#: tools/haumea/gui.cpp:12186
+msgid "Start mapping"
+msgstr "Começar a mapear"
+
+#: tools/haumea/gui.cpp:8681
+msgid "Start point"
+msgstr "Ponto inicial"
+
+#: tools/haumea/gui.cpp:8734
+msgid "Start the route at the NPC"
+msgstr "Começar a rota no NPC"
+
+#: tools/haumea/gui.cpp:10101
+msgid "Stay in placement after each click, as Shift+click does."
+msgstr "Continua colocando após cada clique, como faz o Shift+clique."
+
+#: tools/haumea/maptools.cpp:865
+msgid "Step"
+msgstr "Passo"
+
+#: tools/haumea/radarart.cpp:906
+msgid "Steps"
+msgstr "Níveis"
+
+#: tools/haumea/gui.cpp:10383 tools/haumea/testserver.cpp:1254
+msgid "Stop"
+msgstr "Parar"
+
+#: tools/haumea/gui.cpp:8883
+msgid "Stop adding"
+msgstr "Parar de adicionar"
+
+#: tools/haumea/gui.cpp:10183
+msgid "Stop brush"
+msgstr "Parar pincel"
+
+#: tools/haumea/maptools.cpp:936
+msgid "Stop picking"
+msgstr "Parar de escolher"
+
+#: tools/haumea/gui.cpp:10089 tools/haumea/gui.cpp:10173
+msgid "Stop placing"
+msgstr "Parar de colocar"
+
+#: tools/haumea/gui.cpp:8647
+msgid "Stop preview"
+msgstr "Parar prévia"
+
+#: tools/haumea/gui.cpp:8758
+msgid "Stop range"
+msgstr "Distância de parada"
+
+#: tools/haumea/gui.cpp:8950
+msgid "Stop when the player leaves"
+msgstr "Parar quando o jogador sair"
+
+#: tools/haumea/testserver.cpp:1047
+msgid "Stopped"
+msgstr "Parado"
+
+#: tools/haumea/gui.cpp:9240
+msgid "Stream distance"
+msgstr "Distância de stream"
+
+#: tools/haumea/gui.cpp:8959
+msgid "Streamed per player"
+msgstr "Streamed por jogador"
+
+#: tools/haumea/radarart.cpp:909
+msgid "Streamed per-player zones"
+msgstr "Zonas streamed por jogador"
+
+#: tools/haumea/gui.cpp:11993
+msgid "Streamer"
+msgstr "Streamer"
+
+#: tools/haumea/gui.cpp:9241
+msgid "Streamer only. 0 uses the streamer's default for this kind."
+msgstr "Só streamer. 0 usa o padrão do streamer para este tipo."
+
+#: tools/haumea/gui.cpp:9256
+msgid ""
+"Streamer only; -1 shows the object in every world.\n"
+"Native CreateObject objects exist in all worlds."
+msgstr ""
+"Só streamer; -1 mostra o objeto em todos os worlds.\n"
+"Objetos CreateObject nativos existem em todos os worlds."
+
+#: tools/haumea/gui.cpp:8281
+msgid "Strip club (0.3.7-R2)"
+msgstr "Clube de striptease (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:8978
+msgid "Style"
+msgstr "Estilo"
+
+#: tools/haumea/gui.cpp:8031
+msgid "Sweet"
+msgstr "Sweet"
+
+#: tools/haumea/gui.cpp:9296
+msgid "Sync rotation"
+msgstr "Sincronizar rotação"
+
+#: tools/haumea/gui.cpp:12068
+msgid "TEXTDRAW"
+msgstr "TEXTDRAW"
+
+#: tools/haumea/gui.cpp:10087
+#, c-format
+msgid "Tags: %s"
+msgstr "Tags: %s"
+
+#: tools/haumea/gui.cpp:6904
+msgid "Target"
+msgstr "Alvo"
+
+#: tools/haumea/gui.cpp:8031
+msgid "Tattoo"
+msgstr "Tatuagem"
+
+#: tools/haumea/gui.cpp:8529
+msgid "Team (AddPlayerClassEx)"
+msgstr "Time (AddPlayerClassEx)"
+
+#: tools/haumea/gui.cpp:8016
+msgid "Tear gas"
+msgstr "Gás lacrimogêneo"
+
+#: tools/haumea/gui.cpp:8019
+msgid "Tec-9"
+msgstr "Tec-9"
+
+#: tools/haumea/testserver.cpp:1250
+msgid "Test in game"
+msgstr "Testar no jogo"
+
+#: tools/haumea/testserver.cpp:1308
+msgid ""
+"Test in game runs the map on a private open.mp server in Haumea's config\n"
+"folder. Its files come from this package, or from the workspace server when empty."
+msgstr ""
+"Testar no jogo roda o mapa num servidor open.mp privado na pasta de configuração\n"
+"do Haumea. Os arquivos dele vêm deste pacote, ou do servidor do workspace quando vazio."
+
+#: tools/haumea/testserver.cpp:952
+#, c-format
+msgid "Test in game: %s"
+msgstr "Testar no jogo: %s"
+
+#: tools/haumea/gui.cpp:7871 tools/haumea/testserver.cpp:1230
+msgid "Test server"
+msgstr "Servidor de teste"
+
+#: tools/haumea/testserver.cpp:1172
+#, c-format
+msgid "Test server started on port %d"
+msgstr "Servidor de teste iniciado na porta %d"
+
+#: tools/haumea/testserver.cpp:1169
+msgid "Test server: map reloaded"
+msgstr "Servidor de teste: mapa recarregado"
+
+#: tools/haumea/gui.cpp:8512
+msgid "Text"
+msgstr "Texto"
+
+#: tools/haumea/gui.cpp:11355 tools/haumea/gui.cpp:11510 tools/haumea/gui.cpp:11515
+msgid "TextDraws"
+msgstr "TextDraws"
+
+#: tools/haumea/gui.cpp:9312 tools/haumea/gui.cpp:9315
+msgid "That would attach an object to itself"
+msgstr "Isso anexaria um objeto a ele mesmo"
+
+#: tools/haumea/gui.cpp:8031
+msgid "The Truth"
+msgstr "The Truth"
+
+#: tools/haumea/maptools.cpp:755
+msgid ""
+"The angle the copies cover. 360 spreads them evenly around\n"
+"a full circle together with the selection."
+msgstr ""
+"O ângulo que as cópias cobrem. 360 as distribui por igual num\n"
+"círculo completo junto com a seleção."
+
+#: tools/haumea/radarart.cpp:866
+msgid ""
+"The art's pixel size. Smaller cells follow the shapes more\n"
+"closely and take more gang zones."
+msgstr ""
+"O tamanho do pixel da arte. Células menores seguem as formas mais\n"
+"de perto e usam mais gang zones."
+
+#: tools/haumea/gui.cpp:8795
+msgid "The checkpoint's size; players enter it within about this distance."
+msgstr "O tamanho do checkpoint; os jogadores entram nele a cerca desta distância."
+
+#: tools/haumea/radarart.cpp:923
+msgid "The group the zones go in."
+msgstr "O grupo onde as zonas ficam."
+
+#: tools/haumea/gui.cpp:10099
+msgid "The heading it is placed at."
+msgstr "A direção em que é colocado."
+
+#: tools/haumea/gui.cpp:8828
+msgid "The last checkpoint: Finish (or Air finish) shows a flag."
+msgstr "O último checkpoint: Chegada (ou Chegada aérea) mostra uma bandeira."
+
+#: tools/haumea/gui.cpp:8968 tools/haumea/radarart.cpp:919
+msgid "The map includes the streamer for its areas."
+msgstr "O mapa inclui o streamer para as áreas dele."
+
+#: tools/haumea/maptools.cpp:791
+#, c-format
+msgid "The mirror's %s coordinate."
+msgstr "A coordenada %s do espelho."
+
+#: tools/haumea/gui.cpp:10405
+msgid "The model of new pickups."
+msgstr "O modelo dos novos pickups."
+
+#: tools/haumea/maptools.cpp:966
+msgid "The model's length, so the pieces just touch."
+msgstr "O comprimento do modelo, para as peças se encostarem."
+
+#: tools/haumea/radarart.cpp:842
+msgid ""
+"The objects drawn: every scripted object, the selection, or one group.\n"
+"Vehicles, SA-MP elements and unchanged world objects are left out."
+msgstr ""
+"Os objetos desenhados: todo objeto do script, a seleção ou um grupo.\n"
+"Veículos, elementos SA-MP e objetos do mundo sem mudanças ficam de fora."
+
+#: tools/haumea/gui.cpp:9301
+msgid "The parent was deleted, so this attachment is not exported."
+msgstr "O pai foi excluído, então este anexo não é exportado."
+
+#: tools/haumea/gui.cpp:8745
+msgid "The path's Pawn variable. NPCs follow it by this name."
+msgstr "A variável Pawn do caminho. Os NPCs o seguem por este nome."
+
+#: tools/haumea/maptools.cpp:748
+msgid "The point the copies go around (a vertical axis)."
+msgstr "O ponto em volta do qual as cópias vão (um eixo vertical)."
+
+#: tools/haumea/radarart.cpp:951
+msgid ""
+"The server makes at most 1024 gang zones. Use bigger cells, fewer colours,\n"
+"or streamed zones."
+msgstr ""
+"O servidor cria no máximo 1024 gang zones. Use células maiores, menos cores\n"
+"ou zonas streamed."
+
+#: tools/haumea/gui.cpp:10426
+msgid ""
+"The skin of new actors, player classes and NPCs.\n"
+"Skins are also in the Objects tab's Skins category."
+msgstr ""
+"A skin dos novos atores, classes de jogador e NPCs.\n"
+"As skins também estão na categoria Skins da aba Objetos."
+
+#: tools/haumea/gui.cpp:8021
+msgid "Thermal goggles"
+msgstr "Óculos térmicos"
+
+#: tools/haumea/gui.cpp:12191
+msgid "This map is empty. Maps are saved as Pawn (.pwn) files."
+msgstr "Este mapa está vazio. Os mapas são salvos como arquivos Pawn (.pwn)."
+
+#: tools/haumea/gui.cpp:8263
+msgid "Throw a satchel"
+msgstr "Arremessar uma carga explosiva"
+
+#: tools/haumea/gui.cpp:7998
+msgid "Tiki"
+msgstr "Tiki"
+
+#: tools/haumea/gui.cpp:10455
+msgid "Tile size"
+msgstr "Tamanho do bloco"
+
+#: tools/haumea/gui.cpp:10450
+msgid "Tiles"
+msgstr "Blocos"
+
+#: tools/haumea/gui.cpp:7410
+msgid "Tilt to slope"
+msgstr "Inclinar na encosta"
+
+#: tools/haumea/maptools.cpp:974
+msgid "Tilts each object up or down with the line."
+msgstr "Inclina cada objeto para cima ou para baixo com a linha."
+
+#: tools/haumea/gui.cpp:12664
+msgid "Time & Weather"
+msgstr "Hora e clima"
+
+#: tools/haumea/gui.cpp:8486
+msgid "Time (ms)"
+msgstr "Tempo (ms)"
+
+#: tools/haumea/gui.cpp:7160 tools/haumea/gui.cpp:7394
+msgid "Tools"
+msgstr "Ferramentas"
+
+#: tools/haumea/gui.cpp:8031
+msgid "Toreno's ranch"
+msgstr "Rancho do Toreno"
+
+#: tools/haumea/gui.cpp:10208
+msgid "Trees"
+msgstr "Árvores"
+
+#: tools/haumea/gui.cpp:8032
+msgid "Triads"
+msgstr "Tríades"
+
+#: tools/haumea/gui.cpp:8032
+msgid "Triads casino"
+msgstr "Cassino das Tríades"
+
+#: tools/haumea/gui.cpp:8033
+msgid "Truck"
+msgstr "Caminhão"
+
+#: tools/haumea/maptools.cpp:969
+msgid ""
+"Turns models that are longer sideways (most fences and barriers)\n"
+"so they run along the line."
+msgstr ""
+"Gira os modelos mais compridos de lado (a maioria das cercas e barreiras)\n"
+"para que sigam a linha."
+
+#: tools/haumea/gui.cpp:8000
+msgid "Two players"
+msgstr "Dois jogadores"
+
+#: tools/haumea/gui.cpp:7997
+msgid "Two skulls"
+msgstr "Duas caveiras"
+
+#: tools/haumea/gui.cpp:8264
+msgid "Two-feet stomp"
+msgstr "Pisada com os dois pés"
+
+#: tools/haumea/gui.cpp:6997
+msgid "Txd (inc,-exc)"
+msgstr "Txd (inc,-exc)"
+
+#: tools/haumea/gui.cpp:8508 tools/haumea/gui.cpp:8797 tools/haumea/objfilters.cpp:786
+msgid "Type"
+msgstr "Tipo"
+
+#: tools/haumea/gui.cpp:7761
+msgid "UI scale"
+msgstr "Escala da interface"
+
+#: tools/haumea/gui.cpp:8924
+msgid "URL"
+msgstr "URL"
+
+#: tools/haumea/gui.cpp:9414
+msgid ""
+"Unchanged world objects are not saved in the map. Once you move,\n"
+"rotate, retexture or delete one, the map removes the original with\n"
+"RemoveBuildingForPlayer and creates your version instead."
+msgstr ""
+"Objetos do mundo sem mudanças não são salvos no mapa. Quando você move,\n"
+"gira, retextura ou exclui um, o mapa remove o original com\n"
+"RemoveBuildingForPlayer e cria a sua versão no lugar."
+
+#: tools/haumea/gui.cpp:9403
+msgid "Undelete"
+msgstr "Restaurar"
+
+#: tools/haumea/gui.cpp:11257
+msgid "Ungrouped"
+msgstr "Sem grupo"
+
+#: tools/haumea/gui.cpp:12006
+msgid "Unsaved changes"
+msgstr "Mudanças não salvas"
+
+#: tools/haumea/gui.cpp:8877
+msgid "Up from where the area stands. 0 covers every height."
+msgstr "Para cima de onde a área está. 0 cobre qualquer altura."
+
+#: tools/haumea/gui.cpp:7882
+msgid "Updates"
+msgstr "Atualizações"
+
+#: tools/haumea/gui.cpp:8205
+msgid "Use"
+msgstr "Usar"
+
+#: tools/haumea/gui.cpp:8714
+msgid "Use a vehicle..."
+msgstr "Usar um veículo..."
+
+#: tools/haumea/gui.cpp:9211
+msgid "Use letters, digits and _, not starting with a digit, and no Pawn keyword."
+msgstr "Use letras, dígitos e _, sem começar por dígito e sem palavra-chave do Pawn."
+
+#: tools/haumea/gui.cpp:8929
+msgid "Use position"
+msgstr "Usar posição"
+
+#: tools/haumea/maptools.cpp:958
+msgid "Use the first selected object's model."
+msgstr "Usar o modelo do primeiro objeto selecionado."
+
+#: tools/haumea/gui.cpp:8692
+msgid "Use the selected node"
+msgstr "Usar o nó selecionado"
+
+#: tools/haumea/gui.cpp:9203
+msgid "Variable"
+msgstr "Variável"
+
+#: tools/haumea/gui.cpp:8599 tools/haumea/gui.cpp:9431 tools/haumea/gui.cpp:11109
+msgid "Vehicle"
+msgstr "Veículo"
+
+#: tools/haumea/gui.cpp:8260
+msgid "Vehicle component added (Transfender)"
+msgstr "Peça de veículo instalada (Transfender)"
+
+#: tools/haumea/gui.cpp:11266 tools/haumea/gui.cpp:11509 tools/haumea/gui.cpp:11515
+msgid "Vehicles"
+msgstr "Veículos"
+
+#: tools/haumea/gui.cpp:8274
+msgid "Ventilation (0.3.7-R2)"
+msgstr "Ventilação (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:8016
+msgid "Vibrator"
+msgstr "Vibrador"
+
+#: tools/haumea/gui.cpp:8256
+msgid "Videogame music: Duality"
+msgstr "Música de videogame: Duality"
+
+#: tools/haumea/gui.cpp:8255
+msgid "Videogame music: Go Go Space Monkey"
+msgstr "Música de videogame: Go Go Space Monkey"
+
+#: tools/haumea/gui.cpp:8256
+msgid "Videogame music: Let's Get Ready to Bumble"
+msgstr "Música de videogame: Let's Get Ready to Bumble"
+
+#: tools/haumea/gui.cpp:8269
+msgid "Videotape (continuous)"
+msgstr "Fita de vídeo (contínua)"
+
+#: tools/haumea/gui.cpp:12673
+msgid "View"
+msgstr "Exibir"
+
+#: tools/haumea/gui.cpp:9244 tools/haumea/gui.cpp:9249 tools/haumea/gui.cpp:9254
+msgid "Virtual world"
+msgstr "Virtual world"
+
+#: tools/haumea/gui.cpp:8412
+msgid "Walk"
+msgstr "Andar"
+
+#: tools/haumea/gui.cpp:8605
+msgid "Walk the nodes"
+msgstr "Andar pelos nós"
+
+#: tools/haumea/gui.cpp:8653
+msgid ""
+"Walks the NPC in the viewport the way open.mp moves it.\n"
+"It goes back to its place when the preview stops."
+msgstr ""
+"Anda com o NPC na viewport do jeito que o open.mp o move.\n"
+"Ele volta ao lugar quando a prévia para."
+
+#: tools/haumea/gui.cpp:8281
+msgid "Water (0.3.7-R2)"
+msgstr "Água (0.3.7-R2)"
+
+#: tools/haumea/gui.cpp:8031
+msgid "Waypoint"
+msgstr "Waypoint"
+
+#: tools/haumea/gui.cpp:8251
+msgid "Weak hit"
+msgstr "Pancada fraca"
+
+#: tools/haumea/gui.cpp:8252
+msgid "Weaker hit"
+msgstr "Pancada mais fraca"
+
+#: tools/haumea/gui.cpp:8594
+msgid "Weapon"
+msgstr "Arma"
+
+#: tools/haumea/gui.cpp:8544
+#, c-format
+msgid "Weapon %d"
+msgstr "Arma %d"
+
+#: tools/haumea/gui.cpp:8029
+msgid "Well Stacked Pizza"
+msgstr "Well Stacked Pizza"
+
+#: tools/haumea/gui.cpp:7793
+msgid ""
+"When off, Reload Game Files restarts at once if there are no unsaved changes.\n"
+"Unsaved changes always ask first."
+msgstr ""
+"Desligado, Recarregar arquivos do jogo reinicia na hora se não houver mudanças não salvas.\n"
+"Mudanças não salvas sempre perguntam antes."
+
+#: tools/haumea/gui.cpp:7827
+msgid "When off, flying (W/A/S/D with the look button held) goes at the constant fly speed below."
+msgstr "Desligado, o voo (W/A/S/D com o botão de olhar segurado) vai na velocidade de voo constante abaixo."
+
+#: tools/haumea/maptools.cpp:787
+msgid ""
+"Where the mirror is: through the selection's centre, the\n"
+"world origin, or a coordinate you set."
+msgstr ""
+"Onde fica o espelho: no centro da seleção, na\n"
+"origem do mundo ou numa coordenada que você define."
+
+#: tools/haumea/maptools.cpp:785
+msgid "Which coordinate flips: X mirrors east and west."
+msgstr "Qual coordenada é invertida: X espelha leste e oeste."
+
+#: tools/haumea/gui.cpp:7412
+msgid ""
+"While dragging on the ground, turn the object to match the slope.\n"
+"Following the ground is the mountain button on the toolbar."
+msgstr ""
+"Ao arrastar no chão, gira o objeto para acompanhar a inclinação.\n"
+"Seguir o chão é o botão da montanha na barra de ferramentas."
+
+#: tools/haumea/gui.cpp:8025
+msgid "White square"
+msgstr "Quadrado branco"
+
+#: tools/haumea/testserver.cpp:1315
+msgid "Wine prefix"
+msgstr "Prefixo do Wine"
+
+#: tools/haumea/gui.cpp:7423 tools/haumea/gui.cpp:7427
+msgid ""
+"With the magnet on the toolbar, hold Shift while dragging to move\n"
+"and rotate in these steps."
+msgstr ""
+"Com o ímã da barra de ferramentas, segure Shift ao arrastar para mover\n"
+"e girar nestes passos."
+
+#: tools/haumea/gui.cpp:8032
+msgid "Woozie"
+msgstr "Woozie"
+
+#: tools/haumea/radarart.cpp:957
+msgid "Working..."
+msgstr "Trabalhando..."
+
+#: tools/haumea/gui.cpp:7867
+msgid "Workspace"
+msgstr "Workspace"
+
+#: tools/haumea/gui.cpp:12216
+msgid "Workspace..."
+msgstr "Workspace..."
+
+#: tools/haumea/gui.cpp:9447 tools/haumea/gui.cpp:10430
+msgid "World"
+msgstr "Mundo"
+
+#: tools/haumea/gui.cpp:9448
+msgid "World & streaming"
+msgstr "Mundo e streaming"
+
+#: tools/haumea/maptools.cpp:783
+msgid "World origin"
+msgstr "Origem do mundo"
+
+#: tools/haumea/gui.cpp:7775
+msgid ""
+"Writes a copy of the open map to the autosave folder in Haumea's config\n"
+"folder while it has unsaved changes. File > Recover Autosave opens them.\n"
+"The map file itself is only written by Save."
+msgstr ""
+"Grava uma cópia do mapa aberto na pasta de autosave na pasta de configuração\n"
+"do Haumea enquanto houver mudanças não salvas. Arquivo > Recuperar autosave as abre.\n"
+"O arquivo do mapa em si só é gravado por Salvar."
+
+#: tools/haumea/gui.cpp:9226
+msgid "Written as a comment after this line in the saved map."
+msgstr "Escrito como comentário após esta linha no mapa salvo."
+
+#: tools/haumea/maptools.cpp:782
+msgid "X (east-west)"
+msgstr "X (leste-oeste)"
+
+#: tools/haumea/maptools.cpp:782
+msgid "Y (north-south)"
+msgstr "Y (norte-sul)"
+
+#: tools/haumea/gui.cpp:7494
+msgid "Yaw min/max (°)"
+msgstr "Yaw mín/máx (°)"
+
+#: tools/haumea/gui.cpp:7501
+msgid ""
+"Yaw rotation range in degrees.\n"
+"Both equal = fixed angle (0/0 = no rotation).\n"
+"Different = uniform random between them (e.g. 0/360 for full random)."
+msgstr ""
+"Faixa de rotação yaw em graus.\n"
+"Iguais = ângulo fixo (0/0 = sem rotação).\n"
+"Diferentes = aleatório uniforme entre eles (ex.: 0/360 para totalmente aleatório)."
+
+#: tools/haumea/gui.cpp:7468
+msgid "Z offset (m)"
+msgstr "Deslocamento Z (m)"
+
+#: tools/haumea/gui.cpp:8032
+msgid "Zero"
+msgstr "Zero"
+
+#: tools/haumea/radarart.cpp:892
+msgid "Zone colour"
+msgstr "Cor da zona"
+
+#: tools/haumea/objfilters.cpp:586 tools/haumea/radarart.cpp:908
+msgid "Zones"
+msgstr "Zonas"
+
+#: tools/haumea/gui.cpp:10067
+msgid "all"
+msgstr "todas"
+
+#: tools/haumea/gui.cpp:9203
+msgid "automatic"
+msgstr "automático"
+
+#: tools/haumea/gui.cpp:11196
+msgid "back left"
+msgstr "traseiro esquerdo"
+
+#: tools/haumea/gui.cpp:11196
+msgid "back right"
+msgstr "traseiro direito"
+
+#: tools/haumea/maptools.cpp:853
+msgid "centre"
+msgstr "o centro"
+
+#: tools/haumea/gui.cpp:10814
+msgid "circle"
+msgstr "círculo"
+
+#: tools/haumea/gui.cpp:9224
+msgid "comment in the .pwn"
+msgstr "comentário no .pwn"
+
+#: tools/haumea/maptools.cpp:256 tools/haumea/maptools.cpp:381
+msgid "could not copy the selection"
+msgstr "não foi possível copiar a seleção"
+
+#: tools/haumea/testserver.cpp:981
+msgid "could not export the map"
+msgstr "não foi possível exportar o mapa"
+
+#: tools/haumea/testserver.cpp:993
+msgid "could not export the textdraws"
+msgstr "não foi possível exportar os textdraws"
+
+#: tools/haumea/radarart.cpp:703
+msgid "could not make the zones"
+msgstr "não foi possível criar as zonas"
+
+#: tools/haumea/testserver.cpp:1030
+msgid "could not run pawncc"
+msgstr "não foi possível rodar o pawncc"
+
+#: tools/haumea/testserver.cpp:1097
+msgid "could not start samp.exe"
+msgstr "não foi possível iniciar o samp.exe"
+
+#: tools/haumea/testserver.cpp:1135
+msgid "could not start wine"
+msgstr "não foi possível iniciar o wine"
+
+#: tools/haumea/testserver.cpp:1003
+msgid "could not write the test gamemode"
+msgstr "não foi possível gravar o gamemode de teste"
+
+#: tools/haumea/gui.cpp:10814
+msgid "cube"
+msgstr "cubo"
+
+#: tools/haumea/gui.cpp:10814
+msgid "cuboid"
+msgstr "cuboide"
+
+#: tools/haumea/gui.cpp:10814
+msgid "cylinder"
+msgstr "cilindro"
+
+#: tools/haumea/gui.cpp:11196
+msgid "driver"
+msgstr "motorista"
+
+#: tools/haumea/radarart.cpp:595
+msgid "fit to at least one zone"
+msgstr "ajuste para pelo menos uma zona"
+
+#: tools/haumea/testserver.cpp:1306
+msgid "folder, open.mp .tar.gz or .zip"
+msgstr "pasta, .tar.gz ou .zip do open.mp"
+
+#: tools/haumea/gui.cpp:11213
+#, c-format
+msgid "follows %s (%d points)"
+msgstr "segue %s (%d pontos)"
+
+#: tools/haumea/gui.cpp:7557
+msgid "for Streamer code"
+msgstr "para código Streamer"
+
+#: tools/haumea/gui.cpp:7557
+msgid "for native code"
+msgstr "para código nativo"
+
+#: tools/haumea/testserver.cpp:1315
+msgid "for samp.exe"
+msgstr "para o samp.exe"
+
+#: tools/haumea/gui.cpp:11196
+msgid "front passenger"
+msgstr "passageiro da frente"
+
+#: tools/haumea/maptools.cpp:853
+msgid "highest side"
+msgstr "o lado mais alto"
+
+#: tools/haumea/gui.cpp:8924
+msgid "http://... .mp3, .ogg or .pls"
+msgstr "http://... .mp3, .ogg ou .pls"
+
+#: tools/haumea/gui.cpp:11198
+#, c-format
+msgid "in %s (%s)"
+msgstr "em %s (%s)"
+
+#: tools/haumea/maptools.cpp:853
+msgid "lowest side"
+msgstr "o lado mais baixo"
+
+#: tools/haumea/maptools.cpp:197
+msgid "make at least one copy"
+msgstr "faça pelo menos uma cópia"
+
+#: tools/haumea/maptools.cpp:332
+msgid "mirror across X or Y"
+msgstr "espelhe em X ou Y"
+
+#: tools/haumea/gui.cpp:6923
+msgid "name"
+msgstr "nome"
+
+#: tools/haumea/radarart.cpp:643
+msgid "name the group the zones go in"
+msgstr "dê nome ao grupo onde as zonas ficam"
+
+#: tools/haumea/gui.cpp:8201
+msgid "new path name"
+msgstr "nome do novo caminho"
+
+#: tools/haumea/radarart.cpp:620
+msgid "no cell size gets it down to that many zones"
+msgstr "nenhum tamanho de célula reduz a esse número de zonas"
+
+#: tools/haumea/gui.cpp:7961
+msgid "no group"
+msgstr "sem grupo"
+
+#: tools/haumea/testserver.cpp:1076
+msgid "no samp.exe in the game folder"
+msgstr "nenhum samp.exe na pasta do jogo"
+
+#: tools/haumea/maptools.cpp:952
+msgid "no such model"
+msgstr "modelo inexistente"
+
+#: tools/haumea/gui.cpp:7741
+msgid "none"
+msgstr "nenhum"
+
+#: tools/haumea/radarart.cpp:450
+msgid "none of the objects has a footprint"
+msgstr "nenhum dos objetos tem área de base"
+
+#: tools/haumea/gui.cpp:10415
+msgid "none: plain checkpoints"
+msgstr "nenhuma: checkpoints simples"
+
+#: tools/haumea/testserver.cpp:1057
+msgid "nothing to run yet; use Test in game first"
+msgstr "nada para rodar ainda; use Testar no jogo antes"
+
+#: tools/haumea/gui.cpp:11187
+#, c-format
+msgid "only inside %s"
+msgstr "só dentro de %s"
+
+#: tools/haumea/gui.cpp:11187
+#, c-format
+msgid "only inside %s (missing)"
+msgstr "só dentro de %s (ausente)"
+
+#: tools/haumea/gui.cpp:9123
+msgid "only this one"
+msgstr "só este"
+
+#: tools/haumea/gui.cpp:8560 tools/haumea/gui.cpp:8742 tools/haumea/gui.cpp:8965 tools/haumea/gui.cpp:10333
+msgid "open.mp only"
+msgstr "só open.mp"
+
+#: tools/haumea/gui.cpp:8669
+msgid ""
+"open.mp's NPC_MoveByPath walks the path once. Loop and Back and forth save\n"
+"a <map>_OnNPCFinishMovePath(npcid, pathid) helper: call it from your\n"
+"OnNPCFinishMovePath and the NPC starts the path again (reversed each time\n"
+"for back and forth)."
+msgstr ""
+"O NPC_MoveByPath do open.mp percorre o caminho uma vez. Repetir e Ida e volta salvam\n"
+"um helper <map>_OnNPCFinishMovePath(npcid, pathid): chame-o do seu\n"
+"OnNPCFinishMovePath e o NPC recomeça o caminho (invertido a cada vez\n"
+"em ida e volta)."
+
+#: tools/haumea/gui.cpp:8299
+msgid "other sound"
+msgstr "outro som"
+
+#: tools/haumea/gui.cpp:11203
+#, c-format
+msgid "plays %s.rec"
+msgstr "toca %s.rec"
+
+#: tools/haumea/gui.cpp:10814
+msgid "polygon"
+msgstr "polígono"
+
+#: tools/haumea/gui.cpp:10814
+msgid "rectangle"
+msgstr "retângulo"
+
+#: tools/haumea/gui.cpp:8075
+msgid "search"
+msgstr "buscar"
+
+#: tools/haumea/gui.cpp:8442
+msgid "search animations"
+msgstr "buscar animações"
+
+#: tools/haumea/radarart.cpp:425
+msgid "select some objects first"
+msgstr "selecione alguns objetos antes"
+
+#: tools/haumea/maptools.cpp:160
+msgid "select something first"
+msgstr "selecione algo antes"
+
+#: tools/haumea/testserver.cpp:474
+msgid "set an open.mp server package (folder, .tar.gz or .zip) in Preferences > Test server"
+msgstr "defina um pacote de servidor open.mp (pasta, .tar.gz ou .zip) em Preferências > Servidor de teste"
+
+#: tools/haumea/gui.cpp:6906
+msgid "show"
+msgstr "mostrar"
+
+#: tools/haumea/gui.cpp:10814
+msgid "sphere"
+msgstr "esfera"
+
+#: tools/haumea/gui.cpp:8968 tools/haumea/radarart.cpp:919
+msgid "streamer"
+msgstr "streamer"
+
+#: tools/haumea/gui.cpp:8772 tools/haumea/gui.cpp:8842 tools/haumea/gui.cpp:9175 tools/haumea/gui.cpp:10344
+msgid "streamer only"
+msgstr "só streamer"
+
+#: tools/haumea/gui.cpp:11367
+msgid "textdraw"
+msgstr "textdraw"
+
+#: tools/haumea/radarart.cpp:426
+msgid "that group has no objects"
+msgstr "esse grupo não tem objetos"
+
+#: tools/haumea/radarart.cpp:419
+msgid "the cell size must be 0.5 to 1000 m"
+msgstr "o tamanho da célula precisa ser de 0,5 a 1000 m"
+
+#: tools/haumea/testserver.cpp:1158
+msgid "the compiler could not start (see the log)"
+msgstr "o compilador não pôde iniciar (veja o registro)"
+
+#: tools/haumea/testserver.cpp:986
+msgid "the exported map has no _CreateObjects function"
+msgstr "o mapa exportado não tem a função _CreateObjects"
+
+#: tools/haumea/radarart.cpp:525
+msgid "the footprints are smaller than one cell; use smaller cells"
+msgstr "as áreas de base são menores que uma célula; use células menores"
+
+#: tools/haumea/testserver.cpp:1105
+msgid "the game folder is not in a wine prefix; set one in Preferences > Test server"
+msgstr "a pasta do jogo não está num prefixo do wine; defina um em Preferências > Servidor de teste"
+
+#: tools/haumea/maptools.cpp:634
+msgid "the line needs at least two points"
+msgstr "a linha precisa de pelo menos dois pontos"
+
+#: tools/haumea/radarart.cpp:426
+msgid "the map has no objects"
+msgstr "o mapa não tem objetos"
+
+#: tools/haumea/testserver.cpp:586
+msgid "the map uses the streamer, but no streamer.inc was found in the package or workspace"
+msgstr "o mapa usa o streamer, mas nenhum streamer.inc foi encontrado no pacote ou no workspace"
+
+#: tools/haumea/testserver.cpp:569
+msgid "the server package has no qawno folder (pawncc and includes)"
+msgstr "o pacote do servidor não tem a pasta qawno (pawncc e includes)"
+
+#: tools/haumea/testserver.cpp:455
+msgid "the server package must be a folder, .tar.gz or .zip"
+msgstr "o pacote do servidor precisa ser uma pasta, .tar.gz ou .zip"
+
+#: tools/haumea/maptools.cpp:635
+msgid "the spacing must be above 0"
+msgstr "o espaçamento precisa ser maior que 0"
+
+#: tools/haumea/maptools.cpp:467
+msgid "the step must be above 0"
+msgstr "o passo precisa ser maior que 0"
+
+#: tools/haumea/gui.cpp:11670
+msgid "variable (empty: automatic)"
+msgstr "variável (vazio: automático)"
+
+#: tools/haumea/gui.cpp:8314 tools/haumea/gui.cpp:8316 tools/haumea/gui.cpp:9100
+msgid "vehicle"
+msgstr "veículo"
+
+#: tools/haumea/gui.cpp:11207
+#, c-format
+msgid "walks NODES%d.DAT from point %d"
+msgstr "anda pelo NODES%d.DAT a partir do ponto %d"
+
+#: tools/haumea/gui.cpp:8515
+msgid "{RRGGBB} changes the colour from there on, as in game."
+msgstr "{RRGGBB} muda a cor daí em diante, como no jogo."
