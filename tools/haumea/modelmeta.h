@@ -25,7 +25,7 @@ struct ModelMeta
 	bool dynamic;	// in object.dat: it moves when hit
 	bool breakable, timed, animated, upgrade, vehicle, skin;
 	bool interior;	// defined in an interior IDE
-	bool building;	// a map IDE's model that stays put, 12 m or more across
+	bool building;	// filed under Buildings and land, and stays put
 	bool alpha;	// drawn last or additive, or without z writes
 	int timeOn, timeOff;
 	const char *ideFile;	// as the game file list names it, or ""

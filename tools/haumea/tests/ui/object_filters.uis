@@ -1,0 +1,34 @@
+# Object Browser filters: the gunbox (under 1 m, with collision) stays with Small and Has
+# collision and goes with Large; a chip comes off on its own, Clear all takes the rest.
+# needs: game
+open "$UI_FIXTURES/ui_floor.pwn"
+shortcut window_browser
+wait 5
+click_item 'Object Browser' 'Objects'
+wait 3
+click_item 'Object Browser' '##search_objects'
+type "gunbox"
+wait 5
+assert item 'Object Browser' '##tile'
+assert no_item 'Object Browser' 'Clear all'
+click_item 'Object Browser' '###object_filters'
+wait 5
+click_item 'Object Browser' 'Large (10-50 m)'
+wait 5
+assert no_item 'Object Browser' '##tile'
+assert item 'Object Browser' 'Clear all'
+# A second click turns the chip off again; then the size that fits.
+click_item 'Object Browser' 'Large (10-50 m)'
+wait 3
+click_item 'Object Browser' 'Small (under 2 m)'
+wait 3
+click_item 'Object Browser' 'Has collision'
+wait 5
+assert item 'Object Browser' '##tile'
+click_item 'Object Browser' 'No collision'
+wait 5
+assert no_item 'Object Browser' '##tile'
+click_item 'Object Browser' 'Clear all'
+wait 5
+assert no_item 'Object Browser' 'Clear all'
+assert item 'Object Browser' '##tile'

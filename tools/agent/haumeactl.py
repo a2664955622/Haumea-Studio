@@ -210,6 +210,8 @@ def main(argv: list[str] | None = None) -> int:
 	index = asset_sub.add_parser("index")
 	index.add_argument("--gta-dir", type=Path, required=True,
 	                   help="your GTA San Andreas folder: the catalogue comes from its data/*.ide files")
+	index.add_argument("--model-meta", type=Path,
+	                   help="haumea --dump-model-meta output: sizes, collision, categories and SA-MP models")
 	index.add_argument("--semantic-assets", type=Path,
 	                   help="optional AI-enriched asset JSON; kept external when its license is unknown")
 	search = asset_sub.add_parser("search")
@@ -319,7 +321,8 @@ def main(argv: list[str] | None = None) -> int:
 				payload = service.environment(**settings)
 		elif args.command == "assets":
 			if args.asset_command == "index": payload = build_index(
-				args.db, semantic_assets=args.semantic_assets, gta_dir=args.gta_dir)
+				args.db, semantic_assets=args.semantic_assets, gta_dir=args.gta_dir,
+				model_meta=args.model_meta)
 			elif args.asset_command == "search":
 				service = HaumeaService(args.socket, args.db, args.timeout,
 				                        args.discovery_dir, args.state_dir)

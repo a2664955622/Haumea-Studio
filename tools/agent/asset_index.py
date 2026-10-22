@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from contextlib import closing
+import csv
 import json
 import os
 from pathlib import Path
@@ -15,8 +16,9 @@ from PIL import Image, ImageDraw
 
 
 SCHEMA_VERSION = 4
-GEOMETRY_UNAVAILABLE = ("size and collision filters (max_width, max_depth, has_collision) are not available "
-                        "yet: the asset index has no sizes or collision; they were ignored")
+GEOMETRY_UNAVAILABLE = ("size and collision filters (max_width, max_depth, has_collision) are not available: "
+                        "the asset index was built without the editor's model facts (haumeactl assets index "
+                        "--model-meta, from haumea --dump-model-meta); they were ignored")
 DEFAULT_DATABASE = Path(os.environ.get("HAUMEA_ASSET_DB", str(Path.home() / ".cache" / "haumea-agent" / "assets-v1.sqlite3"))).expanduser()
 
 
@@ -214,11 +216,24 @@ def _gta_models(gta_dir: Path) -> list[dict]:
 	return list(models.values())
 
 
+def _model_meta(path: Path) -> dict[int, dict]:
+	"""The editor's --dump-model-meta file: one row of facts per model, by Pawn id."""
+	rows = {}
+	with open(path, encoding="utf-8", errors="replace", newline="") as f:
+		for row in csv.DictReader(f, delimiter="\t"):
+			try:
+				rows[int(row["id"])] = row
+			except (KeyError, ValueError):
+				continue
+	return rows
+
+
 def build_index(database: Path = DEFAULT_DATABASE, semantic_assets: Path | None = None, *,
-				gta_dir: Path) -> dict:
+				gta_dir: Path, model_meta: Path | None = None) -> dict:
 	"""Index the object definitions of the game in gta_dir (its data/*.ide files).
-	Sizes, collision and world locations are not in this index yet: the editor
-	will provide them, and until then those filters say they are unavailable."""
+	model_meta, the editor's --dump-model-meta output, adds each model's
+	collision size and collision, Haumea's category and SA-MP's own models;
+	without it the size and collision filters say they are unavailable."""
 	database = Path(database).expanduser().resolve()
 	if gta_dir is None:
 		raise ValueError("Specify --gta-dir /path/to/GTA San Andreas")
@@ -226,6 +241,24 @@ def build_index(database: Path = DEFAULT_DATABASE, semantic_assets: Path | None 
 	models = _gta_models(gta_dir)
 	models_path = gta_dir / "data"
 	sizes, locations, collisions = {}, {}, {}
+	if model_meta is not None:
+		by_id = {int(m["id"]): m for m in models}
+		for asset_id, row in _model_meta(Path(model_meta).expanduser()).items():
+			try:
+				w, d, h = float(row["width"]), float(row["depth"]), float(row["height"])
+			except (KeyError, ValueError):
+				continue
+			if row.get("collision") == "1":
+				collisions[str(asset_id)] = True
+				sizes[str(asset_id)] = {"width": w, "depth": d, "height": h, "maxDim": max(w, d, h),
+				                        "volume": w * d * h, "radius": 0.5 * (w * w + d * d + h * h) ** 0.5}
+			category = "lod" if row.get("lod") == "1" else row.get("category") or "unknown"
+			if asset_id not in by_id:	# SA-MP's models, which data/*.ide doesn't list
+				models.append({"id": asset_id, "name": row.get("name", ""), "dff": row.get("name", ""),
+				               "txd": row.get("txd", ""), "category": category, "source": row.get("ide", ""),
+				               "drawDist": float(row.get("draw_distance") or 0), "flags": 0})
+			else:
+				by_id[asset_id]["category"] = category
 	semantic_by_id = _load_semantic_assets(semantic_assets)
 
 	database.parent.mkdir(parents=True, exist_ok=True)

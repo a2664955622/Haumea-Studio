@@ -313,7 +313,11 @@ fillModel(int id)
 	m.upgrade = pathHas(m.ideFile, "veh_mods.ide");
 	m.interior = pathHas(m.ideFile, "/interior/") || pathHas(m.ideFile, "interior/");
 	m.alpha = obj->m_drawLast || obj->m_additive || obj->m_noZwrite;
-	m.building = !m.dynamic && !m.interior && pathHas(m.ideFile, "maps/") && (m.width >= 12.0f || m.depth >= 12.0f);
+	// What the categories file under Buildings and land, and that stays put.
+	int top = GetObjectCategory(id);
+	while(top >= 0 && top < NUM_OBJ_CATEGORIES && objCategories[top].parent >= 0)
+		top = objCategories[top].parent;
+	m.building = top == CAT_BUILDINGS_ROOT && !m.dynamic;
 	TxdDef *txd = GetTxdDef(obj->m_txdSlot);
 	m.txdName = txd ? txd->name : "";
 }
@@ -504,7 +508,8 @@ DumpModelMeta(const char *path)
 	if(f == nil)
 		return -1;
 	fputs("id\tname\tcategory\tsource\tide\ttxd\twidth\tdepth\theight\tcollision\tlod\thas_lod\tdraw_distance\t"
-		"dynamic\tbreakable\ttimed\tanimated\tupgrade\tinterior\talpha\tplacements\tcities\tzones\n", f);
+		"dynamic\tbreakable\ttimed\tanimated\tupgrade\tinterior\talpha\tplacements\tcities\tzones\tpolygons\tmaterials\t"
+		"textures\n", f);
 	int n = 0;
 	for(int id = 0; id < (int)gMeta.size(); id++){
 		const ModelMeta &m = gMeta[id];
@@ -518,11 +523,18 @@ DumpModelMeta(const char *path)
 				cities += std::string(cities.empty() ? "" : ",") + GetModelCityName(c);
 		for(int z : m.zones)
 			zones += std::string(zones.empty() ? "" : ",") + GetMetaZoneName(z);
-		fprintf(f, "%d\t%s\t%s\t%s\t%s\t%s\t%.2f\t%.2f\t%.2f\t%d\t%d\t%d\t%.0f\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\n",
+		int textures = 0;
+		for(int slot = obj->m_txdSlot, depth = 0; slot >= 0 && depth < 8; depth++){
+			if(slot < (int)gTxdTextures.size())
+				textures += (int)gTxdTextures[slot].size();
+			TxdDef *txd = GetTxdDef(slot);
+			slot = txd ? txd->parentId : -1;
+		}
+		fprintf(f, "%d\t%s\t%s\t%s\t%s\t%s\t%.2f\t%.2f\t%.2f\t%d\t%d\t%d\t%.0f\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%d\t%d\t%d\n",
 			PawnModelId(id), obj->m_name, category >= 0 && category < NUM_OBJ_CATEGORIES ? objCategories[category].name : "",
 			GetModelSourceName(m.source), m.ideFile, m.txdName, m.width, m.depth, m.height, m.hasCollision,
 			m.isLod, m.hasLod, m.drawDistance, m.dynamic, m.breakable, m.timed, m.animated, m.upgrade,
-			m.interior, m.alpha, m.placements, cities.c_str(), zones.c_str());
+			m.interior, m.alpha, m.placements, cities.c_str(), zones.c_str(), m.polygons, m.materials, textures);
 		n++;
 	}
 	fclose(f);
