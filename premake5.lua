@@ -331,10 +331,13 @@ project "haumea"
 	files { "tools/haumea/minilzo/minilzo.c" }
 	-- The build number and commit, as open.mp does it (tools/release/gen_buildinfo.py):
 	-- remade every build, rewritten only when they change, so only versionutil follows.
+	-- These lines come before the configs set OBJDIR, so a rule on
+	-- $(OBJDIR)/versionutil.o would be /versionutil.o; prebuild runs before every
+	-- object, and versionutil.d (-MD) has versionutil.o follow the header.
 	filter { "action:gmake*" }
 		makesettings {
 			".DEFAULT_GOAL := all",
-			"$(OBJDIR)/versionutil.o: ../tools/haumea/haumea_buildinfo.h",
+			"prebuild: ../tools/haumea/haumea_buildinfo.h",
 			"../tools/haumea/haumea_buildinfo.h: FORCE",
 			"\t$(SILENT) python3 ../tools/release/gen_buildinfo.py --header $@",
 			".PHONY: FORCE",
