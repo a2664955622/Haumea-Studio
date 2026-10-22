@@ -314,7 +314,7 @@ stock HC_first(type, id, data, fallback)
 
 stock HC_CheckAreas()
 {
-	new failures, checked, skipped;
+	new failures, checked, skipped, candidates;
 	static const Float:away[][3] = { {0.0, 0.0, 60.0}, {0.0, 0.0, -60.0}, {60.0, 0.0, 0.0}, {-60.0, 0.0, 0.0},
 		{0.0, 60.0, 0.0}, {0.0, -60.0, 0.0} };
 	// The streamer leaves NPCs out unless asked.
@@ -324,6 +324,7 @@ stock HC_CheckAreas()
 	{
 		if(!IsValidDynamicObject(o) || Streamer_GetArrayDataLength(STREAMER_TYPE_OBJECT, o, E_STREAMER_AREA_ID) < 1)
 			continue;
+		candidates++;
 		new area = HC_first(STREAMER_TYPE_OBJECT, o, E_STREAMER_AREA_ID, -1), Float:x, Float:y, Float:z;
 		new world = HC_first(STREAMER_TYPE_OBJECT, o, E_STREAMER_WORLD_ID, 0);
 		new interior = HC_first(STREAMER_TYPE_OBJECT, o, E_STREAMER_INTERIOR_ID, 0);
@@ -349,7 +350,9 @@ stock HC_CheckAreas()
 		}
 	}
 	printf("[check] objects limited to a dynamic area: %d checked, %d failed, %d skipped", checked, failures, skipped);
-	return failures || !checked;
+	// A map with areas but no objects limited to one (a sound's spheres) has
+	// nothing to check; one that has such objects must check at least one.
+	return failures || (candidates > 0 && !checked);
 }
 '''
 
