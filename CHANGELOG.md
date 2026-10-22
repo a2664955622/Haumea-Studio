@@ -87,6 +87,34 @@ the Haumea map editor; what changed for its users is in
   numpad + / -), Ctrl+Shift+= / - for fly speed, Ctrl+wheel or
   Ctrl+Alt+= / - for the interface size, PgUp / PgDn to scroll a panel.
 
+**Languages**
+- The interface comes in **English and Português (Brasil)**. **Preferences →
+  Language** picks one: Auto (follows the system language, English when
+  Haumea has no catalog for it), English, or Português (Brasil); the change
+  applies at once. Windows, menus, tooltips, messages and Map Check are
+  translated; the Pawn Haumea writes, native and model names, file names and
+  what Namaka reads stay English. The Portuguese
+  [README](README.pt-BR.md) and [user guide](docs/USER_GUIDE.pt-BR.md) go with it.
+- Adding a language takes no build: a UTF-8 `lang/<code>.po` file beside the
+  editor shows up in the list. `tools/i18n/extract.py` makes the template.
+  See [CONTRIBUTING.md](CONTRIBUTING.md).
+- A saved window layout survives the change: windows keep their place and
+  dock.
+
+**Show Pressed Keys**
+- For tutorials and recordings, off by default: **Windows → Show Pressed
+  Keys**, or **Preferences → General**. Over the 3D view (bottom left, or the
+  corner you pick) it shows the keys, mouse buttons and wheel the editor got
+  as key caps: "Ctrl + D", "RMB + W" while flying, "RMB + drag". A shortcut
+  that ran adds its name ("Ctrl + D: Duplicate selection"). While a text
+  field has the keyboard only Ctrl and Alt combinations show, without a name,
+  so typed text never ends up in a recording.
+- **Show what Namaka is doing** (on by default, and shown even with the keys
+  off) adds a line for each thing the assistant does: "Namaka: placing
+  elements: 2", "moving the camera", "looking at the scene", saving, Map Check
+  and Test in game. Commands that only read are shown at most every two
+  seconds, and a command that failed shows nothing.
+
 **Updates**
 - Haumea updates itself on Windows and Linux: a small banner says when a new
   version is out (What's new, Update now, Later, Skip this version), the
@@ -103,7 +131,7 @@ the Haumea map editor; what changed for its users is in
 **Windows → Namaka**: offline with Python 3.14, or downloading only a few
 parts on 3.10-3.13. It has Repair, Update, Uninstall, a log, and copies the
 MCP setup for Claude Code, Codex, Claude Desktop or any other MCP client
-(JSON). Its install sits in the config folder, so editor updates don't move
+(JSON), whichever your assistant is. Its install sits in the config folder, so editor updates don't move
 it. Once it is installed, Haumea listens for it on
 every start (Preferences > Namaka > "Let Namaka connect" turns that off), and
 a second Haumea never takes over the first one's connection.
@@ -124,6 +152,9 @@ run Map Check and Test in game, and grab frames with the panels.
   Always send), and **Preferences → Privacy** can make it Always or Never.
   Reports leave out your folders, user name and map names. Releases come with
   haumea-symbols-<version>.zip, so the developer can read their stacks.
+- **Community files**: bug report and feature request forms, a pull request
+  template, a contributing guide (including how to mark text for
+  translation), a security policy and a code of conduct.
 - **Help → About** says "(Dev build)" or "(PR build)" for test builds and
   ", Beta channel" for betas; releases say only the version.
 - **Labels, sounds, map icons, gang zones and path points are editor icons**,
