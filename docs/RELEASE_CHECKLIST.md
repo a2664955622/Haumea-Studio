@@ -10,16 +10,14 @@ newer jobs. Nothing here is automatic: pushing and releasing are your call.
   Pawn compile check and the Windows-under-Wine check. It doesn't release
   anything; those builds call themselves channel `dev` (`pr` for pull
   requests).
-- **A release comes from a manual run or a pushed tag.** The two channels
+- **A release only comes from a manual run.** The two channels
   are **production** (what everyone gets) and **beta** (opt-in in the
   editor; published as a GitHub prerelease). A manual run (Actions → Build
   Haumea Studio → Run workflow) takes three inputs: **Channel** (beta or
   production), **Release** (build only, draft or publish) and **Notes**
-  (optional text above the CHANGELOG section). A pushed tag
-  `v1.0.0.<build>-<channel>` publishes straight away; CI's `check-tag` job
-  checks it first (`tools/release/check_tag.py`: version.h's 1.0.0, the
-  tagged commit's commit count, channel production or beta).
-  `tools/release/release_plan.py` decides what a run may release: only beta
+  (optional text above the CHANGELOG section). Tags don't start CI:
+  publishing a draft makes its tag `v1.0.0.<build>-<channel>` and nothing
+  runs again. `tools/release/release_plan.py` decides what a run may release: only beta
   and production, production only from main, never over an existing tag.
   The release has the update bundles, the Namaka bundles and `SHA256SUMS`
   (see `.github/workflows/build-haumea.yml`).
@@ -83,17 +81,6 @@ newer jobs. Nothing here is automatic: pushing and releasing are your call.
 
 Release **publish** in step 2 skips the draft; use it only once the draft
 way has worked.
-
-## Release by tag (the alternative)
-
-```sh
-tools/release/tag_release.sh --create beta       # v1.0.0.<build>-beta, local only
-git push origin <the tag it printed>             # this publishes it
-```
-
-`tag_release.sh` refuses a dirty tree, a channel other than production or
-beta, and a version that isn't newer than that channel's newest tag. The tag
-run publishes at once, with no draft to check, so prefer the manual run.
 
 ## What to watch in the first CI run
 

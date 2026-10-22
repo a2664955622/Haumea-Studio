@@ -1,15 +1,13 @@
 name: Build Haumea Studio
 
 # main is where Haumea is developed. Releases are beta (a GitHub prerelease)
-# or production; they come from a pushed v<version>-beta / -production tag, or
-# from a manual run (Actions > Build Haumea Studio > Run workflow) with a
-# channel and a release choice. tools/release/release_plan.py decides what a
-# run may release.
+# or production, and only come from a manual run (Actions > Build Haumea
+# Studio > Run workflow) with a channel and a release choice; tags don't
+# start this workflow, so publishing a draft (which makes its tag) runs
+# nothing. tools/release/release_plan.py decides what a run may release.
 on:
   push:
     branches: [main]
-    # A pushed release tag is checked against version.h (check-tag).
-    tags: ['v*']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -37,9 +35,9 @@ env:
   # No daily ping from anything CI starts (CI alone already stops it).
   HAUMEA_NO_TELEMETRY: 1
   HAUMEA_NO_REPORTS: 1
-  # The channel built in: a manual run's choice, a release tag's suffix, "pr"
-  # for pull requests and "dev" for everything else.
-  CHANNEL: ${{ github.event_name == 'pull_request' && 'pr' || github.event_name == 'workflow_dispatch' && (inputs.channel || 'beta') || github.ref_type == 'tag' && (endsWith(github.ref_name, '-beta') && 'beta' || endsWith(github.ref_name, '-production') && 'production' || 'invalid') || 'dev' }}
+  # The channel built in: a manual run's choice, "pr" for pull requests and
+  # "dev" for everything else.
+  CHANNEL: ${{ github.event_name == 'pull_request' && 'pr' || github.event_name == 'workflow_dispatch' && (inputs.channel || 'beta') || 'dev' }}
 
 jobs:
   build-windows:
@@ -660,29 +658,10 @@ jobs:
           name: haumea-namaka-windows-x86_64
           path: dist/agent/${{ env.BUNDLE }}.zip
 
-  check-tag:
-    # A pushed v1.0.0.<build>-<channel> tag must match version.h's 1.0.0 and
-    # the commit count of the commit it points at.
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Haumea Studio
-        uses: actions/checkout@v4
-        with:
-          path: haumea
-          fetch-depth: 0
-      - name: Check the tag against version.h
-        working-directory: haumea
-        run: python3 tools/release/check_tag.py "${{ github.ref_name }}"
-
   release:
-    # A pushed release tag, or a manual run asking for a draft or a release.
-    # check-tag runs only for a tag, hence !failure() rather than success().
-    if: >-
-      !cancelled() && !failure() && github.event_name != 'pull_request' &&
-      (github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && inputs.release != 'build only'))
-    needs: [build-windows, build-linux, build-macos, test-linux, pawn, agent-bundle-linux, agent-bundle-windows,
-      check-tag]
+    # A manual run asking for a draft or a release.
+    if: github.event_name == 'workflow_dispatch' && inputs.release != 'build only'
+    needs: [build-windows, build-linux, build-macos, test-linux, pawn, agent-bundle-linux, agent-bundle-windows]
     runs-on: ubuntu-latest
 
     steps:
@@ -692,20 +671,18 @@ jobs:
           path: haumea
           fetch-depth: 0
 
-      # Production only from main, never over an existing tag (a pushed tag is
-      # the release's own): tools/release/release_plan.py.
+      # Production only from main, never over an existing tag:
+      # tools/release/release_plan.py.
       - name: Plan the release
         id: plan
         working-directory: haumea
         run: |
           version='${{ needs.build-windows.outputs.version }}'
           tag="v$version-$CHANNEL"
-          [ "$GITHUB_REF_TYPE" = tag ] && tag=$GITHUB_REF_NAME
           git fetch -q origin main
-          # On main: a tag's commit must be on main; a manual run must also be
-          # run from the main branch itself.
+          # On main: run from the main branch itself, at a commit on it.
           on_main=no; git merge-base --is-ancestor "$GITHUB_SHA" origin/main && on_main=yes
-          [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ "$GITHUB_REF_NAME" != main ] && on_main=no
+          [ "$GITHUB_REF_NAME" != main ] && on_main=no
           exists=no; [ -n "$(git ls-remote --tags origin "refs/tags/$tag")" ] && exists=yes
           python3 tools/release/release_plan.py --event "$GITHUB_EVENT_NAME" --ref-type "$GITHUB_REF_TYPE" \
             --ref-name "$GITHUB_REF_NAME" --version "$version" --channel "$CHANNEL" \

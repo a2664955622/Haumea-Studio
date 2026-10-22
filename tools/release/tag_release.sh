@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # tag_release.sh [--create] [production|beta]: the release tag for HEAD,
 # v1.0.0.<build>-<channel> (production unless given), as open.mp tags its
-# releases. Prints it; --create makes it as a local tag. Never pushes:
-# pushing the tag is what releases it (docs/RELEASE_CHECKLIST.md).
+# releases. Prints it; --create makes it as a local tag. Never pushes, and
+# a pushed tag releases nothing: releases come from a manual CI run, whose
+# published release makes the tag (docs/RELEASE_CHECKLIST.md).
 #
 # Refuses a dirty tree, another channel, and a version (all four parts) that
 # isn't newer than the newest tag of that channel.

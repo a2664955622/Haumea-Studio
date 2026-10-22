@@ -44,20 +44,15 @@ class ReleasePlanTests(unittest.TestCase):
             dict(event='workflow_dispatch', ref_name='main', version='1.0.0.7', channel='beta', release='publish',
                  tag_exists='yes'),
             dict(event='workflow_dispatch', ref_name='main', version='1.0.0.7', channel='dev', release='publish'),
-            dict(event='push', ref_type='tag', ref_name='v1.0.0.6-beta', version='1.0.0.7'),
-            dict(event='push', ref_type='tag', ref_name='v1.0.0.7-master', version='1.0.0.7'),
-            dict(event='push', ref_type='tag', ref_name='v1.0.0.7-production', version='1.0.0.7', on_main='no'),
             dict(event='workflow_dispatch', ref_name='main', version='1.0.0.7', release='ship it'),
         ]
         for kw in refused:
             self.assertIsInstance(plan(**kw), str, kw)
 
-    def test_a_pushed_tag_publishes_its_channel(self):
+    def test_a_pushed_tag_never_releases(self):
+        # Publishing a draft makes its tag: that must never release again.
         p = plan(event='push', ref_type='tag', ref_name='v1.0.0.7-beta', version='1.0.0.7', tag_exists='yes')
-        self.assertEqual((p['channel'], p['release'], p['prerelease']), ('beta', 'publish', 'true'))
-        p = plan(event='push', ref_type='tag', ref_name='v1.0.0.7-production', version='1.0.0.7', on_main='yes',
-                 tag_exists='yes')
-        self.assertEqual((p['channel'], p['latest']), ('production', 'true'))
+        self.assertEqual((p['channel'], p['release']), ('dev', 'build-only'))
 
 
 if __name__ == '__main__':
