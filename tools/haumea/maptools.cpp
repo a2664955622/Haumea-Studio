@@ -158,7 +158,7 @@ needSelection(const std::vector<ObjectInst*> &objs, int minimum, std::string *er
 		return true;
 	if(error)
 		*error = minimum <= 1 ? N_("select something first") :
-			N_("select at least ") + std::to_string(minimum) + " objects";
+			"select at least " + std::to_string(minimum) + " objects";
 	return false;
 }
 

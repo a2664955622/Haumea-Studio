@@ -435,7 +435,7 @@ tsExtractPackage(const std::string &package, const std::string &dest, std::strin
 #endif
 	tsLogf("Extracting %s", package.c_str());
 	if(system(command.c_str()) != 0){
-		*error = "could not extract " + package + (zip ? N_(" (is unzip installed?)") : N_(""));
+		*error = "could not extract " + package + (zip ? " (is unzip installed?)" : "");
 		return false;
 	}
 	tsWriteText(stampPath, stamp);
