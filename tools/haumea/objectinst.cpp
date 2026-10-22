@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "i18n.h"
 #include "editoricons.h"
 #include "trains.h"
 #include "encoding.h"
@@ -2627,10 +2628,10 @@ ObjectInst::Select(void)
 		if(now - lastLockedReferenceToast >= 1.0){
 			if(IsIplMapDocumentOpen())
 				ToastFor(TOAST_SELECTION, 3.0f,
-				         "Reference object — only the opened IPL is editable.");
+				         _("Reference object — only the opened IPL is editable."));
 			else if(m_file && IsExternalIplMapLogicalPath(m_file->name))
 				ToastFor(TOAST_SELECTION, 4.0f,
-				         "Locked external reference — reopen its source IPL to edit it.");
+				         _("Locked external reference — reopen its source IPL to edit it."));
 			lastLockedReferenceToast = now;
 		}
 		return;
@@ -2826,7 +2827,7 @@ DeleteSelected(void)
 	}
 	if(toDelete.empty()) return;
 	if(capped)
-		Toast(TOAST_DELETE, "Delete limited to first %d selected instance(s)", MAX_BATCH_OBJECTS);
+		Toast(TOAST_DELETE, _("Delete limited to first %d selected instance(s)"), MAX_BATCH_OBJECTS);
 
 	// Record the exact transition set. Undo must not recursively undelete an HD
 	// child that was already deleted before this action and shares the same LOD.
@@ -2967,19 +2968,19 @@ const char*
 GetSampElementKindName(int kind)
 {
 	switch(kind){
-	case SAMP_ELEMENT_PICKUP: return "Pickup";
-	case SAMP_ELEMENT_LABEL: return "3D text label";
-	case SAMP_ELEMENT_ACTOR: return "Actor";
-	case SAMP_ELEMENT_CLASS: return "Player class";
-	case SAMP_ELEMENT_GANGZONE: return "Gang zone";
-	case SAMP_ELEMENT_MAPICON: return "Map icon";
-	case SAMP_ELEMENT_NPC: return "NPC";
-	case SAMP_ELEMENT_PATHPOINT: return "NPC path point";
-	case SAMP_ELEMENT_SOUND: return "Sound";
-	case SAMP_ELEMENT_CHECKPOINT: return "Checkpoint";
-	case SAMP_ELEMENT_AREA: return "Dynamic area";
+	case SAMP_ELEMENT_PICKUP: return _("Pickup");
+	case SAMP_ELEMENT_LABEL: return _("3D text label");
+	case SAMP_ELEMENT_ACTOR: return _("Actor");
+	case SAMP_ELEMENT_CLASS: return _("Player class");
+	case SAMP_ELEMENT_GANGZONE: return _("Gang zone");
+	case SAMP_ELEMENT_MAPICON: return _("Map icon");
+	case SAMP_ELEMENT_NPC: return _("NPC");
+	case SAMP_ELEMENT_PATHPOINT: return _("NPC path point");
+	case SAMP_ELEMENT_SOUND: return _("Sound");
+	case SAMP_ELEMENT_CHECKPOINT: return _("Checkpoint");
+	case SAMP_ELEMENT_AREA: return _("Dynamic area");
 	}
-	return "Object";
+	return _("Object");
 }
 
 int
@@ -3460,7 +3461,7 @@ SpawnPlaceObject(rw::V3d position, const rw::Quat *orientation)
 	if(numPasted == 0) return;
 
 	UndoRecordPaste(pasted, numPasted);
-	Toast(TOAST_SPAWN, "Placed %s", obj->m_name);
+	Toast(TOAST_SPAWN, _("Placed %s"), obj->m_name);
 }
 
 void
@@ -3738,13 +3739,13 @@ ReadPrefabEntries(const char *path, PrefabEntry *entries, int maxEntries, int *n
 	if(game >= 0 && game != (int)params.map){
 		fclose(f);
 		if(showToasts)
-			Toast(TOAST_SPAWN, "Prefab is for a different game");
+			Toast(TOAST_SPAWN, _("Prefab is for a different game"));
 		return false;
 	}
 
 	if(count > maxEntries){
 		if(showToasts)
-			Toast(TOAST_SPAWN, "Prefab too large (%d instances, max %d)", count, maxEntries);
+			Toast(TOAST_SPAWN, _("Prefab too large (%d instances, max %d)"), count, maxEntries);
 		count = maxEntries;
 	}
 
@@ -5632,7 +5633,7 @@ CopySelected(void)
 		}
 	}
 	if(capped)
-		Toast(TOAST_COPY_PASTE, "Copy limited to first %d selected instance(s)", MAX_BATCH_OBJECTS);
+		Toast(TOAST_COPY_PASTE, _("Copy limited to first %d selected instance(s)"), MAX_BATCH_OBJECTS);
 	if(!clipboard.empty())
 		log("Copied %d instance(s)\n", (int)clipboard.size());
 }
@@ -5655,7 +5656,7 @@ CutSelected(void)
 		}
 	}
 	if(capped)
-		Toast(TOAST_COPY_PASTE, "Cut limited to first %d selected instance(s)", MAX_BATCH_OBJECTS);
+		Toast(TOAST_COPY_PASTE, _("Cut limited to first %d selected instance(s)"), MAX_BATCH_OBJECTS);
 	if(clipboard.empty())
 		return;
 
@@ -6201,7 +6202,7 @@ ExportPrefabEx(const char *path, int origin, const char *tags)
 	if(numInsts == 0)
 		return 0;
 	if(overflow)
-		Toast(TOAST_SAVE, "Prefab truncated at 256 instances (selection too large)");
+		Toast(TOAST_SAVE, _("Prefab truncated at 256 instances (selection too large)"));
 
 	// Compute centroid
 	rw::V3d centroid = {0.0f, 0.0f, 0.0f};
@@ -10359,46 +10360,46 @@ CheckMaterialTexture(const ObjectMaterialOverride &material, char *buf, size_t s
 {
 	int model = material.hasTexture ? material.sourceModel : -1;
 	if(model < 0){
-		snprintf(buf, size, "Model -1: keeps the original texture; only the color applies.");
+		snprintf(buf, size, _("Model -1: keeps the original texture; only the color applies."));
 		return MATERIAL_TEXTURE_OK;
 	}
 	if(model == 0){
-		snprintf(buf, size, "Model 0: SA-MP's plain white \"blanktex\"; TXD and texture names are ignored.");
+		snprintf(buf, size, _("Model 0: SA-MP's plain white \"blanktex\"; TXD and texture names are ignored."));
 		return MATERIAL_TEXTURE_OK;
 	}
 	ObjectDef *source = GetObjectDef(model);
 	int pawnModel = PawnModelId(model);
 	if(source == nil){
-		snprintf(buf, size, "Model %d does not exist, so SA-MP ignores the whole call (color too).", pawnModel);
+		snprintf(buf, size, _("Model %d does not exist, so SA-MP ignores the whole call (color too)."), pawnModel);
 		return MATERIAL_TEXTURE_ERROR;
 	}
 	if(IsCustomModel(model)){
 		// A 0.3.DL / open.mp custom model's TXD has no stock name; its own is used.
 		if(FindTextureInTxd(source->m_txdSlot, material.textureName) == nil){
-			snprintf(buf, size, "\"%s\" is not in custom model %d's TXD; the original texture stays.",
+			snprintf(buf, size, _("\"%s\" is not in custom model %d's TXD; the original texture stays."),
 				material.textureName, pawnModel);
 			return MATERIAL_TEXTURE_WARNING;
 		}
-		snprintf(buf, size, "Resolves in game: custom model %d's TXD has %s.", pawnModel, material.textureName);
+		snprintf(buf, size, _("Resolves in game: custom model %d's TXD has %s."), pawnModel, material.textureName);
 		return MATERIAL_TEXTURE_OK;
 	}
 	int txdSlot = FindTxdSlot(material.txdName);
 	if(txdSlot < 0){
-		snprintf(buf, size, "TXD \"%s\" was not found; the original texture stays.", material.txdName);
+		snprintf(buf, size, _("TXD \"%s\" was not found; the original texture stays."), material.txdName);
 		return MATERIAL_TEXTURE_WARNING;
 	}
 	if(FindTextureInTxd(txdSlot, material.textureName) == nil){
-		snprintf(buf, size, "\"%s\" is not in TXD \"%s\" (or its parents); the original texture stays.",
+		snprintf(buf, size, _("\"%s\" is not in TXD \"%s\" (or its parents); the original texture stays."),
 			material.textureName, material.txdName);
 		return MATERIAL_TEXTURE_WARNING;
 	}
 	if(!txdChainContains(source->m_txdSlot, txdSlot)){
-		snprintf(buf, size, "Model %d (%s) does not use TXD \"%s\". SA-MP loads the model's TXD, "
-			"then looks the texture up by TXD name, so this only works if \"%s\" is already loaded.",
+		snprintf(buf, size, _("Model %d (%s) does not use TXD \"%s\". SA-MP loads the model's TXD, "
+			"then looks the texture up by TXD name, so this only works if \"%s\" is already loaded."),
 			pawnModel, source->m_name, material.txdName, material.txdName);
 		return MATERIAL_TEXTURE_NOTE;
 	}
-	snprintf(buf, size, "Resolves in game: model %d loads %s:%s.", pawnModel,
+	snprintf(buf, size, _("Resolves in game: model %d loads %s:%s."), pawnModel,
 		material.txdName, material.textureName);
 	return MATERIAL_TEXTURE_OK;
 }
@@ -10518,9 +10519,11 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 			names += (i ? ", " : "") + gPawnUnresolvedMacros[i];
 		if(gPawnUnresolvedMacros.size() > 8)
 			names += ", ...";
-		report.notes.push_back("Text uses " + names + ", defined neither in this map nor in the workspace's "
+		char note[2048];
+		snprintf(note, sizeof(note), _("Text uses %s, defined neither in this map nor in the workspace's "
 			"gamemodes or includes, so it shows without them (often a colour such as {FF6347}). "
-			"Saving writes the text without them too.");
+			"Saving writes the text without them too."), names.c_str());
+		report.notes.push_back(note);
 	}
 	// Textdraws now have their own file; a map's stay read-only until moved there.
 	int numTextDraws = ImportTextDrawsFromSource(source, GetMapTextDraws());
@@ -10791,7 +10794,7 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 	}
 	if(numSkipped) *numSkipped = skipped;
 	if(created.size() > MAX_BATCH_OBJECTS)
-		Toast(TOAST_SPAWN, "Undo limited to first %d of %d imported objects", MAX_BATCH_OBJECTS, (int)created.size());
+		Toast(TOAST_SPAWN, _("Undo limited to first %d of %d imported objects"), MAX_BATCH_OBJECTS, (int)created.size());
 	report.placed = (int)created.size();
 	report.removed = numRemoved;
 	std::sort(report.unknownModels.begin(), report.unknownModels.end());
@@ -10927,7 +10930,7 @@ ImportPrefabAtEx(const char *path, rw::V3d spawnPos, float heading, const char *
 		if(obj == nil){
 			std::vector<int> unknown(1, e->objectId), legacy;
 			if(FindLegacyImports(unknown, legacy) > 0)
-				Toast(TOAST_SPAWN, "Model %d was a modloader/Haumea import: open a map that uses it to move it to the server", e->objectId);
+				Toast(TOAST_SPAWN, _("Model %d was a modloader/Haumea import: open a map that uses it to move it to the server"), e->objectId);
 			log("ImportPrefab: skipping unknown objectId %d (%s)\n", e->objectId, e->modelName);
 			created[i] = nil;
 			continue;
@@ -11082,7 +11085,7 @@ ImportPrefabAtEx(const char *path, rw::V3d spawnPos, float heading, const char *
 
 	if(numPasted > 0){
 		if(numPasted > 64)
-			Toast(TOAST_SPAWN, "Undo limited to first 64 of %d instances", numPasted);
+			Toast(TOAST_SPAWN, _("Undo limited to first 64 of %d instances"), numPasted);
 		UndoRecordPaste(pasted, numPasted > 64 ? 64 : numPasted);
 	}
 
