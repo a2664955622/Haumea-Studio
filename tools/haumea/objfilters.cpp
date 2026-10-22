@@ -876,3 +876,26 @@ ClearObjectFilters(void)
 	gFilters.sort = sort;	// the order is not a filter
 	gFilters.descending = descending;
 }
+
+int
+FilterModels(const char *text, const char *name, std::vector<int> &out, std::string *error)
+{
+	Filters f;
+	if(!parseFilters(text, &f, error))
+		return -1;
+	if(needsDetails(f))
+		ReadAllModelMetaDetails();	// the agent waits for the answer anyway
+	out.clear();
+	for(int id = 0; id < NUMOBJECTDEFS; id++){
+		ObjectDef *obj = GetObjectDef(id);
+		if(obj == nil || (name && name[0] && !hasText(obj->m_name, name)))
+			continue;
+		if(passes(f, id))
+			out.push_back(id);
+	}
+	Filters saved = gFilters;
+	gFilters = f;	// the sort reads the chosen order from here
+	SortObjectResults(out.data(), (int)out.size());
+	gFilters = saved;
+	return (int)out.size();
+}

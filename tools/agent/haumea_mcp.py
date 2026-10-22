@@ -1115,6 +1115,31 @@ def search_textures(query: str, limit: int = 50) -> dict:
 
 
 @mcp.tool()
+def filter_assets(filters: str = "", name: str = "", limit: int = 200,
+                  models: list[int] | None = None) -> dict:
+	"""Find models by what they are, with the Object Browser's filters, or get those facts for models.
+
+	filters is key=value pairs joined by ";", e.g. "size=2-10;collision=with;city=san_fierro;sort=polygons".
+	Ranges are min-max (either side may be empty): size (longest side, m), width (X), depth (Y),
+	height (Z), volume (m3), footprint (m2), draw_distance (m), polygons, materials.
+	Lists (any of): source=gta,samp,custom; type=object,building,dynamic,breakable,timed,animated,
+	upgrade,interior,exterior,alpha; city=los_santos,san_fierro,las_venturas,countryside,interiors,
+	not_placed; zone=<names from the game, e.g. Ganton,Doherty>; mine=favourites,recent,open_map,workspace.
+	Others: ide=<text in the IDE path>, txd=<text>, texture=<text in a texture name>,
+	collision=with|without, two_sided=1, lod=hd|lod, has_lod=1|0, hour=0-23 (timed models shown then),
+	sort=id|name|size|polygons|draw_distance|recent, descending=1. name narrows to model names containing it.
+
+	Each model has model (the Pawn id), name, category, source, ide, txd, size [x, y, z] of its
+	collision, collision, draw_distance, flags, hours (timed), placements (world instances), cities,
+	zones, polygons and materials (-1 until read; filters on them read every model first, which takes a
+	few seconds once). total is how many passed; at most limit come back. models=[ids] instead returns
+	those models' facts."""
+	if models:
+		return service.engine("model_meta", [",".join(str(int(m)) for m in models)])
+	return service.engine("model_filter", [filters, int(limit), name])
+
+
+@mcp.tool()
 def list_textdraws() -> dict:
 	"""List the textdraw file's textdraws with their index and every field (read-only).
 

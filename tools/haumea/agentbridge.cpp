@@ -9,6 +9,9 @@
 #include "trains.h"
 #include "agentbridge.h"
 #include "areas.h"
+#include "categories.h"
+#include "objfilters.h"
+#include "modelmeta.h"
 #include "materialtext.h"
 #include "mapcheck.h"
 #include "maptools.h"
@@ -3490,6 +3493,69 @@ handleRequest(const std::vector<std::string> &lines)
 		}
 		writeResponse(requestId, true, std::string("\"saved_count\":") + std::to_string(count) +
 			",\"path\":\"" + jsonEscapeBytes(path.c_str()) + "\"");
+		return;
+	}
+	if(command == "model_filter" || command == "model_meta"){
+		// model_filter <filters> [limit] [name]: models passing the Object
+		// Browser's filters (objfilters.h for the keys), in their sort order.
+		// model_meta <id,id,...>: the same facts for these models.
+		std::vector<int> ids;
+		int total = 0, limit = 200;
+		if(command == "model_filter"){
+			std::string error;
+			std::string name = lines.size() > 4 ? decodeAgentText(lines[4]) : "";
+			total = FilterModels(lines.size() > 2 ? decodeAgentText(lines[2]).c_str() : "", name.c_str(), ids, &error);
+			if(total < 0){
+				writeError(requestId, error.c_str());
+				return;
+			}
+			if(lines.size() > 3)
+				parseInt(lines[3], &limit);
+			limit = clamp(limit, 1, 5000);
+		}else{
+			std::string list = lines.size() > 2 ? lines[2] : "";
+			for(size_t at = 0; at < list.size();){
+				size_t comma = list.find(',', at);
+				int id = EditorModelId(atoi(list.substr(at, comma == std::string::npos ? std::string::npos : comma - at).c_str()));
+				if(GetModelMeta(id))
+					ids.push_back(id);
+				at = comma == std::string::npos ? list.size() : comma + 1;
+			}
+			total = (int)ids.size();
+			limit = 5000;
+		}
+		std::string json = "\"result\":\"models\",\"total\":" + std::to_string(total) + ",\"models\":[";
+		for(int i = 0; i < (int)ids.size() && i < limit; i++){
+			int id = ids[i];
+			const ModelMeta *m = GetModelMeta(id);
+			ObjectDef *obj = GetObjectDef(id);
+			if(m == nil || obj == nil)
+				continue;
+			int category = GetObjectCategory(id);
+			std::string flags, cities, zones;
+			struct { bool on; const char *name; } fl[] = { { m->dynamic, "dynamic" }, { m->breakable, "breakable" },
+				{ m->timed, "timed" }, { m->animated, "animated" }, { m->upgrade, "upgrade" },
+				{ m->building, "building" }, { m->interior, "interior" }, { m->alpha, "alpha" },
+				{ m->twoSided, "two_sided" }, { m->isLod, "lod" }, { m->hasLod, "has_lod" } };
+			for(auto &f : fl)
+				if(f.on) flags += std::string(flags.empty() ? "" : ",") + "\"" + f.name + "\"";
+			for(int c = 0; c < NUM_MODEL_CITIES; c++)
+				if(m->cities & 1u << c)
+					cities += std::string(cities.empty() ? "" : ",") + "\"" + GetModelCityName(c) + "\"";
+			for(int z : m->zones)
+				zones += std::string(zones.empty() ? "" : ",") + "\"" + jsonEscapeBytes(GetMetaZoneName(z)) + "\"";
+			json += std::string(i ? "," : "") + "{\"model\":" + std::to_string(PawnModelId(id)) +
+				",\"name\":\"" + jsonEscapeBytes(obj->m_name) + "\",\"category\":\"" +
+				jsonEscapeBytes(category >= 0 && category < NUM_OBJ_CATEGORIES ? objCategories[category].name : "") +
+				"\",\"source\":\"" + GetModelSourceName(m->source) + "\",\"ide\":\"" + jsonEscapeBytes(m->ideFile) +
+				"\",\"txd\":\"" + jsonEscapeBytes(m->txdName) + "\",\"size\":[" + jsonFloat(m->width) + "," +
+				jsonFloat(m->depth) + "," + jsonFloat(m->height) + "],\"collision\":" + (m->hasCollision ? "true" : "false") +
+				",\"draw_distance\":" + jsonFloat(m->drawDistance) + ",\"flags\":[" + flags + "]" +
+				(m->timed ? ",\"hours\":[" + std::to_string(m->timeOn) + "," + std::to_string(m->timeOff) + "]" : "") +
+				",\"placements\":" + std::to_string(m->placements) + ",\"cities\":[" + cities + "],\"zones\":[" + zones +
+				"],\"polygons\":" + std::to_string(m->polygons) + ",\"materials\":" + std::to_string(m->materials) + "}";
+		}
+		writeResponse(requestId, true, json + "]");
 		return;
 	}
 	if(command == "texture_search"){

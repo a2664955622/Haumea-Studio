@@ -435,7 +435,7 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       # Bump this when MCP tools are added or removed on purpose.
-      AGENT_MCP_TOOLS: 82
+      AGENT_MCP_TOOLS: 83
       BUNDLE: Haumea-Namaka-linux-x86_64
 
     steps:

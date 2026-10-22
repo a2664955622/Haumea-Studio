@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 // The Object Browser's filters: size, source, collision, type, appearance,
 // where the world uses a model, and the user's own (favourites, recent, the
@@ -35,3 +36,6 @@ void AddObjectFilterPresetLine(const char *line);
 std::string GetObjectFiltersText(void);
 bool SetObjectFiltersText(const char *text, std::string *error);
 void ClearObjectFilters(void);
+// Every model passing filters given as text (and whose name contains name,
+// if given), in their sort order: the count, or -1 with error.
+int FilterModels(const char *text, const char *name, std::vector<int> &out, std::string *error);
