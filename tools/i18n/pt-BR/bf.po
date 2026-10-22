@@ -1035,7 +1035,7 @@ msgstr "Nós: cruzamentos e pontos de passagem na rede de ruas/calçadas"
 
 #: tools/haumea/objfilters.cpp:772
 msgid "None"
-msgstr "Nenhuma"
+msgstr "Nenhum"
 
 #: tools/haumea/sapaths.cpp:6936
 msgid "Not Highway"
@@ -1159,7 +1159,7 @@ msgstr "Nó de pedestre %d em NODES%d.DAT"
 
 #: tools/haumea/nodes_ui.cpp:252
 msgid "Ped nodes"
-msgstr "Nós de pedestre"
+msgstr "Nós de pedestres"
 
 #: tools/haumea/sapaths.cpp:7081
 msgid ""
@@ -1795,7 +1795,7 @@ msgstr "Nó de veículo %d em NODES%d.DAT"
 
 #: tools/haumea/nodes_ui.cpp:250
 msgid "Vehicle nodes"
-msgstr "Nós de veículo"
+msgstr "Nós de veículos"
 
 #: tools/haumea/sapaths.cpp:7332
 msgid "Vehicle nodes are shown as red boxes, ped nodes as magenta spheres"

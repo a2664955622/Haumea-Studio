@@ -4,8 +4,12 @@
 #include <vector>
 
 // Marks UI text for translation: _("Size") is the text in the user's
+<<<<<<< HEAD
 // language, English (the key) when there is no catalog or no entry.
 // "Text##id" and "Text###id" are looked up as "Text" and keep their suffix.
+=======
+// language; "Text##id" and "Text###id" are looked up as "Text" and keep their suffix; English (the key) when there is no catalog or no entry.
+>>>>>>> 198b9fa (i18n: _("Text###id") translates Text and keeps the ###id)
 const char *Translate(const char *text);
 #define _(text) Translate(text)
 

@@ -1417,7 +1417,7 @@ msgstr "%d instância(s) duplicada(s)"
 
 #: tools/haumea/gui.cpp:11272
 msgid "Dynamic areas"
-msgstr "Dynamic areas"
+msgstr "Áreas dinâmicas"
 
 #: tools/haumea/gui.cpp:9114
 msgid "Edit all selected"
@@ -2112,7 +2112,7 @@ msgstr "Último ponto primeiro (invertido)"
 
 #: tools/haumea/testserver.cpp:1263
 msgid "Launch game"
-msgstr "Abrir o jogo"
+msgstr "Iniciar o jogo"
 
 #: tools/haumea/gui.cpp:8435
 msgid "Library"
@@ -2629,7 +2629,7 @@ msgstr "Não salvo: este mapa é código nativo."
 
 #: tools/haumea/gui.cpp:9224
 msgid "Note"
-msgstr "Nota"
+msgstr "Observação"
 
 #: tools/haumea/gui.cpp:7555
 msgid "Notes"
@@ -4101,7 +4101,7 @@ msgstr "Sem grupo"
 
 #: tools/haumea/gui.cpp:12006
 msgid "Unsaved changes"
-msgstr "Mudanças não salvas"
+msgstr "Alterações não salvas"
 
 #: tools/haumea/gui.cpp:8877
 msgid "Up from where the area stands. 0 covers every height."
@@ -4181,7 +4181,7 @@ msgstr "Exibir"
 
 #: tools/haumea/gui.cpp:9244 tools/haumea/gui.cpp:9249 tools/haumea/gui.cpp:9254
 msgid "Virtual world"
-msgstr "Virtual world"
+msgstr "Mundo virtual"
 
 #: tools/haumea/gui.cpp:8412
 msgid "Walk"

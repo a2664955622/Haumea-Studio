@@ -431,7 +431,7 @@ Translate(const char *text)
 	c.english = text;
 	c.result = text;
 	const char *id = strstr(text, "##");
-	if(id && id[2] != '#'){
+	if(id){
 		auto it = catalog.find(std::string(text, id - text));
 		if(it != catalog.end()){
 			c.label = it->second + id;

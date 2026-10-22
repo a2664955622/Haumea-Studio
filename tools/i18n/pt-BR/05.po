@@ -386,7 +386,7 @@ msgstr "(sem nome)"
 
 #: tools/haumea/rec.cpp:759 tools/haumea/rec.cpp:761
 msgid "(none)"
-msgstr "(nenhuma)"
+msgstr "(nenhum)"
 
 #: tools/haumea/startscreen.cpp:408
 msgid "(open)"
@@ -976,7 +976,7 @@ msgstr "Carregando veículos"
 
 #: tools/haumea/shortcuts.cpp:87
 msgid "Log"
-msgstr "Log"
+msgstr "Registro"
 
 #: tools/haumea/namaka.cpp:734
 msgid "Look again"
@@ -1754,7 +1754,7 @@ msgstr "Usar este workspace"
 
 #: tools/haumea/shortcuts.cpp:58 tools/haumea/shortcuts.cpp:59 tools/haumea/shortcuts.cpp:60 tools/haumea/shortcuts.cpp:61
 msgid "View"
-msgstr "Visualizar"
+msgstr "Exibir"
 
 #: tools/haumea/crashreports.cpp:1336
 msgid "View report"
