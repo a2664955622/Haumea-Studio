@@ -3215,9 +3215,22 @@ shellQuote(const char *text)
 }
 #endif
 
+// Where the workspace keeps maps: scriptfiles/maps, else scriptfiles/, else
+// gamemodes/ or filterscripts/ (the workspace itself when it has none).
+static std::string
+workspaceMapsDir(void)
+{
+	static const char *folders[] = { "scriptfiles/maps", "scriptfiles", "gamemodes", "filterscripts" };
+	for(const char *folder : folders){
+		std::string dir = WorkspaceDefaultDir(folder);
+		if(dir != GetWorkspaceDir())
+			return dir;
+	}
+	return WorkspaceDefaultDir("");
+}
+
 // Native open/save dialog for Pawn files.
-// Where map dialogs start: the suggested file's folder, else the workspace's
-// gamemodes/ or filterscripts/.
+// Where map dialogs start: the suggested file's folder, else the workspace's maps.
 static std::string
 mapDialogStartDir(const char *suggested)
 {
@@ -3227,10 +3240,7 @@ mapDialogStartDir(const char *suggested)
 		if(!dir.empty())
 			return dir;
 	}
-	std::string dir = WorkspaceDefaultDir("gamemodes");
-	if(dir == GetWorkspaceDir())
-		dir = WorkspaceDefaultDir("filterscripts");
-	return dir;
+	return workspaceMapsDir();
 }
 
 static bool
@@ -3696,11 +3706,11 @@ uiSavePawnAsPopup(void)
 	static int encoding = PAWN_TEXT_CP1252;
 
 	if(gOpenSavePawnAs){
-		std::string gamemodes = WorkspaceDefaultDir("gamemodes");
+		std::string maps = workspaceMapsDir();
 		if(gPawnSavePath[0] != '\0')
 			strncpy(path, gPawnSavePath, sizeof(path)-1);
-		else if(!gamemodes.empty())
-			snprintf(path, sizeof(path), "%s/map.pwn", gamemodes.c_str());
+		else if(!maps.empty())
+			snprintf(path, sizeof(path), "%s/map.pwn", maps.c_str());
 		else if(!GetHaumeaDataPath(path, sizeof(path), "pawn-exports/map.pwn"))
 			path[0] = '\0';
 		path[sizeof(path)-1] = '\0';
