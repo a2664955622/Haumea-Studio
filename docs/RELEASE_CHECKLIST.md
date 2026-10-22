@@ -67,7 +67,7 @@ newer jobs. Nothing here is automatic: pushing and releasing are your call.
 3. Check the draft on the Releases page:
    - the name and tag say the right version and channel;
    - the assets: `haumea-windows-gl3.tar.gz`, `haumea-linux-amd64.tar.gz`,
-     `haumea-macos`, `haumea-namaka-windows-x86_64.zip`,
+     `haumea-macos.zip`, `haumea-namaka-windows-x86_64.zip`,
      `haumea-namaka-linux-x86_64.zip`, `SHA256SUMS` (and, once crash reports
      are on main, `haumea-symbols-<version>.zip`, which the report server
      fetches);
