@@ -553,10 +553,6 @@ msgstr "Interiores"
 msgid "Namaka"
 msgstr "Namaka"
 
-#: gui.cpp:2824
-msgid "Namaka lets an AI assistant work in Haumea: install it and connect Claude."
-msgstr "O Namaka deixa um assistente de IA trabalhar no Haumea: instale-o e conecte o Claude."
-
 #: gui.cpp:2825
 msgid "TextDraws"
 msgstr "TextDraws"
@@ -640,10 +636,6 @@ msgstr "Atalhos de teclado"
 #: gui.cpp:2866
 msgid "Namaka (AI assistant)..."
 msgstr "Namaka (assistente de IA)..."
-
-#: gui.cpp:2867
-msgid "Install Namaka and connect Claude, like Windows > Namaka."
-msgstr "Instale o Namaka e conecte o Claude, como em Janelas > Namaka."
 
 #: gui.cpp:2877
 msgid "Interior"
@@ -2576,3 +2568,43 @@ msgstr "O modelo %d era uma importação do modloader/Haumea: abra um mapa que o
 #: objectinst.cpp:11097
 msgid "Undo limited to first 64 of %d instances"
 msgstr "Desfazer limitado às primeiras 64 de %d instâncias"
+
+#: tools/haumea/namaka.cpp
+msgid "Copy for Codex"
+msgstr "Copiar para o Codex"
+
+#: tools/haumea/namaka.cpp
+msgid "Copied the codex mcp add command"
+msgstr "Comando codex mcp add copiado"
+
+#: tools/haumea/namaka.cpp
+msgid "%s\n\nOr in ~/.codex/config.toml:\n%s"
+msgstr "%s\n\nOu em ~/.codex/config.toml:\n%s"
+
+#: tools/haumea/namaka.cpp
+msgid "Copy MCP JSON"
+msgstr "Copiar JSON MCP"
+
+#: tools/haumea/namaka.cpp
+msgid "Copied the mcpServers entry"
+msgstr "Entrada mcpServers copiada"
+
+#: tools/haumea/namaka.cpp
+msgid "For any other MCP client: add this to its mcpServers.\n%s"
+msgstr "Para qualquer outro cliente MCP: adicione isto ao mcpServers dele.\n%s"
+
+#: tools/haumea/namaka.cpp
+msgid "Namaka lets an AI assistant (Claude Code, Codex, Claude Desktop or another MCP client) look at and edit the map open in Haumea."
+msgstr "O Namaka deixa um assistente de IA (Claude Code, Codex, Claude Desktop ou outro cliente MCP) ver e editar o mapa aberto no Haumea."
+
+#: tools/haumea/gui.cpp
+msgid "Namaka lets an AI assistant (Claude, Codex…) work in Haumea: install it and connect one."
+msgstr "O Namaka deixa um assistente de IA (Claude, Codex…) trabalhar no Haumea: instale-o e conecte um."
+
+#: tools/haumea/gui.cpp
+msgid "Install Namaka and connect an AI assistant (Claude, Codex…), like Windows > Namaka."
+msgstr "Instale o Namaka e conecte um assistente de IA (Claude, Codex…), como em Janelas > Namaka."
+
+#: tools/haumea/gui.cpp
+msgid "Install, repair or update Namaka, and connect an AI assistant (Claude, Codex…)."
+msgstr "Instale, repare ou atualize o Namaka e conecte um assistente de IA (Claude, Codex…)."

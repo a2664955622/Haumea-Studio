@@ -668,7 +668,44 @@ claudeCodeConfig(void)
 }
 
 static std::string
-claudeDesktopConfig(void)
+codexConfig(void)
+{
+	std::string text = "codex mcp add haumea";
+	for(const auto &e : connectionEnv())
+		text += " --env " + ProcessQuote(e.first + "=" + e.second);
+	return text + " -- " + ProcessQuote(mcpCommand());
+}
+
+// A TOML basic string: Windows paths keep their backslashes.
+static std::string
+tomlString(const std::string &text)
+{
+	std::string out = "\"";
+	for(char c : text){
+		if(c == '\\' || c == '"')
+			out += '\\';
+		out += c;
+	}
+	return out + "\"";
+}
+
+// The same server in ~/.codex/config.toml.
+static std::string
+codexToml(void)
+{
+	std::string text = "[mcp_servers.haumea]\ncommand = " + tomlString(mcpCommand()) + "\n";
+	std::vector<std::pair<std::string, std::string>> env = connectionEnv();
+	if(!env.empty()){
+		text += "\n[mcp_servers.haumea.env]\n";
+		for(const auto &e : env)
+			text += e.first + " = " + tomlString(e.second) + "\n";
+	}
+	return text;
+}
+
+// The mcpServers entry Claude Desktop and most other MCP clients read.
+static std::string
+mcpServersJson(void)
 {
 	std::string text = "{\n  \"mcpServers\": {\n    \"haumea\": {\n      \"command\": " + jsonString(mcpCommand());
 	std::vector<std::pair<std::string, std::string>> env = connectionEnv();
@@ -825,11 +862,22 @@ connectSection(void)
 	}
 	ImGui::SetItemTooltip("%s", claudeCodeConfig().c_str());
 	ImGui::SameLine();
+	if(ImGui::Button(LI(ICON_FA_COPY, "Copy for Codex"))){
+		ImGui::SetClipboardText(codexConfig().c_str());
+		Toast(TOAST_COPY_PASTE, _("Copied the codex mcp add command"));
+	}
+	ImGui::SetItemTooltip(_("%s\n\nOr in ~/.codex/config.toml:\n%s"), codexConfig().c_str(), codexToml().c_str());
 	if(ImGui::Button(LI(ICON_FA_COPY, "Copy for Claude Desktop"))){
-		ImGui::SetClipboardText(claudeDesktopConfig().c_str());
+		ImGui::SetClipboardText(mcpServersJson().c_str());
 		Toast(TOAST_COPY_PASTE, _("Copied the claude_desktop_config.json entry"));
 	}
-	ImGui::SetItemTooltip("%s", claudeDesktopConfig().c_str());
+	ImGui::SetItemTooltip("%s", mcpServersJson().c_str());
+	ImGui::SameLine();
+	if(ImGui::Button(LI(ICON_FA_COPY, "Copy MCP JSON"))){
+		ImGui::SetClipboardText(mcpServersJson().c_str());
+		Toast(TOAST_COPY_PASTE, _("Copied the mcpServers entry"));
+	}
+	ImGui::SetItemTooltip(_("For any other MCP client: add this to its mcpServers.\n%s"), mcpServersJson().c_str());
 	ImGui::EndDisabled();
 }
 
@@ -848,7 +896,7 @@ DrawNamakaWindow(bool *open)
 		ImGui::End();
 		return;
 	}
-	ImGui::TextWrapped(_("Namaka lets an AI assistant (Claude Code, Claude Desktop or another MCP client) "
+	ImGui::TextWrapped(_("Namaka lets an AI assistant (Claude Code, Codex, Claude Desktop or another MCP client) "
 		"look at and edit the map open in Haumea."));
 	statusSection();
 	actionsSection();

@@ -17,6 +17,9 @@ scroll_until 'Namaka' 'Copy for Claude Code'
 click_item 'Namaka' 'Copy for Claude Code'
 wait 3
 assert toast_contains "Copied the claude mcp add command"
+click_item 'Namaka' 'Copy for Codex'
+wait 3
+assert toast_contains "Copied the codex mcp add command"
 click_item 'Namaka' 'Uninstall'
 wait 600
 wait_until item 'Namaka' 'Install'

@@ -2821,7 +2821,7 @@ uiMainmenu(void)
 			if(isSA() && ImGui::MenuItem(TI(ICON_FA_GAMEPAD, "Test server"), nil, showTestServerWindow)) { showTestServerWindow ^= 1; }
 			if(isSA() && ImGui::MenuItem(TI(ICON_FA_MAP_PIN, "Interiors"), nil, showInteriorsWindow)) { showInteriorsWindow ^= 1; }
 			if(ImGui::MenuItem(TI(ICON_FA_BOLT, "Namaka"), nil, showNamakaWindow)) { showNamakaWindow ^= 1; }
-			ImGui::SetItemTooltip(_("Namaka lets an AI assistant work in Haumea: install it and connect Claude."));
+			ImGui::SetItemTooltip(_("Namaka lets an AI assistant (Claude, Codex…) work in Haumea: install it and connect one."));
 			if(isSA() && ImGui::MenuItem(TI(ICON_FA_FONT, "TextDraws"), nil, InTextDrawMode())){
 				if(InTextDrawMode()) ExitTextDrawMode();
 				else EnterTextDrawMode();
@@ -2864,7 +2864,7 @@ uiMainmenu(void)
 			if(ImGui::MenuItem(TI(ICON_FA_CIRCLE_QUESTION, "Help"), nil, showHelpWindow)) { showHelpWindow ^= 1; }
 			ImGui::Separator();
 			if(ImGui::MenuItem(TI(ICON_FA_BOLT, "Namaka (AI assistant)..."))) showNamakaWindow = true;
-			ImGui::SetItemTooltip(_("Install Namaka and connect Claude, like Windows > Namaka."));
+			ImGui::SetItemTooltip(_("Install Namaka and connect an AI assistant (Claude, Codex…), like Windows > Namaka."));
 			ImGui::Separator();
 			UpdaterHelpMenuItems();
 			ImGui::EndMenu();
@@ -7900,7 +7900,7 @@ uiPreferencesWindow(void)
 			NamakaListenSwitch();
 			if(ImGui::Button(_("Open Namaka...")))
 				showNamakaWindow = true;
-			ImGui::SetItemTooltip(_("Install, repair or update Namaka, and connect Claude."));
+			ImGui::SetItemTooltip(_("Install, repair or update Namaka, and connect an AI assistant (Claude, Codex…)."));
 			ImGui::EndTabItem();
 		}
 		ImGui::EndTabBar();
