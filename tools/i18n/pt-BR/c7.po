@@ -224,8 +224,8 @@ msgstr "%s já usa este nome."
 
 #: tools/haumea/licenses.cpp:70
 #, c-format
-msgid "%s isn't next to the editor. It ships with every release, and is in the source at https://github.com/itsneufox/haumea."
-msgstr "%s não está junto do editor. Ele vem com toda versão e está no código-fonte em https://github.com/itsneufox/haumea."
+msgid "%s isn't next to the editor. It ships with every release, and is in the source at https://github.com/itsneufox/Haumea-Studio."
+msgstr "%s não está junto do editor. Ele vem com toda versão e está no código-fonte em https://github.com/itsneufox/Haumea-Studio."
 
 #: tools/haumea/gui.cpp:12098
 #, c-format

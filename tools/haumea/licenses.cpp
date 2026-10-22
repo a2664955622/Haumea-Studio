@@ -68,7 +68,7 @@ DrawLicensesWindow(bool *open)
 				ImGui::TextUnformatted(texts[i].c_str(), texts[i].c_str() + texts[i].size());
 			else
 				ImGui::TextWrapped(_("%s isn't next to the editor. It ships with every release, and is "
-					"in the source at https://github.com/itsneufox/haumea."), licenseFiles[i]);
+					"in the source at https://github.com/itsneufox/Haumea-Studio."), licenseFiles[i]);
 			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}

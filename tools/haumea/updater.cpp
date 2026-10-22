@@ -169,7 +169,7 @@ releaseListUrl(void)
 {
 	if(const char *test = testServer())
 		return std::string(test) + "/releases";
-	return "https://api.github.com/repos/itsneufox/haumea/releases?per_page=30";
+	return "https://api.github.com/repos/itsneufox/Haumea-Studio/releases?per_page=30";
 }
 
 static bool

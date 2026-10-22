@@ -66,7 +66,7 @@ Começando com o Haumea Studio? Leia o **[guia do usuário](docs/USER_GUIDE.pt-B
 
 ## Instalação
 
-Baixe o Haumea Studio na [página de releases](https://github.com/itsneufox/Haumea/releases).
+Baixe o Haumea Studio na [página de releases](https://github.com/itsneufox/Haumea-Studio/releases).
 Você também precisa do GTA San Andreas e, para testar mapas, de uma pasta de servidor open.mp ou SA-MP.
 
 **Windows**: coloque `haumea.exe` e `glfw3.dll` numa pasta e execute `haumea.exe`.

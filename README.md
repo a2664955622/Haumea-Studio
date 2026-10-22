@@ -66,7 +66,7 @@ New to Haumea Studio? Read the **[user guide](docs/USER_GUIDE.md)**.
 
 ## Install
 
-Download Haumea Studio from the [releases page](https://github.com/itsneufox/Haumea/releases).
+Download Haumea Studio from the [releases page](https://github.com/itsneufox/Haumea-Studio/releases).
 You also need GTA San Andreas, and, to test maps, an open.mp or SA-MP server folder.
 
 **Windows**: put `haumea.exe` and `glfw3.dll` in one folder and run `haumea.exe`.

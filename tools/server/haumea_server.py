@@ -59,7 +59,7 @@ DEFAULTS = {
 	'HAUMEA_DASH_PASSWORD': '',
 	'HAUMEA_PUBLIC_URL': 'https://reports.itsneufox.xyz',
 	'HAUMEA_SYMBOLS_DIR': '/var/lib/haumea-server/symbols',
-	'HAUMEA_RELEASES': 'https://github.com/itsneufox/haumea/releases/download',
+	'HAUMEA_RELEASES': 'https://github.com/itsneufox/Haumea-Studio/releases/download',
 	'HAUMEA_FETCH_SYMBOLS': '1',
 	'HAUMEA_RATE_PINGS': '30',	# per IP per minute
 	'HAUMEA_RATE_REPORTS': '10',

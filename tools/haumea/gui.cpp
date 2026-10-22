@@ -4674,7 +4674,7 @@ uiHelpWindow(void)
 	}
 
 	ImGui::SeparatorText(_("More"));
-	ImGui::TextLinkOpenURL(_("User guide"), "https://github.com/itsneufox/Haumea/blob/main/docs/USER_GUIDE.md");
+	ImGui::TextLinkOpenURL(_("User guide"), "https://github.com/itsneufox/Haumea-Studio/blob/main/docs/USER_GUIDE.md");
 	ImGui::SetItemTooltip(_("Setup, elements, NPCs, textdraws, testing and saving, with screenshots."));
 	ImGui::SameLine();
 	if(ImGui::Button(TI(ICON_FA_LIST, "Keyboard shortcuts")))
