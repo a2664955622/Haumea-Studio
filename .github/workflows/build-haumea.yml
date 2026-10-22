@@ -34,6 +34,8 @@ permissions:
 
 env:
   LIBRW: ${{ github.workspace }}/librw
+  # No daily ping from anything CI starts (CI alone already stops it).
+  HAUMEA_NO_TELEMETRY: 1
   # The channel built in: a manual run's choice, a release tag's suffix, "pr"
   # for pull requests and "dev" for everything else.
   CHANNEL: ${{ github.event_name == 'pull_request' && 'pr' || github.event_name == 'workflow_dispatch' && (inputs.channel || 'beta') || github.ref_type == 'tag' && (endsWith(github.ref_name, '-beta') && 'beta' || endsWith(github.ref_name, '-production') && 'production' || 'invalid') || 'dev' }}

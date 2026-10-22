@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "telemetry.h"
 #include "editoricons.h"
 #include "trains.h"
 #include "textdraws.h"
@@ -4605,11 +4606,14 @@ uiHelpWindow(void)
 	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 30.0f, 0.0f), ImGuiCond_FirstUseEver);
 	ImGui::Begin(ICON_FA_CIRCLE_QUESTION " Help", &showHelpWindow);
 	// About.
-	const char *channel = HAUMEA_CHANNEL_DISPLAY;	// empty for production
-	if(channel[0])
-		ImGui::Text("Haumea Studio %s, %s channel", HaumeaVersionDisplay(), channel);
-	else
+	// Production says nothing; a beta release names its channel; a CI build
+	// that isn't a release says what it is.
+	if(strcmp(HAUMEA_CHANNEL, "beta") == 0)
+		ImGui::Text("Haumea Studio %s, Beta channel", HaumeaVersionDisplay());
+	else if(strcmp(HAUMEA_CHANNEL, "production") == 0)
 		ImGui::Text("Haumea Studio %s", HaumeaVersionDisplay());
+	else
+		ImGui::Text("Haumea Studio %s (%s)", HaumeaVersionDisplay(), HAUMEA_CHANNEL_DISPLAY);
 	// A CI artifact (a main push or a pull request), not a release.
 	if(strcmp(HAUMEA_CHANNEL, "dev") == 0 || strcmp(HAUMEA_CHANNEL, "pr") == 0)
 		ImGui::TextDisabled("An unofficial build: it updates to the next official release.");
@@ -7810,7 +7814,8 @@ uiCameraPreferences(void)
 static void
 uiPreferencesWindow(void)
 {
-	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 28.0f, ImGui::GetFontSize() * 32.0f), ImGuiCond_FirstUseEver);
+	// Wide enough for every tab, Privacy and Namaka at the end included.
+	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 44.0f, ImGui::GetFontSize() * 32.0f), ImGuiCond_FirstUseEver);
 	uiNextPanelSizeConstraints();
 	if(!ImGui::Begin(ICON_FA_GEAR " Preferences", &showPreferencesWindow)){
 		ImGui::End();
@@ -7850,6 +7855,10 @@ uiPreferencesWindow(void)
 		}
 		if(ImGui::BeginTabItem("Updates")){
 			UpdaterPreferences();
+			ImGui::EndTabItem();
+		}
+		if(ImGui::BeginTabItem("Privacy")){
+			TelemetryPreferences();
 			ImGui::EndTabItem();
 		}
 		// Last, so the tabs before it keep their places.

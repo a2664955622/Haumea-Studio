@@ -984,8 +984,7 @@ InitRW(void)
 	const char *testReleases = getenv("HAUMEA_UPDATE_URL");
 	if(!IsAutomatedRun() || (testReleases && testReleases[0]))
 		UpdaterCheckForUpdate();
-	if(!IsAutomatedRun())
-		TelemetrySendPing();
+	TelemetrySendPing();	// opt-in; never in automated runs (telemetry.h)
 
 	return true;
 }

@@ -327,6 +327,26 @@ kept as `<file>.local`. **Help → Roll back** puts the previous version back.
 **Preferences → Updates** turns the check or automatic downloads on or off and picks the
 channel; **Help → Check for updates** checks right away.
 
+## Privacy
+
+Haumea sends nothing about you or your maps. The one thing it can send is a **daily usage
+ping**, and only if you say yes: the start screen asks once (closing it without answering
+means no), and **Preferences → Privacy** turns it on or off at any time.
+
+When it is on, Haumea sends at most once a day, to `telemetry.itsneufox.xyz`:
+
+- a random install ID (32 hexadecimal characters made on your computer; it says nothing
+  about you or your computer),
+- the version (for example 1.0.0.57) and channel (production or beta, or dev/pr for test
+  builds),
+- the operating system: Linux, Windows or macOS.
+
+This only counts how many installs are in use, on which versions and systems. It is kept until
+12 months after your install last sent one. Turning the ping off deletes the install ID; turning
+it on again makes a new one. The server keeps no IP addresses or access logs, and only the
+developer sees the counts. [What is sent and kept](https://telemetry.itsneufox.xyz/privacy)
+has the details.
+
 ## Shortcuts
 
 **Help → Keyboard Shortcuts** (`F1`) lists every command with its key, and

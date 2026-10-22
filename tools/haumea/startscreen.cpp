@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "telemetry.h"
 #include "workspace.h"
 #include "startscreen.h"
 #include "icons.h"
@@ -514,6 +515,7 @@ contents(bool gameLoaded)
 			ImGui::EndChild();
 		}
 	}
+	TelemetryDrawConsent();
 	ImGui::Spacing();
 
 	// The game folder's heading, field and status line, then the buttons.
@@ -604,8 +606,10 @@ DrawStartScreen(bool gameLoaded)
 		gSelectedMap.clear();
 		ImGui::OpenPopup(TITLE);
 	}
-	if(!gOpen)
+	if(!gOpen){
+		TelemetryStartScreenClosed();
 		return;
+	}
 	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 	ImGui::SetNextWindowSize(size, ImGuiCond_Always);
 	if(!ImGui::BeginPopupModal(TITLE, nil, flags)){

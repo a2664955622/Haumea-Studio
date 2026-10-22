@@ -57,6 +57,9 @@ def editor_env(scratch, virtual_display=False):
     env.setdefault('LP_NUM_THREADS', '2')
     # Never look for updates, or install one, from a test.
     env['HAUMEA_NO_UPDATE'] = '1'
+    # Never the daily ping (automated runs don't send anyway); a test of it
+    # sets HAUMEA_TELEMETRY_URL and drops this.
+    env['HAUMEA_NO_TELEMETRY'] = '1'
     if sys.platform == 'darwin':
         env['HOME'] = config
     return env

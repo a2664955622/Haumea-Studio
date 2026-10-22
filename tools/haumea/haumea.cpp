@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "telemetry.h"
 #include "editoricons.h"
 #include "trains.h"
 #include "anim.h"
@@ -3468,6 +3469,7 @@ Draw(void)
 		TheCamera.Process();
 	}
 	AgentBridgeUpdate();
+	TelemetryUpdate();
 	TheCamera.update();
 	if(gUseViewerCam)
 		Scene.camera = TheCamera.m_rwcam_viewer;

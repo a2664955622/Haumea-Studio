@@ -112,6 +112,14 @@ run Map Check and Test in game, and grab frames with the panels.
 
 ### Also
 
+- **A daily usage ping, only if you say yes**: the start screen asks once, and
+  **Preferences → Privacy** changes it. It sends a random install ID, the
+  version, channel and OS, at most once a day, to telemetry.itsneufox.xyz; off
+  deletes the ID. The old Windows-only ping, which was on by default and went
+  to another server, is gone, and its ID is deleted. See
+  [Privacy](docs/USER_GUIDE.md#privacy).
+- **Help → About** says "(Dev build)" or "(PR build)" for test builds and
+  ", Beta channel" for betas; releases say only the version.
 - **Labels, sounds, map icons, gang zones and path points are editor icons**,
   not GTA models: a coloured T, speaker, pin, square or node that keeps its
   size on screen, shows faintly through walls, and is clicked, box-selected,
