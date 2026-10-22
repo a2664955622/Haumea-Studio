@@ -4,7 +4,7 @@
 #include <vector>
 
 // Marks UI text for translation: _("Size") is the text in the user's
-// language; English (the key) when there is no catalog or no entry.
+// language; "Text##id" is looked up as "Text" and keeps its ##id; English (the key) when there is no catalog or no entry.
 const char *Translate(const char *text);
 #define _(text) Translate(text)
 
@@ -37,10 +37,16 @@ struct I18nLanguage {
 
 const std::vector<I18nLanguage> &I18nLanguages(void);
 
+// Call once at startup (before the first frame): finds the catalogs and
+// applies the saved language. Old imgui.ini layouts need no migration step:
+// L() and LI() move a window's saved position and dock from its old
+// (untranslated) title to the ### ID the first time the label is built.
+void I18nInit(void);
+
 // The setting: "auto" (the OS language if a catalog matches, else English),
 // "en" (English) or a catalog code. Applied at the next I18nNewFrame().
-const char *I18nPreference(void);
-void I18nSetPreference(const char *preference);
+const char *I18nGetLanguage(void);
+void I18nSetLanguage(const char *preference);
 // The code actually in use, "en" when none.
 const char *I18nActiveLanguage(void);
 
@@ -52,4 +58,4 @@ void I18nNewFrame(void);
 bool I18nLoadCatalogText(const std::string &po, int *dropped = nullptr);
 
 // Preferences > Language.
-bool I18nPreferences(void);	// true when the choice changed
+bool uiLanguagePreferences(void);	// true when the choice changed

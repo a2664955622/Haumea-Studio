@@ -2,7 +2,7 @@
 // language is a lang/<code>.po file and nothing else.
 #include "haumea.h"
 #include "i18n.h"
-#include "imgui.h"
+#include "imgui/imgui_internal.h"
 
 #include <algorithm>
 #include <map>
@@ -24,6 +24,7 @@ static std::unordered_map<const char *, const char *> literalCache;
 static std::unordered_map<const char *, std::string> labelCache;
 typedef std::pair<const char *, const char *> LiteralPair;
 static std::map<LiteralPair, std::string> labelIconCache, textIconCache;
+static std::unordered_map<const char *, std::string> idCache;	// Text##id results
 static std::vector<I18nLanguage> languages;
 static bool languagesScanned;
 static std::string preference = "auto";
@@ -221,6 +222,7 @@ clearCaches(void)
 	literalCache.clear();
 	labelCache.clear();
 	labelIconCache.clear();
+	idCache.clear();
 	textIconCache.clear();
 }
 
@@ -372,19 +374,26 @@ apply(void)
 }
 
 const char *
-I18nPreference(void)
+I18nGetLanguage(void)
 {
 	return preference.c_str();
 }
 
 void
-I18nSetPreference(const char *p)
+I18nSetLanguage(const char *p)
 {
 	std::string next = p && p[0] ? p : "auto";
 	if(next != preference){
 		preference = next;
 		dirty = true;
 	}
+}
+
+void
+I18nInit(void)
+{
+	scanLanguages();
+	apply();
 }
 
 const char *
@@ -410,10 +419,48 @@ Translate(const char *text)
 	auto hit = literalCache.find(text);
 	if(hit != literalCache.end())
 		return hit->second;
-	auto it = catalog.find(text);
-	const char *result = it == catalog.end() ? text : it->second.c_str();
+	const char *result = text;
+	const char *id = strstr(text, "##");
+	if(id && id[2] != '#'){
+		auto it = catalog.find(std::string(text, id - text));
+		if(it != catalog.end()){
+			std::string &s = idCache[text];
+			s = it->second + id;
+			result = s.c_str();
+		}
+	}else if(!id){
+		auto it = catalog.find(text);
+		if(it != catalog.end())
+			result = it->second.c_str();
+	}
 	literalCache[text] = result;
 	return result;
+}
+
+// A window saved under its old title (the English text, with the icon
+// first for LI) is moved to the ### ID's settings, so layouts and docks
+// survive the switch to L()/LI() labels. A no-op once moved or for labels
+// that were never windows.
+static void
+migrateWindowSettings(const char *oldTitle, const char *english)
+{
+	if(ImGui::GetCurrentContext() == nil)
+		return;
+	std::string idTitle = std::string("###") + english;
+	ImGuiID newId = ImHashStr(idTitle.c_str());
+	ImGuiID oldId = ImHashStr(oldTitle);
+	if(oldId == newId || ImGui::FindWindowSettingsByID(newId))
+		return;
+	ImGuiWindowSettings *old = ImGui::FindWindowSettingsByID(oldId);
+	if(old == nil)
+		return;
+	ImGuiWindowSettings copy = *old;
+	old->WantDelete = true;
+	ImGuiWindowSettings *moved = ImGui::CreateNewWindowSettings(idTitle.c_str());
+	ImGuiID keepId = moved->ID;
+	*moved = copy;
+	moved->ID = keepId;
+	moved->WantDelete = false;
 }
 
 const char *
@@ -423,6 +470,7 @@ Label(const char *english)
 		apply();
 	std::string &s = labelCache[english];
 	if(s.empty()){
+		migrateWindowSettings(english, english);
 		s = Translate(english);
 		s += "###";
 		s += english;
@@ -437,6 +485,8 @@ LabelIcon(const char *icon, const char *english)
 		apply();
 	std::string &s = labelIconCache[LiteralPair(icon, english)];
 	if(s.empty()){
+		std::string oldTitle = std::string(icon) + " " + english;
+		migrateWindowSettings(oldTitle.c_str(), english);
 		s = icon;
 		s += " ";
 		s += Translate(english);
@@ -461,12 +511,12 @@ TextIcon(const char *icon, const char *english)
 }
 
 bool
-I18nPreferences(void)
+uiLanguagePreferences(void)
 {
 	bool changed = false;
 	ImGui::SeparatorText(_("Language"));
 	const std::vector<I18nLanguage> &langs = I18nLanguages();
-	std::string current = I18nPreference();
+	std::string current = I18nGetLanguage();
 	std::string shown;
 	if(current == "auto")
 		shown = std::string(_("Auto")) + " (" + I18nActiveLanguage() + ")";
@@ -480,12 +530,12 @@ I18nPreferences(void)
 	}
 	if(ImGui::BeginCombo(_("Language"), shown.c_str())){
 		if(ImGui::Selectable(_("Auto"), current == "auto"))
-			{ I18nSetPreference("auto"); changed = true; }
+			{ I18nSetLanguage("auto"); changed = true; }
 		if(ImGui::Selectable("English", current == "en"))
-			{ I18nSetPreference("en"); changed = true; }
+			{ I18nSetLanguage("en"); changed = true; }
 		for(const I18nLanguage &l : langs)
 			if(ImGui::Selectable(l.name.c_str(), current == l.code))
-				{ I18nSetPreference(l.code.c_str()); changed = true; }
+				{ I18nSetLanguage(l.code.c_str()); changed = true; }
 		ImGui::EndCombo();
 	}
 	ImGui::SetItemTooltip("%s", _("Auto follows the system language when Haumea has it, else English.\nA language is a lang/<code>.po file beside the editor."));
