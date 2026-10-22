@@ -162,6 +162,16 @@ windowMatches(const UiItem &item, const std::string &window)
 
 static const UiItem *findItem(const std::string &window, const std::string &label, int nth = 1);
 
+// An item ImGui labels before it is added (a tab) has only its ID: the label
+// hashed with the item's seed, or "###label" for an L()/LI() label, whose ID
+// is the English text in every language.
+static bool
+idIs(const UiItem &it, const std::string &label)
+{
+	return ImHashStr(label.c_str(), 0, it.seed) == it.id ||
+		ImHashStr(("###" + label).c_str(), 0, it.seed) == it.id;
+}
+
 // 'Widget/part': a part of a widget that pushes its label as an ID, like a
 // colour channel ('Colour/##X') or a DragFloat2 component ('Size (X, Y)/#1').
 static const UiItem*
@@ -181,7 +191,7 @@ findPart(const std::string &window, const std::string &widget, const std::string
 		else
 			match = (it.seed == ImHashStr(widget.c_str(), 0, it.parent) &&
 				(it.rawLabel == part || plainLabel(it.label) == part ||
-				 (it.label.empty() && ImHashStr(part.c_str(), 0, it.seed) == it.id))) ||
+				 (it.label.empty() && idIs(it, part)))) ||
 				// A field one ID deeper: InputInt("##value") inside PushID("Colour 1").
 				(it.rawLabel == part && it.parent == ImHashStr(widget.c_str(), 0, it.grand));
 		if(match && ++seen == nth)
@@ -208,7 +218,7 @@ findItem(const std::string &window, const std::string &label, int nth)
 			// The whole ID: '##tile' is not '##tile_size'.
 			size_t at = it.rawLabel.find(label), end = at + label.size();
 			bool named = it.label.empty() && it.rawLabel.empty() ?
-				ImHashStr(label.c_str(), 0, it.seed) == it.id :
+				idIs(it, label) :
 				at != std::string::npos && (end == it.rawLabel.size() || it.rawLabel[end] == '#');
 			if(windowMatches(it, window) && named && ++seen == nth)
 				return &it;
@@ -221,7 +231,7 @@ findItem(const std::string &window, const std::string &label, int nth)
 		for(size_t i = 0; i < gPrevItems.size(); i++){
 			const UiItem &it = gPrevItems[i];
 			bool named = plainLabel(it.label) == label || it.label == label ||
-				(it.label.empty() && ImHashStr(label.c_str(), 0, it.seed) == it.id);
+				(it.label.empty() && idIs(it, label));
 			if(windowMatches(it, window) && named)
 				matches.push_back(&it);
 		}
@@ -233,7 +243,7 @@ findItem(const std::string &window, const std::string &label, int nth)
 		if(!windowMatches(it, window))
 			continue;
 		if(it.label.empty()){
-			if(ImHashStr(label.c_str(), 0, it.seed) == it.id)
+			if(idIs(it, label))
 				return &it;
 			continue;
 		}
