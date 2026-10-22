@@ -4670,6 +4670,12 @@ msgstr "anda pelo NODES%d.DAT a partir do ponto %d"
 msgid "{RRGGBB} changes the colour from there on, as in game."
 msgstr "{RRGGBB} muda a cor daí em diante, como no jogo."
 
+msgid "Centre on Camera"
+msgstr "Centralizar na câmera"
+
+msgid "Click for the full map. Right-click for the radar's range."
+msgstr "Clique para o mapa completo. Clique com o botão direito para o alcance do radar."
+
 msgid "Click to show the zones in the 3D view. The radar (Windows > Show Radar) always shows them."
 msgstr "Clique para mostrar as zonas na vista 3D. O radar (Janelas > Mostrar radar) sempre as mostra."
 
@@ -4679,11 +4685,26 @@ msgstr "Colisão"
 msgid "Delete this radar art (Ctrl+Z brings it back)."
 msgstr "Apagar esta radar art (Ctrl+Z a traz de volta)."
 
+msgid "Drag to move, wheel to zoom, double-click to fly there."
+msgstr "Arraste para mover, roda para zoom, clique duplo para voar até lá."
+
+msgid "Driving fast (350 m)"
+msgstr "Dirigindo rápido (350 m)"
+
+msgid "Full Map"
+msgstr "Mapa completo"
+
+msgid "Hide Radar"
+msgstr "Esconder radar"
+
 msgid "Leave out what's under water"
 msgstr "Deixar de fora o que está debaixo d'água"
 
 msgid "Model: the objects as they are drawn, seen from above.\nCollision: their collision, which is often boxes (a tree only its trunk)."
 msgstr "Modelo: os objetos como são desenhados, vistos de cima.\nColisão: a colisão deles, que muitas vezes são caixas (uma árvore só o tronco)."
+
+msgid "On foot (180 m)"
+msgstr "A pé (180 m)"
 
 msgid "Parts of the objects below the water's surface (a rock's\nwide base, a pier's legs) aren't drawn, as the radar shows the water there."
 msgstr "Partes dos objetos abaixo da superfície da água (a base larga de uma\nrocha, as pernas de um píer) não são desenhadas, pois o radar mostra a água ali."
@@ -4698,8 +4719,14 @@ msgstr "Cores do radar"
 msgid "Radar colours: the game's own map colours, by what each surface is\n(roads, grass, sand, rock, water...), from its collision and texture names.\nFrom textures: each model's colour seen from above, from its\ntextures, reduced to a few colours so neighbouring cells merge."
 msgstr "Cores do radar: as cores do próprio mapa do jogo, pelo que cada superfície é\n(estradas, grama, areia, rocha, água...), pela colisão e pelos nomes das texturas.\nDas texturas: a cor de cada modelo vista de cima, a partir das\ntexturas, reduzida a poucas cores para que células vizinhas se juntem."
 
+msgid "Show Radar"
+msgstr "Mostrar radar"
+
 msgid "Shown in the 3D view: click to hide."
 msgstr "Mostrada na vista 3D: clique para esconder."
+
+msgid "The game's radar in the corner of the 3D view, with the map's gang zones.\nClick it for the full map."
+msgstr "O radar do jogo no canto da vista 3D, com as gang zones do mapa.\nClique nele para o mapa completo."
 
 msgid "global"
 msgstr "global"

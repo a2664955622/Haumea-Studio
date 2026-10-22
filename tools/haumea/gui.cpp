@@ -31,6 +31,7 @@
 #include "selftest.h"
 #include "i18n.h"
 #include "keycast.h"
+#include "radar.h"
 #include <chrono>
 #ifdef LIBRW_GLFW
 #include <GLFW/glfw3.h>
@@ -2851,6 +2852,11 @@ uiMainmenu(void)
 				saveSaveSettings();
 			}
 			ImGui::SetItemTooltip(_("Shows the keys and mouse buttons you press over the 3D view, for tutorials and recordings."));
+			if(ImGui::MenuItem(L("Show Radar"), nil, RadarEnabled())){
+				RadarSetEnabled(!RadarEnabled());
+				saveSaveSettings();
+			}
+			ImGui::SetItemTooltip(_("The game's radar in the corner of the 3D view, with the map's gang zones.\nClick it for the full map."));
 #if defined(_WIN32) && defined(RW_D3D9)
 			if(ImGui::MenuItem(_("Bring Panels Back to Main Window")))
 				BringEditorPanelsHome();
@@ -6325,7 +6331,8 @@ loadSaveSettings(void)
 			char path[1024];
 			if(parseQuotedStringValue(value, path, sizeof(path)))
 				recentTextDraws.push_back(path);
-		}else if(LoadTextDrawSetting(key, value) || KeycastLoadSetting(key, value)){
+		}else if(LoadTextDrawSetting(key, value) || KeycastLoadSetting(key, value) ||
+		         RadarLoadSetting(key, value)){
 		}else if(strcmp(key, "shortcut") == 0){
 			ShortcutParseSetting(value);
 		}else if(strcmp(key, "language") == 0){
@@ -6730,6 +6737,7 @@ saveSaveSettings(void)
 		writeQuotedSetting(f, "recent_textdraws", GetRecentTextDrawFiles()[i].c_str());
 	SaveTextDrawSettings(f);
 	KeycastSaveSettings(f);
+	RadarSaveSettings(f);
 	fprintf(f, "reopen_last_map %d\n", gReopenLastMap ? 1 : 0);
 	fprintf(f, "show_start_guide %d\n", gShowStartGuide ? 1 : 0);
 	fprintf(f, "panel_snap %d\n", gPanelSnap ? 1 : 0);
@@ -12891,6 +12899,7 @@ gui(void)
 
 	uiDrawPanelSnapGuides();
 	KeycastFrame();
+	RadarFrame();
 	uiToasts();
 	gResetPanelLayout = false;
 

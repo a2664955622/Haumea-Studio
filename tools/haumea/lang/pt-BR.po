@@ -1660,6 +1660,9 @@ msgstr "Centro (meio)"
 msgid "Centre"
 msgstr "Centro"
 
+msgid "Centre on Camera"
+msgstr "Centralizar na câmera"
+
 msgid "Cesar"
 msgstr "Cesar"
 
@@ -1789,6 +1792,9 @@ msgstr "Clique num interior para ir até ele e mostrá-lo. Botão direito para c
 
 msgid "Click an object in the world to edit it. Shift+drag selects several."
 msgstr "Clique num objeto no mundo para editá-lo. Shift+arrastar seleciona vários."
+
+msgid "Click for the full map. Right-click for the radar's range."
+msgstr "Clique para o mapa completo. Clique com o botão direito para o alcance do radar."
 
 msgid "Click in 3D view"
 msgstr "Clique na vista 3D"
@@ -2467,6 +2473,9 @@ msgstr "Arraste a barra de título de um painel para encaixá-lo ao lado da vist
 msgid "Drag to adjust. Double-click to enter an exact value."
 msgstr "Arraste para ajustar. Clique duas vezes para digitar um valor exato."
 
+msgid "Drag to move, wheel to zoom, double-click to fly there."
+msgstr "Arraste para mover, roda para zoom, clique duplo para voar até lá."
+
 msgid ""
 "Dragged panels stick to the screen edges and to each other.\n"
 "Hold Alt while dragging to place a panel freely."
@@ -2537,6 +2546,9 @@ msgstr "Dirigir precisa do NPC num veículo."
 
 msgid "Driver"
 msgstr "Motorista"
+
+msgid "Driving fast (350 m)"
+msgstr "Dirigindo rápido (350 m)"
 
 msgid "Driving school results music"
 msgstr "Música do resultado da autoescola"
@@ -3026,6 +3038,9 @@ msgstr "Do models/artconfig.txt do workspace."
 msgid "Front passenger"
 msgstr "Passageiro da frente"
 
+msgid "Full Map"
+msgstr "Mapa completo"
+
 msgid "Full detail"
 msgstr "Detalhe completo"
 
@@ -3351,6 +3366,9 @@ msgstr "Oculto na viewport. Clique para mostrar."
 
 msgid "Hide"
 msgstr "Ocultar"
+
+msgid "Hide Radar"
+msgstr "Esconder radar"
 
 msgid "Hide Selection"
 msgstr "Ocultar seleção"
@@ -4940,6 +4958,9 @@ msgstr "Deslocamento"
 
 msgid "On foot"
 msgstr "A pé"
+
+msgid "On foot (180 m)"
+msgstr "A pé (180 m)"
 
 msgid "On ground"
 msgstr "No chão"
@@ -6593,6 +6614,9 @@ msgstr "Mostrar tudo"
 msgid "Show Pressed Keys"
 msgstr "Mostrar teclas pressionadas"
 
+msgid "Show Radar"
+msgstr "Mostrar radar"
+
 msgid "Show all"
 msgstr "Mostrar todos"
 
@@ -7249,6 +7273,13 @@ msgstr "Não foi possível carregar os arquivos NODES*.DAT do jogo."
 
 msgid "The game's path nodes. open.mp NPCs follow them with NPC_PlayNode."
 msgstr "Os nós de caminho do jogo. NPCs do open.mp os seguem com NPC_PlayNode."
+
+msgid ""
+"The game's radar in the corner of the 3D view, with the map's gang zones.\n"
+"Click it for the full map."
+msgstr ""
+"O radar do jogo no canto da vista 3D, com as gang zones do mapa.\n"
+"Clique nele para o mapa completo."
 
 msgid "The group the zones go in."
 msgstr "O grupo onde as zonas ficam."
