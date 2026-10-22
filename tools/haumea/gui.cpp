@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "crashreports.h"
 #include "telemetry.h"
 #include "editoricons.h"
 #include "trains.h"
@@ -7867,6 +7868,8 @@ uiPreferencesWindow(void)
 		}
 		if(ImGui::BeginTabItem("Privacy")){
 			TelemetryPreferences();
+			ImGui::Spacing();
+			CrashReportsPreferences();
 			ImGui::EndTabItem();
 		}
 		// Last, so the tabs before it keep their places.
@@ -12600,6 +12603,7 @@ gui(void)
 	DrawStartScreen(true);
 	// TODO: restore when the Destroy Entire Map workflow is finished.
 	UpdaterDrawGui();
+	CrashReportsDrawBanner();
 	autosaveTick();
 
 	// While looking around, W/A/S/D fly and no key is a shortcut (W/E/R

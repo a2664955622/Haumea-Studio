@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "crashreports.h"
 #include "workspace.h"
 #include "modelmeta.h"
 #ifdef LIBRW_GLFW
@@ -291,7 +292,13 @@ log(const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-	vfprintf(stdout, fmt, ap);
+	char line[1024];
+	va_list copy;
+	va_copy(copy, ap);
+	vsnprintf(line, sizeof(line), fmt, copy);
+	va_end(copy);
+	fputs(line, stdout);
+	CrashReportsLog(line);	// the last lines go in a crash report
 	addToLogWindow(fmt, ap);
 	fflush(stdout);
 	va_end(ap);
@@ -738,6 +745,8 @@ Init(void)
 
 	// Where the game, the server and the settings are, before anything loads.
 	InitWorkspace();
+	// From here a crash is reported at the next start.
+	CrashReportsInstall();
 	// A downloaded update installs now, before any window, and starts in this
 	// one's place.
 	UpdaterInstallStaged();
@@ -822,6 +831,8 @@ ConvertTexRaster(rw::Raster *ras, const char *textureName)
 	if(img == nil){
 		log("warning: failed to convert raster from platform %d to %d, using fallback texture\n",
 			ras->platform, rw::platform);
+		CrashReportsError("raster conversion", "a raster from platform %d didn't convert to %d",
+			ras->platform, rw::platform);
 		ras->destroy();
 		return CreateFallbackRaster();
 	}
@@ -840,6 +851,8 @@ ConvertTexRaster(rw::Raster *ras, const char *textureName)
 	if(converted == nil){
 		log("warning: failed to convert texture %s from platform %d to %d, using fallback texture\n",
 			textureName && textureName[0] ? textureName : "(unnamed)", ras->platform, rw::platform);
+		CrashReportsError("texture conversion", "a texture from platform %d didn't convert to %d",
+			ras->platform, rw::platform);
 		ras->destroy();
 		return CreateFallbackRaster();
 	}
@@ -986,6 +999,8 @@ InitRW(void)
 	if(!IsAutomatedRun() || (testReleases && testReleases[0]))
 		UpdaterCheckForUpdate();
 	TelemetrySendPing();	// opt-in; never in automated runs (telemetry.h)
+	CrashReportsNoteGraphics();
+	CrashReportsStartup();	// last run's crash, and --crash-test
 
 	return true;
 }

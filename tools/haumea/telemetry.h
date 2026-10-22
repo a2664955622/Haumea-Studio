@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
+#include <string>
+
 // The daily usage ping, opt-in. Nothing is sent and no install ID exists
 // until the user says yes (the start screen asks; leaving it unanswered is
 // no; Preferences > Privacy changes it). Then, at most once a UTC day, one
@@ -35,3 +37,10 @@ void TelemetryDrawConsent(void);
 void TelemetryStartScreenClosed(void);
 // Preferences > Privacy.
 void TelemetryPreferences(void);
+
+// For crash reports: the install ID while the ping is on (else ""), and the
+// same POST: a JSON body to an https address (or a loopback http one when
+// testing); the HTTP status, 0 without an answer. Blocking.
+std::string TelemetryInstallId(void);
+int TelemetryPostJson(const std::string &url, const std::string &body);
+bool TelemetryUrlAllowed(const std::string &url, bool isTestUrl);

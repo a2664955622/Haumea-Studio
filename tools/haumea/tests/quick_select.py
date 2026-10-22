@@ -65,6 +65,7 @@ SOURCES = {
 	'vehiclemods.cpp': ['el_vehicle'],
 	'agentbridge.cpp': [],	# the agent tests don't need the real game
 	'telemetry.cpp': [],
+	'crashreports.cpp': [],
 	'updater.cpp': [],
 	'versionutil.cpp': [],
 }

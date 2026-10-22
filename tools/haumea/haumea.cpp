@@ -1,4 +1,6 @@
 #include "haumea.h"
+#include "crashreports.h"
+#include "imgui/imgui_internal.h"
 #include "telemetry.h"
 #include "modelmeta.h"
 #include "editoricons.h"
@@ -3472,6 +3474,15 @@ Draw(void)
 	}
 	AgentBridgeUpdate();
 	TelemetryUpdate();
+	CrashReportsUpdate();
+	{
+		// What a crash report says Haumea was doing.
+		const char *mode = InTextDrawMode() ? "textdraw" : gPlaceMode ? "place" : gPrefabPlaceMode ? "prefab" :
+			gBrushMode ? "brush" : "edit";
+		ImGuiContext *g = ImGui::GetCurrentContext();
+		const char *window = g && g->NavWindow ? g->NavWindow->Name : "";
+		CrashReportsSetContext(mode, window);
+	}
 	TheCamera.update();
 	if(gUseViewerCam)
 		Scene.camera = TheCamera.m_rwcam_viewer;

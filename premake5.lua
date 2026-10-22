@@ -321,6 +321,12 @@ project "haumea"
 		includedirs { path.join(Librw, "skeleton/imgui") }
 		links { "dwmapi" }
 	filter {}
+	-- Debug information in release builds too, for crash reports: CI splits it
+	-- out (haumea.debug, haumea.dSYM, haumea.pdb) into haumea-symbols-<version>.zip
+	-- and ships the editor stripped.
+	filter "configurations:Release*"
+		symbols "On"
+	filter {}
 	includedirs { "tools/haumea" }
 	files { "tools/haumea/minilzo/minilzo.c" }
 	-- The build number and commit, as open.mp does it (tools/release/gen_buildinfo.py):

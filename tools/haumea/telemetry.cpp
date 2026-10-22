@@ -231,7 +231,7 @@ httpPost(const std::string &url, const std::string &body)
 	if(!WinHttpCrackUrl(wurl.c_str(), 0, 0, &parts))
 		return 0;
 	bool secure = parts.nScheme == INTERNET_SCHEME_HTTPS;
-	std::string ua = std::string("Haumea-Telemetry/") + HaumeaFullVersion();
+	std::string ua = std::string("Haumea/") + HaumeaFullVersion();
 	std::wstring wua(ua.begin(), ua.end());
 	HINTERNET session = WinHttpOpen(wua.c_str(), WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
 		WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
@@ -261,7 +261,7 @@ httpPost(const std::string &url, const std::string &body)
 static int
 httpPost(const std::string &url, const std::string &body)
 {
-	std::string ua = std::string("Haumea-Telemetry/") + HaumeaFullVersion();
+	std::string ua = std::string("Haumea/") + HaumeaFullVersion();
 	bool https = url.compare(0, 8, "https://") == 0;
 	std::vector<std::string> args = { "curl", "-sS", "-o", "/dev/null", "-w", "%{http_code}",
 		"--connect-timeout", "10", "--max-time", "15", "--proto", https ? "=https" : "=http",
@@ -309,6 +309,25 @@ httpPost(const std::string &url, const std::string &body)
 	return atoi(code);
 }
 #endif
+
+std::string
+TelemetryInstallId(void)
+{
+	load();
+	return gConsent == TELEMETRY_YES ? gUid : std::string();
+}
+
+int
+TelemetryPostJson(const std::string &url, const std::string &body)
+{
+	return httpPost(url, body);
+}
+
+bool
+TelemetryUrlAllowed(const std::string &url, bool isTestUrl)
+{
+	return url.compare(0, 8, "https://") == 0 || (isTestUrl && isLoopbackHttp(url));
+}
 
 static std::string gPostUrl, gPostBody, gPostDay;
 static std::atomic<int> gLastStatus(-1);
@@ -383,7 +402,7 @@ TelemetrySendPing(void)
 	if(gLastSent == day)
 		return;	// at most once a day
 	std::string url = testUrl() ? testUrl() : DEFAULT_URL;
-	if(url.compare(0, 8, "https://") != 0 && !(testUrl() && isLoopbackHttp(url))){
+	if(!TelemetryUrlAllowed(url, testUrl() != nil)){
 		log("Telemetry: refusing %s (https only)\n", url.c_str());
 		return;
 	}

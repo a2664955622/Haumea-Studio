@@ -118,6 +118,11 @@ run Map Check and Test in game, and grab frames with the panels.
   deletes the ID. The old Windows-only ping, which was on by default and went
   to another server, is gone, and its ID is deleted. See
   [Privacy](docs/USER_GUIDE.md#privacy).
+- **Crash and error reports, only as you choose**: after a crash or an error,
+  the next start asks before sending a report (View report, Send, Don't send,
+  Always send), and **Preferences → Privacy** can make it Always or Never.
+  Reports leave out your folders, user name and map names. Releases come with
+  haumea-symbols-<version>.zip, so the developer can read their stacks.
 - **Help → About** says "(Dev build)" or "(PR build)" for test builds and
   ", Beta channel" for betas; releases say only the version.
 - **Labels, sounds, map icons, gang zones and path points are editor icons**,

@@ -60,6 +60,8 @@ def editor_env(scratch, virtual_display=False):
     # Never the daily ping (automated runs don't send anyway); a test of it
     # sets HAUMEA_TELEMETRY_URL and drops this.
     env['HAUMEA_NO_TELEMETRY'] = '1'
+    # Nor crash reports: a test that crashes keeps its report in its own config.
+    env['HAUMEA_NO_REPORTS'] = '1'
     if sys.platform == 'darwin':
         env['HOME'] = config
     return env

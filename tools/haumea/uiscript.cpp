@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "crashreports.h"
 #include "editoricons.h"
 #include "trains.h"
 #include "workspace.h"
@@ -1236,6 +1237,7 @@ finish(void)
 	if(gLog)
 		fclose(gLog);
 	fflush(stdout);
+	CrashReportsShutdown();	// a finished script is a clean exit, not a crash
 	// Skip shutdown: nothing of a test run should be saved.
 	_exit(gFails ? 1 : 0);
 }

@@ -329,9 +329,11 @@ channel; **Help → Check for updates** checks right away.
 
 ## Privacy
 
-Haumea sends nothing about you or your maps. The one thing it can send is a **daily usage
-ping**, and only if you say yes: the start screen asks once (closing it without answering
-means no), and **Preferences → Privacy** turns it on or off at any time.
+Haumea sends nothing unless you choose to, and never your maps. It can send two things: a daily
+usage ping and crash reports.
+
+The **daily usage ping** goes only if you say yes: the start screen asks once (closing it
+without answering means no), and **Preferences → Privacy** turns it on or off at any time.
 
 When it is on, Haumea sends at most once a day, to `telemetry.itsneufox.xyz`:
 
@@ -343,9 +345,28 @@ When it is on, Haumea sends at most once a day, to `telemetry.itsneufox.xyz`:
 
 This only counts how many installs are in use, on which versions and systems. It is kept until
 12 months after your install last sent one. Turning the ping off deletes the install ID; turning
-it on again makes a new one. The server keeps no IP addresses or access logs, and only the
-developer sees the counts. [What is sent and kept](https://telemetry.itsneufox.xyz/privacy)
-has the details.
+it on again makes a new one.
+
+**Crash and error reports**: when Haumea crashes or hits an error, it keeps a report, and at the
+next start a banner asks: **View report** shows exactly what would be sent, then **Send**,
+**Don't send** or **Always send**. **Preferences → Privacy** sets this to Ask (the default),
+Always send or Never send. A report has:
+
+- the version, commit, channel, operating system and its version, the processor type, and the
+  graphics card and driver names,
+- where it happened in Haumea's code (the stack, as offsets in its own files), and the error
+  message if there was one,
+- the last lines of the editor's log, and which mode and window were in use.
+
+Before it is kept, your home folder, user name, game folder and workspace are replaced by
+placeholders, and map names are left out; no map contents are ever included. A report carries the
+install ID only if the daily ping is on too. Reports are sent to `reports.itsneufox.xyz` and kept
+for 6 months; unsent ones are deleted after 30 days. New kinds of crashes are summed up in a
+private Discord channel of the developer's (the version, system, graphics card and where in the
+code it happened; never log lines or install IDs).
+
+The server keeps no IP addresses or access logs, and only the developer sees what it gets.
+[What is sent and kept](https://telemetry.itsneufox.xyz/privacy) has the details.
 
 ## Shortcuts
 
