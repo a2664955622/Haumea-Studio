@@ -28,7 +28,14 @@ static long long
 fileTime(const std::string &path)
 {
 	struct stat st;
-	return stat(path.c_str(), &st) == 0 && S_ISREG(st.st_mode) ? (long long)st.st_mtime : -1;
+	if(stat(path.c_str(), &st) != 0)
+		return -1;
+#ifdef _WIN32
+	bool file = (st.st_mode & _S_IFMT) == _S_IFREG;
+#else
+	bool file = S_ISREG(st.st_mode);
+#endif
+	return file ? (long long)st.st_mtime : -1;
 }
 
 const TStudioTexture*
