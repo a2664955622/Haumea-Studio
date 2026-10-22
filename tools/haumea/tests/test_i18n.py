@@ -8,6 +8,7 @@ The editor parts need the editor binary and Xvfb, and skip without them.
 from pathlib import Path
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -158,6 +159,8 @@ class EditorTests(unittest.TestCase):
             Path(work, 'lang').mkdir()
             Path(work, 'lang', 'xx.po').write_text(lang, encoding='utf-8')
             env['HAUMEA_LANG_DIR'] = str(Path(work, 'lang'))
+        shutil.copytree(HERE / 'ui' / 'fixtures', Path(work, 'fixtures'))
+        env['UI_FIXTURES'] = str(Path(work, 'fixtures'))
         result = run_editor_script(work, env, script)
         log = '\n'.join(l for l in result.stdout.splitlines() if l.startswith('[ui-script]'))
         if os.environ.get('I18N_DEBUG'):
@@ -170,7 +173,10 @@ class EditorTests(unittest.TestCase):
 
     def test_old_layout_survives(self):
         """An imgui.ini saved before a window's label became ###English keeps its place and dock."""
-        ini_a, _, _ = self.editor('wait 600\nexit\n')
+        # Panels show once a map is open; the saved flags carry them to the second run.
+        ini_a, saved_a, _ = self.editor('open "$UI_FIXTURES/ui_floor.pwn"\nwait 100\n' +
+                                        'shortcut window_object_info\nshortcut window_browser\n' +
+                                        'shortcut window_map_objects\nwait 600\nexit\n')
         windows = ini_sections(ini_a)
         marked = [n for n in windows if n.startswith('###')]
         if not marked:
@@ -184,7 +190,8 @@ class EditorTests(unittest.TestCase):
             old = re.sub(r'Selected=0x%08X' % zlib.crc32(name.encode()),
                          'Selected=0x%08X' % zlib.crc32(title.encode()), old)
         self.assertNotEqual(old, ini_a)
-        ini_b, _, _ = self.editor('wait 600\nexit\n', ini=old)
+        ini_b, _, _ = self.editor('open "$UI_FIXTURES/ui_floor.pwn"\nwait 600\nexit\n', ini=old,
+                                  savesettings=saved_a)
         after = ini_sections(ini_b)
         for name in marked:
             self.assertIn(name, after, name + ' lost its saved settings')
