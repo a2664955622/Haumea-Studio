@@ -67,6 +67,17 @@ PLAIN = '\tSetObjectMaterial(tmpobjid, 0, 728, "gtatreeshi", "berrybush1", 0xFF0
 DYNAMIC = '\tSetDynamicObjectMaterial(tmpobjid, 0, 728, "gtatreeshi", "berrybush1", 0xFF00FF33);'
 BLACK = '\tSetObjectMaterial(tmpobjid, 0, 728, "gtatreeshi", "berrybush1", 0xFF000000);'
 CAMERA = (0.0, 2988.0, 601.0, 0.0, 3000.0, 600.5, 50.0)
+# The same view with no object in it (the one there is stands behind the
+# camera): the object's pixels are those that differ from it. Comparing the
+# plain and the coloured object instead would count what shows through the
+# real berrybush1's see-through leaves, where the cactus texture was solid.
+EMPTY = '''#include <a_samp>
+
+stock NothingInView()
+{
+    CreateObject(754, 0.0, 2900.0, 600.0, 0.0, 0.0, 0.0);
+}
+'''
 
 
 def read_png(path):
@@ -155,9 +166,9 @@ class MaterialColourTests(unittest.TestCase):
             time.sleep(1)
         self.fail('the editor never answered: ' + (work / 'out.txt').read_text()[-2000:])
 
-    def capture(self, client, name, plain, dynamic):
+    def capture(self, client, name, plain, dynamic, source=None):
         path = self.tmp / (name + '.pwn')
-        path.write_text(MAP.format(plain=plain, dynamic=dynamic))
+        path.write_text(source or MAP.format(plain=plain, dynamic=dynamic))
         self.assertTrue(client.command('map_open', str(path), 1).get('ok'))
         client.command('camera', *CAMERA)
         time.sleep(3)
@@ -167,29 +178,49 @@ class MaterialColourTests(unittest.TestCase):
 
     def test_colour_tints_the_retextured_object_green(self):
         client = self.client()
-        width, height, plain = self.capture(client, 'plain', '', '')
+        width, height, empty = self.capture(client, 'empty', '', '', EMPTY)
+        _, _, plain = self.capture(client, 'plain', '', '')
         _, _, coloured = self.capture(client, 'coloured', PLAIN, DYNAMIC)
+
+        def object_pixels(shot, x0, x1):
+            return [shot[y][x] for y in range(0, height, 2) for x in range(x0, x1, 2)
+                    if sum(abs(a - b) for a, b in zip(empty[y][x], shot[y][x])) > 24]
+
         for side, x0, x1 in (('CreateObject', 0, width // 2), ('CreateDynamicObject', width // 2, width)):
-            # The object's pixels: those the material changed.
-            changed = [coloured[y][x] for y in range(0, height, 2) for x in range(x0, x1, 2)
-                       if sum(abs(a - b) for a, b in zip(plain[y][x], coloured[y][x])) > 24]
-            self.assertGreater(len(changed), 200, side + ': the material changed nothing')
+            self.assertNotEqual(object_pixels(plain, x0, x1), object_pixels(coloured, x0, x1),
+                                side + ': the material changed nothing')
+            changed = object_pixels(coloured, x0, x1)
+            self.assertGreater(len(changed), 200, side + ': the object is not in view')
             green = [p for p in changed if p[1] > 30 and p[1] > 2 * p[0] and p[1] > 1.5 * p[2]]
+            if GAME_DIR:
+                # The real berrybush1's leaves are partly see-through, so their
+                # edges mix the tint with the sky, as in game. Orange (the
+                # prelight, colour ignored) has red at or above green.
+                not_orange = [p for p in changed if p[1] > 30 and p[1] > 1.5 * p[0]]
+                self.assertGreater(len(not_orange), 0.8 * len(changed),
+                                   '%s: %d of %d pixels greener than red, e.g. %s' % (
+                                       side, len(not_orange), len(changed), changed[len(changed) // 2]))
+                self.assertGreater(len(green), 0.2 * len(changed),
+                                   '%s: only %d of %d pixels green' % (side, len(green), len(changed)))
+                continue
             self.assertGreater(len(green), 0.8 * len(changed),
                                '%s: %d of %d pixels green, e.g. %s' % (side, len(green), len(changed),
                                                                        changed[len(changed) // 2]))
-            if not GAME_DIR:
-                # berrybush1 is (110, 120, 70): times 0x00FF33, lit at most fully.
-                brightest = sorted(p[1] for p in green)[int(len(green) * 0.95)]
-                self.assertLessEqual(brightest, 125, side + ': lit brighter than the texture')
+            # berrybush1 is (110, 120, 70) here: times 0x00FF33, lit at most fully.
+            brightest = sorted(p[1] for p in green)[int(len(green) * 0.95)]
+            self.assertLessEqual(brightest, 125, side + ': lit brighter than the texture')
 
         # 0xFF000000: alpha FF, no red, green or blue. Non-zero, so applied.
         _, _, black = self.capture(client, 'black', BLACK, '')
-        changed = [black[y][x] for y in range(0, height, 2) for x in range(0, width // 2, 2)
-                   if sum(abs(a - b) for a, b in zip(plain[y][x], black[y][x])) > 24]
-        self.assertGreater(len(changed), 200, '0xFF000000 changed nothing')
+        changed = object_pixels(black, 0, width // 2)
+        self.assertGreater(len(changed), 200, '0xFF000000: the object is not in view')
         dark = [p for p in changed if max(p) <= 24]
-        self.assertGreater(len(dark), 0.8 * len(changed),
+        if GAME_DIR:
+            # The see-through leaf edges blend black with the sky; the tint
+            # must still leave no green and plenty of black.
+            greenish = [p for p in changed if p[1] > 30 and p[1] > 2 * p[0] and p[1] > 1.5 * p[2]]
+            self.assertLess(len(greenish), 0.05 * len(changed), '0xFF000000: green pixels left')
+        self.assertGreater(len(dark), (0.4 if GAME_DIR else 0.8) * len(changed),
                            '0xFF000000: %d of %d pixels black, e.g. %s' % (len(dark), len(changed),
                                                                          changed[len(changed) // 2]))
 
