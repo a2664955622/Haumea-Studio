@@ -291,15 +291,15 @@ msgstr "Testar no jogo (%s)\nRoda o mapa em um servidor de teste open.mp privado
 
 #: gui.cpp:2646
 msgid "Workspace"
-msgstr "Espaço de trabalho"
+msgstr "Workspace"
 
 #: gui.cpp:2649
 msgid "No workspace"
-msgstr "Nenhum espaço de trabalho"
+msgstr "Sem workspace"
 
 #: gui.cpp:2661
 msgid "Workspace Settings..."
-msgstr "Configurações do espaço de trabalho..."
+msgstr "Configurações do workspace..."
 
 #: gui.cpp:2684
 msgid "File"
@@ -343,11 +343,11 @@ msgstr "Abre uma cópia salva automaticamente. Use Salvar como para mantê-la co
 
 #: gui.cpp:2726
 msgid "Switch Workspace..."
-msgstr "Trocar espaço de trabalho..."
+msgstr "Trocar workspace..."
 
 #: gui.cpp:2728
 msgid "The start screen: workspaces, their maps and the game folder."
-msgstr "A tela inicial: espaços de trabalho, seus mapas e a pasta do jogo."
+msgstr "A tela inicial: workspaces, seus mapas e a pasta do jogo."
 
 #: gui.cpp:2733
 msgid "Save As..."
@@ -683,7 +683,7 @@ msgstr "Meus (pasta de configuração do Haumea)"
 
 #: gui.cpp:2936
 msgid "The workspace's prefabs folder"
-msgstr "A pasta de prefabs do espaço de trabalho"
+msgstr "A pasta de prefabs do workspace"
 
 #: gui.cpp:2937
 msgid "Save in"
@@ -691,11 +691,11 @@ msgstr "Salvar em"
 
 #: gui.cpp:2939
 msgid "The workspace's prefabs are shared with everyone who maps for that server."
-msgstr "Os prefabs do espaço de trabalho são compartilhados com todos que mapeiam para esse servidor."
+msgstr "Os prefabs do workspace são compartilhados com todos que mapeiam para esse servidor."
 
 #: gui.cpp:2940
 msgid "Set a workspace (File > Workspace) to save prefabs with the server."
-msgstr "Defina um espaço de trabalho (Arquivo > Espaço de trabalho) para salvar prefabs com o servidor."
+msgstr "Defina um workspace (Arquivo > Workspace) para salvar prefabs com o servidor."
 
 #: gui.cpp:2943
 msgid "no folder"
@@ -1267,7 +1267,7 @@ msgstr "Editor"
 
 #: gui.cpp:4491
 msgid "RMB drag"
-msgstr "Arrastar com o botão direito"
+msgstr "RMB + arrastar"
 
 #: gui.cpp:4491
 msgid "Look around (the look button: Preferences > Camera)"
@@ -1279,7 +1279,7 @@ msgstr "Vista 3D"
 
 #: gui.cpp:4492
 msgid "Ctrl+Alt+RMB drag"
-msgstr "Ctrl+Alt+arrastar com o botão direito"
+msgstr "Ctrl+Alt+RMB + arrastar"
 
 #: gui.cpp:4492
 msgid "Dolly camera along view direction"
@@ -1287,7 +1287,7 @@ msgstr "Aproximar a câmera na direção da vista"
 
 #: gui.cpp:4493
 msgid "MMB drag"
-msgstr "Arrastar com o botão do meio"
+msgstr "MMB + arrastar"
 
 #: gui.cpp:4493
 msgid "Pan camera"
@@ -1295,7 +1295,7 @@ msgstr "Deslocar a câmera"
 
 #: gui.cpp:4494
 msgid "Alt+MMB click"
-msgstr "Alt+clique com o botão do meio"
+msgstr "Alt+clique com MMB"
 
 #: gui.cpp:4494
 msgid "Reset FOV"
@@ -1303,7 +1303,7 @@ msgstr "Redefinir FOV"
 
 #: gui.cpp:4495
 msgid "Alt+MMB drag"
-msgstr "Alt+arrastar com o botão do meio"
+msgstr "Alt+MMB + arrastar"
 
 #: gui.cpp:4495
 msgid "Arc rotate around camera target"
@@ -1311,7 +1311,7 @@ msgstr "Girar em arco em volta do alvo da câmera"
 
 #: gui.cpp:4496
 msgid "Ctrl+Alt+MMB drag"
-msgstr "Ctrl+Alt+arrastar com o botão do meio"
+msgstr "Ctrl+Alt+MMB + arrastar"
 
 #: gui.cpp:4496
 msgid "Zoom camera toward target"
@@ -1335,7 +1335,7 @@ msgstr "Tamanho da interface"
 
 #: gui.cpp:4499
 msgid "RMB held + W / S"
-msgstr "Botão direito pressionado + W / S"
+msgstr "RMB pressionado + W / S"
 
 #: gui.cpp:4499
 msgid "Fly forward / backward"
@@ -1343,7 +1343,7 @@ msgstr "Voar para frente / para trás"
 
 #: gui.cpp:4500
 msgid "RMB held + A / D"
-msgstr "Botão direito pressionado + A / D"
+msgstr "RMB pressionado + A / D"
 
 #: gui.cpp:4500
 msgid "Fly left / right"
@@ -1351,7 +1351,7 @@ msgstr "Voar para a esquerda / direita"
 
 #: gui.cpp:4501
 msgid "RMB held + Shift+WASD"
-msgstr "Botão direito pressionado + Shift+WASD"
+msgstr "RMB pressionado + Shift+WASD"
 
 #: gui.cpp:4501
 msgid "Fly fast"
@@ -1359,7 +1359,7 @@ msgstr "Voar rápido"
 
 #: gui.cpp:4502
 msgid "RMB held + Alt+WASD"
-msgstr "Botão direito pressionado + Alt+WASD"
+msgstr "RMB pressionado + Alt+WASD"
 
 #: gui.cpp:4502
 msgid "Fly slowly"
@@ -1399,7 +1399,7 @@ msgstr "Alternar a seleção do objeto"
 
 #: gui.cpp:4508
 msgid "Shift+LMB drag"
-msgstr "Shift+arrastar com o botão esquerdo"
+msgstr "Shift+LMB + arrastar"
 
 #: gui.cpp:4508
 msgid "Rectangle select"
@@ -1407,7 +1407,7 @@ msgstr "Seleção retangular"
 
 #: gui.cpp:4509
 msgid "Ctrl+Shift+LMB drag"
-msgstr "Ctrl+Shift+arrastar com o botão esquerdo"
+msgstr "Ctrl+Shift+LMB + arrastar"
 
 #: gui.cpp:4509
 msgid "Rectangle add to selection"
@@ -1415,7 +1415,7 @@ msgstr "Adicionar à seleção com retângulo"
 
 #: gui.cpp:4510
 msgid "Alt+Shift+LMB drag"
-msgstr "Alt+Shift+arrastar com o botão esquerdo"
+msgstr "Alt+Shift+LMB + arrastar"
 
 #: gui.cpp:4510
 msgid "Rectangle remove from selection"
@@ -1423,7 +1423,7 @@ msgstr "Remover da seleção com retângulo"
 
 #: gui.cpp:4511
 msgid "RMB on selection"
-msgstr "Botão direito na seleção"
+msgstr "RMB na seleção"
 
 #: gui.cpp:4511
 msgid "Deselect selected object"
@@ -1435,7 +1435,7 @@ msgstr "Lista do editor"
 
 #: gui.cpp:4512
 msgid "RMB on deleted object"
-msgstr "Botão direito em objeto excluído"
+msgstr "RMB em objeto excluído"
 
 #: gui.cpp:4512
 msgid "Undelete object"
@@ -1503,7 +1503,7 @@ msgstr "Colocar o objeto e continuar no modo de colocação"
 
 #: gui.cpp:4520
 msgid "RMB"
-msgstr "Botão direito"
+msgstr "RMB"
 
 #: gui.cpp:4520
 msgid "Exit place mode"
@@ -1515,7 +1515,7 @@ msgstr "Pincel"
 
 #: gui.cpp:4522
 msgid "LMB"
-msgstr "Botão esquerdo"
+msgstr "LMB"
 
 #: gui.cpp:4522
 msgid "Paint selected object on surface"
@@ -1527,7 +1527,7 @@ msgstr "Modo pincel"
 
 #: gui.cpp:4523
 msgid "LMB drag"
-msgstr "Arrastar com o botão esquerdo"
+msgstr "LMB + arrastar"
 
 #: gui.cpp:4523
 msgid "Paint continuously using spacing/delay settings"
@@ -1543,7 +1543,7 @@ msgstr "Deslocar ou orbitar a câmera enquanto pinta"
 
 #: gui.cpp:4526
 msgid "MMB click"
-msgstr "Clique com o botão do meio"
+msgstr "Clique com MMB"
 
 #: gui.cpp:4526
 msgid "Exit brush mode"
@@ -1623,7 +1623,7 @@ msgstr "Começo um mapa para o meu servidor"
 
 #: gui.cpp:4635
 msgid "File > Workspace: pick your SA-MP or open.mp server folder."
-msgstr "Arquivo > Espaço de trabalho: escolha a pasta do seu servidor SA-MP ou open.mp."
+msgstr "Arquivo > Workspace: escolha a pasta do seu servidor SA-MP ou open.mp."
 
 #: gui.cpp:4636
 msgid "File > New, place things, then %s saves a .pwn you include in a script."
@@ -1687,7 +1687,7 @@ msgstr "Arquivo > Importar > Modelo personalizado: escolha um DFF, um TXD e um I
 
 #: gui.cpp:4658
 msgid "It goes into the workspace's models folder and artconfig.txt."
-msgstr "Ele vai para a pasta models do espaço de trabalho e para o artconfig.txt."
+msgstr "Ele vai para a pasta models do workspace e para o artconfig.txt."
 
 #: gui.cpp:4659
 msgid "Find it in Object Browser > Custom models and place it like any object."
@@ -1823,7 +1823,7 @@ msgstr "Elementos SA-MP"
 
 #: gui.cpp:4794
 msgid "3D text labels, gang zones and tags on pickups, actors,\nplayer classes and map icons."
-msgstr "Rótulos de texto 3D, gang zones e marcas em pickups, atores,\nclasses de jogador e ícones de mapa."
+msgstr "3D text labels, gang zones e marcas em pickups, atores,\nclasses de jogador e map icons."
 
 #: gui.cpp:4795
 msgid "Collisions"
@@ -2463,7 +2463,7 @@ msgstr "Pickup"
 
 #: objectinst.cpp:2972
 msgid "3D text label"
-msgstr "Rótulo de texto 3D"
+msgstr "3D text label"
 
 #: objectinst.cpp:2973
 msgid "Actor"
@@ -2479,7 +2479,7 @@ msgstr "Gang zone"
 
 #: objectinst.cpp:2976
 msgid "Map icon"
-msgstr "Ícone de mapa"
+msgstr "Map icon"
 
 #: objectinst.cpp:2977
 msgid "NPC"
