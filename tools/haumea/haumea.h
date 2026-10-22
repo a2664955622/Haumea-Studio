@@ -1001,6 +1001,8 @@ void ToastFor(ToastCategory cat, float duration, const char *fmt, ...);
 // A small rounded pill for what only some servers have ("open.mp only",
 // "streamer only", "0.3.DL"); the tooltip says why. Same look in every panel.
 void UiBadge(const char *text, const char *tooltip = nil);
+// ImGui::Combo over a table of N_() names, drawn in the user's language.
+bool UiCombo(const char *label, int *current, const char *const *items, int count);
 // Right-click in the 3D view: Map Objects' menu for inst (selecting it first
 // when it isn't selected). False for what Map Objects doesn't list.
 bool OpenViewportObjectMenu(ObjectInst *inst);

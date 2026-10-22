@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "i18n.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -52,12 +53,12 @@ DrawLicensesWindow(bool *open)
 	}
 	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 42.0f, ImGui::GetFontSize() * 30.0f),
 		ImGuiCond_FirstUseEver);
-	if(!ImGui::Begin("Licenses###licenses", open)){
+	if(!ImGui::Begin(_("Licenses###licenses"), open)){
 		ImGui::End();
 		return;
 	}
-	ImGui::TextWrapped("Haumea Studio is free software under the GNU General Public License, version 2 "
-		"or any later version. It includes components under their own licenses.");
+	ImGui::TextWrapped(_("Haumea Studio is free software under the GNU General Public License, version 2 "
+		"or any later version. It includes components under their own licenses."));
 	if(ImGui::BeginTabBar("##license_files")){
 		for(int i = 0; i < NUM_LICENSE_FILES; i++){
 			if(!ImGui::BeginTabItem(licenseFiles[i]))
@@ -66,8 +67,8 @@ DrawLicensesWindow(bool *open)
 			if(found[i])
 				ImGui::TextUnformatted(texts[i].c_str(), texts[i].c_str() + texts[i].size());
 			else
-				ImGui::TextWrapped("%s isn't next to the editor. It ships with every release, and is "
-					"in the source at https://github.com/itsneufox/haumea.", licenseFiles[i]);
+				ImGui::TextWrapped(_("%s isn't next to the editor. It ships with every release, and is "
+					"in the source at https://github.com/itsneufox/haumea."), licenseFiles[i]);
 			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}

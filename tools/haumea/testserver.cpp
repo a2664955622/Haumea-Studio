@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "i18n.h"
 #include "icons.h"
 #include "testserver.h"
 #include "workspace.h"
@@ -298,7 +299,7 @@ struct TsCompileMessage {
 static std::deque<std::string> gTsLog;
 static bool gTsLogScroll;
 static std::vector<TsCompileMessage> gTsCompileMessages;
-static std::string gTsStatus = "Not running";
+static std::string gTsStatus = N_("Not running");
 
 static void
 tsLogLine(const std::string &line)
@@ -434,7 +435,7 @@ tsExtractPackage(const std::string &package, const std::string &dest, std::strin
 #endif
 	tsLogf("Extracting %s", package.c_str());
 	if(system(command.c_str()) != 0){
-		*error = "could not extract " + package + (zip ? " (is unzip installed?)" : "");
+		*error = "could not extract " + package + (zip ? N_(" (is unzip installed?)") : N_(""));
 		return false;
 	}
 	tsWriteText(stampPath, stamp);
@@ -451,7 +452,7 @@ tsFindSource(TsSource *source, std::string *error)
 		if(tsIsFile(package)){
 			if(!tsEndsWith(package, ".zip") && !tsEndsWith(package, ".tar.gz") &&
 			   !tsEndsWith(package, ".tgz")){
-				*error = "the server package must be a folder, .tar.gz or .zip";
+				*error = N_("the server package must be a folder, .tar.gz or .zip");
 				return false;
 			}
 			dir = tsJoin(tsJoin(tsConfigDir(), "testserver"), "package");
@@ -470,7 +471,7 @@ tsFindSource(TsSource *source, std::string *error)
 		source->label = "workspace " + workspace;
 		return true;
 	}
-	*error = "set an open.mp server package (folder, .tar.gz or .zip) in Preferences > Test server";
+	*error = N_("set an open.mp server package (folder, .tar.gz or .zip) in Preferences > Test server");
 	return false;
 }
 
@@ -565,7 +566,7 @@ tsSetup(const TsSource &source, TsNeeds *needs, std::string *error)
 
 	// The compiler and its includes.
 	if(!tsCopyTree(tsJoin(source.dir, "qawno"), tsJoin(server, "qawno"))){
-		*error = "the server package has no qawno folder (pawncc and includes)";
+		*error = N_("the server package has no qawno folder (pawncc and includes)");
 		return false;
 	}
 
@@ -582,7 +583,7 @@ tsSetup(const TsSource &source, TsNeeds *needs, std::string *error)
 		                  workspace.empty() ? "" : tsJoin(tsJoin(workspace, "qawno"), "include"),
 		                  workspace.empty() ? "" : tsJoin(tsJoin(workspace, "pawno"), "include") },
 		                "streamer.inc", include)){
-			*error = "the map uses the streamer, but no streamer.inc was found in the package or workspace";
+			*error = N_("the map uses the streamer, but no streamer.inc was found in the package or workspace");
 			return false;
 		}
 	}
@@ -929,13 +930,13 @@ tsStartServer(void)
 	}
 	std::vector<std::string> argv = tsCommand("omp-server");
 	if(!tsSpawn(&gTsServer, argv, tsServerDir(), tsEnvironment())){
-		gTsStatus = "Could not start omp-server";
+		gTsStatus = N_("Could not start omp-server");
 		tsLogf("Could not start %s in %s", argv[0].c_str(), tsServerDir().c_str());
 		gTsState = TS_IDLE;
 		return;
 	}
 	gTsState = TS_RUNNING;
-	gTsStatus = "Running";
+	gTsStatus = N_("Running");
 	char status[64];
 	snprintf(status, sizeof(status), "Running on 127.0.0.1:%d", gTsSettings.port);
 	gTsStatus = status;
@@ -948,7 +949,7 @@ tsFail(const std::string &message)
 {
 	gTsStatus = "Failed: " + message;
 	tsLogf("%s", message.c_str());
-	ToastFor(TOAST_SAVE, 6.0f, "Test in game: %s", message.c_str());
+	ToastFor(TOAST_SAVE, 6.0f, _("Test in game: %s"), _(message.c_str()));
 }
 
 void
@@ -977,19 +978,19 @@ TestServerRunMap(int pawnFormat)
 	int skipped = 0;
 	if(BuildPawnCode(mapPath.c_str(), (PawnCodeFormat)pawnFormat, false, code, &skipped) < 0 ||
 	   !tsWriteText(mapPath, EncodePawnFileText(code, GetPawnTextEncoding()))){
-		tsFail("could not export the map");
+		tsFail(N_("could not export the map"));
 		return;
 	}
 	TsNeeds needs = tsScanMap(code);
 	if(needs.prefix.empty()){
-		tsFail("the exported map has no _CreateObjects function");
+		tsFail(N_("the exported map has no _CreateObjects function"));
 		return;
 	}
 	// The textdraw file as it is now, beside the map.
 	if(!GetTextDraws().empty()){
 		std::string tdPath = tsJoin(gamemodes, "haumea_textdraws.pwn");
 		if(!tsWriteText(tdPath, EncodePawnFileText(BuildTextDrawFileCode(tdPath.c_str()), GetPawnTextEncoding()))){
-			tsFail("could not export the textdraws");
+			tsFail(N_("could not export the textdraws"));
 			return;
 		}
 		needs.textDrawFile = TextDrawFilePrefix(tdPath.c_str());
@@ -999,7 +1000,7 @@ TestServerRunMap(int pawnFormat)
 		return;
 	}
 	if(!tsWriteText(tsJoin(gamemodes, "haumea_test.pwn"), tsGamemode(needs))){
-		tsFail("could not write the test gamemode");
+		tsFail(N_("could not write the test gamemode"));
 		return;
 	}
 	TestServerUpdate();	// the camera file for /tp
@@ -1026,12 +1027,12 @@ TestServerRunMap(int pawnFormat)
 	argv.push_back("-(+");
 	tsLogf("Compiling %s with %s", tsJoin(gamemodes, "haumea_test.pwn").c_str(), argv[0].c_str());
 	if(!tsSpawn(&gTsCompiler, argv, server, tsEnvironment())){
-		tsFail("could not run pawncc");
+		tsFail(N_("could not run pawncc"));
 		return;
 	}
 	gTsCompiler.keepOutput = true;
 	gTsState = TS_COMPILING;
-	gTsStatus = "Compiling...";
+	gTsStatus = N_("Compiling...");
 }
 
 void
@@ -1043,7 +1044,7 @@ TestServerStop(void)
 	}
 	if(gTsState == TS_RUNNING)
 		gTsState = TS_IDLE;
-	gTsStatus = "Stopped";
+	gTsStatus = N_("Stopped");
 }
 
 void
@@ -1053,7 +1054,7 @@ TestServerRestart(void)
 		return;
 	TestServerStop();
 	if(!tsIsFile(tsJoin(tsJoin(tsServerDir(), "gamemodes"), "haumea_test.amx"))){
-		tsFail("nothing to run yet; use Test in game first");
+		tsFail(N_("nothing to run yet; use Test in game first"));
 		return;
 	}
 	tsStartServer();
@@ -1072,7 +1073,7 @@ TestServerLaunchGame(void)
 	std::string game = tsGameDir();
 	std::string client = tsFindName(game, "samp.exe");
 	if(client.empty()){
-		tsFail("no samp.exe in the game folder");
+		tsFail(N_("no samp.exe in the game folder"));
 		return;
 	}
 	char address[64];
@@ -1093,7 +1094,7 @@ TestServerLaunchGame(void)
 	si.cb = sizeof(si);
 	PROCESS_INFORMATION pi;
 	if(!CreateProcessA(nil, cmd.data(), nil, nil, FALSE, 0, nil, game.c_str(), &si, &pi)){
-		tsFail("could not start samp.exe");
+		tsFail(N_("could not start samp.exe"));
 		return;
 	}
 	CloseHandle(pi.hThread);
@@ -1101,7 +1102,7 @@ TestServerLaunchGame(void)
 #else
 	std::string prefix = tsWinePrefix();
 	if(prefix.empty()){
-		tsFail("the game folder is not in a wine prefix; set one in Preferences > Test server");
+		tsFail(N_("the game folder is not in a wine prefix; set one in Preferences > Test server"));
 		return;
 	}
 	// The nickname goes to wine reg as an argument, never through a shell:
@@ -1131,7 +1132,7 @@ TestServerLaunchGame(void)
 		_exit(127);
 	}
 	if(pid < 0){
-		tsFail("could not start wine");
+		tsFail(N_("could not start wine"));
 		return;
 	}
 #endif
@@ -1154,7 +1155,7 @@ TestServerUpdate(void)
 			gTsState = tsRunning(&gTsServer) ? TS_RUNNING : TS_IDLE;
 			char message[128];
 			if(compilerExit == 127 && errors == 0 && warnings == 0)
-				snprintf(message, sizeof(message), "the compiler could not start (see the log)");
+				snprintf(message, sizeof(message), "%s", N_("the compiler could not start (see the log)"));
 			else
 				snprintf(message, sizeof(message), "the map did not compile (%d error(s), %d warning(s))",
 					errors, warnings);
@@ -1165,10 +1166,10 @@ TestServerUpdate(void)
 				gTsState = TS_RUNNING;
 				tsWriteInput(&gTsServer, "gmx\n");
 				tsLogf("Reloading the gamemode (gmx)");
-				Toast(TOAST_SAVE, "Test server: map reloaded");
+				Toast(TOAST_SAVE, _("Test server: map reloaded"));
 			}else{
 				tsStartServer();
-				Toast(TOAST_SAVE, "Test server started on port %d", gTsSettings.port);
+				Toast(TOAST_SAVE, _("Test server started on port %d"), gTsSettings.port);
 			}
 		}
 	}
@@ -1177,7 +1178,7 @@ TestServerUpdate(void)
 		tsLogf("The server exited (code %d)", gTsServer.exitCode);
 		gTsServer = TsProcess();
 		gTsState = TS_IDLE;
-		gTsStatus = "Exited";
+		gTsStatus = N_("Exited");
 	}
 
 	// The camera for /tp, written when it moves while the server runs.
@@ -1226,38 +1227,47 @@ TestServerShutdown(void)
 void
 TestServerWindow(bool *open, int pawnFormat)
 {
-	if(!ImGui::Begin(ICON_FA_GAMEPAD " Test server", open)){
+	if(!ImGui::Begin(LI(ICON_FA_GAMEPAD, "Test server"), open)){
 		ImGui::End();
 		return;
 	}
 	tsLoadSettings();
-	ImGui::TextUnformatted(gTsStatus.c_str());
+	// The status stays English for the agent; it is translated here.
+	char status[256];
+	int port;
+	if(gTsStatus.compare(0, 8, "Failed: ") == 0)
+		snprintf(status, sizeof(status), _("Failed: %s"), _(gTsStatus.c_str() + 8));
+	else if(sscanf(gTsStatus.c_str(), "Running on 127.0.0.1:%d", &port) == 1)
+		snprintf(status, sizeof(status), _("Running on 127.0.0.1:%d"), port);
+	else
+		snprintf(status, sizeof(status), "%s", _(gTsStatus.c_str()));
+	ImGui::TextUnformatted(status);
 	if(!gTsSource.label.empty()){
 		ImGui::SameLine();
 		ImGui::TextDisabled("(%s)", gTsSource.label.c_str());
 	}
 	bool running = tsRunning(&gTsServer);
-	if(ImGui::Button(running ? ICON_FA_ROTATE " Reload map" : ICON_FA_PLAY " Test in game"))
+	if(ImGui::Button(running ? TI(ICON_FA_ROTATE, "Reload map") : TI(ICON_FA_PLAY, "Test in game")))
 		TestServerRunMap(pawnFormat);
 	ImGui::SameLine();
 	ImGui::BeginDisabled(!running);
-	if(ImGui::Button(ICON_FA_STOP " Stop"))
+	if(ImGui::Button(TI(ICON_FA_STOP, "Stop")))
 		TestServerStop();
 	ImGui::EndDisabled();
 	ImGui::SameLine();
 	ImGui::BeginDisabled(gTsState == TS_COMPILING);
-	if(ImGui::Button(ICON_FA_ROTATE " Restart"))
+	if(ImGui::Button(TI(ICON_FA_ROTATE, "Restart")))
 		TestServerRestart();
 	ImGui::EndDisabled();
 	ImGui::SameLine();
-	if(ImGui::Button(ICON_FA_GAMEPAD " Launch game"))
+	if(ImGui::Button(TI(ICON_FA_GAMEPAD, "Launch game")))
 		TestServerLaunchGame();
 	ImGui::SameLine();
-	if(ImGui::Button("Clear log"))
+	if(ImGui::Button(_("Clear log")))
 		gTsLog.clear();
 
 	if(!gTsCompileMessages.empty()){
-		ImGui::SeparatorText("Compiler");
+		ImGui::SeparatorText(_("Compiler"));
 		for(size_t i = 0; i < gTsCompileMessages.size(); i++){
 			const TsCompileMessage &m = gTsCompileMessages[i];
 			ImGui::TextColored(m.error ? ImVec4(1.0f, 0.45f, 0.4f, 1.0f) : ImVec4(1.0f, 0.8f, 0.35f, 1.0f),
@@ -1266,7 +1276,7 @@ TestServerWindow(bool *open, int pawnFormat)
 			ImGui::TextWrapped("%s", m.text.c_str());
 		}
 	}
-	ImGui::SeparatorText("Server log");
+	ImGui::SeparatorText(_("Server log"));
 	ImGui::BeginChild("##testserverlog", ImVec2(0, 0), ImGuiChildFlags_Borders,
 		ImGuiWindowFlags_HorizontalScrollbar);
 	ImGuiListClipper clipper;
@@ -1293,16 +1303,16 @@ TestServerPreferences(void)
 {
 	tsLoadSettings();
 	bool changed = false;
-	changed |= ImGui::InputTextWithHint("Server package", "folder, open.mp .tar.gz or .zip",
+	changed |= ImGui::InputTextWithHint(_("Server package"), _("folder, open.mp .tar.gz or .zip"),
 		gTsSettings.package, sizeof(gTsSettings.package));
-	ImGui::SetItemTooltip("Test in game runs the map on a private open.mp server in Haumea's config\n"
-		"folder. Its files come from this package, or from the workspace server when empty.");
-	changed |= ImGui::InputInt("Port", &gTsSettings.port);
+	ImGui::SetItemTooltip(_("Test in game runs the map on a private open.mp server in Haumea's config\n"
+		"folder. Its files come from this package, or from the workspace server when empty."));
+	changed |= ImGui::InputInt(_("Port"), &gTsSettings.port);
 	gTsSettings.port = clamp(gTsSettings.port, 1024, 65535);
-	changed |= ImGui::InputText("Nickname", gTsSettings.nickname, sizeof(gTsSettings.nickname));
+	changed |= ImGui::InputText(_("Nickname"), gTsSettings.nickname, sizeof(gTsSettings.nickname));
 #ifndef _WIN32
 	std::string prefix = tsWinePrefix();
-	changed |= ImGui::InputTextWithHint("Wine prefix", prefix.empty() ? "for samp.exe" : prefix.c_str(),
+	changed |= ImGui::InputTextWithHint(_("Wine prefix"), prefix.empty() ? _("for samp.exe") : prefix.c_str(),
 		gTsSettings.winePrefix, sizeof(gTsSettings.winePrefix));
 #endif
 	if(changed)

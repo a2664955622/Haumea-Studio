@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "i18n.h"
 #include "radarart.h"
 #include "icons.h"
 
@@ -415,14 +416,14 @@ RadarArtBuild(const RadarArtParams &params, RadarArtResult *result, std::string 
 	*result = RadarArtResult();
 	result->cellSize = params.cellSize;
 	if(!(params.cellSize >= 0.5f && params.cellSize <= 1000.0f)){
-		if(error) *error = "the cell size must be 0.5 to 1000 m";
+		if(error) *error = N_("the cell size must be 0.5 to 1000 m");
 		return false;
 	}
 	std::vector<ObjectInst*> sources;
 	collectSources(params, sources);
 	if(sources.empty()){
-		if(error) *error = params.source == RADAR_SOURCE_SELECTION ? "select some objects first" :
-			params.source == RADAR_SOURCE_GROUP ? "that group has no objects" : "the map has no objects";
+		if(error) *error = params.source == RADAR_SOURCE_SELECTION ? N_("select some objects first") :
+			params.source == RADAR_SOURCE_GROUP ? N_("that group has no objects") : N_("the map has no objects");
 		return false;
 	}
 
@@ -446,7 +447,7 @@ RadarArtBuild(const RadarArtParams &params, RadarArtResult *result, std::string 
 			}
 	}
 	if(mn.x > mx.x){
-		if(error) *error = "none of the objects has a footprint";
+		if(error) *error = N_("none of the objects has a footprint");
 		return false;
 	}
 	float cs = params.cellSize;
@@ -521,7 +522,7 @@ RadarArtBuild(const RadarArtParams &params, RadarArtResult *result, std::string 
 		zmax = std::max(zmax, top[i]);
 	}
 	if(result->cells == 0){
-		if(error) *error = "the footprints are smaller than one cell; use smaller cells";
+		if(error) *error = N_("the footprints are smaller than one cell; use smaller cells");
 		return false;
 	}
 	if(params.colourMode == RADAR_COLOUR_TEXTURE)
@@ -591,7 +592,7 @@ bool
 RadarArtFitCellSize(const RadarArtParams &params, int maxZones, float *cellSize, std::string *error)
 {
 	if(maxZones < 1){
-		if(error) *error = "fit to at least one zone";
+		if(error) *error = N_("fit to at least one zone");
 		return false;
 	}
 	// Fewer, bigger cells make fewer zones (nearly always), so search the
@@ -616,7 +617,7 @@ RadarArtFitCellSize(const RadarArtParams &params, int maxZones, float *cellSize,
 			lo = mid;
 	}
 	if(best < 0.0f){
-		if(error) *error = "no cell size gets it down to that many zones";
+		if(error) *error = N_("no cell size gets it down to that many zones");
 		return false;
 	}
 	// Rounded up to 0.1 m; the grid then lines up differently, so check it
@@ -639,7 +640,7 @@ int
 RadarArtApply(const RadarArtParams &params, std::string *error)
 {
 	if(params.outGroup[0] == '\0'){
-		if(error) *error = "name the group the zones go in";
+		if(error) *error = N_("name the group the zones go in");
 		return -1;
 	}
 	RadarArtResult result;
@@ -652,7 +653,7 @@ RadarArtApply(const RadarArtParams &params, std::string *error)
 	}
 	int proxy = GetSampElementProxyModel(SAMP_ELEMENT_GANGZONE);
 	if(GetObjectDef(proxy) == nil){
-		if(error) *error = "Haumea has no model to draw gang zones with";
+		if(error) *error = N_("Haumea has no model to draw gang zones with");
 		return -1;
 	}
 	ClearSelection();
@@ -699,7 +700,7 @@ RadarArtApply(const RadarArtParams &params, std::string *error)
 	UndoEndGroup();
 	ClearSelection();
 	if(made.empty()){
-		if(error) *error = "could not make the zones";
+		if(error) *error = N_("could not make the zones");
 		return -1;
 	}
 	return (int)made.size();
@@ -829,17 +830,17 @@ RadarArtPanel(void)
 		RadarArtDefaults(&gParams);
 		gParamsReady = true;
 	}
-	if(!ImGui::CollapsingHeader(ICON_FA_SQUARE " Radar art from objects")){
+	if(!ImGui::CollapsingHeader(LI(ICON_FA_SQUARE, "Radar art from objects"))){
 		gHaveResult = false;	// built again when opened
 		return;
 	}
 	ImGui::PushID("radar_art");
 	RadarArtParams &p = gParams;
 
-	static const char *sources[] = { "All objects", "Selection", "A group" };
-	ImGui::Combo("Objects", &p.source, sources, IM_ARRAYSIZE(sources));
-	ImGui::SetItemTooltip("The objects drawn: every scripted object, the selection, or one group.\n"
-		"Vehicles, SA-MP elements and unchanged world objects are left out.");
+	static const char *sources[] = { N_("All objects"), N_("Selection"), N_("A group") };
+	UiCombo(_("Objects"), &p.source, sources, IM_ARRAYSIZE(sources));
+	ImGui::SetItemTooltip(_("The objects drawn: every scripted object, the selection, or one group.\n"
+		"Vehicles, SA-MP elements and unchanged world objects are left out."));
 	if(p.source == RADAR_SOURCE_GROUP){
 		std::vector<std::string> groups;
 		for(CPtrNode *n = instances.first; n; n = n->next){
@@ -851,76 +852,76 @@ RadarArtPanel(void)
 				groups.push_back(g);
 		}
 		std::sort(groups.begin(), groups.end());
-		if(ImGui::BeginCombo("Group", p.group[0] ? p.group : "(pick one)")){
+		if(ImGui::BeginCombo(_("Group"), p.group[0] ? p.group : _("(pick one)"))){
 			for(size_t i = 0; i < groups.size(); i++)
 				if(ImGui::Selectable(groups[i].c_str(), groups[i] == p.group))
 					snprintf(p.group, sizeof(p.group), "%s", groups[i].c_str());
 			if(groups.empty())
-				ImGui::TextDisabled("No object is in a group.");
+				ImGui::TextDisabled(_("No object is in a group."));
 			ImGui::EndCombo();
 		}
 	}
 
-	ImGui::DragFloat("Cell size", &p.cellSize, 0.1f, 0.5f, 1000.0f, "%.1f m");
-	ImGui::SetItemTooltip("The art's pixel size. Smaller cells follow the shapes more\n"
-		"closely and take more gang zones.");
+	ImGui::DragFloat(_("Cell size"), &p.cellSize, 0.1f, 0.5f, 1000.0f, "%.1f m");
+	ImGui::SetItemTooltip(_("The art's pixel size. Smaller cells follow the shapes more\n"
+		"closely and take more gang zones."));
 	p.cellSize = clamp(p.cellSize, 0.5f, 1000.0f);
 	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.0f);
 	ImGui::InputInt("##fit_to", &gFitTo, 0);
 	gFitTo = clamp(gFitTo, 1, (int)MAX_RADAR_ZONES);
 	ImGui::SameLine();
-	if(ImGui::Button("Fit to this many zones")){
+	if(ImGui::Button(_("Fit to this many zones"))){
 		float cs;
 		std::string why;
 		if(RadarArtFitCellSize(p, gFitTo, &cs, &why))
 			p.cellSize = cs;
 		else
-			ToastFor(TOAST_SELECTION, 4.0f, "Radar art: %s", why.c_str());
+			ToastFor(TOAST_SELECTION, 4.0f, _("Radar art: %s"), _(why.c_str()));
 	}
-	ImGui::SetItemTooltip("Picks the smallest cell size whose art needs at most this many zones.");
+	ImGui::SetItemTooltip(_("Picks the smallest cell size whose art needs at most this many zones."));
 
-	ImGui::SeparatorText("Colours");
-	static const char *colourModes[] = { "One colour", "By group", "From textures" };
-	ImGui::Combo("Colour", &p.colourMode, colourModes, IM_ARRAYSIZE(colourModes));
-	ImGui::SetItemTooltip("From textures: each model's colour seen from above, from its\n"
-		"textures, reduced to a few colours so neighbouring cells merge.");
+	ImGui::SeparatorText(_("Colours"));
+	static const char *colourModes[] = { N_("One colour"), N_("By group"), N_("From textures") };
+	UiCombo(_("Colour"), &p.colourMode, colourModes, IM_ARRAYSIZE(colourModes));
+	ImGui::SetItemTooltip(_("From textures: each model's colour seen from above, from its\n"
+		"textures, reduced to a few colours so neighbouring cells merge."));
 	if(p.colourMode == RADAR_COLOUR_TEXTURE){
-		ImGui::SliderInt("Colours", &p.numColours, 1, 16);
-		ImGui::SetItemTooltip("Fewer colours make fewer zones.");
+		ImGui::SliderInt(_("Colours"), &p.numColours, 1, 16);
+		ImGui::SetItemTooltip(_("Fewer colours make fewer zones."));
 	}
-	colourEdit(p.colourMode == RADAR_COLOUR_ONE ? "Zone colour" : "Fallback colour", &p.colour);
+	colourEdit(p.colourMode == RADAR_COLOUR_ONE ? _("Zone colour") : _("Fallback colour"), &p.colour);
 	if(p.colourMode != RADAR_COLOUR_ONE)
-		ImGui::SetItemTooltip(p.colourMode == RADAR_COLOUR_GROUP ? "For objects without a group." :
-			"For models whose textures can't be read.");
-	ImGui::SliderInt("Opacity", &p.alpha, 0, 255);
-	ImGui::Checkbox("Outline", &p.outline);
-	ImGui::SetItemTooltip("Draws the footprints' edge cells in their own colour.");
+		ImGui::SetItemTooltip("%s", p.colourMode == RADAR_COLOUR_GROUP ? _("For objects without a group.") :
+			_("For models whose textures can't be read."));
+	ImGui::SliderInt(_("Opacity"), &p.alpha, 0, 255);
+	ImGui::Checkbox(_("Outline"), &p.outline);
+	ImGui::SetItemTooltip(_("Draws the footprints' edge cells in their own colour."));
 	if(p.outline){
 		ImGui::SameLine();
 		colourEdit("##outline_colour", &p.outlineColour);
 	}
-	ImGui::Checkbox("Height shading", &p.heightShading);
-	ImGui::SetItemTooltip("Higher surfaces are lighter, in a few steps.");
+	ImGui::Checkbox(_("Height shading"), &p.heightShading);
+	ImGui::SetItemTooltip(_("Higher surfaces are lighter, in a few steps."));
 	if(p.heightShading)
-		ImGui::SliderInt("Steps", &p.heightLevels, 2, 8);
+		ImGui::SliderInt(_("Steps"), &p.heightLevels, 2, 8);
 
-	ImGui::SeparatorText("Zones");
-	static const char *modes[] = { "Global zones", "Per-player zones", "Streamed per-player zones" };
-	ImGui::Combo("Shown as", &p.zoneMode, modes, IM_ARRAYSIZE(modes));
-	ImGui::SetItemTooltip("Global: GangZoneCreate, 1024 on the whole server.\n"
+	ImGui::SeparatorText(_("Zones"));
+	static const char *modes[] = { N_("Global zones"), N_("Per-player zones"), N_("Streamed per-player zones") };
+	UiCombo(_("Shown as"), &p.zoneMode, modes, IM_ARRAYSIZE(modes));
+	ImGui::SetItemTooltip(_("Global: GangZoneCreate, 1024 on the whole server.\n"
 		"Per-player: CreatePlayerGangZone for every player, 1024 each.\n"
 		"Streamed: per-player zones made around each player as they move,\n"
-		"in %.0f m cells (streamer areas), so a map can have many more.", STREAMED_ZONE_CELL);
+		"in %.0f m cells (streamer areas), so a map can have many more."), STREAMED_ZONE_CELL);
 	if(p.zoneMode != SAMP_ZONE_GLOBAL){
-		UiBadge("open.mp only", "CreatePlayerGangZone is an open.mp native; SA-MP 0.3.7 has no per-player zones.");
+		UiBadge(_("open.mp only"), _("CreatePlayerGangZone is an open.mp native; SA-MP 0.3.7 has no per-player zones."));
 		if(p.zoneMode == SAMP_ZONE_STREAMED){
 			ImGui::SameLine();
-			UiBadge("streamer", "The map includes the streamer for its areas.");
+			UiBadge(_("streamer"), _("The map includes the streamer for its areas."));
 		}
 	}
-	ImGui::InputText("Group##out_group", p.outGroup, sizeof(p.outGroup));
-	ImGui::SetItemTooltip("The group the zones go in.");
-	ImGui::Checkbox("Replace this group's zones", &p.replace);
+	ImGui::InputText(_("Group##out_group"), p.outGroup, sizeof(p.outGroup));
+	ImGui::SetItemTooltip(_("The group the zones go in."));
+	ImGui::Checkbox(_("Replace this group's zones"), &p.replace);
 
 	rebuildIfNeeded();
 	ImGui::Separator();
@@ -938,35 +939,35 @@ RadarArtPanel(void)
 			StreamedZoneGrid grid;
 			GetStreamedZoneGrid(bounds, &grid);
 			over = grid.capacity > 1024;
-			ImGui::Text("%d zones, at most %d around a player", n, grid.capacity);
+			ImGui::Text(_("%d zones, at most %d around a player"), n, grid.capacity);
 		}else{
 			over = n > 1024;
-			ImGui::Text("%d zones", n);
+			ImGui::Text(_("%d zones"), n);
 		}
 		if(over){
 			ImGui::SameLine();
-			ImGui::TextColored(ImVec4(0.95f, 0.45f, 0.35f, 1.0f), "(over 1024)");
-			ImGui::SetItemTooltip(p.zoneMode == SAMP_ZONE_GLOBAL ?
-				"The server makes at most 1024 gang zones. Use bigger cells, fewer colours,\n"
-				"or streamed zones." : "A player sees at most 1024 gang zones. Use bigger cells or fewer colours.");
+			ImGui::TextColored(ImVec4(0.95f, 0.45f, 0.35f, 1.0f), _("(over 1024)"));
+			ImGui::SetItemTooltip("%s", p.zoneMode == SAMP_ZONE_GLOBAL ?
+				_("The server makes at most 1024 gang zones. Use bigger cells, fewer colours,\n"
+				"or streamed zones.") : _("A player sees at most 1024 gang zones. Use bigger cells or fewer colours."));
 		}
-		ImGui::TextDisabled("%d objects, %d x %d cells%s", gResult.objects, gResult.cols, gResult.rows,
-			gResult.skipped ? " (some without a footprint)" : "");
+		ImGui::TextDisabled(gResult.skipped ? _("%d objects, %d x %d cells (some without a footprint)") :
+			_("%d objects, %d x %d cells"), gResult.objects, gResult.cols, gResult.rows);
 	}else
-		ImGui::TextDisabled("Working...");
-	ImGui::Checkbox("Preview##radar_preview", &gPreview);
+		ImGui::TextDisabled(_("Working..."));
+	ImGui::Checkbox(_("Preview##radar_preview"), &gPreview);
 	ImGui::SameLine();
 	ImGui::BeginDisabled(!gError.empty() || !gHaveResult || gResult.zones.empty());
-	if(ImGui::Button("Apply##radar_apply")){
+	if(ImGui::Button(_("Apply##radar_apply"))){
 		std::string why;
 		int made = RadarArtApply(p, &why);
 		if(made < 0)
-			ToastFor(TOAST_SELECTION, 4.0f, "Radar art: %s", why.c_str());
+			ToastFor(TOAST_SELECTION, 4.0f, _("Radar art: %s"), _(why.c_str()));
 		else
-			Toast(TOAST_SELECTION, "Radar art: %d gang zone(s) in \"%s\"", made, p.outGroup);
+			Toast(TOAST_SELECTION, _("Radar art: %d gang zone(s) in \"%s\""), made, p.outGroup);
 	}
 	ImGui::EndDisabled();
-	ImGui::SetItemTooltip("Makes the zones, as one undo step.");
+	ImGui::SetItemTooltip(_("Makes the zones, as one undo step."));
 	if(gPreview && gHaveResult && gError.empty())
 		drawPreview();
 	ImGui::PopID();

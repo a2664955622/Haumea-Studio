@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "i18n.h"
 #include "icons.h"
 #include "interiors.h"
 #include "workspace.h"
@@ -259,7 +260,7 @@ void
 InteriorsWindow(bool *open)
 {
 	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 26.0f, ImGui::GetFontSize() * 30.0f), ImGuiCond_FirstUseEver);
-	if(!ImGui::Begin(ICON_FA_MAP_PIN " Interiors", open)){
+	if(!ImGui::Begin(LI(ICON_FA_MAP_PIN, "Interiors"), open)){
 		ImGui::End();
 		return;
 	}
@@ -267,21 +268,21 @@ InteriorsWindow(bool *open)
 		loadInteriors();
 	static char filter[64];
 	ImGui::SetNextItemWidth(-ImGui::GetFontSize() * 4.0f);
-	ImGui::InputTextWithHint("##interiorsearch", ICON_FA_MAGNIFYING_GLASS " Name, key or ID", filter, sizeof(filter));
-	ImGui::SetItemTooltip("Click an interior to go there and show it. Right-click to copy it as Pawn.");
+	ImGui::InputTextWithHint("##interiorsearch", TI(ICON_FA_MAGNIFYING_GLASS, "Name, key or ID"), filter, sizeof(filter));
+	ImGui::SetItemTooltip(_("Click an interior to go there and show it. Right-click to copy it as Pawn."));
 	ImGui::SameLine();
 	if(ImGui::Button(ICON_FA_ROTATE "##reloadinteriors"))
 		loadInteriors();
-	ImGui::SetItemTooltip("Read the interiors from the game files again.");
+	ImGui::SetItemTooltip(_("Read the interiors from the game files again."));
 	if(gInteriors.empty())
-		ImGui::TextDisabled("No interiors found in the game's data/maps IPL files.");
+		ImGui::TextDisabled(_("No interiors found in the game's data/maps IPL files."));
 
 	if(ImGui::BeginTable("##interiors", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY |
 	                     ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp)){
 		ImGui::TableSetupScrollFreeze(0, 1);
-		ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed, ImGui::GetFontSize() * 2.0f);
-		ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch, 2.0f);
-		ImGui::TableSetupColumn("Position", ImGuiTableColumnFlags_WidthStretch, 2.0f);
+		ImGui::TableSetupColumn(_("ID"), ImGuiTableColumnFlags_WidthFixed, ImGui::GetFontSize() * 2.0f);
+		ImGui::TableSetupColumn(_("Name"), ImGuiTableColumnFlags_WidthStretch, 2.0f);
+		ImGui::TableSetupColumn(_("Position"), ImGuiTableColumnFlags_WidthStretch, 2.0f);
 		ImGui::TableHeadersRow();
 		for(size_t i = 0; i < gInteriors.size(); i++){
 			const GameInterior &in = gInteriors[i];
@@ -297,9 +298,9 @@ InteriorsWindow(bool *open)
 			if(ImGui::Selectable(id, here, ImGuiSelectableFlags_SpanAllColumns))
 				goToInterior(in);
 			if(ImGui::BeginPopupContextItem()){
-				if(ImGui::MenuItem(ICON_FA_COPY " Copy as Pawn"))
+				if(ImGui::MenuItem(TI(ICON_FA_COPY, "Copy as Pawn")))
 					ImGui::SetClipboardText(interiorPawn(in).c_str());
-				if(ImGui::MenuItem(ICON_FA_LOCATION_DOT " Go there"))
+				if(ImGui::MenuItem(TI(ICON_FA_LOCATION_DOT, "Go there")))
 					goToInterior(in);
 				ImGui::EndPopup();
 			}
