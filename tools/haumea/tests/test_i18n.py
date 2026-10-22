@@ -1,0 +1,197 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+"""Translation: the extractor, the pt-BR catalog, and the editor loading a
+catalog (a language is a lang/<code>.po file), keeping the saved layout of
+windows whose labels became "translated###English" IDs.
+
+The editor parts need the editor binary and Xvfb, and skip without them.
+"""
+from pathlib import Path
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import unittest
+import zlib
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[2]
+sys.path.insert(0, str(ROOT / 'tools' / 'i18n'))
+sys.path.insert(0, str(HERE))
+import extract  # noqa: E402
+import merge  # noqa: E402
+
+
+class ExtractTests(unittest.TestCase):
+    def test_conversions(self):
+        self.assertEqual(extract.conversions('%d of %s (%.1f%%)'), ['d', 's', 'f'])
+        self.assertEqual(extract.conversions('%lld bytes %5.2f'), ['d', 'f'])
+        self.assertEqual(extract.conversions('100%% sure'), [])
+
+    def test_marks(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp, 'a.cpp')
+            src.write_text(
+                'x = _("Size##id"); y = L("Object Info"); z = LI(ICON_FA_GEAR, "Tools");\n'
+                't = TI(ICON_FA_COPY, "Copy" " as Pawn"); static const char *n = N_("Sky\\n");\n'
+                'foo_("not a mark"); // _("in a comment still counts")\n')
+            found = {}
+            extract.scan(str(src), found)
+        self.assertEqual(sorted(found), ['Copy as Pawn', 'Object Info', 'Size', 'Sky\n', 'Tools',
+                                         'in a comment still counts'])
+
+    def test_c_escapes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp, 'a.cpp')
+            src.write_text(r'a = _("\xC2\xB1 5 mm"); b = _("tab\there \"q\" \303\251"); c = _("100%%");')
+            found = {}
+            extract.scan(str(src), found)
+        self.assertEqual(sorted(found), ['100%%', 'tab\there "q" \u00e9', '\u00b1 5 mm'])
+
+    def test_po_round_trip(self):
+        text = 'a\nb "quoted"\t%d'
+        entries = extract.parse_po('msgid ""\nmsgstr ""\n\nmsgid ' + extract.po_quote(text) +
+                                   '\nmsgstr ' + extract.po_quote('x\n' + text) + '\n')
+        self.assertEqual(entries[1][:2], [text, 'x\n' + text])
+
+
+class CatalogTests(unittest.TestCase):
+    def test_placeholders(self):
+        self.assertEqual(extract.check_catalogs(), 0)
+
+    def test_no_conflicts_between_staging_files(self):
+        self.assertEqual(merge.build()[1], [])
+
+    def test_pt_br_is_complete(self):
+        """Every marked string has a pt-BR translation (lang/pt-BR.po or a staging file)."""
+        done = extract.translated(extract.pt_br_paths())
+        found = extract.collect()
+        missing = sorted(t for t in found if t not in done)
+        by_file = {}
+        for t in missing:
+            by_file.setdefault(found[t][0].rsplit(':', 1)[0], []).append(t)
+        report = '\n'.join('%s: %d, e.g. %r' % (f, len(v), v[0]) for f, v in sorted(by_file.items()))
+        self.assertEqual(missing, [], 'untranslated into pt-BR:\n' + report)
+
+
+# ---- the editor ----
+
+try:
+    from test_ui_scripts import BINARY, XVFB, shared, start_xvfb
+    from haumea_test_env import editor_env, run_editor
+except ImportError:
+    BINARY = XVFB = None
+
+ICONS = (ROOT / 'tools' / 'haumea' / 'icons.h').read_text()
+WRENCH = re.search(r'ICON_FA_WRENCH\s+"((?:\\x[0-9a-f]{2})+)"', ICONS).group(1)
+WRENCH = bytes(int(x, 16) for x in re.findall(r'\\x([0-9a-f]{2})', WRENCH)).decode('utf-8')
+
+XX_PO = '''msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Language-Name: Xx Test\\n"
+
+msgid "Language"
+msgstr "Idioma"
+
+msgid "Auto"
+msgstr "Automatico"
+
+msgid "Auto follows the system language when Haumea has it, else English.\\nA language is a lang/<code>.po file beside the editor."
+msgstr "Auto %d"
+'''
+
+
+def run_editor_script(work, env, script_text, seconds_of_frames=600):
+    """Play a UI script in a private Xvfb; the editor's output."""
+    script = Path(work, 'script.uis')
+    script.write_text(script_text)
+    tmp, game = shared()
+    xvfb, env['DISPLAY'] = start_xvfb()
+    env.pop('XAUTHORITY', None)
+    try:
+        return run_editor([BINARY, '--ui-script', str(script), '--game', game, '--workspace', str(work)],
+                          cwd=work, env=env, timeout=300)
+    finally:
+        xvfb.terminate()
+        xvfb.wait(10)
+
+
+def ini_sections(text):
+    out = {}
+    for m in re.finditer(r'^\[Window\]\[(.*)\]\n((?:[^\[\n].*\n)*)', text, re.M):
+        out[m.group(1)] = dict(line.split('=', 1) for line in m.group(2).splitlines() if '=' in line)
+    return out
+
+
+@unittest.skipUnless(BINARY and XVFB, 'needs the editor and Xvfb')
+class EditorTests(unittest.TestCase):
+    def editor(self, script, ini=None, savesettings=None, lang=None):
+        tmp, game = shared()
+        work = tempfile.mkdtemp(dir=tmp)
+        env = editor_env(work, virtual_display=True)
+        config = Path(env['XDG_CONFIG_HOME'], 'haumea')
+        config.mkdir(parents=True, exist_ok=True)
+        if ini is not None:
+            (config / 'imgui.ini').write_text(ini, encoding='utf-8')
+        if savesettings is not None:
+            (config / 'savesettings.txt').write_text(savesettings)
+        if lang is not None:
+            Path(work, 'lang').mkdir()
+            Path(work, 'lang', 'xx.po').write_text(lang, encoding='utf-8')
+            env['HAUMEA_LANG_DIR'] = str(Path(work, 'lang'))
+        result = run_editor_script(work, env, script)
+        log = '\n'.join(l for l in result.stdout.splitlines() if l.startswith('[ui-script]'))
+        if os.environ.get('I18N_DEBUG'):
+            print(log)
+        self.assertEqual(result.returncode, 0, log or result.stdout[-3000:])
+        ini_out = config / 'imgui.ini'
+        return (ini_out.read_text(encoding='utf-8') if ini_out.exists() else ''), \
+               ((config / 'savesettings.txt').read_text() if (config / 'savesettings.txt').exists() else ''), \
+               result.stdout + result.stderr
+
+    def test_old_layout_survives(self):
+        """An imgui.ini saved before a window's label became ###English keeps its place and dock."""
+        ini_a, _, _ = self.editor('wait 600\nexit\n')
+        windows = ini_sections(ini_a)
+        marked = [n for n in windows if n.startswith('###')]
+        if not marked:
+            self.skipTest('no window uses L()/LI() yet')
+        # Write it as the old editor did: each window under its old title.
+        icon_of = {'###Tools': WRENCH + ' Tools'}
+        old = ini_a
+        for name in marked:
+            title = icon_of.get(name, name[3:])
+            old = old.replace('[Window][%s]' % name, '[Window][%s]' % title)
+            old = re.sub(r'Selected=0x%08X' % zlib.crc32(name.encode()),
+                         'Selected=0x%08X' % zlib.crc32(title.encode()), old)
+        self.assertNotEqual(old, ini_a)
+        ini_b, _, _ = self.editor('wait 600\nexit\n', ini=old)
+        after = ini_sections(ini_b)
+        for name in marked:
+            self.assertIn(name, after, name + ' lost its saved settings')
+            self.assertEqual(after[name].get('DockId'), windows[name].get('DockId'), name + ' undocked')
+        self.assertEqual(re.findall(r'Selected=0x\w+', ini_b), re.findall(r'Selected=0x\w+', ini_a))
+
+    def test_catalog_and_picker(self):
+        """A catalog in HAUMEA_LANG_DIR is a language: the setting loads it, a
+        translation with other printf conversions is ignored, and the picker saves its choice."""
+        script = '''shortcut window_preferences
+wait 5
+assert window "Preferences"
+click_item 'Preferences' '##language'
+wait 3
+assert item '*' 'Automatico'
+assert item '*' 'English'
+assert item '*' 'Xx Test'
+click_item '*' 'English'
+wait 5
+exit
+'''
+        _, saved, output = self.editor(script, savesettings='language xx\n', lang=XX_PO)
+        self.assertIn('language en', saved.splitlines())
+        self.assertIn('Language xx: 1 translations ignored', output)
+
+
+if __name__ == '__main__':
+    unittest.main()

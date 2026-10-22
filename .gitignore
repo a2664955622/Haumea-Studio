@@ -14,3 +14,4 @@ build/windows-mingw/
 tools/haumea/haumea_buildinfo.h
 build/.rc-asan.make
 rc_check_logs/
+tools/haumea/lang/haumea.pot

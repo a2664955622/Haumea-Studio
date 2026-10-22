@@ -1,0 +1,6 @@
+# Haumea Studio, Portuguese (Brazil). Made by tools/i18n/merge.py from
+# tools/i18n/pt-BR/*.po; see docs/i18n/GLOSSARY.pt-BR.md.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language-Name: Português (Brasil)\n"

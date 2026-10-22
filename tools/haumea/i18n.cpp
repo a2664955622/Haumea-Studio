@@ -19,12 +19,16 @@
 #endif
 
 static std::unordered_map<std::string, std::string> catalog;
-// By the literal's address: _() runs for every label every frame.
-static std::unordered_map<const char *, const char *> literalCache;
-static std::unordered_map<const char *, std::string> labelCache;
+// By the literal's address, which _() runs for every label every frame; the
+// text is kept with it, so _(buffer) with a changing buffer is not stale.
+struct Cached {
+	std::string english;
+	std::string label;	// Label/LabelIcon/TextIcon results
+	const char *result = nil;	// Translate
+};
+static std::unordered_map<const char *, Cached> literalCache, labelCache;
 typedef std::pair<const char *, const char *> LiteralPair;
-static std::map<LiteralPair, std::string> labelIconCache, textIconCache;
-static std::unordered_map<const char *, std::string> idCache;	// Text##id results
+static std::map<LiteralPair, Cached> labelIconCache, textIconCache;
 static std::vector<I18nLanguage> languages;
 static bool languagesScanned;
 static std::string preference = "auto";
@@ -222,7 +226,6 @@ clearCaches(void)
 	literalCache.clear();
 	labelCache.clear();
 	labelIconCache.clear();
-	idCache.clear();
 	textIconCache.clear();
 }
 
@@ -382,7 +385,11 @@ I18nGetLanguage(void)
 void
 I18nSetLanguage(const char *p)
 {
-	std::string next = p && p[0] ? p : "auto";
+	std::string next = p ? p : "";
+	while(!next.empty() && isspace((unsigned char)next.back()))	// a settings line keeps its newline
+		next.pop_back();
+	if(next.empty())
+		next = "auto";
 	if(next != preference){
 		preference = next;
 		dirty = true;
@@ -414,27 +421,28 @@ I18nNewFrame(void)
 const char *
 Translate(const char *text)
 {
+	if(dirty)
+		apply();
 	if(catalog.empty())
 		return text;
-	auto hit = literalCache.find(text);
-	if(hit != literalCache.end())
-		return hit->second;
-	const char *result = text;
+	Cached &c = literalCache[text];
+	if(c.result && c.english == text)
+		return c.result;
+	c.english = text;
+	c.result = text;
 	const char *id = strstr(text, "##");
 	if(id && id[2] != '#'){
 		auto it = catalog.find(std::string(text, id - text));
 		if(it != catalog.end()){
-			std::string &s = idCache[text];
-			s = it->second + id;
-			result = s.c_str();
+			c.label = it->second + id;
+			c.result = c.label.c_str();
 		}
 	}else if(!id){
 		auto it = catalog.find(text);
 		if(it != catalog.end())
-			result = it->second.c_str();
+			c.result = it->second.c_str();
 	}
-	literalCache[text] = result;
-	return result;
+	return c.result;
 }
 
 // A window saved under its old title (the English text, with the icon
@@ -461,6 +469,20 @@ migrateWindowSettings(const char *oldTitle, const char *english)
 	*moved = copy;
 	moved->ID = keepId;
 	moved->WantDelete = false;
+
+	// The dock node that shows it as the selected tab remembers the old ID.
+	ImGuiContext &g = *ImGui::GetCurrentContext();
+	for(int n = 0; n < g.DockContext.Nodes.Data.Size; n++){
+		ImGuiDockNode *node = (ImGuiDockNode*)g.DockContext.Nodes.Data[n].val_p;
+		if(node == nil)
+			continue;
+		if(node->SelectedTabId == oldId)
+			node->SelectedTabId = newId;
+		if(node->TabBar && node->TabBar->SelectedTabId == oldId)
+			node->TabBar->SelectedTabId = newId;
+		if(node->TabBar && node->TabBar->NextSelectedTabId == oldId)
+			node->TabBar->NextSelectedTabId = newId;
+	}
 }
 
 const char *
@@ -468,8 +490,10 @@ Label(const char *english)
 {
 	if(dirty)
 		apply();
-	std::string &s = labelCache[english];
-	if(s.empty()){
+	Cached &c = labelCache[english];
+	std::string &s = c.label;
+	if(s.empty() || c.english != english){
+		c.english = english;
 		migrateWindowSettings(english, english);
 		s = Translate(english);
 		s += "###";
@@ -483,8 +507,10 @@ LabelIcon(const char *icon, const char *english)
 {
 	if(dirty)
 		apply();
-	std::string &s = labelIconCache[LiteralPair(icon, english)];
-	if(s.empty()){
+	Cached &c = labelIconCache[LiteralPair(icon, english)];
+	std::string &s = c.label;
+	if(s.empty() || c.english != english){
+		c.english = english;
 		std::string oldTitle = std::string(icon) + " " + english;
 		migrateWindowSettings(oldTitle.c_str(), english);
 		s = icon;
@@ -501,8 +527,10 @@ TextIcon(const char *icon, const char *english)
 {
 	if(dirty)
 		apply();
-	std::string &s = textIconCache[LiteralPair(icon, english)];
-	if(s.empty()){
+	Cached &c = textIconCache[LiteralPair(icon, english)];
+	std::string &s = c.label;
+	if(s.empty() || c.english != english){
+		c.english = english;
 		s = icon;
 		s += " ";
 		s += Translate(english);
@@ -514,7 +542,6 @@ bool
 uiLanguagePreferences(void)
 {
 	bool changed = false;
-	ImGui::SeparatorText(_("Language"));
 	const std::vector<I18nLanguage> &langs = I18nLanguages();
 	std::string current = I18nGetLanguage();
 	std::string shown;
@@ -528,7 +555,10 @@ uiLanguagePreferences(void)
 			if(l.code == current)
 				shown = l.name;
 	}
-	if(ImGui::BeginCombo(_("Language"), shown.c_str())){
+	ImGui::AlignTextToFramePadding();
+	ImGui::TextUnformatted(_("Language"));
+	ImGui::SameLine();
+	if(ImGui::BeginCombo("##language", shown.c_str())){
 		if(ImGui::Selectable(_("Auto"), current == "auto"))
 			{ I18nSetLanguage("auto"); changed = true; }
 		if(ImGui::Selectable("English", current == "en"))

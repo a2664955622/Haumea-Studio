@@ -26,11 +26,13 @@ UI_DIR = SRC + 'tests/ui/'
 # aren't code).
 NONE = ('docs/', 'README', 'CHANGELOG', '.github/', 'tools/release/', 'tools/agent/',
         'patches/', SRC + 'tests/fixture/', SRC + 'tests/windows_check.py', SRC + 'tests/run_all.sh',
-        SRC + 'tests/quick_select.py', SRC + 'tests/test_namaka_install.py', SRC + 'prefabs/')
+        SRC + 'tests/quick_select.py', SRC + 'tests/test_i18n.py', 'tools/i18n/', SRC + 'lang/', SRC + 'tests/test_namaka_install.py', SRC + 'prefabs/')
 
 # Source files and the real-game tests they need: UI scripts (without .uis),
 # 'roundtrip', 'showcase'. Files not listed here (and not in NONE) select all.
 SOURCES = {
+	'i18n.cpp': [],
+	'i18n.h': [],
 	'texbrowser.cpp': ['texture_browser', 'texture_studio_list', 'materials'],
 	'materialtext.cpp': ['materials', 'material_font', 'texture_browser', 'roundtrip'],
 	'custommodels.cpp': ['custom_model', 'showcase', 'roundtrip'],
