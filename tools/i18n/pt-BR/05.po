@@ -1930,3 +1930,108 @@ msgstr "ontem"
 #, c-format
 msgid "|  0.3.DL custom models in this workspace: %d"
 msgstr "|  Modelos personalizados 0.3.DL neste workspace: %d"
+
+#: tools/haumea/agentbridge.cpp
+msgid "arranging objects"
+msgstr "organizando objetos"
+
+#: tools/haumea/agentbridge.cpp
+#, c-format
+msgid "changing elements: %d"
+msgstr "alterando elementos: %d"
+
+#: tools/haumea/agentbridge.cpp
+msgid "changing materials"
+msgstr "alterando materiais"
+
+#: tools/haumea/agentbridge.cpp
+msgid "checking the map"
+msgstr "verificando o mapa"
+
+#: tools/haumea/agentbridge.cpp
+msgid "clearing its objects"
+msgstr "limpando os objetos dele"
+
+#: tools/haumea/agentbridge.cpp
+#, c-format
+msgid "deleting elements: %d"
+msgstr "excluindo elementos: %d"
+
+#: tools/haumea/agentbridge.cpp
+msgid "editing textdraws"
+msgstr "editando textdraws"
+
+#: tools/haumea/agentbridge.cpp
+msgid "hiding world buildings"
+msgstr "ocultando construções do mundo"
+
+#: tools/haumea/agentbridge.cpp
+msgid "looking at the scene"
+msgstr "olhando a cena"
+
+#: tools/haumea/agentbridge.cpp
+msgid "merging a map into this one"
+msgstr "juntando um mapa a este"
+
+#: tools/haumea/agentbridge.cpp
+#, c-format
+msgid "moving objects: %d"
+msgstr "movendo objetos: %d"
+
+#: tools/haumea/agentbridge.cpp
+msgid "moving the camera"
+msgstr "movendo a câmera"
+
+#: tools/haumea/agentbridge.cpp
+msgid "opening a map"
+msgstr "abrindo um mapa"
+
+#: tools/haumea/agentbridge.cpp
+msgid "placing a prefab"
+msgstr "colocando um prefab"
+
+#: tools/haumea/agentbridge.cpp
+#, c-format
+msgid "placing elements: %d"
+msgstr "colocando elementos: %d"
+
+#: tools/haumea/agentbridge.cpp
+#, c-format
+msgid "placing objects: %d"
+msgstr "colocando objetos: %d"
+
+#: tools/haumea/agentbridge.cpp
+msgid "putting the map back as it was"
+msgstr "voltando o mapa ao que era"
+
+#: tools/haumea/agentbridge.cpp
+msgid "redoing"
+msgstr "refazendo"
+
+#: tools/haumea/agentbridge.cpp
+msgid "saving a prefab"
+msgstr "salvando um prefab"
+
+#: tools/haumea/agentbridge.cpp
+msgid "saving the map"
+msgstr "salvando o mapa"
+
+#: tools/haumea/agentbridge.cpp
+msgid "selecting objects"
+msgstr "selecionando objetos"
+
+#: tools/haumea/agentbridge.cpp
+msgid "starting a new map"
+msgstr "começando um mapa novo"
+
+#: tools/haumea/agentbridge.cpp
+msgid "taking a screenshot"
+msgstr "tirando uma captura de tela"
+
+#: tools/haumea/agentbridge.cpp
+msgid "testing the map in game"
+msgstr "testando o mapa no jogo"
+
+#: tools/haumea/agentbridge.cpp
+msgid "undoing"
+msgstr "desfazendo"

@@ -20,11 +20,14 @@
 #include "encoding.h"
 #include "namaka.h"
 #include "workspace.h"
+#include "keycast.h"
+#include "i18n.h"
 #ifdef RW_GL3
 #include <GLFW/glfw3.h>
 #endif
 
 #include <algorithm>
+#include <chrono>
 #include <map>
 #include <ctype.h>
 #include <errno.h>
@@ -338,9 +341,13 @@ getAgentInstUnderSegment(const rw::V3d &start, const rw::V3d &end,
 	return best;
 }
 
+static bool gRequestFailed;	// the request being handled answered with an error
+
 static void
 writeResponse(const std::string &requestId, bool ok, const std::string &body)
 {
+	if(!ok)
+		gRequestFailed = true;
 	std::string response = std::string("{\"protocol_version\":") +
 		std::to_string(AGENT_PROTOCOL_VERSION) + ",\"scene_revision\":" +
 		std::to_string(gAgentSceneRevision) + ",\"request_id\":\"" +
@@ -4999,6 +5006,128 @@ updateCameraFly(void)
 	gAgentCameraFlyRequestId.clear();
 }
 
+// ---- What Namaka is doing, for the keycast overlay ----
+// One short line per command that changes something; a burst of the same
+// kind adds up in one line (keycast replaces a line with the same key).
+// Reads show as "looking at the scene", at most every 2 s. Only the overlay
+// is translated; the protocol stays English.
+
+static double
+agentcastNow(void)
+{
+	return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
+static void
+agentcastNote(const std::vector<std::string> &lines)
+{
+	static std::string lastKey;
+	static int total;
+	static double lastTime = -100.0, lastLook = -100.0;
+	const std::string &c = lines[1];
+	// The key, and the line: a format with %d for a count, or plain text.
+	const char *key = nil, *format = nil;
+	int count = 1;
+	if(c == "place" || c == "batch"){
+		key = "place";
+		format = _("placing objects: %d");
+		if(c == "batch"){
+			count = 0;
+			for(size_t i = 2; i < lines.size(); i++)
+				count += !lines[i].empty();
+		}
+	}else if(c == "place_element"){
+		key = "place_element";
+		format = _("placing elements: %d");
+	}else if(c == "prefab_place"){
+		key = "prefab";
+		format = _("placing a prefab");
+	}else if(c == "transform" || c == "transform3d"){
+		key = "move";
+		format = _("moving objects: %d");
+	}else if(c == "delete"){
+		key = "delete";
+		format = _("deleting elements: %d");
+	}else if(c == "clear"){
+		key = "delete";
+		format = _("clearing its objects");
+	}else if(c == "properties"){
+		key = "properties";
+		format = _("changing elements: %d");
+	}else if(c == "material" || c == "material_text" || c == "material_clear"){
+		key = "material";
+		format = _("changing materials");
+	}else if(c == "camera" || c == "camera_move" || c == "camera_back"){
+		key = "camera";
+		format = _("moving the camera");
+	}else if(c == "map_new"){
+		key = "map";
+		format = _("starting a new map");
+	}else if(c == "map_open"){
+		key = "map";
+		format = _("opening a map");
+	}else if(c == "map_merge"){
+		key = "map";
+		format = _("merging a map into this one");
+	}else if(c == "save" || c == "session_commit"){
+		key = "save";
+		format = _("saving the map");
+	}else if(c == "session_rollback"){
+		key = "undo";
+		format = _("putting the map back as it was");
+	}else if(c == "undo"){
+		key = "undo";
+		format = _("undoing");
+	}else if(c == "redo"){
+		key = "undo";
+		format = _("redoing");
+	}else if(c == "maptool" || c == "fit_terrain"){
+		key = "arrange";
+		format = _("arranging objects");
+	}else if(c == "select"){
+		key = "select";
+		format = _("selecting objects");
+	}else if(c == "suppress_world_models"){
+		key = "world";
+		format = _("hiding world buildings");
+	}else if(c == "prefab_save"){
+		key = "prefab";
+		format = _("saving a prefab");
+	}else if(c.compare(0, 9, "textdraw_") == 0){
+		key = "textdraw";
+		format = _("editing textdraws");
+	}else if(c == "test_in_game"){
+		key = "test";
+		format = _("testing the map in game");
+	}else if(c == "capture" || c == "capture_screen" || c == "capture_pose"){
+		key = "capture";
+		format = _("taking a screenshot");
+	}else if(c == "map_check" || c == "validate" || c == "validate_zone"){
+		key = "check";
+		format = _("checking the map");
+	}else if(c == "ping" || c == "capabilities" || c == "session_begin" || c == "session_status"){
+		return;	// the connection itself, not something to watch
+	}else{
+		// Everything else only reads.
+		double now = agentcastNow();
+		if(now - lastLook < 2.0)
+			return;
+		lastLook = now;
+		KeycastAgentAction(_("looking at the scene"), "look");
+		return;
+	}
+	double now = agentcastNow();
+	if(lastKey == key && now - lastTime < 1.5)
+		total += count;
+	else
+		total = count;
+	lastKey = key;
+	lastTime = now;
+	char text[160];
+	snprintf(text, sizeof(text), format, total);
+	KeycastAgentAction(text, key);
+}
+
 void
 AgentBridgeUpdate(void)
 {
@@ -5010,8 +5139,12 @@ AgentBridgeUpdate(void)
 	if(!gAgentBridgeEnabled || gAgentCapturePending || gAgentCameraFlyPending)
 		return;
 	std::vector<std::string> lines;
-	if(readRequest(lines))
+	if(readRequest(lines)){
+		gRequestFailed = false;
 		handleRequest(lines);
+		if(!gRequestFailed && lines.size() >= 2)
+			agentcastNote(lines);
+	}
 }
 
 void
