@@ -110,6 +110,8 @@ O Haumea Studio nasceu do euryopa, o visualizador de mapas do [librwgta](https:/
 
 Licenciado sob a GNU GPL v2 ou posterior; veja [LICENSE](LICENSE) e [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
+Para relatar um bug, sugerir um recurso, traduzir ou contribuir com código, veja [CONTRIBUTING.md](CONTRIBUTING.md) (em inglês).
+
 Discord do Haumea: https://discord.gg/yTF8DWQqpP
 
 Discord do open.mp: https://discord.gg/samp
