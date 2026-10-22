@@ -1,0 +1,391 @@
+[English](USER_GUIDE.md) | Português (Brasil)
+
+# Guia do usuário do Haumea Studio
+
+O Haumea Studio é o editor completo para open.mp e SA-MP, construído sobre o GTA San Andreas.
+Você coloca objetos, veículos, NPCs e todos os outros elementos do servidor no mundo do jogo,
+desenha textdraws, verifica o mapa contra os limites do servidor e o testa no jogo, e o Haumea
+salva tudo num arquivo Pawn que o seu gamemode inclui.
+
+As teclas abaixo são as padrão. Todas podem ser mudadas em **Preferências → Atalhos**, e
+**Ajuda → Atalhos de teclado** (`F1`) lista todas.
+
+![Haumea editando a Grove Street](images/editor.png)
+
+## Configuração
+
+O Haumea precisa de duas pastas:
+
+- **Pasta do jogo**: a sua instalação do GTA San Andreas. O Haumea lê os arquivos do jogo e nunca os altera.
+- **Workspace**: o servidor SA-MP ou open.mp para o qual você mapeia. O Haumea pega dele os mapas,
+  os modelos personalizados, os arquivos de NPC e o servidor de teste.
+
+Para instalar o Haumea, veja [Instalação](../README.pt-BR.md#instalação). O Haumea abre na **tela inicial**:
+
+- **Workspaces** que você usou, do mais recente ao mais antigo, com a data em que foram abertos pela
+  última vez. **Fixar** (a estrela) mantém um no topo; o botão de pasta o abre no gerenciador de
+  arquivos, e × o tira da lista (a pasta continua lá). **Novo workspace** cria uma pasta de servidor
+  com `gamemodes`, `filterscripts` e `scriptfiles`; **Abrir pasta como workspace** usa uma que você
+  já tem.
+- **Mapas** do workspace selecionado que você já abriu, com uma imagem de cada. Clique duas vezes
+  num deles, ou selecione-o e pressione **Abrir mapa**. **Abrir workspace** o abre com um mapa novo.
+- **GTA San Andreas**: a pasta do jogo, com a versão do cliente SA-MP encontrada lá e os modelos
+  personalizados 0.3.DL do workspace. Uma nova pasta do jogo carrega depois de reiniciar.
+- **Continuar sem workspace**, ou **Pular** para manter o que está aberto.
+
+Na primeira vez, a pasta do jogo é pedida aqui antes de qualquer coisa carregar. Digite cada caminho
+ou use **Procurar...** (no Linux isso precisa do `zenity` ou do `kdialog`). Marque **Abrir o último
+workspace automaticamente** para pular a tela; **Arquivo → Trocar workspace** a mostra de novo. As
+duas pastas também podem ser mudadas em **Arquivo → Workspace** ou **Preferências → Workspace**. O
+título da janela mostra o workspace.
+
+O Haumea guarda as próprias configurações, autosaves, mapas recentes, favoritos e prefabs na pasta
+de configuração dele: `~/.config/haumea` no Linux, `%APPDATA%\Haumea` no Windows,
+`~/Library/Application Support/Haumea` no macOS. Na primeira vez, ele copia para lá o
+`<GTA>/haumea_data` de uma instalação antiga e deixa a pasta antiga como estava. Um Haumea dentro
+da pasta do GTA, ou iniciado a partir dela, encontra a pasta do jogo sem perguntar. Para as opções
+de linha de comando, veja [Building and testing](BUILDING.md#command-line) (em inglês).
+
+## Movimentação
+
+Segure o botão direito do mouse na vista 3D para olhar em volta e, enquanto segura, voe com
+`W`/`A`/`S`/`D` (`Shift` mais rápido, `Alt` mais devagar). O cursor some enquanto você olha e
+volta para onde estava. Arrastar com o botão do meio desloca a vista e a roda dá zoom. O botão de
+olhar pode ser mudado em **Preferências → Câmera**.
+
+O quanto você enxerga é definido na janela **Exibir** (**Janelas → Exibir**): **Distância de
+desenho do mundo** para as construções do jogo, **Distância de desenho do mapa** para os objetos do
+seu mapa (eles aparecem até essa distância, seja qual for a distância de desenho do modelo), e
+**Neblina** (Jogo é tão densa quanto no jogo, Leve só ao longe). **Destacar meu mapa** escurece as
+construções do jogo. A visão do jogador (`P`) sempre usa as distâncias do jogo.
+
+## Colocando objetos
+
+1. Abra o **Navegador de objetos** (`Ctrl+1`) e escolha um objeto. Busque por nome, ID, uma lista
+   ou um intervalo (`1337, 19000-19100`). Todo modelo, do jogo e do SA-MP, fica numa categoria
+   conforme o que os próprios arquivos do jogo dizem dele (o nome, o arquivo IDE, o tamanho da
+   colisão), e **Favoritos** guarda os que você usa com frequência.
+2. Clique em **Colocar** e depois clique no mundo. `Esc` para de colocar.
+3. Clique num objeto para selecioná-lo. Arraste o gizmo para movê-lo (`W`) ou girá-lo (`E`), ou
+   digite valores exatos em **Informações do objeto** (`Ctrl+2`). `G` o põe no chão, `F` foca a
+   câmera nele e `Ctrl+D` o duplica.
+
+**Editar → Ir para coordenadas** (`Ctrl+J`) aponta a câmera para uma posição que você cola:
+`x, y, z`, `x y z` com um ângulo depois, ou uma linha inteira `SetPlayerPos(playerid, x, y, z);`.
+Ela só move a vista, então não há nada a desfazer. **Editar → Copiar posição da câmera** copia onde
+a câmera está como `x, y, z`.
+
+A barra de ferramentas liga e desliga o encaixe por passos (o ímã), o encaixe em objetos (`N`) e o
+seguir o chão. **Ferramentas** guarda as configurações deles, além do pincel para espalhar objetos.
+
+Informações do objeto organiza tudo do mesmo jeito: o nome e a variável Pawn, as configurações
+próprias do objeto, depois a posição. Mundo e streaming, anexo, materiais (texturas, cores e texto)
+e grupo e nota vêm em seguida, fechados até você precisar deles. Selecione vários objetos para
+mudar um campo em todos de uma vez.
+
+## Elementos do SA-MP
+
+A aba **SA-MP** do navegador coloca todo o resto de que um mapa de servidor precisa:
+
+| Jogadores | Mundo |
+| --- | --- |
+| Atores, classes de jogador (pontos de spawn) | Pickups, 3D text labels, gang zones |
+| NPCs e pontos de caminho de NPC (só open.mp) | Map icons, locais de som, checkpoints (só streamer) |
+
+Os jogadores nunca veem 3D text labels, gang zones, map icons, locais de som e pontos de caminho
+como objetos, então o editor mostra cada um como um pequeno ícone colorido (um T, um alto-falante,
+um alfinete, um quadrado, um nó) que mantém o tamanho na tela; clique nele para selecioná-lo.
+
+Cada linha mostra quantos o mapa tem; clique no número para selecionar todos. Os elementos são
+salvos como chamadas nativas ou do streamer (`CreateActor`, `CreateDynamicPickup`, ...) e lidos de
+volta de scripts existentes. Gang zones e map icons nativos são mostrados a um jogador pela função
+`_ShowForPlayer(playerid)` do mapa.
+
+Um **local de som** toca um audio stream (uma URL) ou um som do jogo (escolhido numa lista) para os
+jogadores que chegam dentro do raio dele.
+
+<img src="images/samp-elements.png" alt="A aba SA-MP" width="360">
+
+## NPCs (só open.mp)
+
+Os NPCs do open.mp são jogadores bots. Coloque um pela aba SA-MP e depois defina o nome, a skin, a
+arma, a vida e o colete dele em Informações do objeto. Em **Movimento**, escolha o que ele faz:
+
+- **Seguir um caminho**: coloque primeiro os pontos de caminho do NPC, clicando um depois do outro,
+  e depois escolha o caminho. Salvo como `NPC_MoveByPath`.
+- **Andar pelos nós**: anda pelos nós de caminho do jogo a partir de um ponto inicial
+  (`NPC_PlayNode`). Edite os arquivos de nós em **Janelas → Nós** (`F3`); o Haumea os salva em
+  `scriptfiles/NPCs/nodes` do servidor e nunca altera os arquivos do próprio jogo.
+- **Tocar uma gravação**: toca um arquivo `.rec` de `npcmodes/recordings` (`NPC_StartPlayback`).
+
+**Prévia do movimento** faz o NPC andar na viewport. Atores e NPCs também podem tocar uma animação
+(biblioteca, nome, velocidade, repetição, travas, congelar e tempo), e você a vê na skin.
+
+<img src="images/npc-object-info.png" alt="Informações do objeto de um NPC que segue um caminho" width="360">
+
+## Veículos
+
+Os veículos ficam no navegador como os objetos. Em Informações do objeto, defina a criação estática
+(`AddStaticVehicleEx`) ou dinâmica, o tempo de respawn, as duas cores (-1 é aleatória), uma placa,
+um paintjob e peças de tuning. Só aparecem as peças que servem no modelo, uma por slot.
+
+**Trens** (Freight 537, Brown Streak 538, Tram 449) vão para os trilhos como o SA-MP os coloca:
+colocar um o encaixa no trilho mais próximo e arrastá-lo o desliza pelo trilho (segure `Alt` para
+movê-lo livremente), com os trilhos desenhados de leve enquanto um trem está selecionado ou sendo
+colocado. Eles vêm de `data/Paths/tracks.dat` e `tracks3.dat` do seu jogo (o SA-MP não usa
+`tracks2.dat` e `tracks4.dat`). O Freight puxa três vagões de carga e o Brown Streak três vagões de
+passageiros, desenhados atrás dele como no jogo; o Tram anda sozinho. Só a locomotiva é escrita no
+mapa, já que o jogo adiciona os vagões, e cada trem ocupa quatro ids de veículo. O ângulo dele só
+diz para que lado ele anda: acima de 180 para um lado, até 180 para o outro. Trens precisam de
+**Veículo estático**, porque o `CreateVehicle` do open.mp os recusa, e a Verificação do mapa avisa
+isso, além de apontar um trem colocado a mais de 3 m de um trilho ou um vagão sozinho.
+
+## Materiais
+
+Em **Materiais**, nas Informações do objeto, cada slot de material de um objeto pode receber outra
+textura, uma cor ou um texto. **Procurar texturas...** mostra as texturas para escolher, e
+**Janelas → Navegador de texturas** tem todas as texturas, inclusive a lista de texturas do Texture
+Studio. A vista 3D as mostra como o cliente SA-MP 0.3.7 mostra: o texto usa os arquivos de fonte
+reais, incluindo as cores `{RRGGBB}`, e materiais recoloridos perdem o sombreamento como no jogo.
+
+As fontes são procuradas pelo nome nesta ordem: a sua pasta de fontes, as fontes do sistema (e a
+`windows/Fonts` do prefixo do Wine), a pasta do GTA e, por fim, as fontes que vêm com o Haumea. O
+Haumea traz as fontes do próprio SA-MP (GTAWEAPON3 para os ícones de armas e caveiras, SampAux3) e
+as coloca na sua pasta de fontes ao iniciar: `%APPDATA%\haumea\fonts` no Windows,
+`~/.local/share/haumea/fonts` no Linux, `~/Library/Application Support/Haumea/fonts` no macOS.
+**Abrir pasta de fontes** (ao lado da fonte em Informações do objeto, e em Preferências) a abre:
+coloque qualquer `.ttf` lá e pressione **Procurar fontes de novo**. Sem Arial, Times New Roman ou
+Courier New, a prévia usa Liberation Sans, Serif ou Mono, que têm as mesmas larguras de letra.
+Informações do objeto mostra qual arquivo de fonte a prévia usa, e a Verificação do mapa avisa de
+uma fonte que não está instalada.
+
+## Modelos personalizados (open.mp e SA-MP 0.3.DL)
+
+**Arquivo → Importar → Modelo personalizado** coloca um DFF e um TXD na pasta `models` do workspace
+e no `artconfig.txt`, para que jogadores do open.mp e do 0.3.DL os baixem. Os modelos
+personalizados aparecem em **Modelos personalizados** no navegador e mantêm os IDs negativos no
+mapa salvo.
+
+## TextDraws
+
+Os textdraws são salvos num arquivo próprio, separado do mapa. **Janelas → TextDraws** abre o modo
+TextDraw: o mundo dá lugar à tela do jogo de 640x448, com uma cor lisa ou um quadro parado da vista
+que você tinha, e a edição do mapa fica desligada até você sair com **Sair** no aviso ou com
+**Esc**. Adicione textos, caixas, sprites e prévias de modelo, arraste-os na tela (o canto os
+redimensiona) e defina o texto, a fonte, as cores e o estilo. Desfazer (Ctrl+Z) tem um histórico
+próprio aqui.
+
+**Novo**, **Abrir**, **Salvar** e **Salvar como** da janela trabalham no arquivo de textdraws (um
+`.pwn` ou `.inc`), e Ctrl+S o salva enquanto o modo está ligado. Inclua-o no seu gamemode e chame
+`Haumea_<arquivo>_CreateTextDraws()` no `OnGameModeInit` e `Haumea_<arquivo>_ShowTextDraws(playerid)`
+quando um jogador precisar vê-los. **Testar no jogo** inclui o arquivo de textdraws aberto como está.
+
+Um mapa salvo por uma versão anterior ainda pode ter textdraws. Ao abri-lo, o Haumea oferece
+**Mover textdraws para um arquivo separado** (`<mapa>_textdraws.pwn`); salve o mapa depois para
+tirá-los dele. Se você os mantiver no mapa, eles aparecem na tela mas são somente leitura e são
+salvos de volta sem mudanças.
+
+![O editor de TextDraws](images/textdraws.png)
+
+### Códigos de cor dos TextDraws
+
+A tela segue as regras do jogo para os códigos no texto de um textdraw:
+
+- `~r~` vermelho, `~g~` verde, `~b~` azul, `~y~` amarelo, `~p~` roxo, `~w~` e `~s~` cinza-claro,
+  `~l~` preto (só minúsculas). Só a primeira letra conta: `~red~` é `~r~`.
+- `~h~` deixa a cor atual 1,5 vez mais clara, e se acumula: `~h~~h~` é mais clara ainda.
+- `~n~` começa uma nova linha. A nova linha começa na cor do próprio textdraw (TextDrawColor) mais
+  o **último** código de cor antes dela, e nada mais. Linhas quebradas pelo tamanho do texto
+  funcionam do mesmo jeito.
+  - `~y~test~n~test`: as duas linhas são amarelas.
+  - `test~n~test` (sem código): as duas linhas são TextDrawColor.
+  - `~w~~h~test~n~test`: a primeira linha é branco brilhante, a segunda é TextDrawColor clareada
+    uma vez (`~h~` foi o último código), não branca.
+  - `~r~~h~test~n~test`: a segunda linha também é TextDrawColor clareada, não vermelho-claro.
+  - `test~n~~w~test`: um código depois de `~n~` vale normalmente.
+- `~k~~PED_FIREWEAPON~` mostra o nome de uma tecla no jogo; o Haumea o deixa de fora.
+
+## Prefabs
+
+Um prefab é um grupo de objetos salvo para colocar de novo. Selecione os objetos e use **Arquivo →
+Exportar → Seleção como prefab** (`Ctrl+Shift+E`). Dê a ele um nome e tags e salve-o em **Mine**
+(a sua pasta de configuração) ou no workspace.
+
+A aba **Prefabs** do Navegador de objetos lista os seus, os do workspace e um conjunto **Starter**.
+Busque por nome ou tag, escolha um e clique em **Colocar**; `Q`, `E` ou a roda do mouse o giram antes
+de você clicar. **Como grupo** coloca os objetos dele num grupo com o nome do prefab.
+
+## Ferramentas de mapa
+
+**Ferramentas** também tem ferramentas de arranjo: **Matriz** (cópias em linha ou em círculo),
+**Espelhar**, **Alinhar e distribuir**, **Pôr no chão e copiar como Pawn** (pôr no chão, copiar
+como anexos ou deslocamentos) e **Ao longo de uma linha** (distribuir objetos por um caminho que
+você clica). Movimentos e giros exatos ficam no modo Delta das Informações do objeto.
+
+**Radar art a partir de objetos** (em Ferramentas) desenha os seus objetos no radar com gang zones.
+Ela usa todos os objetos, a seleção ou um grupo, vistos de cima, e coloca as zonas no grupo
+"radar art".
+
+- **Cor**: uma cor, por grupo ou a partir das texturas dos objetos. Um contorno e partes altas mais
+  claras são opcionais.
+- **Detalhe**: o contador mostra quantas zonas são necessárias. **Ajustar a este número de zonas**
+  define o detalhe para chegar a um número que você escolhe.
+- **Mostrado como**: **zonas globais** (no máximo 1024 no servidor), **zonas por jogador** (1024
+  para cada jogador) ou **zonas streamed por jogador** (criadas perto de cada jogador enquanto ele
+  anda, para mapas grandes). As duas últimas são só do open.mp.
+
+**Aplicar** cria as zonas, e um desfazer remove todas.
+
+## Interiores
+
+**Janelas → Interiores** lista os interiores do GTA. Clique num para ir até lá e mostrá-lo. Clique
+com o botão direito para copiar o código Pawn que leva um jogador até lá (`SetPlayerInterior` e
+`SetPlayerPos`).
+
+## Verificando o mapa
+
+- **Verificação do mapa** (`F6`) lista o que vai quebrar no jogo: limites, modelos desconhecidos,
+  elementos fora do mundo, códigos de cor errados e mais. Clique num item para selecionar aquilo de
+  que ele trata.
+- **Visão do jogador** (`P`, ou a caixa em **Janelas → Exibir**) desenha o mapa como um jogador na
+  câmera o veria: distâncias de desenho e de stream, os limites do streamer, o virtual world e o
+  interior.
+
+## Testar no jogo
+
+**Testar no jogo** (`F5`) roda o mapa num servidor open.mp privado na pasta de configuração do
+Haumea. O seu arquivo de mapa e o seu próprio servidor não são tocados. **Abrir o jogo** entra
+nele, e **Recarregar mapa** pega as suas mudanças. Escolha o pacote do servidor e a porta em
+**Preferências → Servidor de teste**. No Linux 64 bits, o servidor e o compilador do open.mp
+precisam da biblioteca C de 32 bits: veja [Instalação](../README.pt-BR.md#instalação).
+
+![Testar no jogo com o registro do servidor](images/testserver.png)
+
+## Salvando
+
+Um mapa é um arquivo Pawn. **Arquivo → Salvar** (`Ctrl+S`) o grava, e **Salvar como** escolhe um
+arquivo novo ou o estilo do código:
+
+- **Nativo**: `CreateObject`, `CreateActor`, ... para qualquer servidor.
+- **Streamer**: `CreateDynamicObject`, ... com o plugin streamer, para mapas grandes.
+
+Um mapa que usa o streamer continua em código streamer quando você o abre e salva. Construções do
+GTA movidas ou excluídas viram chamadas `RemoveBuildingForPlayer`. As primeiras linhas do arquivo
+salvo dizem quais funções chamar no seu gamemode. O código compila sem avisos tanto com os includes
+do open.mp quanto com os do SA-MP 0.3.7.
+
+- **Abrir**: **Arquivo → Abrir mapa** (`Ctrl+O`, ou solte um `.pwn` na janela) lê mapas `.pwn` e
+  mapas `.db` do Texture Studio (de `scriptfiles/tstudio/SavedMaps`). Salvar um mapa do Texture
+  Studio grava um `.pwn` novo e nunca altera o `.db`. O Texture Studio guarda as texturas por número
+  na lista de texturas dele; quando o seu servidor tem o Texture Studio instalado, o Haumea usa a
+  lista desse servidor.
+- **Mesclar**: **Arquivo → Importar → Mesclar arquivo Pawn** adiciona outro `.pwn`, `.db`, `.map`
+  do MTA:SA ou mapa IPL ao seu.
+- **Grupos e notas** são salvos depois de cada objeto como `// model @group("...") @note("...")`.
+  Mantenha esses comentários quando editar o arquivo à mão.
+- **Autosave**: enquanto um mapa tem mudanças não salvas, o Haumea salva cópias na pasta de
+  configuração dele. **Arquivo → Recuperar autosave** as abre.
+- **Código Pawn ao vivo** (em Janelas) mostra o código enquanto você edita.
+
+## Namaka (assistente de IA)
+
+O Namaka, nome da lua interna de Haumea, deixa um assistente de IA (Claude Code, Claude Desktop ou
+outro host MCP) ver e editar o mapa aberto por um socket local. Ele se chamava Agent Alpha.
+
+**Janelas → Namaka** o instala. Ele precisa do Python 3.10 ou mais novo; o painel diz qual Python
+encontrou e o que instalar se não houver nenhum.
+
+- Com o **Python 3.14**, **Instalar** funciona offline com os arquivos que vêm com o Haumea.
+- Com o 3.10-3.13, ele baixa só as poucas partes que o Haumea traz apenas para o 3.14.
+
+A instalação roda em segundo plano: o painel mostra o progresso, **Cancelar** a interrompe e
+**Abrir o registro** mostra o que aconteceu. O Namaka fica na pasta de configuração
+(`~/.config/haumea/namaka` no Linux, `%APPDATA%\Haumea\namaka` no Windows), então atualizar o Haumea
+não o move.
+
+- **Reparar** o instala de novo; a instalação antiga fica até a nova funcionar.
+- **Atualizar** aparece quando o Haumea vem com um Namaka mais novo, e o Haumea também o atualiza
+  depois de uma atualização do editor.
+- **Desinstalar** o remove.
+
+**Copiar para o Claude Code** põe um comando `claude mcp add` na área de transferência, e **Copiar
+para o Claude Desktop** uma entrada para o `claude_desktop_config.json`, os dois para esta
+instalação.
+
+Depois que o Namaka está instalado, o Haumea fica esperando por ele sempre que inicia: no Linux e no
+macOS pelo `~/.cache/haumea-agent.sock`, que só você pode usar, e no Windows numa porta local com
+uma chave nova a cada vez, gravada em `namaka\connection.json` na pasta de configuração. **Deixar o
+Namaka se conectar** (**Preferências → Namaka**, ou o painel) desliga isso a partir do próximo
+início. Só um Haumea por vez pode ser alcançado: se outro já está, o painel avisa. Iniciar o Haumea
+com `--agent-socket` ainda usa esse socket no lugar.
+O assistente normalmente olha o mapa sem mexer na sua vista. Quando você pede para ele mostrar algo
+ou levar você a algum lugar, ele voa com a câmera até lá (`move_camera`) e avisa; `camera_back`
+volta para onde você estava. Ele nunca mexe na câmera enquanto você arrasta o gizmo, coloca objetos
+ou olha em volta com o botão direito do mouse.
+Uma instalação do Agent Alpha continua funcionando; depois que o Namaka estiver configurado, aponte
+o seu cliente MCP para ele e apague a pasta antiga. Mais detalhes no
+[guia de configuração](../tools/release/AGENT_README.md) (em inglês).
+
+## Atualizações
+
+Quando sai uma versão nova, um aviso no canto superior direito avisa: **Novidades** mostra as notas
+dela, **Atualizar agora** a baixa em segundo plano, e ela é instalada na próxima vez que o Haumea
+iniciar (ou na hora com **Reiniciar agora**, depois que as suas mudanças forem salvas). O Haumea
+confere o download com os checksums da versão e substitui só os próprios arquivos; os seus mapas,
+configurações e qualquer outra coisa na pasta dele ficam como estão, e um arquivo do Haumea que
+você alterou é guardado como `<arquivo>.local`. **Ajuda → Voltar versão** restaura a versão
+anterior. **Preferências → Atualizações** liga ou desliga a verificação e os downloads automáticos
+e escolhe o canal; **Ajuda → Procurar atualizações** verifica na hora.
+
+## Privacidade
+
+O Haumea não envia nada a menos que você escolha, e nunca os seus mapas. Ele pode enviar duas
+coisas: um ping diário de uso e relatórios de travamento.
+
+O **ping diário de uso** só vai se você disser sim: a tela inicial pergunta uma vez (fechá-la sem
+responder vale como não), e **Preferências → Privacidade** o liga ou desliga a qualquer momento.
+
+Quando está ligado, o Haumea envia no máximo uma vez por dia, para `telemetry.itsneufox.xyz`:
+
+- um ID de instalação aleatório (32 caracteres hexadecimais gerados no seu computador; ele não diz
+  nada sobre você nem sobre o seu computador),
+- a versão (por exemplo 1.0.0.57) e o canal (production ou beta, ou dev/pr para versões de teste),
+- o sistema operacional: Linux, Windows ou macOS.
+
+Isso só conta quantas instalações estão em uso, em quais versões e sistemas. É guardado até 12
+meses depois do último envio da sua instalação. Desligar o ping apaga o ID de instalação; ligá-lo
+de novo cria um novo.
+
+**Relatórios de travamento e de erro**: quando o Haumea trava ou encontra um erro, ele guarda um
+relatório, e no próximo início um aviso pergunta: **Ver relatório** mostra exatamente o que seria
+enviado, e depois **Enviar**, **Não enviar** ou **Sempre enviar**. **Preferências → Privacidade**
+define isso como Perguntar (o padrão), Sempre enviar ou Nunca enviar. Um relatório tem:
+
+- a versão, o commit, o canal, o sistema operacional e a versão dele, o tipo de processador e os
+  nomes da placa de vídeo e do driver,
+- onde aconteceu no código do Haumea (a pilha, como deslocamentos nos próprios arquivos dele) e a
+  mensagem de erro, se houver,
+- as últimas linhas do registro do editor e qual modo e qual janela estavam em uso.
+
+Antes de ser guardado, a sua pasta pessoal, o seu nome de usuário, a pasta do jogo e o workspace são
+trocados por marcadores, e os nomes dos mapas ficam de fora; o conteúdo dos mapas nunca é incluído.
+Um relatório só leva o ID de instalação se o ping diário também estiver ligado. Os relatórios são
+enviados para `reports.itsneufox.xyz` e guardados por 6 meses; os não enviados são apagados depois
+de 30 dias. Tipos novos de travamento são resumidos num canal privado do Discord do desenvolvedor (a
+versão, o sistema, a placa de vídeo e onde no código aconteceu; nunca linhas do registro nem IDs de
+instalação).
+
+O servidor não guarda endereços IP nem registros de acesso, e só o desenvolvedor vê o que ele
+recebe. [O que é enviado e guardado](https://telemetry.itsneufox.xyz/privacy) tem os detalhes (em
+inglês).
+
+## Atalhos
+
+**Ajuda → Atalhos de teclado** (`F1`) lista todos os comandos com a tecla de cada um, e
+**Preferências → Atalhos** os redefine.
+
+## Painéis
+
+Os painéis se encaixam em volta da vista 3D. Você também pode deixá-los flutuando, e eles se
+encaixam nas bordas da tela e uns nos outros. **Janelas → Redefinir disposição dos painéis** os põe
+de volta no lugar.
