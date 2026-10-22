@@ -287,6 +287,35 @@ LoadPed(char *line)
 	obj->m_file = currentFile;
 }
 
+// default.ide's weapons (321-372 in SA): SA-MP and open.mp place them with
+// CreateObject like any other model. Their anim group is the weapon's, not an IFP.
+static void
+LoadWeapon(char *line)
+{
+	int id, numAtomics;
+	char model[MODELNAMELEN];
+	char txd[MODELNAMELEN];
+	char anim[MODELNAMELEN];
+	float dist;
+	if(sscanf(line, "%d %23s %23s %23s %d %f", &id, model, txd, anim, &numAtomics, &dist) != 6)
+		return;
+	if(GetObjectDef(id)){
+		log("warning: weapon model %s (%d) conflicts with an object definition; skipping\n", model, id);
+		return;
+	}
+
+	ObjectDef *obj = AddObjectDef(id);
+	if(obj == nil)
+		return;
+	obj->m_type = ObjectDef::CLUMP;
+	strncpy(obj->m_name, model, sizeof(obj->m_name)-1);
+	obj->m_name[sizeof(obj->m_name)-1] = '\0';
+	obj->m_txdSlot = AddTxdSlot(txd);
+	obj->m_numAtomics = 1;	// so the draw distance below applies
+	obj->m_drawDist[0] = dist;
+	obj->m_file = currentFile;
+}
+
 // Skins SA-MP gives to GTA's story characters. They have no IDE entry; the
 // client loads these models from gta3.img itself.
 void
@@ -728,7 +757,7 @@ DatDesc ideDesc[] = {
 	{ "path", LoadPathLine },
 	{ "2dfx", Load2dEffect },
 // VC
-	{ "weap", LoadNothing },
+	{ "weap", LoadWeapon },
 // SA
 	{ "anim", LoadAnimatedObject },
 	{ "txdp", LoadTXDParent },

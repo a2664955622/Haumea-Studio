@@ -962,8 +962,8 @@ msgid "Nothing was imported."
 msgstr "Nada foi importado."
 
 #: gui.cpp:3891
-msgid "%d object(s) use models the editor does not have (%s). Weapon models (321-372) and models from other mods are not available."
-msgstr "%d objeto(s) usam modelos que o editor não tem (%s). Modelos de armas (321-372) e modelos de outros mods não estão disponíveis."
+msgid "%d object(s) use models the editor does not have (%s). Models from other mods are not available."
+msgstr "%d objeto(s) usam modelos que o editor não tem (%s). Modelos de outros mods não estão disponíveis."
 
 #: gui.cpp:3895
 msgid "%d call(s) were skipped because their position, model or handle is not a plain value (for example a formula or a variable that holds coordinates)."

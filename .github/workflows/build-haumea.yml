@@ -116,6 +116,10 @@ jobs:
         working-directory: haumea/build
         run: msbuild librwgta.sln /p:Configuration=Release /p:Platform=win-amd64-gl3 /t:librwgta;haumea /m
 
+      - name: Check the build number and commit (Windows)
+        working-directory: haumea
+        run: python tools/release/check_buildinfo.py bin/win-amd64-gl3/Release/haumea.exe
+
       - name: Stage Windows editor bundle
         shell: pwsh
         run: |
@@ -199,6 +203,10 @@ jobs:
         working-directory: haumea/build
         run: make config=release_linux-amd64-gl3 librwgta haumea "-j$(nproc)"
 
+      - name: Check the build number and commit (Linux)
+        working-directory: haumea
+        run: python3 tools/release/check_buildinfo.py bin/linux-amd64-gl3/Release/haumea
+
       # Release builds have debug information (premake5.lua): it goes into
       # haumea.debug for crash reports, and the editor ships stripped.
       - name: Split off the debug information (Linux)
@@ -265,6 +273,10 @@ jobs:
       - name: Build Haumea Studio
         working-directory: haumea/build
         run: make config=release_macos-arm64-gl3 librwgta haumea "-j$(sysctl -n hw.ncpu)"
+
+      - name: Check the build number and commit (macOS)
+        working-directory: haumea
+        run: python3 tools/release/check_buildinfo.py bin/macos-arm64-gl3/Release/haumea
 
       - name: Split off the debug information (macOS)
         working-directory: haumea/bin/macos-arm64-gl3/Release

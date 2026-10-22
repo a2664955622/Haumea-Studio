@@ -209,8 +209,8 @@ msgid "%d material, attachment or interior line(s) referred to objects that were
 msgstr "%d linha(s) de material, anexo ou interior se referiam a objetos que foram ignorados."
 
 #, c-format
-msgid "%d object(s) use models the editor does not have (%s). Weapon models (321-372) and models from other mods are not available."
-msgstr "%d objeto(s) usam modelos que o editor não tem (%s). Modelos de armas (321-372) e modelos de outros mods não estão disponíveis."
+msgid "%d object(s) use models the editor does not have (%s). Models from other mods are not available."
+msgstr "%d objeto(s) usam modelos que o editor não tem (%s). Modelos de outros mods não estão disponíveis."
 
 #, c-format
 msgid "%d object(s) use the font \"%s\", which isn't installed here: the preview uses %s. Players see it only if they have the font. To preview it, put its .ttf in the fonts folder (Object Info, Open fonts folder) and rescan."

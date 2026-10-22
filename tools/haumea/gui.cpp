@@ -3894,8 +3894,8 @@ uiPawnImportReport(const PawnImportReport &report)
 		}
 		if(report.unknownModels.size() > 12)
 			ids += ", ...";
-		ImGui::TextWrapped(_("%d object(s) use models the editor does not have (%s). Weapon models "
-			"(321-372) and models from other mods are not available."), report.unknownModelObjects, ids.c_str());
+		ImGui::TextWrapped(_("%d object(s) use models the editor does not have (%s). Models "
+			"from other mods are not available."), report.unknownModelObjects, ids.c_str());
 	}
 	if(report.unreadableCalls > 0)
 		ImGui::TextWrapped(_("%d call(s) were skipped because their position, model or handle is not a "
