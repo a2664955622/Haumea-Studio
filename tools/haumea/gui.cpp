@@ -7533,7 +7533,7 @@ static bool gMapCheckShowNotes = true;
 static void
 uiMapCheckBefore(const char *action)
 {
-	RunMapCheck(gPawnSaveFormat, &gMapCheck);
+	RunMapCheck(gPawnSaveFormat, &gMapCheck, true);
 	gMapCheckDone = true;
 	std::string summary = MapCheckSummary(gMapCheck);
 	if(summary.empty())
@@ -7554,7 +7554,7 @@ uiMapCheckWindow(void)
 	}
 	uiFitItemsToPanel();
 	if(!gMapCheckDone || ImGui::Button(TI(ICON_FA_ROTATE, "Check again"))){
-		RunMapCheck(gPawnSaveFormat, &gMapCheck);
+		RunMapCheck(gPawnSaveFormat, &gMapCheck, true);
 		gMapCheckDone = true;
 	}
 	ImGui::SameLine();
@@ -11546,7 +11546,7 @@ uiMapObjectsList(void)
 	toggle(ICON_FA_TRIANGLE_EXCLAMATION "##problemsonly", &gOutliner.problemsOnly, gMapCheckDone ?
 		_("Only objects with a Map check problem.") : _("Only objects with a Map check problem. Runs Map check first."));
 	if(gOutliner.problemsOnly && !gMapCheckDone){
-		RunMapCheck(gPawnSaveFormat, &gMapCheck);
+		RunMapCheck(gPawnSaveFormat, &gMapCheck, true);
 		gMapCheckDone = true;
 		gOutliner.builtKey.clear();
 	}
