@@ -172,10 +172,10 @@ def change(now_n, before_n, what):
 	return f'<span class="{cls}">{"+" if d > 0 else ""}{d}% on {esc(what)}</span>'
 
 
-def page(title, body, user):
+def page(title, body, user, home='/dashboard', subtitle='Telemetry and crash reports'):
 	who = (f'<div class="who">{SHIELD}<span>{esc(user)}</span></div>' if user else '')
-	top = (f'<header class="top"><div class="brand">{LOGO}<div><h1><a href="/dashboard">Haumea Studio</a></h1>'
-	       f'<div class="muted small">Telemetry and crash reports</div></div></div>'
+	top = (f'<header class="top"><div class="brand">{LOGO}<div><h1><a href="{home}">Haumea Studio</a></h1>'
+	       f'<div class="muted small">{esc(subtitle)}</div></div></div>'
 	       f'<div class="tools">{{tools}}{who}</div></header>')
 	return top, ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
 	             '<meta name="viewport" content="width=device-width, initial-scale=1">'
@@ -183,8 +183,8 @@ def page(title, body, user):
 		body + '</div></body></html>'
 
 
-def render(title, body, user, tools=''):
-	top, head, tail = page(title, body, user)
+def render(title, body, user, tools='', **where):
+	top, head, tail = page(title, body, user, **where)
 	return head + top.replace('{tools}', tools) + tail
 
 
@@ -243,6 +243,65 @@ def spark(counts):
 	        f'{bars}</div>')
 
 
+def installs_chart(s, t, days):
+	"""Active installs per day, stacked by channel."""
+	day = lambda n: (t - dt.timedelta(days=n)).strftime('%Y-%m-%d')
+	per_day = {}
+	for d, channel, n in s.store.q('SELECT day, channel, COUNT(*) FROM active_days WHERE day >= ? '
+	                               'GROUP BY day, channel', (day(days - 1),)):
+		per_day.setdefault(d, {})[channel] = n
+	totals = [sum(per_day.get(day(i), {}).values()) for i in range(days - 1, -1, -1)]
+	top = max(10, -(-max(totals or [0]) // 10) * 10)
+	columns = ''
+	for i in range(days - 1, -1, -1):
+		counts = per_day.get(day(i), {})
+		label = ('Today' if i == 0 else f'{day(i)}') + f': {sum(counts.values())} installs'
+		segs = ''.join(f'<div style="height:{round(counts[c] * CHART_PX / top)}px;background:{colour}"></div>'
+		               for c, colour in CHANNEL_COLOURS if counts.get(c))
+		columns += f'<div title="{esc(label)}">{segs}</div>'
+	legend = ''.join(f'<span><i class="sw" style="background:{colour}"></i>{c}</span>'
+	                 for c, colour in CHANNEL_COLOURS[:3])
+	return (f'<div class="card wide" id="installs"><div class="head"><h2>Active installs per day</h2>'
+	        f'<div class="legend">{legend}</div></div>'
+	        f'<div class="chart"><div class="axis"><span>{top}</span><span>{top // 2}</span><span>0</span></div>'
+	        f'<div class="bars" role="img" aria-label="Active installs per day for the last {days} days, '
+	        f'by channel">{columns}</div></div>'
+	        f'<div class="under" style="padding-left:38px"><span>{days - 1} days ago</span><span>today</span></div>'
+	        '</div>')
+
+
+def usage_card(s, t):
+	"""Versions, systems and channels of the installs seen in 30 days."""
+	month_since = stamp(t - dt.timedelta(days=30))
+	split = lambda col: s.store.q(f'SELECT {col}, COUNT(*) FROM installs WHERE last_seen >= ? GROUP BY {col} '
+	                              'ORDER BY 2 DESC', (month_since,))
+	versions = sorted(split('version'), key=lambda r: version_key(r[0]), reverse=True)
+	total = sum(n for _, n in versions)
+	latest = {}
+	for channel, version in s.store.q('SELECT channel, version FROM installs WHERE last_seen >= ?', (month_since,)):
+		if channel in ('production', 'beta') and version_key(version) > version_key(latest.get(channel, '0')):
+			latest[channel] = version
+	shown, rest = versions[:4], sum(n for _, n in versions[4:])
+	if rest:
+		shown.append(('other', rest))
+	vrows = ''
+	for i, (version, n) in enumerate(shown):
+		tags = [f'<span class="tag">latest {c}</span>' for c in ('beta', 'production') if latest.get(c) == version]
+		if version.endswith('.0') and version != 'other':
+			tags.append('<span class="tag warn">no build info</span>')
+		vrows += (f'<div style="display:flex;flex-direction:column;gap:6px"><div class="pair">'
+		          f'<span class="mono">{esc(version)}{"".join(tags)}</span>'
+		          f'<span class="soft">{n:,} · {pct(n, total)}</span></div><div class="meter">'
+		          f'<div class="{"first" if i == 0 else ""}" style="width:{pct(n, total)}"></div></div></div>')
+	pairs = lambda rows: ''.join(f'<div class="pair"><span>{esc(v)}</span><span class="soft">'
+	                             f'{pct(n, sum(m for _, m in rows))}</span></div>' for v, n in rows)
+	return (f'<div class="card narrow"><h2>Versions in use</h2>'
+	        f'<div class="muted small" style="margin-top:-8px">Installs seen in the last 30 days</div>'
+	        f'{vrows or "<div class=empty>No installs yet.</div>"}<div class="rule"></div>'
+	        f'<div class="cols"><div><h3>Systems</h3>{pairs([(system(v), n) for v, n in split("os")])}</div>'
+	        f'<div><h3>Channels</h3>{pairs(split("channel"))}</div></div></div>')
+
+
 # ---- overview ----------------------------------------------------------------------
 
 def home(s, query, user):
@@ -281,60 +340,7 @@ def home(s, query, user):
 		f'<div class="card kpi"><div class="muted">{esc(label)}</div><div class="n">{n:,}</div>'
 		f'<div class="d">{note}</div></div>' for label, n, note in kpis) + '</section>'
 
-	# Active installs per day, stacked by channel.
-	per_day = {}
-	for d, channel, n in s.store.q('SELECT day, channel, COUNT(*) FROM active_days WHERE day >= ? '
-	                               'GROUP BY day, channel', (day(days - 1),)):
-		per_day.setdefault(d, {})[channel] = n
-	totals = [sum(per_day.get(day(i), {}).values()) for i in range(days - 1, -1, -1)]
-	top = max(10, -(-max(totals or [0]) // 10) * 10)
-	columns = ''
-	for i in range(days - 1, -1, -1):
-		counts = per_day.get(day(i), {})
-		label = ('Today' if i == 0 else f'{day(i)}') + f': {sum(counts.values())} installs'
-		segs = ''.join(f'<div style="height:{round(counts[c] * CHART_PX / top)}px;background:{colour}"></div>'
-		               for c, colour in CHANNEL_COLOURS if counts.get(c))
-		columns += f'<div title="{esc(label)}">{segs}</div>'
-	legend = ''.join(f'<span><i class="sw" style="background:{colour}"></i>{c}</span>'
-	                 for c, colour in CHANNEL_COLOURS[:3])
-	chart = (f'<div class="card wide" id="installs"><div class="head"><h2>Active installs per day</h2>'
-	         f'<div class="legend">{legend}</div></div>'
-	         f'<div class="chart"><div class="axis"><span>{top}</span><span>{top // 2}</span><span>0</span></div>'
-	         f'<div class="bars" role="img" aria-label="Active installs per day for the last {days} days, '
-	         f'by channel">{columns}</div></div>'
-	         f'<div class="under" style="padding-left:38px"><span>{days - 1} days ago</span><span>today</span></div>'
-	         '</div>')
-
-	# Versions, systems and channels of the installs seen in 30 days.
-	month_since = stamp(t - dt.timedelta(days=30))
-	split = lambda col: s.store.q(f'SELECT {col}, COUNT(*) FROM installs WHERE last_seen >= ? GROUP BY {col} '
-	                              'ORDER BY 2 DESC', (month_since,))
-	versions = sorted(split('version'), key=lambda r: version_key(r[0]), reverse=True)
-	total = sum(n for _, n in versions)
-	latest = {}
-	for channel, version in s.store.q('SELECT channel, version FROM installs WHERE last_seen >= ?', (month_since,)):
-		if channel in ('production', 'beta') and version_key(version) > version_key(latest.get(channel, '0')):
-			latest[channel] = version
-	shown, rest = versions[:4], sum(n for _, n in versions[4:])
-	if rest:
-		shown.append(('other', rest))
-	vrows = ''
-	for i, (version, n) in enumerate(shown):
-		tags = [f'<span class="tag">latest {c}</span>' for c in ('beta', 'production') if latest.get(c) == version]
-		if version.endswith('.0') and version != 'other':
-			tags.append('<span class="tag warn">no build info</span>')
-		vrows += (f'<div style="display:flex;flex-direction:column;gap:6px"><div class="pair">'
-		          f'<span class="mono">{esc(version)}{"".join(tags)}</span>'
-		          f'<span class="soft">{n:,} · {pct(n, total)}</span></div><div class="meter">'
-		          f'<div class="{"first" if i == 0 else ""}" style="width:{pct(n, total)}"></div></div></div>')
-	pairs = lambda rows: ''.join(f'<div class="pair"><span>{esc(v)}</span><span class="soft">'
-	                             f'{pct(n, sum(m for _, m in rows))}</span></div>' for v, n in rows)
-	side = (f'<div class="card narrow"><h2>Versions in use</h2>'
-	        f'<div class="muted small" style="margin-top:-8px">Installs seen in the last 30 days</div>'
-	        f'{vrows or "<div class=empty>No installs yet.</div>"}<div class="rule"></div>'
-	        f'<div class="cols"><div><h3>Systems</h3>{pairs([(system(v), n) for v, n in split("os")])}</div>'
-	        f'<div><h3>Channels</h3>{pairs(split("channel"))}</div></div></div>')
-	body += f'<section class="row">{chart}{side}</section>'
+	body += f'<section class="row">{installs_chart(s, t, days)}{usage_card(s, t)}</section>'
 
 	# Crash and error groups.
 	order = {'regression': 0, 'new': 1, 'open': 2, 'fixed': 3}
@@ -522,3 +528,60 @@ def report(s, rid, user, uid_pattern):
 	        f'</span></div><div class="frames">{frames}</div></section>'
 	        f'<section class="card"><h2>Log</h2><pre>{esc(chr(10).join(r.get("log", []))) or "(empty)"}</pre></section>')
 	return render(f'Report {rid[:12]}', body, user)
+
+
+# ---- the public page -------------------------------------------------------------
+
+SOURCE = 'https://github.com/itsneufox/Haumea-Studio/tree/main/tools/server'
+
+
+def public(s, query):
+	"""Everything the pings and reports add up to, for anyone: totals only,
+	never a stack, a log, a GPU, a report or an install."""
+	t = utc_now()
+	q = urllib.parse.parse_qs(query)
+	days = int(q.get('days', ['90'])[0]) if q.get('days', ['90'])[0] in ('7', '30', '90') else 90
+	day = lambda n: (t - dt.timedelta(days=n)).strftime('%Y-%m-%d')
+	active = lambda first: s.store.q('SELECT COUNT(DISTINCT uid) FROM active_days WHERE day >= ?', (day(first),))[0][0]
+	month = stamp(t - dt.timedelta(days=30))
+	reports = s.store.q('SELECT COUNT(*) FROM reports WHERE received >= ?', (month,))[0][0]
+	kpis = [('Active today', active(0)), ('Active, 7 days', active(6)), ('Active, 30 days', active(29)),
+	        ('Crash and error reports, 30 days', reports)]
+	body = ('<section class="card"><h2>Why this page</h2><div class="soft">Haumea Studio can send a small daily ping '
+	        'and, when it crashes, a crash report: both are off until you say yes in the editor, and both can be '
+	        'turned off in Preferences, Privacy. This page shows everything they add up to, the same numbers the '
+	        'developer sees, as totals. No IP address is ever stored.</div></section>')
+	body += '<section class="kpis" aria-label="Totals">' + ''.join(
+		f'<div class="card kpi"><div class="muted">{esc(label)}</div><div class="n">{n:,}</div></div>'
+		for label, n in kpis) + '</section>'
+	body += f'<section class="row">{installs_chart(s, t, days)}{usage_card(s, t)}</section>'
+
+	per_version = s.store.q('SELECT version, COUNT(*), COUNT(DISTINCT group_id) FROM reports WHERE received >= ? '
+	                        'GROUP BY version', (month,))
+	per_version.sort(key=lambda r: version_key(r[0]), reverse=True)
+	most = max((n for _, n, _ in per_version), default=1)
+	rows = ''.join(f'<div class="split"><span class="name mono">{esc(v)}</span><div class="meter thin">'
+	               f'<div style="width:{round(n * 100 / most)}%"></div></div><span class="n">{n}</span>'
+	               f'<span class="soft small" style="flex:0 0 90px">{g} crash{"es" if g != 1 else ""}</span></div>'
+	               for v, n, g in per_version)
+	ping = json.dumps({'uid': '3f9c2a7e5b1d4c8e9a0f6b2d7c4e1a95', 'version': '1.0.0.242', 'channel': 'beta',
+	                   'os': 'windows'}, indent=2)
+	body += ('<section class="row">'
+	         '<div class="card half"><h2>Crash and error reports by version</h2><div class="muted small" '
+	         'style="margin-top:-8px">The last 30 days: reports, and how many different crashes they are</div>'
+	         + (rows or '<div class="empty">None in the last 30 days.</div>') + '</div>'
+	         '<div class="card half"><h2>What a ping sends</h2><div class="soft">Once a day at most, only these four '
+	         'fields. The id is random, made the first time you say yes, and deleted from your computer when '
+	         f'you turn the ping off.</div><pre>{esc(ping)}</pre><div class="soft">A crash report, sent only when you choose to, '
+	         'adds the editor\'s own stack (where in the code it crashed), its last log lines with your folders '
+	         'replaced by &lt;GTA&gt; and &lt;WORKSPACE&gt;, the system and graphics card, which window was '
+	         'open, and the ping\'s id while the ping is on (so one computer\'s crashes count once). Pings are kept '
+	         f'{esc(s.config["HAUMEA_PING_DAYS"])} days, reports {esc(s.config["HAUMEA_REPORT_DAYS"])}.</div>'
+	         f'<div style="display:flex;flex-wrap:wrap;gap:16px"><a href="/privacy">Privacy page</a>'
+	         f'<a href="{SOURCE}">The server\'s source code</a></div></div></section>')
+	body += ('<footer><span>Haumea Studio is free software under the GNU GPL, version 2 or later.</span>'
+	         f'<span>Updated {esc(t.strftime("%Y-%m-%d %H:%M"))} UTC</span></footer>')
+	ranges = ''.join(f'<a href="/stats?days={r}" class="{"on" if r == days else ""}">{r} days</a>' for r in RANGES)
+	return render('Haumea Studio: public statistics', body, None,
+	              f'<nav class="seg" aria-label="Time range">{ranges}</nav>', home='/stats',
+	              subtitle='Public statistics')

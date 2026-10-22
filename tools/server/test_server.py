@@ -263,6 +263,17 @@ class ServerTests(unittest.TestCase):
 		self.assertIn('Object Info', page)
 		self.assertEqual(self.get('/dashboard/report/../../etc/passwd')[0], 404)
 
+	def test_public_stats_has_totals_only(self):
+		r = report(version='1.0.0.31', gl_renderer='Secret GPU 9000')
+		self.assertEqual(self.post('/haumea/reports', r)[0], 204)
+		self.post('/haumea/telemetry/ping', {'uid': 'f' * 32, 'version': '1.0.0.31', 'channel': 'beta', 'os': 'linux'})
+		code, page = self.get('/stats?days=7', auth=False)
+		self.assertEqual(code, 200)
+		self.assertIn('What a ping sends', page)
+		self.assertIn('1.0.0.31', page)	# a version's report count
+		for private in ('Secret GPU 9000', r['id'], 'f' * 32, 'SIGSEGV in', '/dashboard/'):
+			self.assertNotIn(private, page)
+
 	def test_privacy_page(self):
 		code, page = self.get('/privacy', auth=False)
 		self.assertEqual(code, 200)

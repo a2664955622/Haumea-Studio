@@ -12,6 +12,7 @@ and reports.itsneufox.xyz over HTTPS. Routes:
     POST /haumea/telemetry/ping   a ping (JSON, under 1 KB): 204
     POST /haumea/reports          a crash or error report (JSON, up to 256 KB): 204
     GET  /privacy                 what is collected and kept
+    GET  /stats                   what it all adds up to, for anyone (totals only)
     GET  /dashboard/...           the dashboard (dashboard.py), behind Cloudflare Access
                                   (access.py) or, without it set up, HTTP basic auth
 
@@ -637,6 +638,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
 		path = url.path
 		if path == '/privacy':
 			return self.reply(200, PRIVACY.read_bytes(), 'text/html; charset=utf-8')
+		if path == '/stats':
+			return self.reply(200, dashboard.public(self.service, url.query).encode(), 'text/html; charset=utf-8',
+			                  extra=[('Cache-Control', 'public, max-age=300'), ('X-Frame-Options', 'DENY'),
+			                         ('Content-Security-Policy', "default-src 'self'; style-src 'unsafe-inline'")])
 		if path == '/healthz':
 			return self.reply(200, b'ok')
 		if path == '/dashboard' or path.startswith('/dashboard/'):

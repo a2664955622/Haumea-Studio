@@ -7,7 +7,7 @@ telemetry.itsneufox.xyz {
 	log {
 		output discard
 	}
-	@allowed path /haumea/telemetry/ping /privacy
+	@allowed path /haumea/telemetry/ping /privacy /stats
 	handle @allowed {
 		request_body {
 			max_size 1KB

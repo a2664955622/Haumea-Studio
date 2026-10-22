@@ -200,6 +200,14 @@ in the Namaka companion keep their stacks as offsets. To read a report by hand
 python3 /opt/haumea-server/symbolize.py report.json haumea-symbols-1.0.0.57.zip
 ```
 
+## Public statistics
+
+`https://telemetry.itsneufox.xyz/stats` shows anyone what the pings and
+reports add up to: active installs, versions, systems, channels and the
+number of crash reports per version, plus exactly what a ping sends. It has
+totals only, never a stack, a log, a graphics card or one install, and needs
+no login.
+
 ## Privacy
 
 The service never stores IP addresses and keeps no access log (Caddy's is
