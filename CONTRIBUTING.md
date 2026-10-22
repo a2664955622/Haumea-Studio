@@ -4,7 +4,8 @@ Thanks for helping. Bug reports, ideas, translations and code are all welcome.
 
 - **Bugs and ideas:** open an issue with the bug report or feature request form. One problem or
   idea per issue.
-- **Questions:** ask on the [Haumea Discord](https://discord.gg/yTF8DWQqpP).
+- **Questions and ideas to talk through:** [Discussions](https://github.com/itsneufox/Haumea-Studio/discussions),
+  or the [Haumea Discord](https://discord.gg/yTF8DWQqpP) for quick help.
 - **Security problems:** never in a public issue; see [SECURITY.md](SECURITY.md).
 
 Everyone taking part follows the [code of conduct](CODE_OF_CONDUCT.md).

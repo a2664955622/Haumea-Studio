@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Please don't report security problems in public issues, pull requests or on Discord.
+Please don't report security problems in public issues, pull requests, Discussions or on Discord.
 
 Report them privately through GitHub: open the repository's **Security** tab and choose
 **Report a vulnerability** ([direct link](https://github.com/itsneufox/Haumea-Studio/security/advisories/new)).

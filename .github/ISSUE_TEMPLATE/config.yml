@@ -1,6 +1,9 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Questions and help
+  - name: Questions and ideas
+    url: https://github.com/itsneufox/Haumea-Studio/discussions
+    about: Ask a question or talk an idea through in Discussions.
+  - name: Quick help
     url: https://discord.gg/yTF8DWQqpP
     about: Ask on the Haumea Discord.
   - name: Security problem
