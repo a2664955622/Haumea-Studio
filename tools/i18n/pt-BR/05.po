@@ -1042,10 +1042,6 @@ msgstr "Namaka %s está instalado"
 msgid "Namaka is not installed."
 msgstr "O Namaka não está instalado."
 
-#: tools/haumea/namaka.cpp:851
-msgid "Namaka lets an AI assistant (Claude Code, Claude Desktop or another MCP client) look at and edit the map open in Haumea."
-msgstr "O Namaka deixa um assistente de IA (Claude Code, Claude Desktop ou outro cliente MCP) ver e editar o mapa aberto no Haumea."
-
 #: tools/haumea/namaka.cpp:574
 #, c-format
 msgid "Namaka updated: %s"
@@ -1934,4 +1930,3 @@ msgstr "ontem"
 #, c-format
 msgid "|  0.3.DL custom models in this workspace: %d"
 msgstr "|  Modelos personalizados 0.3.DL neste workspace: %d"
-

@@ -339,6 +339,18 @@ msgstr "%d zonas, no máximo %d perto de um jogador"
 #, c-format
 msgid ""
 "%s\n"
+"\n"
+"Or in ~/.codex/config.toml:\n"
+"%s"
+msgstr ""
+"%s\n"
+"\n"
+"Ou em ~/.codex/config.toml:\n"
+"%s"
+
+#, c-format
+msgid ""
+"%s\n"
 "%d instance(s), %d SA-MP element(s), %d vehicle(s)\n"
 "%s\n"
 "Double-click to place"
@@ -485,8 +497,8 @@ msgid "%s is set to show only inside area \"%s\", which is not in the map: it is
 msgstr "%s está configurado para aparecer só dentro da área \"%s\", que não está no mapa: é escrito sem ela e aparece em todo lugar."
 
 #, c-format
-msgid "%s isn't next to the editor. It ships with every release, and is in the source at https://github.com/itsneufox/haumea."
-msgstr "%s não está junto do editor. Ele vem com toda versão e está no código-fonte em https://github.com/itsneufox/haumea."
+msgid "%s isn't next to the editor. It ships with every release, and is in the source at https://github.com/itsneufox/Haumea-Studio."
+msgstr "%s não está junto do editor. Ele vem com toda versão e está no código-fonte em https://github.com/itsneufox/Haumea-Studio."
 
 #, c-format
 msgid "%s lists every keyboard shortcut; change them in Preferences."
@@ -1940,6 +1952,12 @@ msgstr "Comando claude mcp add copiado"
 msgid "Copied the claude_desktop_config.json entry"
 msgstr "Entrada do claude_desktop_config.json copiada"
 
+msgid "Copied the codex mcp add command"
+msgstr "Comando codex mcp add copiado"
+
+msgid "Copied the mcpServers entry"
+msgstr "Entrada mcpServers copiada"
+
 msgid "Copies"
 msgstr "Cópias"
 
@@ -1982,6 +2000,9 @@ msgstr "Copiar / Colar"
 msgid "Copy Camera Position"
 msgstr "Copiar posição da câmera"
 
+msgid "Copy MCP JSON"
+msgstr "Copiar JSON MCP"
+
 msgid "Copy as Pawn"
 msgstr "Copiar como Pawn"
 
@@ -1999,6 +2020,9 @@ msgstr "Copiar para o Claude Code"
 
 msgid "Copy for Claude Desktop"
 msgstr "Copiar para o Claude Desktop"
+
+msgid "Copy for Codex"
+msgstr "Copiar para o Codex"
 
 #, c-format
 msgid "Copy limited to first %d selected instance(s)"
@@ -2937,6 +2961,14 @@ msgstr "Área ocupada"
 msgid "Footprint (m²)"
 msgstr "Área ocupada (m²)"
 
+#, c-format
+msgid ""
+"For any other MCP client: add this to its mcpServers.\n"
+"%s"
+msgstr ""
+"Para qualquer outro cliente MCP: adicione isto ao mcpServers dele.\n"
+"%s"
+
 msgid "For models whose textures can't be read."
 msgstr "Para modelos cujas texturas não podem ser lidas."
 
@@ -3578,8 +3610,8 @@ msgstr "Info"
 msgid "Install"
 msgstr "Instalar"
 
-msgid "Install Namaka and connect Claude, like Windows > Namaka."
-msgstr "Instale o Namaka e conecte o Claude, como em Janelas > Namaka."
+msgid "Install Namaka and connect an AI assistant (Claude, Codex…), like Windows > Namaka."
+msgstr "Instale o Namaka e conecte um assistente de IA (Claude, Codex…), como em Janelas > Namaka."
 
 msgid "Install Namaka, point your MCP client at it (Copy below), then delete this folder."
 msgstr "Instale o Namaka, aponte seu cliente MCP para ele (Copiar abaixo) e depois apague esta pasta."
@@ -3612,8 +3644,8 @@ msgstr ""
 msgid "Install and update"
 msgstr "Instalar e atualizar"
 
-msgid "Install, repair or update Namaka, and connect Claude."
-msgstr "Instale, repare ou atualize o Namaka e conecte o Claude."
+msgid "Install, repair or update Namaka, and connect an AI assistant (Claude, Codex…)."
+msgstr "Instale, repare ou atualize o Namaka e conecte um assistente de IA (Claude, Codex…)."
 
 msgid "Installs it again from the bundle; the old install stays until the new one works."
 msgstr "Instala de novo a partir do pacote; a instalação antiga fica até a nova funcionar."
@@ -4402,11 +4434,11 @@ msgstr "Namaka (assistente de IA)..."
 msgid "Namaka is not installed."
 msgstr "O Namaka não está instalado."
 
-msgid "Namaka lets an AI assistant (Claude Code, Claude Desktop or another MCP client) look at and edit the map open in Haumea."
-msgstr "O Namaka deixa um assistente de IA (Claude Code, Claude Desktop ou outro cliente MCP) ver e editar o mapa aberto no Haumea."
+msgid "Namaka lets an AI assistant (Claude Code, Codex, Claude Desktop or another MCP client) look at and edit the map open in Haumea."
+msgstr "O Namaka deixa um assistente de IA (Claude Code, Codex, Claude Desktop ou outro cliente MCP) ver e editar o mapa aberto no Haumea."
 
-msgid "Namaka lets an AI assistant work in Haumea: install it and connect Claude."
-msgstr "O Namaka deixa um assistente de IA trabalhar no Haumea: instale-o e conecte o Claude."
+msgid "Namaka lets an AI assistant (Claude, Codex…) work in Haumea: install it and connect one."
+msgstr "O Namaka deixa um assistente de IA (Claude, Codex…) trabalhar no Haumea: instale-o e conecte um."
 
 #, c-format
 msgid "Namaka updated: %s"

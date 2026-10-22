@@ -2019,10 +2019,6 @@ msgstr "No veículo"
 msgid "Info"
 msgstr "Info"
 
-#: tools/haumea/gui.cpp:7897
-msgid "Install, repair or update Namaka, and connect Claude."
-msgstr "Instale, repare ou atualize o Namaka e conecte o Claude."
-
 #: tools/haumea/gui.cpp:7757
 msgid "Interface"
 msgstr "Interface"
