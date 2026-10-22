@@ -7,6 +7,8 @@ telemetry.itsneufox.xyz {
 	log {
 		output discard
 	}
+	# The bare name opens the public statistics.
+	redir / /stats 302
 	@allowed path /haumea/telemetry/ping /privacy /stats
 	handle @allowed {
 		request_body {
