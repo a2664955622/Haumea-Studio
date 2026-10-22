@@ -491,7 +491,7 @@ RunMapCheck(int pawnFormat, MapCheckResult *result, bool translated)
 				// The TXD and texture as the client looks them up (game, SA-MP
 				// or the workspace's custom models).
 				char why[512];
-				int check = CheckMaterialTexture(*m, why, sizeof(why));
+				int check = CheckMaterialTexture(*m, why, sizeof(why), gTranslated);
 				if(check != MATERIAL_TEXTURE_OK)
 					c.add(check == MATERIAL_TEXTURE_ERROR ? MAPCHECK_ERROR :
 						check == MATERIAL_TEXTURE_NOTE ? MAPCHECK_INFO : MAPCHECK_WARNING, MATERIALS, inst,
