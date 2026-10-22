@@ -1,0 +1,17 @@
+# pt-BR translations of the strings in i18n.cpp
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Auto"
+msgstr "Automático"
+
+msgid ""
+"Auto follows the system language when Haumea has it, else English.\n"
+"A language is a lang/<code>.po file beside the editor."
+msgstr ""
+"Automático segue o idioma do sistema quando o Haumea o tem; senão, inglês.\n"
+"Um idioma é um arquivo lang/<code>.po ao lado do editor."
+
+msgid "Language"
+msgstr "Idioma"
