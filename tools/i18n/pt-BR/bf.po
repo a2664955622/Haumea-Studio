@@ -1,0 +1,2056 @@
+# pt-BR translations of the strings in: custommodels.cpp nodes_ui.cpp objfilters.cpp sapaths.cpp texbrowser.cpp textdraws_ui.cpp
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: tools/haumea/textdraws_ui.cpp:1392
+#, c-format
+msgid "%d in the map (read-only)"
+msgstr "%d no mapa (somente leitura)"
+
+#: tools/haumea/texbrowser.cpp:616
+#, c-format
+msgid "%d of %d"
+msgstr "%d de %d"
+
+#: tools/haumea/textdraws_ui.cpp:1343
+#, c-format
+msgid ""
+"%s\n"
+"Include it in your gamemode and call %s_CreateTextDraws()\n"
+"from OnGameModeInit and %s_ShowTextDraws(playerid)."
+msgstr ""
+"%s\n"
+"Inclua-o no seu gamemode e chame %s_CreateTextDraws()\n"
+"em OnGameModeInit e %s_ShowTextDraws(playerid)."
+
+#: tools/haumea/texbrowser.cpp:520
+#, c-format
+msgid ""
+"%s\n"
+"TXD %s, model %d\n"
+"Click applies it; right-click keeps it in Favourites."
+msgstr ""
+"%s\n"
+"TXD %s, modelo %d\n"
+"Clique para aplicar; clique direito para guardar nos Favoritos."
+
+#: tools/haumea/texbrowser.cpp:519
+#, c-format
+msgid ""
+"%s\n"
+"TXD %s, model %d (no model loads this TXD)\n"
+"Click applies it; right-click keeps it in Favourites."
+msgstr ""
+"%s\n"
+"TXD %s, modelo %d (nenhum modelo carrega esta TXD)\n"
+"Clique para aplicar; clique direito para guardar nos Favoritos."
+
+#: tools/haumea/nodes_ui.cpp:212
+msgid "(other file)"
+msgstr "(outro arquivo)"
+
+#: tools/haumea/sapaths.cpp:6831
+msgid "(unknown)"
+msgstr "(desconhecido)"
+
+#: tools/haumea/custommodels.cpp:789
+msgid "-1000 to -30000: the model ID scripts use, as in CreateObject(-1000, ...)."
+msgstr "-1000 a -30000: o ID de modelo que os scripts usam, como em CreateObject(-1000, ...)."
+
+#: tools/haumea/sapaths.cpp:6791
+msgid "0 - Default"
+msgstr "0 - Padrão"
+
+#: tools/haumea/sapaths.cpp:6810
+msgid "0 - Disabled (no traffic light)"
+msgstr "0 - Desativado (sem semáforo)"
+
+#: tools/haumea/textdraws_ui.cpp:921
+msgid "0 Beckett (gothic)"
+msgstr "0 Beckett (gótica)"
+
+#: tools/haumea/sapaths.cpp:6811
+msgid "1 - North-South phase"
+msgstr "1 - Fase Norte-Sul"
+
+#: tools/haumea/sapaths.cpp:6792
+msgid "1 - Roadblock"
+msgstr "1 - Bloqueio"
+
+#: tools/haumea/textdraws_ui.cpp:921
+msgid "1 Aharoni"
+msgstr "1 Aharoni"
+
+#: tools/haumea/sapaths.cpp:6801
+msgid "10 - Unknown"
+msgstr "10 - Desconhecido"
+
+#: tools/haumea/sapaths.cpp:6802
+msgid "11 - Unknown"
+msgstr "11 - Desconhecido"
+
+#: tools/haumea/sapaths.cpp:6803
+msgid "12 - Unknown"
+msgstr "12 - Desconhecido"
+
+#: tools/haumea/sapaths.cpp:6804
+msgid "13 - Unknown"
+msgstr "13 - Desconhecido"
+
+#: tools/haumea/sapaths.cpp:6805
+msgid "14 - Unknown"
+msgstr "14 - Desconhecido"
+
+#: tools/haumea/sapaths.cpp:6806
+msgid "15 - Unknown"
+msgstr "15 - Desconhecido"
+
+#: tools/haumea/sapaths.cpp:6793
+msgid "2 - Parking"
+msgstr "2 - Estacionamento"
+
+#: tools/haumea/sapaths.cpp:6812
+msgid "2 - West-East phase"
+msgstr "2 - Fase Oeste-Leste"
+
+#: tools/haumea/textdraws_ui.cpp:921
+msgid "2 Bank Gothic (capitals)"
+msgstr "2 Bank Gothic (maiúsculas)"
+
+#: tools/haumea/custommodels.cpp:788
+msgid "20001 to 30000: the skin ID scripts use."
+msgstr "20001 a 30000: o ID de skin que os scripts usam."
+
+#: tools/haumea/sapaths.cpp:7120
+msgid ""
+"2D position (X, Y) of this navi waypoint.\n"
+"Usually placed at the midpoint between two path nodes.\n"
+"Quantized to 0.125 units."
+msgstr ""
+"Posição 2D (X, Y) deste ponto navi.\n"
+"Normalmente fica no meio entre dois nós de caminho.\n"
+"Arredondada para passos de 0,125 unidade."
+
+#: tools/haumea/sapaths.cpp:6794
+msgid "3 - Unknown"
+msgstr "3 - Desconhecido"
+
+#: tools/haumea/sapaths.cpp:6813
+msgid "3 - Unused (undefined in vanilla)"
+msgstr "3 - Não usado (indefinido no jogo original)"
+
+#: tools/haumea/textdraws_ui.cpp:922
+msgid "3 Pricedown (capitals)"
+msgstr "3 Pricedown (maiúsculas)"
+
+#: tools/haumea/sapaths.cpp:6795
+msgid "4 - Unknown"
+msgstr "4 - Desconhecido"
+
+#: tools/haumea/textdraws_ui.cpp:922
+msgid "4 Sprite"
+msgstr "4 Sprite"
+
+#: tools/haumea/sapaths.cpp:6796
+msgid "5 - Unknown"
+msgstr "5 - Desconhecido"
+
+#: tools/haumea/textdraws_ui.cpp:922
+msgid "5 Model preview"
+msgstr "5 Prévia de modelo"
+
+#: tools/haumea/sapaths.cpp:6797
+msgid "6 - Unknown"
+msgstr "6 - Desconhecido"
+
+#: tools/haumea/sapaths.cpp:6798
+msgid "7 - Unknown"
+msgstr "7 - Desconhecido"
+
+#: tools/haumea/sapaths.cpp:6799
+msgid "8 - Unknown"
+msgstr "8 - Desconhecido"
+
+#: tools/haumea/sapaths.cpp:6800
+msgid "9 - Unknown"
+msgstr "9 - Desconhecido"
+
+#: tools/haumea/textdraws_ui.cpp:1199
+msgid "A .pwn or .inc file with only textdraws; your gamemode includes it."
+msgstr "Um arquivo .pwn ou .inc só com textdraws; o seu gamemode o inclui."
+
+#: tools/haumea/objfilters.cpp:802
+msgid "A texture contains"
+msgstr "Uma textura contém"
+
+#: tools/haumea/sapaths.cpp:7304
+#, c-format
+msgid "Active: %s"
+msgstr "Em uso: %s"
+
+#: tools/haumea/sapaths.cpp:7304
+#, c-format
+msgid "Active: %s (lenient IMG read)"
+msgstr "Em uso: %s (leitura tolerante do IMG)"
+
+#: tools/haumea/custommodels.cpp:734
+msgid "Add Custom Model (SA-MP 0.3.DL / open.mp)"
+msgstr "Adicionar modelo personalizado (SA-MP 0.3.DL / open.mp)"
+
+#: tools/haumea/custommodels.cpp:798
+msgid "Add to server"
+msgstr "Adicionar ao servidor"
+
+#: tools/haumea/custommodels.cpp:814
+#, c-format
+msgid "Added %d to the server: Object Browser > Custom models"
+msgstr "%d adicionado ao servidor: Navegador de objetos > Modelos personalizados"
+
+#: tools/haumea/nodes_ui.cpp:148
+#, c-format
+msgid "Added the node, but couldn't link it: %s"
+msgstr "Nó adicionado, mas não foi possível ligá-lo: %s"
+
+#: tools/haumea/textdraws_ui.cpp:985
+msgid "Alignment"
+msgstr "Alinhamento"
+
+#: tools/haumea/texbrowser.cpp:562
+msgid "All textures"
+msgstr "Todas as texturas"
+
+#: tools/haumea/nodes_ui.cpp:213
+#, c-format
+msgid ""
+"An NPC reaching this link leaves NODES%d.DAT;\n"
+"open.mp then reports a node change."
+msgstr ""
+"Um NPC que chega a esta ligação sai de NODES%d.DAT;\n"
+"o open.mp então informa uma troca de nó."
+
+#: tools/haumea/objfilters.cpp:29
+msgid "Animated"
+msgstr "Animado"
+
+#: tools/haumea/objfilters.cpp:768
+msgid "Any collision"
+msgstr "Qualquer colisão"
+
+#: tools/haumea/objfilters.cpp:774
+msgid "Any detail"
+msgstr "Qualquer detalhe"
+
+#: tools/haumea/objfilters.cpp:800
+msgid "Appearance"
+msgstr "Aparência"
+
+#: tools/haumea/texbrowser.cpp:450
+#, c-format
+msgid "Applies to %d selected"
+msgstr "Aplica-se a %d selecionados"
+
+#: tools/haumea/nodes_ui.cpp:254
+msgid "Area grid"
+msgstr "Grade de áreas"
+
+#: tools/haumea/sapaths.cpp:6838
+msgid "Area has unsaved edits"
+msgstr "A área tem edições não salvas"
+
+#: tools/haumea/texbrowser.cpp:445
+msgid "As in Object Info: every selected object that has this slot, as one undo step."
+msgstr "Como em Informações do objeto: todos os objetos selecionados que têm este slot, num só passo de desfazer."
+
+#: tools/haumea/i18n.cpp:549 tools/haumea/i18n.cpp:562 tools/haumea/sapaths.cpp:4754 tools/haumea/sapaths.cpp:7276
+msgid "Auto"
+msgstr "Automático"
+
+#: tools/haumea/sapaths.cpp:7137
+msgid "Auto-compute direction vector pointing from this navi toward its attached node."
+msgstr "Calcula a direção apontando deste navi para o nó ligado a ele."
+
+#: tools/haumea/textdraws_ui.cpp:1248
+#, c-format
+msgid "Back to the map (%s)"
+msgstr "Voltar ao mapa (%s)"
+
+#: tools/haumea/textdraws_ui.cpp:998 tools/haumea/textdraws_ui.cpp:1373
+msgid "Background"
+msgstr "Fundo"
+
+#: tools/haumea/custommodels.cpp:791
+msgid "Base model"
+msgstr "Modelo base"
+
+#: tools/haumea/custommodels.cpp:791
+msgid "Base skin"
+msgstr "Skin base"
+
+#: tools/haumea/sapaths.cpp:6877
+msgid "Behaviour Type"
+msgstr "Tipo de comportamento"
+
+#: tools/haumea/sapaths.cpp:6844
+msgid "Blocked: moving this car node would push attached navis into another streamed area."
+msgstr "Bloqueado: mover este nó de veículo levaria os navis ligados para outra área de streaming."
+
+#: tools/haumea/sapaths.cpp:6841
+msgid "Blocked: nodes cannot cross SA streamed area boundaries yet."
+msgstr "Bloqueado: os nós ainda não podem cruzar os limites das áreas de streaming do SA."
+
+#: tools/haumea/textdraws_ui.cpp:992 tools/haumea/textdraws_ui.cpp:1404
+msgid "Box"
+msgstr "Caixa"
+
+#: tools/haumea/textdraws_ui.cpp:994
+msgid "Box colour"
+msgstr "Cor da caixa"
+
+#: tools/haumea/objfilters.cpp:28 tools/haumea/objfilters.cpp:535
+msgid "Breakable"
+msgstr "Quebrável"
+
+#: tools/haumea/sapaths.cpp:7168
+msgid "Bridge Lights"
+msgstr "Sinal de ponte"
+
+#: tools/haumea/sapaths.cpp:7172
+msgid ""
+"Bridge/train crossing signal flag.\n"
+"In vanilla SA, train crossing objects set this flag via\n"
+"SetLinksBridgeLights when a train approaches.\n"
+"Vehicles read it (ShouldCarStopForBridge) and stop\n"
+"if the flag transitions from unset to set on their next navi."
+msgstr ""
+"Flag de sinal de ponte/passagem de trem.\n"
+"No SA original, os objetos de passagem de nível ativam esta flag com\n"
+"SetLinksBridgeLights quando um trem se aproxima.\n"
+"Os veículos a leem (ShouldCarStopForBridge) e param\n"
+"se a flag passar de desligada para ligada no próximo navi."
+
+#: tools/haumea/custommodels.cpp:745 tools/haumea/custommodels.cpp:768 tools/haumea/nodes_ui.cpp:320 tools/haumea/textdraws_ui.cpp:1203
+msgid "Browse..."
+msgstr "Procurar..."
+
+#: tools/haumea/objfilters.cpp:28
+msgid "Building"
+msgstr "Construção"
+
+#: tools/haumea/nodes_ui.cpp:146
+#, c-format
+msgid "Can't add a node: %s"
+msgstr "Não foi possível adicionar um nó: %s"
+
+#: tools/haumea/nodes_ui.cpp:131
+#, c-format
+msgid "Can't link: %s"
+msgstr "Não foi possível ligar: %s"
+
+#: tools/haumea/nodes_ui.cpp:381 tools/haumea/nodes_ui.cpp:392 tools/haumea/textdraws_ui.cpp:1153 tools/haumea/textdraws_ui.cpp:1216
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: tools/haumea/textdraws_ui.cpp:984
+msgid "Centre"
+msgstr "Centro"
+
+#: tools/haumea/sapaths.cpp:7317
+#, c-format
+msgid "Changed areas: %d"
+msgstr "Áreas alteradas: %d"
+
+#: tools/haumea/nodes_ui.cpp:370 tools/haumea/nodes_ui.cpp:386
+#, c-format
+msgid "Changed files not saved: %d"
+msgstr "Arquivos alterados não salvos: %d"
+
+#: tools/haumea/custommodels.cpp:750
+msgid "Choose the server folder..."
+msgstr "Escolher a pasta do servidor..."
+
+#: tools/haumea/objfilters.cpp:729 tools/haumea/objfilters.cpp:730
+msgid "Clear all"
+msgstr "Limpar tudo"
+
+#: tools/haumea/textdraws_ui.cpp:1334
+msgid "Clear list"
+msgstr "Limpar lista"
+
+#: tools/haumea/nodes_ui.cpp:115
+msgid "Click a node to link it"
+msgstr "Clique num nó para ligá-lo"
+
+#: tools/haumea/nodes_ui.cpp:264
+msgid "Click nodes to select them; W moves the selected node."
+msgstr "Clique nos nós para selecioná-los; W move o nó selecionado."
+
+#: tools/haumea/nodes_ui.cpp:273
+msgid ""
+"Click one node, then another, to link them.\n"
+"Clicking two linked nodes unlinks them. Right-click or Esc stops."
+msgstr ""
+"Clique num nó e depois noutro para ligá-los.\n"
+"Clicar em dois nós ligados os desliga. Clique direito ou Esc para parar."
+
+#: tools/haumea/nodes_ui.cpp:279
+msgid "Click the first node."
+msgstr "Clique no primeiro nó."
+
+#: tools/haumea/nodes_ui.cpp:270
+msgid "Click the ground to add ped nodes. Right-click or Esc stops."
+msgstr "Clique no chão para adicionar nós de pedestre. Clique direito ou Esc para parar."
+
+#: tools/haumea/nodes_ui.cpp:267
+msgid "Click the ground to add vehicle nodes. Right-click or Esc stops."
+msgstr "Clique no chão para adicionar nós de veículo. Clique direito ou Esc para parar."
+
+#: tools/haumea/nodes_ui.cpp:279
+msgid "Click the node to link to."
+msgstr "Clique no nó a ligar."
+
+#: tools/haumea/objfilters.cpp:767
+msgid "Collision and detail"
+msgstr "Colisão e detalhe"
+
+#: tools/haumea/textdraws_ui.cpp:958
+msgid "Colour"
+msgstr "Cor"
+
+#: tools/haumea/sapaths.cpp:7329
+msgid "Controls:"
+msgstr "Controles:"
+
+#: tools/haumea/custommodels.cpp:740
+msgid "Copies the DFF and TXD into the server's models folder and adds them to models/artconfig.txt, so SA-MP 0.3.DL and open.mp send them to players. Nothing is written into the game folder."
+msgstr "Copia a DFF e a TXD para a pasta models do servidor e as adiciona a models/artconfig.txt, para que o SA-MP 0.3.DL e o open.mp as enviem aos jogadores. Nada é gravado na pasta do jogo."
+
+#: tools/haumea/textdraws_ui.cpp:1121
+#, c-format
+msgid "Could not move the textdraws: %s"
+msgstr "Não foi possível mover os textdraws: %s"
+
+#: tools/haumea/textdraws_ui.cpp:1030
+#, c-format
+msgid "Could not open %s"
+msgstr "Não foi possível abrir %s"
+
+#: tools/haumea/textdraws_ui.cpp:1042
+#, c-format
+msgid "Could not save the textdraws: %s"
+msgstr "Não foi possível salvar os textdraws: %s"
+
+#: tools/haumea/nodes_ui.cpp:349 tools/haumea/nodes_ui.cpp:377
+#, c-format
+msgid "Couldn't load the nodes: %s"
+msgstr "Não foi possível carregar os nós: %s"
+
+#: tools/haumea/nodes_ui.cpp:335
+#, c-format
+msgid "Couldn't save the nodes: %s"
+msgstr "Não foi possível salvar os nós: %s"
+
+#: tools/haumea/sapaths.cpp:7056
+msgid "Crosses Road"
+msgstr "Cruza a rua"
+
+#: tools/haumea/texbrowser.cpp:562
+msgid "Custom models"
+msgstr "Modelos personalizados"
+
+#: tools/haumea/custommodels.cpp:377
+#, c-format
+msgid "Custom models that couldn't be loaded: %d (see the log)"
+msgstr "Modelos personalizados que não puderam ser carregados: %d (veja o log)"
+
+#: tools/haumea/sapaths.cpp:6890
+msgid "Dead End"
+msgstr "Sem saída"
+
+#: tools/haumea/textdraws_ui.cpp:1451
+msgid "Delete"
+msgstr "Excluir"
+
+#: tools/haumea/nodes_ui.cpp:218
+msgid "Delete node"
+msgstr "Excluir nó"
+
+#: tools/haumea/objfilters.cpp:654
+msgid "Delete the preset with this name."
+msgstr "Exclui a predefinição com este nome."
+
+#: tools/haumea/objfilters.cpp:410
+msgid "Depth"
+msgstr "Profundidade"
+
+#: tools/haumea/objfilters.cpp:755
+msgid "Depth Y (m)"
+msgstr "Profundidade Y (m)"
+
+#: tools/haumea/objfilters.cpp:826
+msgid "Descending"
+msgstr "Decrescente"
+
+#: tools/haumea/sapaths.cpp:7128
+msgid ""
+"Direction vector of traffic flow (X, Y).\n"
+"Scaled to -100..100. Determines which way vehicles drive.\n"
+"Use 'Point Dir To Node' to auto-calculate from geometry."
+msgstr ""
+"Vetor de direção do trânsito (X, Y).\n"
+"Em escala de -100..100. Define para que lado os veículos andam.\n"
+"Use 'Apontar para o nó' para calcular pela geometria."
+
+#: tools/haumea/nodes_ui.cpp:387
+msgid "Discard"
+msgstr "Descartar"
+
+#: tools/haumea/nodes_ui.cpp:371
+msgid "Discard and load"
+msgstr "Descartar e carregar"
+
+#: tools/haumea/nodes_ui.cpp:342 tools/haumea/nodes_ui.cpp:363 tools/haumea/nodes_ui.cpp:369 tools/haumea/nodes_ui.cpp:385
+msgid "Discard node changes?"
+msgstr "Descartar as alterações dos nós?"
+
+#: tools/haumea/textdraws_ui.cpp:1145
+msgid "Don't Save"
+msgstr "Não salvar"
+
+#: tools/haumea/sapaths.cpp:6922
+msgid "Dont Wander"
+msgstr "Não passear"
+
+#: tools/haumea/textdraws_ui.cpp:1444
+msgid "Down"
+msgstr "Descer"
+
+#: tools/haumea/objfilters.cpp:37 tools/haumea/objfilters.cpp:412
+msgid "Draw distance"
+msgstr "Distância de desenho"
+
+#: tools/haumea/objfilters.cpp:783
+msgid "Draw distance (m)"
+msgstr "Distância de desenho (m)"
+
+#: tools/haumea/textdraws_ui.cpp:1442
+msgid "Drawn earlier, so under the others."
+msgstr "Desenhado antes, portanto por baixo dos outros."
+
+#: tools/haumea/textdraws_ui.cpp:1449
+msgid "Drawn later, so over the others."
+msgstr "Desenhado depois, portanto por cima dos outros."
+
+#: tools/haumea/sapaths.cpp:7095
+msgid "Dump Preview Traffic Debug"
+msgstr "Despejar depuração do trânsito de prévia"
+
+#: tools/haumea/textdraws_ui.cpp:1428
+msgid "Duplicate"
+msgstr "Duplicar"
+
+#: tools/haumea/nodes_ui.cpp:255
+msgid "Each 750x750 square is one NODES<id>.DAT file."
+msgstr "Cada quadrado de 750x750 é um arquivo NODES<id>.DAT."
+
+#: tools/haumea/texbrowser.cpp:443
+msgid "Edit all selected"
+msgstr "Editar todos os selecionados"
+
+#: tools/haumea/nodes_ui.cpp:352
+msgid "Edit the NODES*.DAT files already in that folder."
+msgstr "Edita os arquivos NODES*.DAT que já estão nessa pasta."
+
+#: tools/haumea/nodes_ui.cpp:258
+#, c-format
+msgid "Editing: %s"
+msgstr "Editando: %s"
+
+#: tools/haumea/textdraws_ui.cpp:1246
+msgid "Exit"
+msgstr "Sair"
+
+#: tools/haumea/objfilters.cpp:29
+msgid "Exterior model"
+msgstr "Modelo de exterior"
+
+#: tools/haumea/sapaths.cpp:7308
+msgid "Failed to load streamed SA path areas"
+msgstr "Falha ao carregar as áreas de caminhos do SA"
+
+#: tools/haumea/objfilters.cpp:778
+msgid "Far versions (LOD)"
+msgstr "Versões distantes (LOD)"
+
+#: tools/haumea/objfilters.cpp:427
+msgid "Far versions only"
+msgstr "Só versões distantes"
+
+#: tools/haumea/objfilters.cpp:35 tools/haumea/objfilters.cpp:539 tools/haumea/texbrowser.cpp:562
+msgid "Favourites"
+msgstr "Favoritos"
+
+#: tools/haumea/nodes_ui.cpp:288 tools/haumea/textdraws_ui.cpp:1174
+msgid "File"
+msgstr "Arquivo"
+
+#: tools/haumea/nodes_ui.cpp:309
+msgid "Files"
+msgstr "Arquivos"
+
+#: tools/haumea/nodes_ui.cpp:312
+#, c-format
+msgid "Files changed and not saved: %d"
+msgstr "Arquivos alterados e não salvos: %d"
+
+#: tools/haumea/nodes_ui.cpp:260
+msgid "Files missing from that folder came from the game."
+msgstr "Os arquivos que faltam nessa pasta vieram do jogo."
+
+#: tools/haumea/objfilters.cpp:713 tools/haumea/objfilters.cpp:715
+msgid "Filters"
+msgstr "Filtros"
+
+#: tools/haumea/sapaths.cpp:7310
+#, c-format
+msgid "First failure: area %d (%s)"
+msgstr "Primeira falha: área %d (%s)"
+
+#: tools/haumea/sapaths.cpp:6887
+msgid "Flags"
+msgstr "Flags"
+
+#: tools/haumea/nodes_ui.cpp:321
+msgid "Folder for NODES*.DAT (a server's scriptfiles/NPCs/nodes)"
+msgstr "Pasta para NODES*.DAT (a scriptfiles/NPCs/nodes de um servidor)"
+
+#: tools/haumea/textdraws_ui.cpp:926
+msgid "Font"
+msgstr "Fonte"
+
+#: tools/haumea/objfilters.cpp:412
+msgid "Footprint"
+msgstr "Área ocupada"
+
+#: tools/haumea/objfilters.cpp:758
+msgid "Footprint (m²)"
+msgstr "Área ocupada (m²)"
+
+#: tools/haumea/textdraws_ui.cpp:1394
+msgid ""
+"From a map made before textdraws had their own file. They are saved\n"
+"back with the map as they are; move them here to edit them."
+msgstr ""
+"De um mapa feito antes de os textdraws terem arquivo próprio. São salvos\n"
+"de volta com o mapa como estão; mova-os para cá para editá-los."
+
+#: tools/haumea/objfilters.cpp:776
+msgid "Full detail"
+msgstr "Detalhe completo"
+
+#: tools/haumea/objfilters.cpp:427 tools/haumea/objfilters.cpp:529
+msgid "Full detail only"
+msgstr "Só detalhe completo"
+
+#: tools/haumea/nodes_ui.cpp:356
+msgid "Game nodes"
+msgstr "Nós do jogo"
+
+#: tools/haumea/nodes_ui.cpp:295
+msgid "Go"
+msgstr "Ir"
+
+#: tools/haumea/nodes_ui.cpp:286
+msgid "Go to node"
+msgstr "Ir para o nó"
+
+#: tools/haumea/objfilters.cpp:428 tools/haumea/objfilters.cpp:780
+msgid "Has a far version"
+msgstr "Tem versão distante"
+
+#: tools/haumea/objfilters.cpp:424 tools/haumea/objfilters.cpp:525 tools/haumea/objfilters.cpp:770
+msgid "Has collision"
+msgstr "Tem colisão"
+
+#: tools/haumea/objfilters.cpp:782
+msgid "Has none"
+msgstr "Não tem"
+
+#: tools/haumea/objfilters.cpp:411
+msgid "Height"
+msgstr "Altura"
+
+#: tools/haumea/objfilters.cpp:756
+msgid "Height Z (m)"
+msgstr "Altura Z (m)"
+
+#: tools/haumea/sapaths.cpp:6929
+msgid "Highway"
+msgstr "Rodovia"
+
+#: tools/haumea/sapaths.cpp:7334
+msgid "Hover over any field below for a description of what it does in-game"
+msgstr "Passe o mouse sobre qualquer campo abaixo para ver o que ele faz no jogo"
+
+#: tools/haumea/sapaths.cpp:7320
+msgid "How to Use"
+msgstr "Como usar"
+
+#: tools/haumea/objfilters.cpp:524
+msgid "Huge (over 50 m)"
+msgstr "Enorme (mais de 50 m)"
+
+#: tools/haumea/objfilters.cpp:37
+msgid "ID"
+msgstr "ID"
+
+#: tools/haumea/custommodels.cpp:249
+#, c-format
+msgid "ID %d is already a game model"
+msgstr "O ID %d já é um modelo do jogo"
+
+#: tools/haumea/custommodels.cpp:533
+#, c-format
+msgid "ID %d is already used"
+msgstr "O ID %d já está em uso"
+
+#: tools/haumea/custommodels.cpp:244
+#, c-format
+msgid "ID %d is out of range"
+msgstr "O ID %d está fora do intervalo"
+
+#: tools/haumea/objfilters.cpp:423
+msgid "IDE"
+msgstr "IDE"
+
+#: tools/haumea/objfilters.cpp:764
+msgid "IDE file contains"
+msgstr "Arquivo IDE contém"
+
+#: tools/haumea/sapaths.cpp:7277
+msgid "IMG (models/paths.img or models/gta3.img)"
+msgstr "IMG (models/paths.img ou models/gta3.img)"
+
+#: tools/haumea/sapaths.cpp:4751 tools/haumea/sapaths.cpp:4762
+msgid "IMG archive"
+msgstr "Arquivo IMG"
+
+#: tools/haumea/nodes_ui.cpp:178
+#, c-format
+msgid ""
+"In Pawn: NPC_OpenNode(%d), then NPC_PlayNode(npcid, %d, ...).\n"
+"The point id is the node's place in its file; adding or deleting\n"
+"nodes in that file renumbers the ones after it."
+msgstr ""
+"Em Pawn: NPC_OpenNode(%d), depois NPC_PlayNode(npcid, %d, ...).\n"
+"O id do ponto é a posição do nó no seu arquivo; adicionar ou excluir\n"
+"nós nesse arquivo renumera os que vêm depois."
+
+#: tools/haumea/objfilters.cpp:35 tools/haumea/objfilters.cpp:541
+msgid "In the open map"
+msgstr "No mapa aberto"
+
+#: tools/haumea/objfilters.cpp:35
+msgid "In the workspace's maps"
+msgstr "Nos mapas do workspace"
+
+#: tools/haumea/texbrowser.cpp:594
+#, c-format
+msgid "Indexing textures... %d of %d TXDs"
+msgstr "Indexando texturas... %d de %d TXDs"
+
+#: tools/haumea/objfilters.cpp:29
+msgid "Interior model"
+msgstr "Modelo de interior"
+
+#: tools/haumea/textdraws_ui.cpp:1182
+msgid "Keep them read-only"
+msgstr "Mantê-los somente leitura"
+
+#: tools/haumea/objfilters.cpp:523
+msgid "Large (10-50 m)"
+msgstr "Grande (10-50 m)"
+
+#: tools/haumea/textdraws_ui.cpp:984
+msgid "Left"
+msgstr "Esquerda"
+
+#: tools/haumea/sapaths.cpp:7330
+msgid "Left-click a node in the viewport to select it"
+msgstr "Clique com o botão esquerdo num nó na viewport para selecioná-lo"
+
+#: tools/haumea/textdraws_ui.cpp:973
+msgid ""
+"Left: the box's right edge. Centre: width and height are swapped (the second is the width).\n"
+"Right: the box's left edge. Text wraps there."
+msgstr ""
+"Esquerda: a borda direita da caixa. Centro: largura e altura trocam de lugar (a segunda é a largura).\n"
+"Direita: a borda esquerda da caixa. O texto quebra ali."
+
+#: tools/haumea/sapaths.cpp:6965
+msgid "Length"
+msgstr "Comprimento"
+
+#: tools/haumea/textdraws_ui.cpp:979
+msgid "Letter size"
+msgstr "Tamanho da letra"
+
+#: tools/haumea/textdraws_ui.cpp:990
+msgid "Letters take their own width instead of a fixed one."
+msgstr "As letras ocupam a sua própria largura em vez de uma fixa."
+
+#: tools/haumea/nodes_ui.cpp:272
+msgid "Link"
+msgstr "Ligar"
+
+#: tools/haumea/sapaths.cpp:7042
+msgid "Link Length"
+msgstr "Comprimento da ligação"
+
+#: tools/haumea/nodes_ui.cpp:276
+msgid "Link each new node to the previous one"
+msgstr "Ligar cada novo nó ao anterior"
+
+#: tools/haumea/sapaths.cpp:7333
+msgid ""
+"Link lines match node color (red/magenta), white when selected,\n"
+"yellow = road crossings, green = vehicle lanes"
+msgstr ""
+"As linhas das ligações têm a cor do nó (vermelho/magenta), branco quando selecionadas,\n"
+"amarelo = travessias, verde = faixas de veículos"
+
+#: tools/haumea/nodes_ui.cpp:129
+msgid "Linked the nodes"
+msgstr "Nós ligados"
+
+#: tools/haumea/sapaths.cpp:6960
+#, c-format
+msgid "Links (%d)"
+msgstr "Ligações (%d)"
+
+#: tools/haumea/nodes_ui.cpp:194
+#, c-format
+msgid "Links: %d / 15"
+msgstr "Ligações: %d / 15"
+
+#: tools/haumea/sapaths.cpp:7325
+msgid "Links: connections between nodes (each node can have up to 15)"
+msgstr "Ligações: conexões entre nós (cada nó pode ter até 15)"
+
+#: tools/haumea/nodes_ui.cpp:340
+msgid "Load"
+msgstr "Carregar"
+
+#: tools/haumea/nodes_ui.cpp:347 tools/haumea/nodes_ui.cpp:375
+#, c-format
+msgid "Loaded %d node files"
+msgstr "Arquivos de nós carregados: %d"
+
+#: tools/haumea/sapaths.cpp:7109
+msgid ""
+"Logs the selected link, its reciprocal direction when present, and any active or nearest preview cars.\n"
+"Use this on a problematic highway segment, then inspect the app log/terminal output."
+msgstr ""
+"Registra a ligação selecionada, a direção recíproca quando existe, e os carros de prévia ativos ou mais próximos.\n"
+"Use num trecho de rodovia com problema e depois veja o log do app/a saída do terminal."
+
+#: tools/haumea/objfilters.cpp:753
+msgid "Longest side (m)"
+msgstr "Lado maior (m)"
+
+#: tools/haumea/sapaths.cpp:7278
+msgid "Loose (data/Paths)"
+msgstr "Arquivos soltos (data/Paths)"
+
+#: tools/haumea/textdraws_ui.cpp:1244
+msgid "Map editing is off."
+msgstr "A edição do mapa está desligada."
+
+#: tools/haumea/sapaths.cpp:6933
+msgid ""
+"Marks this node as a highway node.\n"
+"Present in vanilla path data but no confirmed gameplay\n"
+"effect found in the reversed SA source."
+msgstr ""
+"Marca este nó como nó de rodovia.\n"
+"Existe nos dados de caminhos originais, mas nenhum efeito confirmado\n"
+"no jogo foi encontrado no código do SA revertido."
+
+#: tools/haumea/sapaths.cpp:6940
+msgid ""
+"Marks this node as explicitly not a highway.\n"
+"Present in vanilla path data but no confirmed gameplay\n"
+"effect found in the reversed SA source."
+msgstr ""
+"Marca este nó explicitamente como não rodovia.\n"
+"Existe nos dados de caminhos originais, mas nenhum efeito confirmado\n"
+"no jogo foi encontrado no código do SA revertido."
+
+#: tools/haumea/objfilters.cpp:413 tools/haumea/objfilters.cpp:804
+msgid "Materials"
+msgstr "Materiais"
+
+#: tools/haumea/objfilters.cpp:522
+msgid "Medium (2-10 m)"
+msgstr "Médio (2-10 m)"
+
+#: tools/haumea/objfilters.cpp:811
+msgid "Mine"
+msgstr "Meus"
+
+#: tools/haumea/textdraws_ui.cpp:945 tools/haumea/textdraws_ui.cpp:1408
+msgid "Model"
+msgstr "Modelo"
+
+#: tools/haumea/textdraws_ui.cpp:1161 tools/haumea/textdraws_ui.cpp:1164
+msgid "Move textdraws"
+msgstr "Mover textdraws"
+
+#: tools/haumea/textdraws_ui.cpp:1177
+msgid "Move textdraws to a separate file"
+msgstr "Mover os textdraws para um arquivo separado"
+
+#: tools/haumea/textdraws_ui.cpp:1397
+msgid "Move to a separate file..."
+msgstr "Mover para um arquivo separado..."
+
+#: tools/haumea/objfilters.cpp:28
+msgid "Moves when hit"
+msgstr "Move-se ao ser atingido"
+
+#: tools/haumea/nodes_ui.cpp:301
+#, c-format
+msgid "NODES%d.DAT has no point %d"
+msgstr "NODES%d.DAT não tem o ponto %d"
+
+#: tools/haumea/nodes_ui.cpp:305
+#, c-format
+msgid "NODES%d.DAT: %d vehicle, %d ped nodes (points 0-%d are vehicle)"
+msgstr "NODES%d.DAT: %d nós de veículo, %d de pedestre (os pontos 0-%d são de veículo)"
+
+#: tools/haumea/objfilters.cpp:37
+msgid "Name"
+msgstr "Nome"
+
+#: tools/haumea/sapaths.cpp:7123
+msgid "Navi Direction"
+msgstr "Direção do navi"
+
+#: tools/haumea/sapaths.cpp:6968
+msgid "Navi Node"
+msgstr "Nó navi"
+
+#: tools/haumea/sapaths.cpp:7091
+#, c-format
+msgid "Navi Node  (%d:%d)"
+msgstr "Nó navi  (%d:%d)"
+
+#: tools/haumea/sapaths.cpp:7112
+msgid "Navi Pos"
+msgstr "Posição do navi"
+
+#: tools/haumea/sapaths.cpp:7140
+msgid "Navi Width"
+msgstr "Largura do navi"
+
+#: tools/haumea/sapaths.cpp:7092
+msgid ""
+"Navi nodes are lane waypoints placed between two path nodes.\n"
+"They define road width, lane count, and traffic direction\n"
+"for the road segment between this node and the target."
+msgstr ""
+"Nós navi são pontos de faixa colocados entre dois nós de caminho.\n"
+"Definem a largura da via, o número de faixas e a direção do trânsito\n"
+"no trecho entre este nó e o destino."
+
+#: tools/haumea/sapaths.cpp:7326
+msgid ""
+"Navi nodes: lane waypoints on vehicle links that define road width,\n"
+"lane count, and traffic direction between two nodes"
+msgstr ""
+"Nós navi: pontos de faixa nas ligações de veículos que definem a largura da via,\n"
+"o número de faixas e a direção do trânsito entre dois nós"
+
+#: tools/haumea/textdraws_ui.cpp:1303
+msgid "New"
+msgstr "Novo"
+
+#: tools/haumea/textdraws_ui.cpp:1082
+msgid "New textdraws"
+msgstr "Novos textdraws"
+
+#: tools/haumea/objfilters.cpp:537
+msgid "Night-time"
+msgstr "Noturno"
+
+#: tools/haumea/objfilters.cpp:424 tools/haumea/objfilters.cpp:527
+msgid "No collision"
+msgstr "Sem colisão"
+
+#: tools/haumea/objfilters.cpp:428
+msgid "No far version"
+msgstr "Sem versão distante"
+
+#: tools/haumea/texbrowser.cpp:387
+#, c-format
+msgid "No model loads TXD %s, so SA-MP can't use this texture"
+msgstr "Nenhum modelo carrega a TXD %s, então o SA-MP não pode usar esta textura"
+
+#: tools/haumea/nodes_ui.cpp:174
+msgid "No node selected. Click one in the viewport."
+msgstr "Nenhum nó selecionado. Clique num nó na viewport."
+
+#: tools/haumea/objfilters.cpp:626
+msgid "No presets yet: name the filters on the right and save them."
+msgstr "Ainda não há predefinições: dê um nome aos filtros à direita e salve."
+
+#: tools/haumea/sapaths.cpp:7039
+msgid "No reciprocal link found (one-way connection)."
+msgstr "Nenhuma ligação recíproca encontrada (conexão de mão única)."
+
+#: tools/haumea/textdraws_ui.cpp:1424
+msgid "No textdraws yet."
+msgstr "Ainda não há textdraws."
+
+#: tools/haumea/textdraws_ui.cpp:903
+#, c-format
+msgid "No textures in %s."
+msgstr "Nenhuma textura em %s."
+
+#: tools/haumea/nodes_ui.cpp:314
+msgid "No unsaved changes"
+msgstr "Nenhuma alteração não salva"
+
+#: tools/haumea/nodes_ui.cpp:233
+msgid "Nodes"
+msgstr "Nós"
+
+#: tools/haumea/sapaths.cpp:7337
+msgid "Nodes cannot be moved across area boundaries. Edits are held in memory until you save them from the Nodes window."
+msgstr "Os nós não podem ser movidos através dos limites das áreas. As edições ficam na memória até você salvá-las na janela Nós."
+
+#: tools/haumea/sapaths.cpp:7324
+msgid "Nodes: intersections and waypoints on the road/sidewalk network"
+msgstr "Nós: cruzamentos e pontos de passagem na rede de ruas/calçadas"
+
+#: tools/haumea/objfilters.cpp:772
+msgid "None"
+msgstr "Nenhuma"
+
+#: tools/haumea/sapaths.cpp:6936
+msgid "Not Highway"
+msgstr "Não é rodovia"
+
+#: tools/haumea/objfilters.cpp:444 tools/haumea/objfilters.cpp:533 tools/haumea/objfilters.cpp:603
+msgid "Not placed"
+msgstr "Não colocado"
+
+#: tools/haumea/sapaths.cpp:7151
+msgid ""
+"Number of lanes going in the same direction as the navi direction.\n"
+"These are the 'right side' lanes (following traffic flow)."
+msgstr ""
+"Número de faixas no mesmo sentido da direção do navi.\n"
+"São as faixas do 'lado direito' (seguindo o trânsito)."
+
+#: tools/haumea/sapaths.cpp:7158
+msgid ""
+"Number of lanes going opposite to the navi direction.\n"
+"These are the 'left side' / oncoming traffic lanes.\n"
+"Set to 0 for one-way roads."
+msgstr ""
+"Número de faixas no sentido contrário à direção do navi.\n"
+"São as faixas do 'lado esquerdo' / do trânsito em sentido oposto.\n"
+"Use 0 para vias de mão única."
+
+#: tools/haumea/objfilters.cpp:28
+msgid "Object"
+msgstr "Objeto"
+
+#: tools/haumea/custommodels.cpp:775
+msgid "Object (AddSimpleModel)"
+msgstr "Objeto (AddSimpleModel)"
+
+#: tools/haumea/custommodels.cpp:804
+msgid "Object IDs go from -1000 to -30000."
+msgstr "Os IDs de objeto vão de -1000 a -30000."
+
+#: tools/haumea/textdraws_ui.cpp:966
+msgid "On the 640x448 canvas every resolution is scaled to."
+msgstr "Na tela de 640x448 para a qual toda resolução é escalada."
+
+#: tools/haumea/textdraws_ui.cpp:1208
+msgid "Open"
+msgstr "Abrir"
+
+#: tools/haumea/textdraws_ui.cpp:1191
+msgid "Open TextDraws"
+msgstr "Abrir textdraws"
+
+#: tools/haumea/textdraws_ui.cpp:1306
+msgid "Open..."
+msgstr "Abrir..."
+
+#: tools/haumea/textdraws_ui.cpp:1034
+#, c-format
+msgid "Opened %s"
+msgstr "%s aberto"
+
+#: tools/haumea/sapaths.cpp:6970
+msgid "Opp Lanes"
+msgstr "Faixas opostas"
+
+#: tools/haumea/sapaths.cpp:7154
+msgid "Opposite Dir Lanes"
+msgstr "Faixas no sentido oposto"
+
+#: tools/haumea/sapaths.cpp:6944
+msgid "Orig Switched Off"
+msgstr "Desligado original"
+
+#: tools/haumea/sapaths.cpp:6961
+msgid ""
+"Outgoing connections from this node to other path nodes.\n"
+"Each link can have a navi node (lane waypoint) between the two endpoints.\n"
+"Click a row to inspect/edit that link's details below."
+msgstr ""
+"Conexões de saída deste nó para outros nós de caminho.\n"
+"Cada ligação pode ter um nó navi (ponto de faixa) entre as duas pontas.\n"
+"Clique numa linha para ver/editar os detalhes dessa ligação abaixo."
+
+#: tools/haumea/textdraws_ui.cpp:996
+msgid "Outline"
+msgstr "Contorno"
+
+#: tools/haumea/textdraws_ui.cpp:1201
+msgid "Path"
+msgstr "Caminho"
+
+#: tools/haumea/sapaths.cpp:6855
+msgid "Path Width"
+msgstr "Largura do caminho"
+
+#: tools/haumea/sapaths.cpp:7313
+#, c-format
+msgid "Path: %s"
+msgstr "Caminho: %s"
+
+#: tools/haumea/nodes_ui.cpp:269
+msgid "Ped"
+msgstr "Pedestre"
+
+#: tools/haumea/sapaths.cpp:6967
+msgid "Ped Light"
+msgstr "Semáforo de pedestre"
+
+#: tools/haumea/sapaths.cpp:6829
+#, c-format
+msgid "Ped Node  |  Area %d  Node %d"
+msgstr "Nó de pedestre  |  Área %d  Nó %d"
+
+#: tools/haumea/sapaths.cpp:7070
+msgid "Ped Traffic Light"
+msgstr "Semáforo de pedestre"
+
+#: tools/haumea/nodes_ui.cpp:177
+#, c-format
+msgid "Ped node %d in NODES%d.DAT"
+msgstr "Nó de pedestre %d em NODES%d.DAT"
+
+#: tools/haumea/nodes_ui.cpp:252
+msgid "Ped nodes"
+msgstr "Nós de pedestre"
+
+#: tools/haumea/sapaths.cpp:7081
+msgid ""
+"Pedestrian traffic light present at this crossing.\n"
+"Peds will wait for the light before crossing."
+msgstr ""
+"Há um semáforo de pedestres nesta travessia.\n"
+"Os pedestres esperam o sinal antes de atravessar."
+
+#: tools/haumea/sapaths.cpp:6926
+msgid ""
+"Peds will not wander to this node.\n"
+"Prevents idle pedestrians from walking here."
+msgstr ""
+"Os pedestres não passeiam até este nó.\n"
+"Impede que pedestres ociosos andem por aqui."
+
+#: tools/haumea/textdraws_ui.cpp:916
+msgid "Per player (CreatePlayerTextDraw)"
+msgstr "Por jogador (CreatePlayerTextDraw)"
+
+#: tools/haumea/textdraws_ui.cpp:1372
+msgid "Plain"
+msgstr "Liso"
+
+#: tools/haumea/textdraws_ui.cpp:1000
+msgid "Players can click it while SelectTextDraw is on (OnPlayerClickTextDraw)."
+msgstr "Os jogadores podem clicar nele enquanto SelectTextDraw está ativo (OnPlayerClickTextDraw)."
+
+#: tools/haumea/nodes_ui.cpp:292
+msgid "Point"
+msgstr "Ponto"
+
+#: tools/haumea/sapaths.cpp:7130
+msgid "Point Dir To Node"
+msgstr "Apontar para o nó"
+
+#: tools/haumea/objfilters.cpp:37 tools/haumea/objfilters.cpp:413 tools/haumea/objfilters.cpp:803
+msgid "Polygons"
+msgstr "Polígonos"
+
+#: tools/haumea/nodes_ui.cpp:183 tools/haumea/sapaths.cpp:6849 tools/haumea/textdraws_ui.cpp:960 tools/haumea/textdraws_ui.cpp:962
+msgid "Position"
+msgstr "Posição"
+
+#: tools/haumea/sapaths.cpp:7053
+msgid ""
+"Precomputed distance between the two nodes (0-255).\n"
+"Used by the AI pathfinder to pick shortest routes.\n"
+"Automatically recomputed when you move nodes with the gizmo."
+msgstr ""
+"Distância pré-calculada entre os dois nós (0-255).\n"
+"Usada pela IA para escolher as rotas mais curtas.\n"
+"Recalculada automaticamente quando você move nós com o gizmo."
+
+#: tools/haumea/objfilters.cpp:631
+msgid "Preset name"
+msgstr "Nome da predefinição"
+
+#: tools/haumea/objfilters.cpp:612
+msgid "Presets"
+msgstr "Predefinições"
+
+#: tools/haumea/sapaths.cpp:7331
+msgid "Press W to activate the translate gizmo, then drag to move"
+msgstr "Pressione W para ativar o gizmo de mover e arraste para mover"
+
+#: tools/haumea/textdraws_ui.cpp:989
+msgid "Proportional"
+msgstr "Proporcional"
+
+#: tools/haumea/sapaths.cpp:6946
+msgid ""
+"Read-only. The original value of 'Switched Off' when the game loaded this area.\n"
+"SA copies this from the Switched Off flag at load time."
+msgstr ""
+"Somente leitura. O valor original de 'Desligado' quando o jogo carregou esta área.\n"
+"O SA copia isto da flag Desligado ao carregar."
+
+#: tools/haumea/objfilters.cpp:734
+msgid "Reading polygons and textures..."
+msgstr "Lendo polígonos e texturas..."
+
+#: tools/haumea/textdraws_ui.cpp:1320
+msgid "Recent textdraw files"
+msgstr "Arquivos de textdraw recentes"
+
+#: tools/haumea/objfilters.cpp:35
+msgid "Recently placed"
+msgstr "Colocados recentemente"
+
+#: tools/haumea/objfilters.cpp:37 tools/haumea/texbrowser.cpp:562
+msgid "Recently used"
+msgstr "Usados recentemente"
+
+#: tools/haumea/sapaths.cpp:7037
+msgid ""
+"Reciprocal link found. Length and intersection flags are mirrored;\n"
+"navi edits below apply only to this direction."
+msgstr ""
+"Ligação recíproca encontrada. O comprimento e as flags de cruzamento são espelhados;\n"
+"as edições de navi abaixo valem só para esta direção."
+
+#: tools/haumea/textdraws_ui.cpp:1267
+msgid "Redo"
+msgstr "Refazer"
+
+#: tools/haumea/sapaths.cpp:7296
+msgid "Reload SA Paths"
+msgstr "Recarregar caminhos do SA"
+
+#: tools/haumea/nodes_ui.cpp:220
+#, c-format
+msgid "Removes the node and its links. Later nodes in NODES%d.DAT move up one point id."
+msgstr "Remove o nó e as suas ligações. Os nós seguintes em NODES%d.DAT sobem um id de ponto."
+
+#: tools/haumea/sapaths.cpp:7303
+#, c-format
+msgid "Requested: %s"
+msgstr "Pedido: %s"
+
+#: tools/haumea/textdraws_ui.cpp:984
+msgid "Right"
+msgstr "Direita"
+
+#: tools/haumea/sapaths.cpp:6908
+msgid "Road Block"
+msgstr "Bloqueio de via"
+
+#: tools/haumea/sapaths.cpp:6966
+msgid "Road Cross"
+msgstr "Travessia"
+
+#: tools/haumea/sapaths.cpp:6912
+msgid ""
+"Road block flag on this node.\n"
+"Note: actual roadblock placement in vanilla SA is driven by\n"
+"data/paths/roadblox.dat, not this flag alone.\n"
+"Exact vanilla effect of this bit is not fully confirmed."
+msgstr ""
+"Flag de bloqueio de via neste nó.\n"
+"Obs.: no SA original, os bloqueios são colocados conforme\n"
+"data/paths/roadblox.dat, não só por esta flag.\n"
+"O efeito exato deste bit no jogo original não está totalmente confirmado."
+
+#: tools/haumea/textdraws_ui.cpp:947
+msgid "Rotation"
+msgstr "Rotação"
+
+#: tools/haumea/sapaths.cpp:7284
+msgid "SA Path Source"
+msgstr "Fonte dos caminhos do SA"
+
+#: tools/haumea/sapaths.cpp:7322
+msgid "SA uses a streamed path network split into 64 areas (8x8 grid, 750 units each). The path system has three layers:"
+msgstr "O SA usa uma rede de caminhos carregada por streaming, dividida em 64 áreas (grade 8x8, 750 unidades cada). O sistema de caminhos tem três camadas:"
+
+#: tools/haumea/objfilters.cpp:531
+msgid "SA-MP"
+msgstr "SA-MP"
+
+#: tools/haumea/texbrowser.cpp:562
+msgid "SA-MP textures only"
+msgstr "Só texturas do SA-MP"
+
+#: tools/haumea/sapaths.cpp:7147
+msgid "Same Dir Lanes"
+msgstr "Faixas no mesmo sentido"
+
+#: tools/haumea/sapaths.cpp:6969
+msgid "Same Lanes"
+msgstr "Mesmas faixas"
+
+#: tools/haumea/nodes_ui.cpp:329 tools/haumea/textdraws_ui.cpp:1140 tools/haumea/textdraws_ui.cpp:1208 tools/haumea/textdraws_ui.cpp:1309
+msgid "Save"
+msgstr "Salvar"
+
+#: tools/haumea/textdraws_ui.cpp:1313
+msgid "Save As..."
+msgstr "Salvar como..."
+
+#: tools/haumea/textdraws_ui.cpp:1191
+msgid "Save TextDraws As"
+msgstr "Salvar textdraws como"
+
+#: tools/haumea/textdraws_ui.cpp:1137
+#, c-format
+msgid "Save changes to %s?"
+msgstr "Salvar as alterações em %s?"
+
+#: tools/haumea/sapaths.cpp:7292
+msgid "Save or discard SA path edits before switching source."
+msgstr "Salve ou descarte as edições de caminhos do SA antes de trocar a fonte."
+
+#: tools/haumea/objfilters.cpp:647
+msgid "Save the filters under this name (an existing preset is replaced)."
+msgstr "Salva os filtros com este nome (uma predefinição existente é substituída)."
+
+#: tools/haumea/sapaths.cpp:7318
+msgid "Save them from Windows > Nodes. The game's own files are never changed."
+msgstr "Salve-as em Janelas > Nós. Os arquivos do próprio jogo nunca são alterados."
+
+#: tools/haumea/nodes_ui.cpp:333
+#, c-format
+msgid "Saved %d node files to %s"
+msgstr "%d arquivos de nós salvos em %s"
+
+#: tools/haumea/textdraws_ui.cpp:1045
+#, c-format
+msgid "Saved %s"
+msgstr "%s salvo"
+
+#: tools/haumea/textdraws_ui.cpp:1340
+#, c-format
+msgid "Saved - %s"
+msgstr "Salvo - %s"
+
+#: tools/haumea/texbrowser.cpp:560
+msgid "Search texture names"
+msgstr "Buscar nomes de textura"
+
+#: tools/haumea/objfilters.cpp:29
+msgid "See-through (alpha)"
+msgstr "Transparente (alfa)"
+
+#: tools/haumea/nodes_ui.cpp:263
+msgid "Select"
+msgstr "Selecionar"
+
+#: tools/haumea/sapaths.cpp:7345
+msgid "Select a streamed SA path node in the viewport to begin editing."
+msgstr "Selecione um nó de caminho do SA na viewport para começar a editar."
+
+#: tools/haumea/nodes_ui.cpp:203
+msgid "Select and go to this node."
+msgstr "Seleciona e vai até este nó."
+
+#: tools/haumea/texbrowser.cpp:433
+msgid "Select objects to apply textures to them."
+msgstr "Selecione objetos para aplicar texturas neles."
+
+#: tools/haumea/texbrowser.cpp:526
+msgid "Select objects to apply the texture to"
+msgstr "Selecione objetos para aplicar a textura"
+
+#: tools/haumea/textdraws_ui.cpp:999
+msgid "Selectable"
+msgstr "Clicável"
+
+#: tools/haumea/sapaths.cpp:7035
+#, c-format
+msgid "Selected Link %d"
+msgstr "Ligação selecionada %d"
+
+#: tools/haumea/nodes_ui.cpp:283
+msgid "Selected node"
+msgstr "Nó selecionado"
+
+#: tools/haumea/custommodels.cpp:752
+msgid "Server folder (has gamemodes/, models/)"
+msgstr "Pasta do servidor (tem gamemodes/, models/)"
+
+#: tools/haumea/custommodels.cpp:760
+#, c-format
+msgid "Server: %s"
+msgstr "Servidor: %s"
+
+#: tools/haumea/textdraws_ui.cpp:995
+msgid "Shadow"
+msgstr "Sombra"
+
+#: tools/haumea/textdraws_ui.cpp:998
+msgid "Shadow/outline colour"
+msgstr "Cor da sombra/contorno"
+
+#: tools/haumea/textdraws_ui.cpp:917
+msgid "Shown"
+msgstr "Exibido"
+
+#: tools/haumea/objfilters.cpp:435 tools/haumea/objfilters.cpp:790
+msgid "Shown at"
+msgstr "Exibido às"
+
+#: tools/haumea/objfilters.cpp:37 tools/haumea/objfilters.cpp:410 tools/haumea/objfilters.cpp:752 tools/haumea/texbrowser.cpp:572
+msgid "Size"
+msgstr "Tamanho"
+
+#: tools/haumea/custommodels.cpp:781
+msgid "Skin (AddCharModel)"
+msgstr "Skin (AddCharModel)"
+
+#: tools/haumea/custommodels.cpp:804
+msgid "Skin IDs go from 20001 to 30000."
+msgstr "Os IDs de skin vão de 20001 a 30000."
+
+#: tools/haumea/texbrowser.cpp:437
+msgid "Slot"
+msgstr "Slot"
+
+#: tools/haumea/objfilters.cpp:521
+msgid "Small (under 2 m)"
+msgstr "Pequeno (menos de 2 m)"
+
+#: tools/haumea/sapaths.cpp:6901
+msgid ""
+"Soft-disables this node. Not a hard block:\n"
+"- Excluded from low-traffic node selection\n"
+"- AI cannot enter from a non-switched node (directional barrier)\n"
+"- Skipped as vehicle spawn point in some contexts\n"
+"Used by missions/scripts to close roads via SwitchRoadsOffInArea."
+msgstr ""
+"Desativa este nó de forma branda. Não é um bloqueio total:\n"
+"- Fica fora da escolha de nós de pouco trânsito\n"
+"- A IA não entra nele vindo de um nó não desligado (barreira direcional)\n"
+"- É ignorado como ponto de spawn de veículos em alguns casos\n"
+"Usado por missões/scripts para fechar ruas com SwitchRoadsOffInArea."
+
+#: tools/haumea/objfilters.cpp:819
+msgid "Sort by"
+msgstr "Ordenar por"
+
+#: tools/haumea/objfilters.cpp:761
+msgid "Source"
+msgstr "Origem"
+
+#: tools/haumea/sapaths.cpp:6831
+#, c-format
+msgid "Source: %s"
+msgstr "Origem: %s"
+
+#: tools/haumea/sapaths.cpp:6864
+msgid "Spawn Probability"
+msgstr "Probabilidade de spawn"
+
+#: tools/haumea/sapaths.cpp:6881
+msgid ""
+"Special behaviour assigned to this node.\n"
+"0 = Default (normal path node)\n"
+"1 = Roadblock (police can set up roadblocks here)\n"
+"2 = Parking (vehicles may park at this node)"
+msgstr ""
+"Comportamento especial deste nó.\n"
+"0 = Padrão (nó de caminho normal)\n"
+"1 = Bloqueio (a polícia pode montar bloqueios aqui)\n"
+"2 = Estacionamento (veículos podem estacionar neste nó)"
+
+#: tools/haumea/textdraws_ui.cpp:931 tools/haumea/textdraws_ui.cpp:1406
+msgid "Sprite"
+msgstr "Sprite"
+
+#: tools/haumea/textdraws_ui.cpp:877
+msgid "Sprite TXD"
+msgstr "TXD do sprite"
+
+#: tools/haumea/nodes_ui.cpp:367
+msgid "Start again from the game's own nodes."
+msgstr "Recomeça a partir dos nós do próprio jogo."
+
+#: tools/haumea/textdraws_ui.cpp:1372
+msgid "Still frame"
+msgstr "Imagem congelada"
+
+#: tools/haumea/textdraws_ui.cpp:1381
+msgid "Still frame: the world as the camera saw it when TextDraw mode started."
+msgstr "Imagem congelada: o mundo como a câmera o via quando o modo textdraw começou."
+
+#: tools/haumea/nodes_ui.cpp:189
+msgid ""
+"Stored in steps of 0.125. A node can't leave its 750x750 area;\n"
+"press W to drag it with the gizmo instead."
+msgstr ""
+"Guardada em passos de 0,125. Um nó não pode sair da sua área de 750x750;\n"
+"pressione W para arrastá-lo com o gizmo."
+
+#: tools/haumea/sapaths.cpp:6832
+#, c-format
+msgid "Stream area: %d  (grid %d, %d)  |  bounds X [%.0f, %.0f]  Y [%.0f, %.0f]"
+msgstr "Área de streaming: %d  (grade %d, %d)  |  limites X [%.0f, %.0f]  Y [%.0f, %.0f]"
+
+#: tools/haumea/textdraws_ui.cpp:976
+msgid "Style"
+msgstr "Estilo"
+
+#: tools/haumea/sapaths.cpp:6897
+msgid "Switched Off"
+msgstr "Desligado"
+
+#: tools/haumea/objfilters.cpp:438
+msgid "TXD"
+msgstr "TXD"
+
+#: tools/haumea/objfilters.cpp:801
+msgid "TXD contains"
+msgstr "TXD contém"
+
+#: tools/haumea/sapaths.cpp:6964
+msgid "Target Node"
+msgstr "Nó de destino"
+
+#: tools/haumea/textdraws_ui.cpp:939 tools/haumea/textdraws_ui.cpp:1402
+msgid "Text"
+msgstr "Texto"
+
+#: tools/haumea/textdraws_ui.cpp:968
+msgid "Text size"
+msgstr "Tamanho do texto"
+
+#: tools/haumea/textdraws_ui.cpp:1240
+msgid "TextDraw mode"
+msgstr "Modo textdraw"
+
+#: tools/haumea/textdraws_ui.cpp:1360
+msgid "TextDraws"
+msgstr "TextDraws"
+
+#: tools/haumea/textdraws_ui.cpp:1166
+#, c-format
+msgid "Textdraws in this map: %d."
+msgstr "Textdraws neste mapa: %d."
+
+#: tools/haumea/textdraws_ui.cpp:1125
+#, c-format
+msgid "Textdraws moved: %d, into %s. Save the map to take them out of it."
+msgstr "Textdraws movidos: %d, para %s. Salve o mapa para retirá-los dele."
+
+#: tools/haumea/textdraws_ui.cpp:1167
+msgid ""
+"Textdraws now have their own file, which Test in game includes.\n"
+"Left in the map they are read-only."
+msgstr ""
+"Os textdraws agora têm um arquivo próprio, que o Testar no jogo inclui.\n"
+"Deixados no mapa, ficam somente leitura."
+
+#: tools/haumea/objfilters.cpp:439
+msgid "Texture"
+msgstr "Textura"
+
+#: tools/haumea/texbrowser.cpp:546
+msgid "Texture Browser"
+msgstr "Navegador de texturas"
+
+#: tools/haumea/texbrowser.cpp:602
+msgid "Texture Studio list"
+msgstr "Lista do Texture Studio"
+
+#: tools/haumea/texbrowser.cpp:607
+#, c-format
+msgid ""
+"Texture Studio's texture index (alltextures.pwn): search by number, TXD or name.\n"
+"From %s."
+msgstr ""
+"Índice de texturas do Texture Studio (alltextures.pwn): busque por número, TXD ou nome.\n"
+"De %s."
+
+#: tools/haumea/texbrowser.cpp:555
+msgid "Textures"
+msgstr "Texturas"
+
+#: tools/haumea/texbrowser.cpp:596
+#, c-format
+msgid "Textures: %d"
+msgstr "Texturas: %d"
+
+#: tools/haumea/nodes_ui.cpp:325
+msgid "That's the game's own data. Pick a server's scriptfiles/NPCs/nodes."
+msgstr "Esses são os dados do próprio jogo. Escolha a scriptfiles/NPCs/nodes de um servidor."
+
+#: tools/haumea/textdraws_ui.cpp:914
+msgid "The Pawn variable. Empty or not a plain name makes one up."
+msgstr "A variável Pawn. Vazia ou com um nome inválido, uma é criada."
+
+#: tools/haumea/custommodels.cpp:793
+msgid "The game object whose settings the new model takes (19379 is a common choice)."
+msgstr "O objeto do jogo cujas configurações o novo modelo herda (19379 é uma escolha comum)."
+
+#: tools/haumea/custommodels.cpp:792
+msgid "The game skin whose settings the new skin takes."
+msgstr "A skin do jogo cujas configurações a nova skin herda."
+
+#: tools/haumea/nodes_ui.cpp:245
+msgid "The game's NODES*.DAT files couldn't be loaded."
+msgstr "Não foi possível carregar os arquivos NODES*.DAT do jogo."
+
+#: tools/haumea/texbrowser.cpp:439
+#, c-format
+msgid ""
+"The material slot (SetObjectMaterial's index) the texture goes to.\n"
+"%s has %d."
+msgstr ""
+"O slot de material (o índice de SetObjectMaterial) que recebe a textura.\n"
+"%s tem %d."
+
+#: tools/haumea/textdraws_ui.cpp:1171
+#, c-format
+msgid "They go into %s."
+msgstr "Eles vão para %s."
+
+#: tools/haumea/textdraws_ui.cpp:1184
+msgid "They stay in the map and are saved with it. TextDraws can move them later."
+msgstr "Ficam no mapa e são salvos com ele. TextDraws pode movê-los depois."
+
+#: tools/haumea/sapaths.cpp:6919
+msgid ""
+"This is a boat/water path node.\n"
+"Only boats will use this node for navigation."
+msgstr ""
+"Este é um nó de caminho de barcos/água.\n"
+"Só barcos usam este nó para navegar."
+
+#: tools/haumea/sapaths.cpp:7067
+msgid ""
+"This link crosses a road.\n"
+"Peds will look both ways before crossing here."
+msgstr ""
+"Esta ligação cruza uma rua.\n"
+"Os pedestres olham para os dois lados antes de atravessar aqui."
+
+#: tools/haumea/sapaths.cpp:6894
+msgid ""
+"This node is at a dead end.\n"
+"Vehicles will turn around here rather than continuing."
+msgstr ""
+"Este nó fica num beco sem saída.\n"
+"Os veículos fazem a volta aqui em vez de continuar."
+
+#: tools/haumea/objfilters.cpp:28
+msgid "Timed (day or night)"
+msgstr "Com horário (dia ou noite)"
+
+#: tools/haumea/objfilters.cpp:796
+msgid "Timed models (day or night) that the game draws at this hour."
+msgstr "Modelos com horário (dia ou noite) que o jogo desenha nesta hora."
+
+#: tools/haumea/textdraws_ui.cpp:958
+msgid "Tint"
+msgstr "Tonalidade"
+
+#: tools/haumea/textdraws_ui.cpp:916
+msgid "To everyone (TextDrawCreate)"
+msgstr "Para todos (TextDrawCreate)"
+
+#: tools/haumea/nodes_ui.cpp:262
+msgid "Tools"
+msgstr "Ferramentas"
+
+#: tools/haumea/sapaths.cpp:7144
+msgid ""
+"Total road width at this navi waypoint.\n"
+"Affects lane positioning and vehicle lateral offset."
+msgstr ""
+"Largura total da via neste ponto navi.\n"
+"Afeta a posição das faixas e o deslocamento lateral dos veículos."
+
+#: tools/haumea/sapaths.cpp:7161
+msgid "Traffic Light Direction"
+msgstr "Direção do semáforo"
+
+#: tools/haumea/sapaths.cpp:7178
+msgid "Traffic Light State"
+msgstr "Estado do semáforo"
+
+#: tools/haumea/sapaths.cpp:6868
+#, c-format
+msgid ""
+"Traffic/ped spawn weight at this node (0-15).\n"
+"SA uses: (rand & 0xF) > min(nodeA, nodeB) to skip spawning.\n"
+"0 = very rare (~6%% chance), 15 = guaranteed spawn.\n"
+"The minimum of both connected nodes is used."
+msgstr ""
+"Peso de spawn de trânsito/pedestres neste nó (0-15).\n"
+"O SA usa: (rand & 0xF) > min(nodeA, nodeB) para pular o spawn.\n"
+"0 = muito raro (~6%% de chance), 15 = spawn garantido.\n"
+"Vale o menor valor dos dois nós ligados."
+
+#: tools/haumea/objfilters.cpp:426
+msgid "Two-sided"
+msgstr "Dupla face"
+
+#: tools/haumea/objfilters.cpp:773
+msgid "Two-sided (no backface culling)"
+msgstr "Dupla face (sem backface culling)"
+
+#: tools/haumea/objfilters.cpp:786
+msgid "Type"
+msgstr "Tipo"
+
+#: tools/haumea/textdraws_ui.cpp:1263
+msgid "Undo"
+msgstr "Desfazer"
+
+#: tools/haumea/nodes_ui.cpp:205
+msgid "Unlink"
+msgstr "Desligar"
+
+#: tools/haumea/nodes_ui.cpp:125
+msgid "Unlinked the nodes"
+msgstr "Nós desligados"
+
+#: tools/haumea/textdraws_ui.cpp:1340
+#, c-format
+msgid "Unsaved changes - %s"
+msgstr "Alterações não salvas - %s"
+
+#: tools/haumea/textdraws_ui.cpp:1133 tools/haumea/textdraws_ui.cpp:1136
+msgid "Unsaved textdraws"
+msgstr "Textdraws não salvos"
+
+#: tools/haumea/textdraws_ui.cpp:1437
+msgid "Up"
+msgstr "Subir"
+
+#: tools/haumea/textdraws_ui.cpp:912
+msgid "Variable"
+msgstr "Variável"
+
+#: tools/haumea/nodes_ui.cpp:266
+msgid "Vehicle"
+msgstr "Veículo"
+
+#: tools/haumea/sapaths.cpp:6829
+#, c-format
+msgid "Vehicle Node  |  Area %d  Node %d"
+msgstr "Nó de veículo  |  Área %d  Nó %d"
+
+#: tools/haumea/textdraws_ui.cpp:953
+msgid "Vehicle colours"
+msgstr "Cores do veículo"
+
+#: tools/haumea/nodes_ui.cpp:177
+#, c-format
+msgid "Vehicle node %d in NODES%d.DAT"
+msgstr "Nó de veículo %d em NODES%d.DAT"
+
+#: tools/haumea/nodes_ui.cpp:250
+msgid "Vehicle nodes"
+msgstr "Nós de veículo"
+
+#: tools/haumea/sapaths.cpp:7332
+msgid "Vehicle nodes are shown as red boxes, ped nodes as magenta spheres"
+msgstr "Os nós de veículo aparecem como caixas vermelhas, os de pedestre como esferas magenta"
+
+#: tools/haumea/nodes_ui.cpp:280
+msgid "Vehicle nodes link to vehicle nodes, ped to ped."
+msgstr "Nós de veículo ligam-se a nós de veículo, de pedestre a de pedestre."
+
+#: tools/haumea/objfilters.cpp:29
+msgid "Vehicle upgrade part"
+msgstr "Peça de tunagem"
+
+#: tools/haumea/objfilters.cpp:411
+msgid "Volume"
+msgstr "Volume"
+
+#: tools/haumea/objfilters.cpp:757
+msgid "Volume (m³)"
+msgstr "Volume (m³)"
+
+#: tools/haumea/sapaths.cpp:6915
+msgid "Water Node"
+msgstr "Nó de água"
+
+#: tools/haumea/objfilters.cpp:807
+msgid "Where it's used"
+msgstr "Onde é usado"
+
+#: tools/haumea/sapaths.cpp:7165
+msgid ""
+"Whether this navi's traffic flow matches the traffic light cycle.\n"
+"Used to sync vehicle stopping with light phases."
+msgstr ""
+"Se o trânsito deste navi segue o ciclo do semáforo.\n"
+"Usado para sincronizar a parada dos veículos com as fases do sinal."
+
+#: tools/haumea/custommodels.cpp:749
+msgid "Which server are these models for?"
+msgstr "Para qual servidor são estes modelos?"
+
+#: tools/haumea/sapaths.cpp:7182
+msgid ""
+"Which traffic light phase controls this road segment.\n"
+"0 = Disabled (cars pass freely, no light)\n"
+"1 = North-South phase (uses LightForCars1)\n"
+"2 = West-East phase (uses LightForCars2)\n"
+"3 = Unused in vanilla SA (undefined behavior)"
+msgstr ""
+"Qual fase do semáforo controla este trecho.\n"
+"0 = Desativado (os carros passam livremente, sem sinal)\n"
+"1 = Fase Norte-Sul (usa LightForCars1)\n"
+"2 = Fase Oeste-Leste (usa LightForCars2)\n"
+"3 = Não usado no SA original (comportamento indefinido)"
+
+#: tools/haumea/objfilters.cpp:410
+msgid "Width"
+msgstr "Largura"
+
+#: tools/haumea/objfilters.cpp:754
+msgid "Width X (m)"
+msgstr "Largura X (m)"
+
+#: tools/haumea/textdraws_ui.cpp:972
+msgid "Width and height."
+msgstr "Largura e altura."
+
+#: tools/haumea/sapaths.cpp:6859
+msgid ""
+"Width of the path at this node, in game units.\n"
+"Affects how far from the center vehicles/peds can deviate.\n"
+"Quantized to 0.0625 units (1/16)."
+msgstr ""
+"Largura do caminho neste nó, em unidades do jogo.\n"
+"Afeta quanto veículos/pedestres podem se afastar do centro.\n"
+"Arredondada para passos de 0,0625 unidade (1/16)."
+
+#: tools/haumea/objfilters.cpp:779
+msgid "With or without a far version"
+msgstr "Com ou sem versão distante"
+
+#: tools/haumea/sapaths.cpp:6852
+msgid ""
+"World position of this node.\n"
+"Drag to move, or use the translate gizmo (W key) in the viewport.\n"
+"Quantized to 0.125 units (1/8). Nodes cannot cross area boundaries."
+msgstr ""
+"Posição deste nó no mundo.\n"
+"Arraste para mover, ou use o gizmo de mover (tecla W) na viewport.\n"
+"Arredondada para passos de 0,125 unidade (1/8). Os nós não podem cruzar os limites das áreas."
+
+#: tools/haumea/nodes_ui.cpp:337
+msgid ""
+"Writes all 64 NODES*.DAT files to this folder. open.mp loads them when the\n"
+"server starts."
+msgstr ""
+"Grava os 64 arquivos NODES*.DAT nesta pasta. O open.mp os carrega quando o\n"
+"servidor inicia."
+
+#: tools/haumea/textdraws_ui.cpp:1138
+msgid "Your textdraw changes are lost if you don't save them."
+msgstr "As alterações nos textdraws se perdem se você não salvá-las."
+
+#: tools/haumea/objfilters.cpp:586
+msgid "Zones"
+msgstr "Zonas"
+
+#: tools/haumea/textdraws_ui.cpp:951
+msgid "Zoom"
+msgstr "Zoom"
+
+#: tools/haumea/nodes_ui.cpp:258
+msgid "a copy of the game's nodes"
+msgstr "uma cópia dos nós do jogo"
+
+#: tools/haumea/sapaths.cpp:7589
+msgid "a node can have at most 15 links"
+msgstr "um nó pode ter no máximo 15 ligações"
+
+#: tools/haumea/sapaths.cpp:7585
+msgid "already linked"
+msgstr "já estão ligados"
+
+#: tools/haumea/objfilters.cpp:479 tools/haumea/objfilters.cpp:482
+msgid "any"
+msgstr "qualquer"
+
+#: tools/haumea/textdraws_ui.cpp:1415
+msgid "box"
+msgstr "caixa"
+
+#: tools/haumea/custommodels.cpp:479
+#, c-format
+msgid "can't create %s"
+msgstr "não foi possível criar %s"
+
+#: tools/haumea/custommodels.cpp:461
+#, c-format
+msgid "can't read %s"
+msgstr "não foi possível ler %s"
+
+#: tools/haumea/custommodels.cpp:485 tools/haumea/custommodels.cpp:548
+#, c-format
+msgid "can't write %s"
+msgstr "não foi possível gravar %s"
+
+#: tools/haumea/sapaths.cpp:7897
+#, c-format
+msgid "couldn't write %s"
+msgstr "não foi possível gravar %s"
+
+#: tools/haumea/custommodels.cpp:255
+#, c-format
+msgid "missing %s"
+msgstr "falta %s"
+
+#: tools/haumea/textdraws_ui.cpp:1414
+msgid "model"
+msgstr "modelo"
+
+#: tools/haumea/sapaths.cpp:7949
+#, c-format
+msgid "no NODES*.DAT files in %s"
+msgstr "nenhum arquivo NODES*.DAT em %s"
+
+#: tools/haumea/sapaths.cpp:7640
+msgid "nodes must be inside the map (-3000 to 3000)"
+msgstr "os nós devem estar dentro do mapa (-3000 a 3000)"
+
+#: tools/haumea/sapaths.cpp:4764 tools/haumea/sapaths.cpp:7000
+msgid "none"
+msgstr "nenhum"
+
+#: tools/haumea/nodes_ui.cpp:241
+msgid ""
+"open.mp NPCs walk and drive along NODES0-63.DAT with NPC_PlayNode.\n"
+"SA-MP and the game itself don't read the files you save here."
+msgstr ""
+"Os NPCs do open.mp andam e dirigem pelos NODES0-63.DAT com NPC_PlayNode.\n"
+"O SA-MP e o próprio jogo não leem os arquivos que você salva aqui."
+
+#: tools/haumea/nodes_ui.cpp:241
+msgid "open.mp only"
+msgstr "só open.mp"
+
+#: tools/haumea/sapaths.cpp:7877
+msgid "pick a folder first"
+msgstr "escolha uma pasta primeiro"
+
+#: tools/haumea/custommodels.cpp:519
+msgid "pick the server folder first"
+msgstr "escolha a pasta do servidor primeiro"
+
+#: tools/haumea/sapaths.cpp:7573
+msgid "pick two different nodes"
+msgstr "escolha dois nós diferentes"
+
+#: tools/haumea/textdraws_ui.cpp:1414
+msgid "sprite"
+msgstr "sprite"
+
+#: tools/haumea/textdraws_ui.cpp:1415
+msgid "text"
+msgstr "texto"
+
+#: tools/haumea/textdraws_ui.cpp:755
+msgid "textdraw"
+msgstr "textdraw"
+
+#: tools/haumea/custommodels.cpp:524
+msgid "that folder is inside the game folder; pick the server's folder"
+msgstr "essa pasta fica dentro da pasta do jogo; escolha a pasta do servidor"
+
+#: tools/haumea/sapaths.cpp:7881
+msgid "that is the game's own data; pick a server's scriptfiles/NPCs/nodes"
+msgstr "esses são os dados do próprio jogo; escolha a scriptfiles/NPCs/nodes de um servidor"
+
+#: tools/haumea/custommodels.cpp:529
+msgid "the DFF isn't a model file"
+msgstr "a DFF não é um arquivo de modelo"
+
+#: tools/haumea/sapaths.cpp:7595 tools/haumea/sapaths.cpp:7599
+msgid "the area has no room for more links"
+msgstr "a área não tem espaço para mais ligações"
+
+#: tools/haumea/sapaths.cpp:7646
+msgid "the area is full"
+msgstr "a área está cheia"
+
+#: tools/haumea/texbrowser.cpp:608
+msgid "the copy that comes with Haumea"
+msgstr "a cópia que vem com o Haumea"
+
+#: tools/haumea/sapaths.cpp:7917
+msgid "the game's node files aren't loaded"
+msgstr "os arquivos de nós do jogo não estão carregados"
+
+#: tools/haumea/sapaths.cpp:7635 tools/haumea/sapaths.cpp:7873
+msgid "the node files aren't loaded"
+msgstr "os arquivos de nós não estão carregados"
+
+#: tools/haumea/custommodels.cpp:492
+#, c-format
+msgid "too many files named %s"
+msgstr "arquivos demais chamados %s"
+
+#: tools/haumea/nodes_ui.cpp:131 tools/haumea/nodes_ui.cpp:146 tools/haumea/sapaths.cpp:7311
+msgid "unknown"
+msgstr "desconhecido"
+
+#: tools/haumea/sapaths.cpp:7577
+msgid "vehicle nodes link only to vehicle nodes, ped nodes to ped nodes"
+msgstr "nós de veículo só se ligam a nós de veículo, e de pedestre a de pedestre"
+
+#: tools/haumea/textdraws_ui.cpp:943
+msgid "~n~ new line, ~r~ ~g~ ~b~ ~y~ ~p~ ~w~ ~l~ colours, ~h~ lighter, _ blank"
+msgstr "~n~ nova linha, ~r~ ~g~ ~b~ ~y~ ~p~ ~w~ ~l~ cores, ~h~ mais claro, _ espaço"
+
