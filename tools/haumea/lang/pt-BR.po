@@ -8166,6 +8166,9 @@ msgstr "uma execução automatizada"
 msgid "any"
 msgstr "qualquer"
 
+msgid "arranging objects"
+msgstr "organizando objetos"
+
 msgid "automatic"
 msgstr "automático"
 
@@ -8193,8 +8196,21 @@ msgstr "não foi possível gravar %s"
 msgid "centre"
 msgstr "o centro"
 
+#, c-format
+msgid "changing elements: %d"
+msgstr "alterando elementos: %d"
+
+msgid "changing materials"
+msgstr "alterando materiais"
+
+msgid "checking the map"
+msgstr "verificando o mapa"
+
 msgid "circle"
 msgstr "círculo"
+
+msgid "clearing its objects"
+msgstr "limpando os objetos dele"
 
 msgid "client"
 msgstr "cliente"
@@ -8242,6 +8258,10 @@ msgstr "cilindro"
 msgid "default"
 msgstr "padrão"
 
+#, c-format
+msgid "deleting elements: %d"
+msgstr "excluindo elementos: %d"
+
 msgid "drag"
 msgstr "arrastar"
 
@@ -8253,6 +8273,9 @@ msgstr "ex.: ponto de ônibus"
 
 msgid "e.g. street, LS"
 msgstr "ex.: rua, LS"
+
+msgid "editing textdraws"
+msgstr "editando textdraws"
 
 msgid "empty text can crash 0.3.7 clients; use \"_\" for nothing."
 msgstr "texto vazio pode travar clientes 0.3.7; use \"_\" para nada."
@@ -8285,6 +8308,9 @@ msgstr "gang zones"
 msgid "has a '{' that isn't a {RRGGBB} colour code."
 msgstr "tem um '{' que não é um código de cor {RRGGBB}."
 
+msgid "hiding world buildings"
+msgstr "ocultando construções do mundo"
+
 msgid "highest side"
 msgstr "o lado mais alto"
 
@@ -8301,6 +8327,9 @@ msgstr "a posição está fora da tela de 640x448, então os jogadores não o ve
 msgid "its text is longer than the 800-character limit."
 msgstr "o texto passa do limite de 800 caracteres."
 
+msgid "looking at the scene"
+msgstr "olhando a cena"
+
 msgid "lowest side"
 msgstr "o lado mais baixo"
 
@@ -8309,6 +8338,9 @@ msgstr "faça pelo menos uma cópia"
 
 msgid "map icons"
 msgstr "map icons"
+
+msgid "merging a map into this one"
+msgstr "juntando um mapa a este"
 
 msgid "mirror across X or Y"
 msgstr "espelhe em X ou Y"
@@ -8319,6 +8351,13 @@ msgstr "falta %s"
 
 msgid "model"
 msgstr "modelo"
+
+#, c-format
+msgid "moving objects: %d"
+msgstr "movendo objetos: %d"
+
+msgid "moving the camera"
+msgstr "movendo a câmera"
 
 msgid "name"
 msgstr "nome"
@@ -8419,6 +8458,9 @@ msgstr ""
 "OnNPCFinishMovePath e o NPC recomeça o caminho (invertido a cada vez\n"
 "em ida e volta)."
 
+msgid "opening a map"
+msgstr "abrindo um mapa"
+
 msgid "other sound"
 msgstr "outro som"
 
@@ -8434,6 +8476,17 @@ msgstr "escolha dois nós diferentes"
 msgid "pickups"
 msgstr "pickups"
 
+msgid "placing a prefab"
+msgstr "colocando um prefab"
+
+#, c-format
+msgid "placing elements: %d"
+msgstr "colocando elementos: %d"
+
+#, c-format
+msgid "placing objects: %d"
+msgstr "colocando objetos: %d"
+
 msgid "player classes"
 msgstr "classes de jogador"
 
@@ -8444,8 +8497,20 @@ msgstr "toca %s.rec"
 msgid "polygon"
 msgstr "polígono"
 
+msgid "putting the map back as it was"
+msgstr "voltando o mapa ao que era"
+
 msgid "rectangle"
 msgstr "retângulo"
+
+msgid "redoing"
+msgstr "refazendo"
+
+msgid "saving a prefab"
+msgstr "salvando um prefab"
+
+msgid "saving the map"
+msgstr "salvando o mapa"
 
 msgid "search"
 msgstr "buscar"
@@ -8459,6 +8524,9 @@ msgstr "selecione alguns objetos antes"
 msgid "select something first"
 msgstr "selecione algo antes"
 
+msgid "selecting objects"
+msgstr "selecionando objetos"
+
 msgid "set an open.mp server package (folder, .tar.gz or .zip) in Preferences > Test server"
 msgstr "defina um pacote de servidor open.mp (pasta, .tar.gz ou .zip) em Preferências > Servidor de teste"
 
@@ -8471,11 +8539,20 @@ msgstr "esfera"
 msgid "sprite"
 msgstr "sprite"
 
+msgid "starting a new map"
+msgstr "começando um mapa novo"
+
 msgid "streamer"
 msgstr "streamer"
 
 msgid "streamer only"
 msgstr "só streamer"
+
+msgid "taking a screenshot"
+msgstr "tirando uma captura de tela"
+
+msgid "testing the map in game"
+msgstr "testando o mapa no jogo"
 
 msgid "text"
 msgstr "texto"
@@ -8555,6 +8632,9 @@ msgstr "hoje"
 #, c-format
 msgid "too many files named %s"
 msgstr "arquivos demais chamados %s"
+
+msgid "undoing"
+msgstr "desfazendo"
 
 msgid "unknown"
 msgstr "desconhecido"
