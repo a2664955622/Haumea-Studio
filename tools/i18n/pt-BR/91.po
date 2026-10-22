@@ -1,0 +1,2582 @@
+# Haumea Studio: pt-BR strings marked by ariane-91 (gui.cpp up to uiObjInfo, objectinst.cpp).
+# Merged by ariane-59 into tools/haumea/lang/pt-BR.po.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: pt-BR\n"
+
+#: gui.cpp:225
+msgid "no key"
+msgstr "sem tecla"
+
+#: gui.cpp:286
+msgid "Off"
+msgstr "Desligado"
+
+#: gui.cpp:291
+msgid "Custom"
+msgstr "Personalizado"
+
+#: gui.cpp:1144
+msgid "Undo / Redo"
+msgstr "Desfazer / Refazer"
+
+#: gui.cpp:1144
+msgid "Delete"
+msgstr "Excluir"
+
+#: gui.cpp:1144
+msgid "Copy / Paste"
+msgstr "Copiar / Colar"
+
+#: gui.cpp:1144
+msgid "Save"
+msgstr "Salvar"
+
+#: gui.cpp:1144
+msgid "Selection"
+msgstr "Seleção"
+
+#: gui.cpp:1144
+msgid "Spawn"
+msgstr "Criação"
+
+#: gui.cpp:1268
+msgid "Enable Notifications"
+msgstr "Ativar notificações"
+
+#: gui.cpp:1311
+msgid "Clear"
+msgstr "Limpar"
+
+#: gui.cpp:1313
+msgid "Copy"
+msgstr "Copiar"
+
+#: gui.cpp:1315
+msgid "Filter"
+msgstr "Filtro"
+
+#: gui.cpp:1514
+msgid "Could not restart Haumea. No files or editor changes were modified."
+msgstr "Não foi possível reiniciar o Haumea. Nenhum arquivo ou alteração do editor foi modificado."
+
+#: gui.cpp:1526
+msgid "Reload Game Files"
+msgstr "Recarregar arquivos do jogo"
+
+#: gui.cpp:1531
+msgid "Haumea will close, start again, and reload the game files from disk."
+msgstr "O Haumea vai fechar, abrir de novo e recarregar os arquivos do jogo do disco."
+
+#: gui.cpp:1535
+msgid "Unsaved editor changes will be discarded."
+msgstr "As alterações não salvas do editor serão descartadas."
+
+#: gui.cpp:1536
+msgid "Save anything you want to keep before restarting."
+msgstr "Salve o que quiser manter antes de reiniciar."
+
+#: gui.cpp:1538
+msgid "No unsaved map, water, or SA path changes were detected."
+msgstr "Nenhuma alteração não salva no mapa, na água ou nos caminhos do SA foi detectada."
+
+#: gui.cpp:1542
+msgid "Don't show again when there are no unsaved changes"
+msgstr "Não mostrar de novo quando não houver alterações não salvas"
+
+#: gui.cpp:1546
+msgid "Unsaved editor changes will always require confirmation.\nYou can re-enable this prompt in the Editor window under General."
+msgstr "Alterações não salvas do editor sempre pedirão confirmação.\nVocê pode reativar este aviso na janela Editor, em Geral."
+
+#: gui.cpp:1549
+msgid "Restart and Discard Changes"
+msgstr "Reiniciar e descartar alterações"
+
+#: gui.cpp:1549
+msgid "Restart Haumea Studio"
+msgstr "Reiniciar o Haumea Studio"
+
+#: gui.cpp:1555
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: gui.cpp:2191
+msgid "Please choose a %s file."
+msgstr "Escolha um arquivo %s."
+
+#: gui.cpp:2253
+msgid "Normal cull"
+msgstr "Culling normal"
+
+#: gui.cpp:2254
+msgid "No Fade"
+msgstr "Sem fade"
+
+#: gui.cpp:2255
+msgid "Draw Last"
+msgstr "Desenhar por último"
+
+#: gui.cpp:2256
+msgid "Additive Blend"
+msgstr "Mistura aditiva"
+
+#: gui.cpp:2258
+msgid "Is Subway"
+msgstr "É metrô"
+
+#: gui.cpp:2259
+msgid "Ignore Light"
+msgstr "Ignorar luz"
+
+#: gui.cpp:2260
+msgid "No Z-write"
+msgstr "Sem escrita de Z"
+
+#: gui.cpp:2264
+msgid "Wet Road Effect"
+msgstr "Efeito de pista molhada"
+
+#: gui.cpp:2271
+msgid "No shadows"
+msgstr "Sem sombras"
+
+#: gui.cpp:2272
+msgid "Ignore Draw Dist"
+msgstr "Ignorar distância de desenho"
+
+#: gui.cpp:2273
+msgid "Code Glass"
+msgstr "Vidro de código"
+
+#: gui.cpp:2274
+msgid "Artist Glass"
+msgstr "Vidro de artista"
+
+#: gui.cpp:2283
+msgid "No Backface Culling"
+msgstr "Sem culling de faces traseiras"
+
+#: gui.cpp:2286
+msgid "Don't collide with Flyer"
+msgstr "Não colidir com o Flyer"
+
+#: gui.cpp:2297
+msgid "None"
+msgstr "Nenhum"
+
+#: gui.cpp:2300
+msgid "Garage Door"
+msgstr "Porta de garagem"
+
+#: gui.cpp:2302
+msgid "Damageable"
+msgstr "Destrutível"
+
+#: gui.cpp:2303
+msgid "Tree"
+msgstr "Árvore"
+
+#: gui.cpp:2304
+msgid "Palm Tree"
+msgstr "Palmeira"
+
+#: gui.cpp:2305
+msgid "Tag"
+msgstr "Tag"
+
+#: gui.cpp:2306
+msgid "No Cover"
+msgstr "Sem cobertura"
+
+#: gui.cpp:2307
+msgid "Wet Only"
+msgstr "Só molhado"
+
+#: gui.cpp:2318
+msgid "Door"
+msgstr "Porta"
+
+#: gui.cpp:2363
+msgid "Custom import needs matching .dff and .txd in the same folder"
+msgstr "A importação personalizada precisa de .dff e .txd correspondentes na mesma pasta"
+
+#: gui.cpp:2503
+msgid "Undo"
+msgstr "Desfazer"
+
+#: gui.cpp:2513
+msgid "Redo"
+msgstr "Refazer"
+
+#: gui.cpp:2536
+msgid "Move step (hold Shift)"
+msgstr "Passo ao mover (segure Shift)"
+
+#: gui.cpp:2545
+msgid "Rotate step (hold Shift)"
+msgstr "Passo ao girar (segure Shift)"
+
+#: gui.cpp:2563
+msgid "Select\nClick objects to select them, drag them to move along the ground."
+msgstr "Selecionar\nClique nos objetos para selecioná-los; arraste-os para movê-los pelo chão."
+
+#: gui.cpp:2566
+msgid "Move (%s)\nDrag the arrows on the selected object."
+msgstr "Mover (%s)\nArraste as setas no objeto selecionado."
+
+#: gui.cpp:2571
+msgid "Rotate (%s)\nDrag the rings on the selected object."
+msgstr "Girar (%s)\nArraste os anéis no objeto selecionado."
+
+#: gui.cpp:2579
+msgid "Gizmo follows the map axes. Click or press %s for the object's own axes."
+msgstr "O gizmo segue os eixos do mapa. Clique ou pressione %s para os eixos do próprio objeto."
+
+#: gui.cpp:2580
+msgid "Gizmo follows the object's own axes. Click or press %s for the map axes."
+msgstr "O gizmo segue os eixos do próprio objeto. Clique ou pressione %s para os eixos do mapa."
+
+#: gui.cpp:2581
+msgid "World"
+msgstr "Mundo"
+
+#: gui.cpp:2581
+msgid "Local"
+msgstr "Local"
+
+#: gui.cpp:2585
+msgid "Step snapping: hold Shift while dragging the gizmo\nto move in %g m steps or rotate in %g° steps.\nRight-click to change the steps."
+msgstr "Encaixe por passos: segure Shift ao arrastar o gizmo\npara mover em passos de %g m ou girar em passos de %g°.\nClique com o botão direito para mudar os passos."
+
+#: gui.cpp:2594
+msgid "Object snap (%s)\nWhile moving, line up edges and faces with nearby objects."
+msgstr "Encaixe em objetos (%s)\nAo mover, alinha bordas e faces com objetos próximos."
+
+#: gui.cpp:2599
+msgid "Follow ground\nDragged objects stay on the ground surface."
+msgstr "Seguir o chão\nObjetos arrastados ficam sobre a superfície do chão."
+
+#: gui.cpp:2601
+msgid "Outline map objects (%s)\nDraws the edges of everything in this map, so invisible\nand see-through objects can be found.\nRight-click for selection outlines."
+msgstr "Contornar objetos do mapa (%s)\nDesenha as bordas de tudo neste mapa, para que objetos invisíveis\ne transparentes possam ser encontrados.\nClique com o botão direito para os contornos da seleção."
+
+#: gui.cpp:2606
+msgid "Outline map objects"
+msgstr "Contornar objetos do mapa"
+
+#: gui.cpp:2607
+msgid "Outline selected and hovered objects"
+msgstr "Contornar objetos selecionados e sob o mouse"
+
+#: gui.cpp:2612
+msgid "Undo (%s)"
+msgstr "Desfazer (%s)"
+
+#: gui.cpp:2615
+msgid "Redo (%s)"
+msgstr "Refazer (%s)"
+
+#: gui.cpp:2622
+msgid "Save (%s)\nThe map has unsaved changes."
+msgstr "Salvar (%s)\nO mapa tem alterações não salvas."
+
+#: gui.cpp:2622
+msgid "Save (%s)\nEverything is saved."
+msgstr "Salvar (%s)\nTudo está salvo."
+
+#: gui.cpp:2629
+msgid "Test in game (%s)\nRuns the map on a private open.mp test server."
+msgstr "Testar no jogo (%s)\nRoda o mapa em um servidor de teste open.mp privado."
+
+#: gui.cpp:2646
+msgid "Workspace"
+msgstr "Espaço de trabalho"
+
+#: gui.cpp:2649
+msgid "No workspace"
+msgstr "Nenhum espaço de trabalho"
+
+#: gui.cpp:2661
+msgid "Workspace Settings..."
+msgstr "Configurações do espaço de trabalho..."
+
+#: gui.cpp:2684
+msgid "File"
+msgstr "Arquivo"
+
+#: gui.cpp:2685
+msgid "New Map"
+msgstr "Novo mapa"
+
+#: gui.cpp:2687
+msgid "Open Map..."
+msgstr "Abrir mapa..."
+
+#: gui.cpp:2689
+msgid "Open a .pwn map. The current scene is replaced by its objects,\nremoved buildings and materials."
+msgstr "Abre um mapa .pwn. A cena atual é substituída pelos objetos,\nprédios removidos e materiais dele."
+
+#: gui.cpp:2690
+msgid "Open Recent"
+msgstr "Abrir recente"
+
+#: gui.cpp:2702
+msgid "Reopen last map on startup"
+msgstr "Reabrir o último mapa ao iniciar"
+
+#: gui.cpp:2706
+msgid "Clear list"
+msgstr "Limpar lista"
+
+#: gui.cpp:2712
+msgid "Recover Autosave"
+msgstr "Recuperar salvamento automático"
+
+#: gui.cpp:2722
+msgid "No autosaves yet"
+msgstr "Nenhum salvamento automático ainda"
+
+#: gui.cpp:2725
+msgid "Opens an autosaved copy. Use Save As to keep it as your map."
+msgstr "Abre uma cópia salva automaticamente. Use Salvar como para mantê-la como seu mapa."
+
+#: gui.cpp:2726
+msgid "Switch Workspace..."
+msgstr "Trocar espaço de trabalho..."
+
+#: gui.cpp:2728
+msgid "The start screen: workspaces, their maps and the game folder."
+msgstr "A tela inicial: espaços de trabalho, seus mapas e a pasta do jogo."
+
+#: gui.cpp:2733
+msgid "Save As..."
+msgstr "Salvar como..."
+
+#: gui.cpp:2736
+msgid "Unsaved changes - %s"
+msgstr "Alterações não salvas - %s"
+
+#: gui.cpp:2736
+msgid "Saved - %s"
+msgstr "Salvo - %s"
+
+#: gui.cpp:2739
+msgid "%s\nStreamer code, %s text"
+msgstr "%s\nCódigo Streamer, texto %s"
+
+#: gui.cpp:2740
+msgid "%s\nNative code, %s text"
+msgstr "%s\nCódigo nativo, texto %s"
+
+#: gui.cpp:2744
+msgid "Import"
+msgstr "Importar"
+
+#: gui.cpp:2745
+msgid "Merge Pawn File..."
+msgstr "Mesclar arquivo Pawn..."
+
+#: gui.cpp:2747
+msgid "Adds the objects from another .pwn/.inc file, a Texture Studio .db,\nan MTA:SA .map or an IPL file to this map."
+msgstr "Adiciona a este mapa os objetos de outro arquivo .pwn/.inc, um .db do Texture Studio,\num .map do MTA:SA ou um arquivo IPL."
+
+#: gui.cpp:2748
+msgid "Prefab..."
+msgstr "Prefab..."
+
+#: gui.cpp:2750
+msgid "Places the objects of a prefab file (.haumea) in this map."
+msgstr "Coloca neste mapa os objetos de um arquivo de prefab (.haumea)."
+
+#: gui.cpp:2751
+msgid "Custom Model... (0.3.DL)"
+msgstr "Modelo personalizado... (0.3.DL)"
+
+#: gui.cpp:2753
+msgid "Puts a DFF and TXD in the server's models folder and artconfig.txt,\nso SA-MP 0.3.DL and open.mp players get it. The game folder isn't touched."
+msgstr "Coloca um DFF e um TXD na pasta models do servidor e no artconfig.txt,\npara que jogadores do SA-MP 0.3.DL e do open.mp o recebam. A pasta do jogo não é alterada."
+
+#: gui.cpp:2756
+msgid "Export"
+msgstr "Exportar"
+
+#: gui.cpp:2757
+msgid "Selection as Pawn..."
+msgstr "Seleção como Pawn..."
+
+#: gui.cpp:2759
+msgid "Writes the selection to a separate Pawn file, e.g. to paste into\nanother script. Save writes the whole map."
+msgstr "Grava a seleção em um arquivo Pawn separado, por exemplo para colar\nem outro script. Salvar grava o mapa inteiro."
+
+#: gui.cpp:2760
+msgid "Selection as Prefab..."
+msgstr "Seleção como prefab..."
+
+#: gui.cpp:2762
+msgid "Saves the selection as a prefab file (.haumea) to place again or share."
+msgstr "Salva a seleção como um arquivo de prefab (.haumea) para colocar de novo ou compartilhar."
+
+#: gui.cpp:2765
+msgid "Export needs a selection."
+msgstr "Exportar precisa de uma seleção."
+
+#: gui.cpp:2767
+msgid "Test in game"
+msgstr "Testar no jogo"
+
+#: gui.cpp:2772
+msgid "Runs the map as it is now on a private open.mp test server.\nYour map file and your own server are not touched."
+msgstr "Roda o mapa como está agora em um servidor de teste open.mp privado.\nSeu arquivo de mapa e seu próprio servidor não são alterados."
+
+#: gui.cpp:2773
+msgid "Launch game"
+msgstr "Iniciar o jogo"
+
+#: gui.cpp:2775
+msgid "Starts SA-MP and joins the test server."
+msgstr "Inicia o SA-MP e entra no servidor de teste."
+
+#: gui.cpp:2777
+msgid "Reload Game Files..."
+msgstr "Recarregar arquivos do jogo..."
+
+#: gui.cpp:2784
+msgid "Restarts Haumea and reloads the game files from disk."
+msgstr "Reinicia o Haumea e recarrega os arquivos do jogo do disco."
+
+#: gui.cpp:2785
+msgid "Exit"
+msgstr "Sair"
+
+#: gui.cpp:2788
+msgid "Edit"
+msgstr "Editar"
+
+#: gui.cpp:2794
+msgid "Cut"
+msgstr "Recortar"
+
+#: gui.cpp:2795
+msgid "Paste"
+msgstr "Colar"
+
+#: gui.cpp:2796
+msgid "Paste in Place"
+msgstr "Colar no lugar"
+
+#: gui.cpp:2797
+msgid "Duplicate"
+msgstr "Duplicar"
+
+#: gui.cpp:2800
+msgid "Focus on Selection"
+msgstr "Focar na seleção"
+
+#: gui.cpp:2801
+msgid "Go to Coordinates..."
+msgstr "Ir para coordenadas..."
+
+#: gui.cpp:2802
+msgid "Moves the camera to look at a point: paste x, y, z or a SetPlayerPos line."
+msgstr "Move a câmera para olhar um ponto: cole x, y, z ou uma linha SetPlayerPos."
+
+#: gui.cpp:2803
+msgid "Copy Camera Position"
+msgstr "Copiar posição da câmera"
+
+#: gui.cpp:2804
+msgid "Copies where the camera is as \"x, y, z\", ready for SetPlayerPos."
+msgstr "Copia onde a câmera está como \"x, y, z\", pronto para SetPlayerPos."
+
+#: gui.cpp:2805
+msgid "Drop to Ground"
+msgstr "Soltar no chão"
+
+#: gui.cpp:2806
+msgid "Drop and Align to Ground"
+msgstr "Soltar e alinhar ao chão"
+
+#: gui.cpp:2808
+msgid "Hide Selection"
+msgstr "Ocultar seleção"
+
+#: gui.cpp:2809
+msgid "Isolate Selection"
+msgstr "Isolar seleção"
+
+#: gui.cpp:2810
+msgid "Show All"
+msgstr "Mostrar tudo"
+
+#: gui.cpp:2811
+msgid "Hiding is only for editing: hidden objects stay in the map and are saved as usual."
+msgstr "Ocultar é só para editar: objetos ocultos continuam no mapa e são salvos normalmente."
+
+#: gui.cpp:2814
+msgid "Windows"
+msgstr "Janelas"
+
+#: gui.cpp:2815
+msgid "Object Browser"
+msgstr "Navegador de objetos"
+
+#: gui.cpp:2816
+msgid "Object Info"
+msgstr "Informações do objeto"
+
+#: gui.cpp:2817
+msgid "Map Objects"
+msgstr "Objetos do mapa"
+
+#: gui.cpp:2818
+msgid "Tools"
+msgstr "Ferramentas"
+
+#: gui.cpp:2819
+msgid "Texture Browser"
+msgstr "Navegador de texturas"
+
+#: gui.cpp:2820
+msgid "Nodes (open.mp only)"
+msgstr "Nós (só open.mp)"
+
+#: gui.cpp:2821
+msgid "Test server"
+msgstr "Servidor de teste"
+
+#: gui.cpp:2822
+msgid "Interiors"
+msgstr "Interiores"
+
+#: gui.cpp:2823
+msgid "Namaka"
+msgstr "Namaka"
+
+#: gui.cpp:2824
+msgid "Namaka lets an AI assistant work in Haumea: install it and connect Claude."
+msgstr "O Namaka deixa um assistente de IA trabalhar no Haumea: instale-o e conecte o Claude."
+
+#: gui.cpp:2825
+msgid "TextDraws"
+msgstr "TextDraws"
+
+#: gui.cpp:2829
+msgid "TextDraw mode: edit the textdraw file on a canvas instead of the world."
+msgstr "Modo TextDraw: edite o arquivo de textdraws em uma tela em vez do mundo."
+
+#: gui.cpp:2831
+msgid "Time & Weather"
+msgstr "Hora e clima"
+
+#: gui.cpp:2832
+msgid "View"
+msgstr "Exibir"
+
+#: gui.cpp:2833
+msgid "Camera"
+msgstr "Câmera"
+
+#: gui.cpp:2835
+msgid "Live Pawn Code"
+msgstr "Código Pawn ao vivo"
+
+#: gui.cpp:2836
+msgid "Changes"
+msgstr "Alterações"
+
+#: gui.cpp:2837
+msgid "Map Check"
+msgstr "Verificação do mapa"
+
+#: gui.cpp:2838
+msgid "Log"
+msgstr "Registro"
+
+#: gui.cpp:2840
+msgid "Reset Panel Layout"
+msgstr "Redefinir layout dos painéis"
+
+#: gui.cpp:2842
+msgid "Puts the Object Browser, Object Info, Map Objects and Tools\nback in their default places along the screen edges."
+msgstr "Coloca o Navegador de objetos, Informações do objeto, Objetos do mapa e Ferramentas\nde volta nos lugares padrão nas bordas da tela."
+
+#: gui.cpp:2843
+msgid "Snap Panels"
+msgstr "Encaixar painéis"
+
+#: gui.cpp:2847
+msgid "Dragged panels stick to the screen edges and to each other.\nHold Alt while dragging to place a panel freely."
+msgstr "Painéis arrastados grudam nas bordas da tela e uns nos outros.\nSegure Alt ao arrastar para posicionar um painel livremente."
+
+#: gui.cpp:2849
+msgid "Bring Panels Back to Main Window"
+msgstr "Trazer painéis de volta à janela principal"
+
+#: gui.cpp:2851
+msgid "Drag a panel by its title bar onto another screen.\nUse this command to recover panels after disconnecting a monitor."
+msgstr "Arraste um painel pela barra de título para outra tela.\nUse este comando para recuperar painéis depois de desconectar um monitor."
+
+#: gui.cpp:2854
+msgid "Preferences..."
+msgstr "Preferências..."
+
+#: gui.cpp:2857
+msgid "Help"
+msgstr "Ajuda"
+
+#: gui.cpp:2858
+msgid "Getting started"
+msgstr "Primeiros passos"
+
+#: gui.cpp:2862
+msgid "Shows the first-steps card while the map is empty."
+msgstr "Mostra o cartão de primeiros passos enquanto o mapa está vazio."
+
+#: gui.cpp:2863
+msgid "Keyboard Shortcuts"
+msgstr "Atalhos de teclado"
+
+#: gui.cpp:2866
+msgid "Namaka (AI assistant)..."
+msgstr "Namaka (assistente de IA)..."
+
+#: gui.cpp:2867
+msgid "Install Namaka and connect Claude, like Windows > Namaka."
+msgstr "Instale o Namaka e conecte o Claude, como em Janelas > Namaka."
+
+#: gui.cpp:2877
+msgid "Interior"
+msgstr "Interior"
+
+#: gui.cpp:2882
+msgid "The interior you see and place new objects in. 0 is outside."
+msgstr "O interior que você vê e onde coloca novos objetos. 0 é o exterior."
+
+#: gui.cpp:2888
+msgid "(selection: %d)"
+msgstr "(seleção: %d)"
+
+#: gui.cpp:2889
+msgid "The selected object is in interior %d. Change it under Position\nin Object Info."
+msgstr "O objeto selecionado está no interior %d. Mude isso em Posição,\nem Informações do objeto."
+
+#: gui.cpp:2925
+msgid "Save Prefab"
+msgstr "Salvar prefab"
+
+#: gui.cpp:2928
+msgid "Save %d selected as a prefab"
+msgstr "Salvar %d selecionado(s) como prefab"
+
+#: gui.cpp:2931
+msgid "Name"
+msgstr "Nome"
+
+#: gui.cpp:2931
+msgid "e.g. bus stop"
+msgstr "ex.: ponto de ônibus"
+
+#: gui.cpp:2936
+msgid "Mine (Haumea's config folder)"
+msgstr "Meus (pasta de configuração do Haumea)"
+
+#: gui.cpp:2936
+msgid "The workspace's prefabs folder"
+msgstr "A pasta de prefabs do espaço de trabalho"
+
+#: gui.cpp:2937
+msgid "Save in"
+msgstr "Salvar em"
+
+#: gui.cpp:2939
+msgid "The workspace's prefabs are shared with everyone who maps for that server."
+msgstr "Os prefabs do espaço de trabalho são compartilhados com todos que mapeiam para esse servidor."
+
+#: gui.cpp:2940
+msgid "Set a workspace (File > Workspace) to save prefabs with the server."
+msgstr "Defina um espaço de trabalho (Arquivo > Espaço de trabalho) para salvar prefabs com o servidor."
+
+#: gui.cpp:2943
+msgid "no folder"
+msgstr "sem pasta"
+
+#: gui.cpp:2946
+msgid "(no folder)"
+msgstr "(sem pasta)"
+
+#: gui.cpp:2958
+msgid "Folder"
+msgstr "Pasta"
+
+#: gui.cpp:2959
+msgid "Tags"
+msgstr "Tags"
+
+#: gui.cpp:2959
+msgid "e.g. street, LS"
+msgstr "ex.: rua, LS"
+
+#: gui.cpp:2960
+msgid "Comma-separated words the prefab search finds it by."
+msgstr "Palavras separadas por vírgula pelas quais a busca de prefabs o encontra."
+
+#: gui.cpp:2961
+msgid "Held by"
+msgstr "Ponto de apoio"
+
+#: gui.cpp:2963
+msgid "Lowest point"
+msgstr "Ponto mais baixo"
+
+#: gui.cpp:2964
+msgid "The middle, at the bottom: it stands on the ground where you click."
+msgstr "O meio, embaixo: ele fica em pé no chão onde você clica."
+
+#: gui.cpp:2966
+msgid "Centre"
+msgstr "Centro"
+
+#: gui.cpp:2968
+msgid "First object"
+msgstr "Primeiro objeto"
+
+#: gui.cpp:2969
+msgid "The first selected object goes where you click."
+msgstr "O primeiro objeto selecionado vai para onde você clica."
+
+#: gui.cpp:2971
+msgid "Only the first 256 are saved."
+msgstr "Só os primeiros 256 são salvos."
+
+#: gui.cpp:2983
+msgid "Saved %d instance(s) as %s"
+msgstr "%d instância(s) salva(s) como %s"
+
+#: gui.cpp:2986
+msgid "Couldn't save the prefab"
+msgstr "Não foi possível salvar o prefab"
+
+#: gui.cpp:3075
+msgid "Import Prefab"
+msgstr "Importar prefab"
+
+#: gui.cpp:3076
+msgid "Load prefab in front of camera"
+msgstr "Carregar prefab na frente da câmera"
+
+#: gui.cpp:3079
+msgid "Available prefabs:"
+msgstr "Prefabs disponíveis:"
+
+#: gui.cpp:3086
+msgid "No .haumea files found in the config folder's prefabs/"
+msgstr "Nenhum arquivo .haumea encontrado em prefabs/ na pasta de configuração"
+
+#: gui.cpp:3089
+msgid "Or path"
+msgstr "Ou caminho"
+
+#: gui.cpp:3102
+msgid "Imported %d instance(s) from prefab"
+msgstr "%d instância(s) importada(s) do prefab"
+
+#: gui.cpp:3104
+msgid "Failed to import prefab"
+msgstr "Falha ao importar o prefab"
+
+#: gui.cpp:3164
+msgid "Untitled map"
+msgstr "Mapa sem título"
+
+#: gui.cpp:3326
+msgid "Could not open %s"
+msgstr "Não foi possível abrir %s"
+
+#: gui.cpp:3357
+msgid "Could not read %s"
+msgstr "Não foi possível ler %s"
+
+#: gui.cpp:3392
+msgid "Opened %s"
+msgstr "%s aberto"
+
+#: gui.cpp:3410
+msgid "New map"
+msgstr "Novo mapa"
+
+#: gui.cpp:3535
+msgid "Copied the camera position: %s"
+msgstr "Posição da câmera copiada: %s"
+
+#: gui.cpp:3545
+msgid "Go to Coordinates"
+msgstr "Ir para coordenadas"
+
+#: gui.cpp:3551
+msgid "Paste a position: x, y, z (an angle after it is fine) or a SetPlayerPos line."
+msgstr "Cole uma posição: x, y, z (um ângulo depois não tem problema) ou uma linha SetPlayerPos."
+
+#: gui.cpp:3557
+msgid "That has no x, y and z in it."
+msgstr "Isso não tem x, y e z."
+
+#: gui.cpp:3559
+msgid "Go"
+msgstr "Ir"
+
+#: gui.cpp:3568
+msgid "Camera at %.2f, %.2f, %.2f"
+msgstr "Câmera em %.2f, %.2f, %.2f"
+
+#: gui.cpp:3580
+msgid "Unsaved changes"
+msgstr "Alterações não salvas"
+
+#: gui.cpp:3585
+msgid "Save changes to %s?"
+msgstr "Salvar as alterações em %s?"
+
+#: gui.cpp:3586
+msgid "Your changes are lost if you don't save them."
+msgstr "Suas alterações serão perdidas se você não salvá-las."
+
+#: gui.cpp:3599
+msgid "Don't Save"
+msgstr "Não salvar"
+
+#: gui.cpp:3653
+msgid "Pawn map saving is only supported for GTA San Andreas"
+msgstr "Salvar mapas Pawn só é suportado no GTA San Andreas"
+
+#: gui.cpp:3663
+msgid "Invalid or too long Pawn map path"
+msgstr "Caminho do mapa Pawn inválido ou longo demais"
+
+#: gui.cpp:3669
+msgid "Failed to save Pawn map"
+msgstr "Falha ao salvar o mapa Pawn"
+
+#: gui.cpp:3677
+msgid "Saved %s: %d object operation(s) (some unsupported objects skipped)"
+msgstr "%s salvo: %d operação(ões) de objeto (alguns objetos não suportados foram ignorados)"
+
+#: gui.cpp:3678
+msgid "Saved %s: %d object operation(s)"
+msgstr "%s salvo: %d operação(ões) de objeto"
+
+#: gui.cpp:3708
+msgid "Save Pawn Map As"
+msgstr "Salvar mapa Pawn como"
+
+#: gui.cpp:3709
+msgid "Save the map as Pawn source. It holds every placed object and only the changed or removed GTA world objects, and Haumea opens it again as the map."
+msgstr "Salve o mapa como código Pawn. Ele contém todos os objetos colocados e só os objetos do mundo do GTA alterados ou removidos, e o Haumea o abre de novo como o mapa."
+
+#: gui.cpp:3710
+msgid "Path"
+msgstr "Caminho"
+
+#: gui.cpp:3712
+msgid "Browse..."
+msgstr "Procurar..."
+
+#: gui.cpp:3719
+msgid "Native CreateObject"
+msgstr "CreateObject nativo"
+
+#: gui.cpp:3721
+msgid "Streamer CreateDynamicObject"
+msgstr "CreateDynamicObject do Streamer"
+
+#: gui.cpp:3723
+msgid "Text encoding of labels, material text, textdraws and notes.\nSA-MP and open.mp clients draw text as Windows-1252, as pawno writes it."
+msgstr "Codificação de texto de rótulos, texto de material, textdraws e notas.\nOs clientes SA-MP e open.mp desenham texto em Windows-1252, como o pawno grava."
+
+#: gui.cpp:3727
+msgid "Only for a server whose players' clients draw UTF-8 text:\nthe standard SA-MP and open.mp clients show accents garbled."
+msgstr "Só para um servidor cujos jogadores usam clientes que desenham texto UTF-8:\nos clientes SA-MP e open.mp padrão mostram os acentos corrompidos."
+
+#: gui.cpp:3729
+msgid "Use an absolute path, or a path relative to the editor's working directory."
+msgstr "Use um caminho absoluto ou um caminho relativo à pasta de trabalho do editor."
+
+#: gui.cpp:3776
+msgid "Export Pawn Code"
+msgstr "Exportar código Pawn"
+
+#: gui.cpp:3777
+msgid "Export open.mp Pawn object code"
+msgstr "Exportar código Pawn de objetos open.mp"
+
+#: gui.cpp:3782
+msgid "Selection only"
+msgstr "Só a seleção"
+
+#: gui.cpp:3819
+msgid "Export set: %d object(s) (selection + deleted world objects)"
+msgstr "Conjunto exportado: %d objeto(s) (seleção + objetos do mundo excluídos)"
+
+#: gui.cpp:3820
+msgid "Export set: %d object(s) (whole scene)"
+msgstr "Conjunto exportado: %d objeto(s) (cena inteira)"
+
+#: gui.cpp:3827
+msgid "%d changed world object(s) will be removed per player with RemoveBuildingForPlayer and recreated by the exported Pawn code when they are not deleted."
+msgstr "%d objeto(s) do mundo alterado(s) serão removidos por jogador com RemoveBuildingForPlayer e recriados pelo código Pawn exportado quando não forem excluídos."
+
+#: gui.cpp:3829
+msgid "%d world object(s) in this export scope are unchanged and will be omitted. Move, rotate, edit, or delete one if it should become a Pawn change."
+msgstr "%d objeto(s) do mundo neste escopo de exportação não foram alterados e serão omitidos. Mova, gire, edite ou exclua um se ele deve virar uma alteração em Pawn."
+
+#: gui.cpp:3831
+msgid "Unchanged world objects are omitted. Changed or deleted world objects are exported as RemoveBuildingForPlayer plus scripted object calls."
+msgstr "Objetos do mundo não alterados são omitidos. Objetos do mundo alterados ou excluídos são exportados como RemoveBuildingForPlayer mais chamadas de objeto no script."
+
+#: gui.cpp:3834
+msgid "Native CreateObject is global and has no interior parameter."
+msgstr "O CreateObject nativo é global e não tem parâmetro de interior."
+
+#: gui.cpp:3836
+msgid "Streamer objects use world -1 and preserve positive editor interiors."
+msgstr "Objetos do Streamer usam o mundo -1 e preservam interiores positivos do editor."
+
+#: gui.cpp:3850
+msgid "Output: %s"
+msgstr "Saída: %s"
+
+#: gui.cpp:3858
+msgid "Exported %d Pawn object(s) (some skipped) to %s"
+msgstr "%d objeto(s) Pawn exportado(s) (alguns ignorados) para %s"
+
+#: gui.cpp:3859
+msgid "Exported %d Pawn object(s) to %s"
+msgstr "%d objeto(s) Pawn exportado(s) para %s"
+
+#: gui.cpp:3862
+msgid "No exportable objects found"
+msgstr "Nenhum objeto exportável encontrado"
+
+#: gui.cpp:3864
+msgid "Failed to export Pawn code"
+msgstr "Falha ao exportar o código Pawn"
+
+#: gui.cpp:3879
+msgid "Added %d object(s) and %d removed building(s)."
+msgstr "%d objeto(s) e %d prédio(s) removido(s) adicionados."
+
+#: gui.cpp:3882
+msgid "Nothing was imported."
+msgstr "Nada foi importado."
+
+#: gui.cpp:3891
+msgid "%d object(s) use models the editor does not have (%s). Weapon models (321-372) and models from other mods are not available."
+msgstr "%d objeto(s) usam modelos que o editor não tem (%s). Modelos de armas (321-372) e modelos de outros mods não estão disponíveis."
+
+#: gui.cpp:3895
+msgid "%d call(s) were skipped because their position, model or handle is not a plain value (for example a formula or a variable that holds coordinates)."
+msgstr "%d chamada(s) foram ignoradas porque a posição, o modelo ou o handle não é um valor simples (por exemplo uma fórmula ou uma variável que guarda coordenadas)."
+
+#: gui.cpp:3898
+msgid "%d RemoveBuildingForPlayer line(s) did not match a GTA building at that spot."
+msgstr "%d linha(s) RemoveBuildingForPlayer não correspondem a um prédio do GTA naquele lugar."
+
+#: gui.cpp:3901
+msgid "%d material, attachment or interior line(s) referred to objects that were skipped."
+msgstr "%d linha(s) de material, anexo ou interior se referiam a objetos que foram ignorados."
+
+#: gui.cpp:3904
+msgid "Left out because SA-MP has no equivalent:"
+msgstr "Deixado de fora porque o SA-MP não tem equivalente:"
+
+#: gui.cpp:3928
+msgid "%d of those models were imported into the game's modloader/Haumea folder, which SA-MP players don't have. They can become custom models in the server's models folder (SA-MP 0.3.DL / open.mp)."
+msgstr "%d desses modelos foram importados para a pasta modloader/Haumea do jogo, que os jogadores do SA-MP não têm. Eles podem virar modelos personalizados na pasta models do servidor (SA-MP 0.3.DL / open.mp)."
+
+#: gui.cpp:3931
+msgid "Move them to the server's models folder"
+msgstr "Movê-los para a pasta models do servidor"
+
+#: gui.cpp:3936
+msgid "Couldn't move the models: %s"
+msgstr "Não foi possível mover os modelos: %s"
+
+#: gui.cpp:3944
+msgid "OK"
+msgstr "OK"
+
+#: gui.cpp:3964
+msgid "Merge Pawn File"
+msgstr "Mesclar arquivo Pawn"
+
+#: gui.cpp:3965
+msgid "Adds the objects, textures and removed buildings from another .pwn or .inc file, a Texture Studio map (.db), an MTA:SA map (.map) or an IPL file to this map. Works with Haumea and Texture Studio exports and most hand-written maps."
+msgstr "Adiciona a este mapa os objetos, texturas e prédios removidos de outro arquivo .pwn ou .inc, de um mapa do Texture Studio (.db), de um mapa do MTA:SA (.map) ou de um arquivo IPL. Funciona com exportações do Haumea e do Texture Studio e com a maioria dos mapas escritos à mão."
+
+#: gui.cpp:3968
+msgid "To edit that file itself instead, use File > Open Map."
+msgstr "Para editar esse arquivo em si, use Arquivo > Abrir mapa."
+
+#: gui.cpp:3971
+msgid "Pick a .pwn, .db, .map or .ipl file"
+msgstr "Escolha um arquivo .pwn, .db, .map ou .ipl"
+
+#: gui.cpp:3983
+msgid "Merge into map"
+msgstr "Mesclar no mapa"
+
+#: gui.cpp:3990
+msgid "Merged %s"
+msgstr "%s mesclado"
+
+#: gui.cpp:3996
+msgid "Close"
+msgstr "Fechar"
+
+#: gui.cpp:4015
+msgid "Custom import is wired for GTA San Andreas only in this v1."
+msgstr "Nesta v1, a importação personalizada funciona só no GTA San Andreas."
+
+#: gui.cpp:4019
+msgid "No free stock-range ID was found."
+msgstr "Nenhum ID livre na faixa padrão foi encontrado."
+
+#: gui.cpp:4023
+msgid "ID %d is already in use."
+msgstr "O ID %d já está em uso."
+
+#: gui.cpp:4028
+msgid "Model/TXD names must use only letters, digits, and underscores."
+msgstr "Nomes de modelo/TXD devem usar só letras, dígitos e sublinhados."
+
+#: gui.cpp:4033
+msgid "Model name %s already exists. Change the model name first."
+msgstr "O nome de modelo %s já existe. Mude o nome do modelo primeiro."
+
+#: gui.cpp:4038
+msgid "Model name %s is too long for COL internal name/export (max 23 chars)."
+msgstr "O nome de modelo %s é longo demais para o nome interno/exportação do COL (máx. 23 caracteres)."
+
+#: gui.cpp:4053
+msgid "Couldn't build export paths."
+msgstr "Não foi possível montar os caminhos de exportação."
+
+#: gui.cpp:4066
+msgid "TXD name %s already exists, but the selected file differs from the active TXD (%s). Select the same TXD file or use a different TXD name."
+msgstr "O nome de TXD %s já existe, mas o arquivo selecionado é diferente do TXD ativo (%s). Selecione o mesmo arquivo TXD ou use outro nome de TXD."
+
+#: gui.cpp:4068
+msgid "not a loose modloader file"
+msgstr "não é um arquivo solto do modloader"
+
+#: gui.cpp:4081
+msgid "Couldn't parse COL file %s."
+msgstr "Não foi possível ler o arquivo COL %s."
+
+#: gui.cpp:4086
+msgid "COL import only supports automatic renaming for single-entry COL files."
+msgstr "A importação de COL só renomeia automaticamente arquivos COL com uma única entrada."
+
+#: gui.cpp:4096
+msgid "Couldn't snapshot files for rollback."
+msgstr "Não foi possível fazer uma cópia dos arquivos para reverter."
+
+#: gui.cpp:4102
+msgid "Failed to resolve custom IDE path."
+msgstr "Falha ao resolver o caminho do IDE personalizado."
+
+#: gui.cpp:4112
+msgid "Failed to copy one or more source files."
+msgstr "Falha ao copiar um ou mais arquivos de origem."
+
+#: gui.cpp:4130
+msgid "<none>"
+msgstr "<nenhum>"
+
+#: gui.cpp:4138
+msgid "Import is shadowed before Haumea wins override resolution. DFF winner: %s | TXD winner: %s. Tip: importing files from another modloader folder can cause this."
+msgstr "A importação é sobreposta antes de o Haumea vencer a resolução de substituições. DFF vencedor: %s | TXD vencedor: %s. Dica: importar arquivos de outra pasta do modloader pode causar isso."
+
+#: gui.cpp:4143
+msgid "Import is shadowed before Haumea wins override resolution. DFF winner: %s | TXD winner: %s."
+msgstr "A importação é sobreposta antes de o Haumea vencer a resolução de substituições. DFF vencedor: %s | TXD vencedor: %s."
+
+#: gui.cpp:4150
+msgid "Failed to prepare custom import files."
+msgstr "Falha ao preparar os arquivos da importação personalizada."
+
+#: gui.cpp:4159
+msgid "Couldn't create %s"
+msgstr "Não foi possível criar %s"
+
+#: gui.cpp:4203
+msgid "Couldn't rewrite %s"
+msgstr "Não foi possível regravar %s"
+
+#: gui.cpp:4214
+msgid "Failed to allocate custom object."
+msgstr "Falha ao alocar o objeto personalizado."
+
+#: gui.cpp:4244
+msgid "Failed to load imported DFF/TXD for %s."
+msgstr "Falha ao carregar o DFF/TXD importado de %s."
+
+#: gui.cpp:4260
+msgid "Failed to auto-generate COL from DFF geometry."
+msgstr "Falha ao gerar o COL automaticamente a partir da geometria do DFF."
+
+#: gui.cpp:4271
+msgid "Auto-generated COL from DFF geometry (%d -> %d tris, %d -> %d verts)."
+msgstr "COL gerado automaticamente a partir da geometria do DFF (%d -> %d triângulos, %d -> %d vértices)."
+
+#: gui.cpp:4280
+msgid "Failed to update %s"
+msgstr "Falha ao atualizar %s"
+
+#: gui.cpp:4296
+msgid "Failed to register COLFILE addition."
+msgstr "Falha ao registrar a adição de COLFILE."
+
+#: gui.cpp:4315
+msgid "Auto-generated COL did not attach to model name %s."
+msgstr "O COL gerado automaticamente não se ligou ao nome de modelo %s."
+
+#: gui.cpp:4324
+msgid "COL imported, but no collision matched model name %s."
+msgstr "COL importado, mas nenhuma colisão correspondeu ao nome de modelo %s."
+
+#: gui.cpp:4325
+msgid "COL auto-generated, but no collision matched model name %s."
+msgstr "COL gerado automaticamente, mas nenhuma colisão correspondeu ao nome de modelo %s."
+
+#: gui.cpp:4333
+msgid "The object was imported but couldn't be spawned."
+msgstr "O objeto foi importado, mas não pôde ser criado."
+
+#: gui.cpp:4339
+msgid "Imported %s (%d) with warning: %s"
+msgstr "%s (%d) importado com aviso: %s"
+
+#: gui.cpp:4342
+msgid "Imported %s (%d)"
+msgstr "%s (%d) importado"
+
+#: gui.cpp:4355
+msgid "Import Custom Object"
+msgstr "Importar objeto personalizado"
+
+#: gui.cpp:4358
+msgid "Import custom object in front of camera"
+msgstr "Importar objeto personalizado na frente da câmera"
+
+#: gui.cpp:4359
+msgid "Assets are written to modloader/Haumea; original game files stay untouched."
+msgstr "Os arquivos vão para modloader/Haumea; os arquivos originais do jogo não são alterados."
+
+#: gui.cpp:4361
+msgid "Files"
+msgstr "Arquivos"
+
+#: gui.cpp:4362
+msgid "Choose DFF..."
+msgstr "Escolher DFF..."
+
+#: gui.cpp:4368
+msgid "Required"
+msgstr "Obrigatório"
+
+#: gui.cpp:4383
+msgid "Choose TXD..."
+msgstr "Escolher TXD..."
+
+#: gui.cpp:4399
+msgid "Choose COL..."
+msgstr "Escolher COL..."
+
+#: gui.cpp:4405
+msgid "Optional"
+msgstr "Opcional"
+
+#: gui.cpp:4413
+msgid "DFF and TXD are required."
+msgstr "DFF e TXD são obrigatórios."
+
+#: gui.cpp:4415
+msgid "Using provided COL: %s"
+msgstr "Usando o COL fornecido: %s"
+
+#: gui.cpp:4417
+msgid "No COL selected. Collision will be auto-generated."
+msgstr "Nenhum COL selecionado. A colisão será gerada automaticamente."
+
+#: gui.cpp:4419
+msgid "An existing TXD is shared when its contents match; name conflicts are rejected."
+msgstr "Um TXD existente é compartilhado quando o conteúdo é igual; conflitos de nome são rejeitados."
+
+#: gui.cpp:4420
+msgid "Tip: you can also drag & drop .dff/.txd/.col files anywhere in Haumea."
+msgstr "Dica: você também pode arrastar e soltar arquivos .dff/.txd/.col em qualquer lugar do Haumea."
+
+#: gui.cpp:4423
+msgid "Object ID"
+msgstr "ID do objeto"
+
+#: gui.cpp:4425
+msgid "Preferred ID Start"
+msgstr "Início preferido de ID"
+
+#: gui.cpp:4430
+msgid "Suggest Free ID"
+msgstr "Sugerir ID livre"
+
+#: gui.cpp:4432
+msgid "Model"
+msgstr "Modelo"
+
+#: gui.cpp:4434
+msgid "Draw Distance"
+msgstr "Distância de desenho"
+
+#: gui.cpp:4438
+msgid "IDE Flags"
+msgstr "Flags do IDE"
+
+#: gui.cpp:4440
+msgid "Raw flags: 0x%X"
+msgstr "Flags brutas: 0x%X"
+
+#: gui.cpp:4444
+msgid "COL will be exported as %s.col and renamed internally if needed"
+msgstr "O COL será exportado como %s.col e renomeado internamente se necessário"
+
+#: gui.cpp:4447
+msgid "COL will be auto-generated from DFF geometry as %s.col"
+msgstr "O COL será gerado automaticamente a partir da geometria do DFF como %s.col"
+
+#: gui.cpp:4489
+msgid "Alt+F4"
+msgstr "Alt+F4"
+
+#: gui.cpp:4489
+msgid "Exit Haumea Studio"
+msgstr "Sair do Haumea Studio"
+
+#: gui.cpp:4489
+msgid "Editor"
+msgstr "Editor"
+
+#: gui.cpp:4491
+msgid "RMB drag"
+msgstr "Arrastar com o botão direito"
+
+#: gui.cpp:4491
+msgid "Look around (the look button: Preferences > Camera)"
+msgstr "Olhar em volta (o botão de olhar: Preferências > Câmera)"
+
+#: gui.cpp:4491
+msgid "3D view"
+msgstr "Vista 3D"
+
+#: gui.cpp:4492
+msgid "Ctrl+Alt+RMB drag"
+msgstr "Ctrl+Alt+arrastar com o botão direito"
+
+#: gui.cpp:4492
+msgid "Dolly camera along view direction"
+msgstr "Aproximar a câmera na direção da vista"
+
+#: gui.cpp:4493
+msgid "MMB drag"
+msgstr "Arrastar com o botão do meio"
+
+#: gui.cpp:4493
+msgid "Pan camera"
+msgstr "Deslocar a câmera"
+
+#: gui.cpp:4494
+msgid "Alt+MMB click"
+msgstr "Alt+clique com o botão do meio"
+
+#: gui.cpp:4494
+msgid "Reset FOV"
+msgstr "Redefinir FOV"
+
+#: gui.cpp:4495
+msgid "Alt+MMB drag"
+msgstr "Alt+arrastar com o botão do meio"
+
+#: gui.cpp:4495
+msgid "Arc rotate around camera target"
+msgstr "Girar em arco em volta do alvo da câmera"
+
+#: gui.cpp:4496
+msgid "Ctrl+Alt+MMB drag"
+msgstr "Ctrl+Alt+arrastar com o botão do meio"
+
+#: gui.cpp:4496
+msgid "Zoom camera toward target"
+msgstr "Aproximar a câmera do alvo"
+
+#: gui.cpp:4497
+msgid "Mouse wheel"
+msgstr "Roda do mouse"
+
+#: gui.cpp:4497
+msgid "Adjust FOV zoom"
+msgstr "Ajustar o zoom do FOV"
+
+#: gui.cpp:4498
+msgid "Ctrl+wheel"
+msgstr "Ctrl+roda"
+
+#: gui.cpp:4498
+msgid "Interface size"
+msgstr "Tamanho da interface"
+
+#: gui.cpp:4499
+msgid "RMB held + W / S"
+msgstr "Botão direito pressionado + W / S"
+
+#: gui.cpp:4499
+msgid "Fly forward / backward"
+msgstr "Voar para frente / para trás"
+
+#: gui.cpp:4500
+msgid "RMB held + A / D"
+msgstr "Botão direito pressionado + A / D"
+
+#: gui.cpp:4500
+msgid "Fly left / right"
+msgstr "Voar para a esquerda / direita"
+
+#: gui.cpp:4501
+msgid "RMB held + Shift+WASD"
+msgstr "Botão direito pressionado + Shift+WASD"
+
+#: gui.cpp:4501
+msgid "Fly fast"
+msgstr "Voar rápido"
+
+#: gui.cpp:4502
+msgid "RMB held + Alt+WASD"
+msgstr "Botão direito pressionado + Alt+WASD"
+
+#: gui.cpp:4502
+msgid "Fly slowly"
+msgstr "Voar devagar"
+
+#: gui.cpp:4504
+msgid "Click object"
+msgstr "Clicar no objeto"
+
+#: gui.cpp:4504
+msgid "Select object"
+msgstr "Selecionar objeto"
+
+#: gui.cpp:4505
+msgid "Shift+click object"
+msgstr "Shift+clique no objeto"
+
+#: gui.cpp:4505
+msgid "Add object to selection"
+msgstr "Adicionar objeto à seleção"
+
+#: gui.cpp:4506
+msgid "Alt+click object"
+msgstr "Alt+clique no objeto"
+
+#: gui.cpp:4506
+msgid "Remove object from selection"
+msgstr "Remover objeto da seleção"
+
+#: gui.cpp:4507
+msgid "Ctrl+click object"
+msgstr "Ctrl+clique no objeto"
+
+#: gui.cpp:4507
+msgid "Toggle object selection"
+msgstr "Alternar a seleção do objeto"
+
+#: gui.cpp:4508
+msgid "Shift+LMB drag"
+msgstr "Shift+arrastar com o botão esquerdo"
+
+#: gui.cpp:4508
+msgid "Rectangle select"
+msgstr "Seleção retangular"
+
+#: gui.cpp:4509
+msgid "Ctrl+Shift+LMB drag"
+msgstr "Ctrl+Shift+arrastar com o botão esquerdo"
+
+#: gui.cpp:4509
+msgid "Rectangle add to selection"
+msgstr "Adicionar à seleção com retângulo"
+
+#: gui.cpp:4510
+msgid "Alt+Shift+LMB drag"
+msgstr "Alt+Shift+arrastar com o botão esquerdo"
+
+#: gui.cpp:4510
+msgid "Rectangle remove from selection"
+msgstr "Remover da seleção com retângulo"
+
+#: gui.cpp:4511
+msgid "RMB on selection"
+msgstr "Botão direito na seleção"
+
+#: gui.cpp:4511
+msgid "Deselect selected object"
+msgstr "Desmarcar o objeto selecionado"
+
+#: gui.cpp:4511
+msgid "Editor list"
+msgstr "Lista do editor"
+
+#: gui.cpp:4512
+msgid "RMB on deleted object"
+msgstr "Botão direito em objeto excluído"
+
+#: gui.cpp:4512
+msgid "Undelete object"
+msgstr "Restaurar objeto excluído"
+
+#: gui.cpp:4513
+msgid "Shift while dragging"
+msgstr "Shift ao arrastar"
+
+#: gui.cpp:4513
+msgid "Use selected snap increment"
+msgstr "Usar o incremento de encaixe selecionado"
+
+#: gui.cpp:4513
+msgid "Gizmo"
+msgstr "Gizmo"
+
+#: gui.cpp:4515
+msgid "Ctrl+F"
+msgstr "Ctrl+F"
+
+#: gui.cpp:4515
+msgid "Search"
+msgstr "Buscar"
+
+#: gui.cpp:4516
+msgid "Up / Down"
+msgstr "Cima / Baixo"
+
+#: gui.cpp:4516
+msgid "Move selected object through current filtered list"
+msgstr "Percorrer a lista filtrada atual com o objeto selecionado"
+
+#: gui.cpp:4516
+msgid "Object Browser list"
+msgstr "Lista do Navegador de objetos"
+
+#: gui.cpp:4517
+msgid "Right-click object row"
+msgstr "Clique direito na linha do objeto"
+
+#: gui.cpp:4517
+msgid "Add or remove favourite"
+msgstr "Adicionar ou remover favorito"
+
+#: gui.cpp:4518
+msgid "Click in 3D view"
+msgstr "Clique na vista 3D"
+
+#: gui.cpp:4518
+msgid "Place selected object"
+msgstr "Colocar o objeto selecionado"
+
+#: gui.cpp:4518
+msgid "Place mode"
+msgstr "Modo de colocação"
+
+#: gui.cpp:4519
+msgid "Shift+click in 3D view"
+msgstr "Shift+clique na vista 3D"
+
+#: gui.cpp:4519
+msgid "Place object and stay in place mode"
+msgstr "Colocar o objeto e continuar no modo de colocação"
+
+#: gui.cpp:4520
+msgid "RMB"
+msgstr "Botão direito"
+
+#: gui.cpp:4520
+msgid "Exit place mode"
+msgstr "Sair do modo de colocação"
+
+#: gui.cpp:4522
+msgid "Brush"
+msgstr "Pincel"
+
+#: gui.cpp:4522
+msgid "LMB"
+msgstr "Botão esquerdo"
+
+#: gui.cpp:4522
+msgid "Paint selected object on surface"
+msgstr "Pintar o objeto selecionado na superfície"
+
+#: gui.cpp:4522
+msgid "Brush mode"
+msgstr "Modo pincel"
+
+#: gui.cpp:4523
+msgid "LMB drag"
+msgstr "Arrastar com o botão esquerdo"
+
+#: gui.cpp:4523
+msgid "Paint continuously using spacing/delay settings"
+msgstr "Pintar continuamente usando as configurações de espaçamento/atraso"
+
+#: gui.cpp:4524
+msgid "Look around while brushing"
+msgstr "Olhar em volta enquanto pinta"
+
+#: gui.cpp:4525
+msgid "Pan or orbit camera while brushing"
+msgstr "Deslocar ou orbitar a câmera enquanto pinta"
+
+#: gui.cpp:4526
+msgid "MMB click"
+msgstr "Clique com o botão do meio"
+
+#: gui.cpp:4526
+msgid "Exit brush mode"
+msgstr "Sair do modo pincel"
+
+#: gui.cpp:4528
+msgid "Panel under the mouse"
+msgstr "Painel sob o mouse"
+
+#: gui.cpp:4540
+msgid "Change shortcuts..."
+msgstr "Mudar atalhos..."
+
+#: gui.cpp:4542
+msgid "Preferences > Shortcuts"
+msgstr "Preferências > Atalhos"
+
+#: gui.cpp:4555
+msgid "Section"
+msgstr "Seção"
+
+#: gui.cpp:4556
+msgid "Shortcut"
+msgstr "Atalho"
+
+#: gui.cpp:4557
+msgid "Action"
+msgstr "Ação"
+
+#: gui.cpp:4558
+msgid "Context"
+msgstr "Contexto"
+
+#: gui.cpp:4567
+msgid "(none)"
+msgstr "(nenhum)"
+
+#: gui.cpp:4598
+msgid "No shortcuts match the current filter."
+msgstr "Nenhum atalho corresponde ao filtro atual."
+
+#: gui.cpp:4620
+msgid "Haumea Studio %s, Beta channel"
+msgstr "Haumea Studio %s, canal beta"
+
+#: gui.cpp:4622
+msgid "Haumea Studio %s"
+msgstr "Haumea Studio %s"
+
+#: gui.cpp:4624
+msgid "Haumea Studio %s (%s)"
+msgstr "Haumea Studio %s (%s)"
+
+#: gui.cpp:4627
+msgid "An unofficial build: it updates to the next official release."
+msgstr "Uma versão não oficial: ela atualiza para a próxima versão oficial."
+
+#: gui.cpp:4628
+msgid "The all-in-one editor for open.mp and SA-MP, by itsneufox."
+msgstr "O editor tudo-em-um para open.mp e SA-MP, por itsneufox."
+
+#: gui.cpp:4629
+msgid "Licenses..."
+msgstr "Licenças..."
+
+#: gui.cpp:4631
+msgid "GNU GPL v2 or later, and the licenses of the components it includes."
+msgstr "GNU GPL v2 ou posterior, e as licenças dos componentes que ele inclui."
+
+#: gui.cpp:4633
+msgid "How do I..."
+msgstr "Como eu..."
+
+#: gui.cpp:4634
+msgid "Start a map for my server"
+msgstr "Começo um mapa para o meu servidor"
+
+#: gui.cpp:4635
+msgid "File > Workspace: pick your SA-MP or open.mp server folder."
+msgstr "Arquivo > Espaço de trabalho: escolha a pasta do seu servidor SA-MP ou open.mp."
+
+#: gui.cpp:4636
+msgid "File > New, place things, then %s saves a .pwn you include in a script."
+msgstr "Arquivo > Novo, coloque coisas e então %s salva um .pwn que você inclui em um script."
+
+#: gui.cpp:4638
+msgid "The saved file's first lines say which functions to call."
+msgstr "As primeiras linhas do arquivo salvo dizem quais funções chamar."
+
+#: gui.cpp:4640
+msgid "Place objects, pickups, actors..."
+msgstr "Coloco objetos, pickups, atores..."
+
+#: gui.cpp:4641
+msgid "Object Browser (%s): pick an object, Place, then click in the world."
+msgstr "Navegador de objetos (%s): escolha um objeto, Colocar, e clique no mundo."
+
+#: gui.cpp:4643
+msgid "Its SA-MP tab has pickups, labels, actors, gang zones, sounds and more."
+msgstr "A aba SA-MP tem pickups, rótulos, atores, gang zones, sons e mais."
+
+#: gui.cpp:4644
+msgid "Click something to edit it in Object Info (%s). %s stops placing."
+msgstr "Clique em algo para editá-lo em Informações do objeto (%s). %s para de colocar."
+
+#: gui.cpp:4647
+msgid "Make an NPC walk a route"
+msgstr "Faço um NPC andar por uma rota"
+
+#: gui.cpp:4648
+msgid "open.mp only"
+msgstr "só open.mp"
+
+#: gui.cpp:4649
+msgid "SA-MP tab: Place NPC path points, clicking one point after another."
+msgstr "Aba SA-MP: coloque pontos de caminho de NPC, clicando um ponto depois do outro."
+
+#: gui.cpp:4650
+msgid "Place an NPC, then in Object Info > NPC > Movement pick \"Follow a path\"."
+msgstr "Coloque um NPC e, em Informações do objeto > NPC > Movimento, escolha \"Seguir um caminho\"."
+
+#: gui.cpp:4651
+msgid "Preview movement walks it in the viewport; the map saves NPC_MoveByPath."
+msgstr "Pré-visualizar movimento o faz andar na viewport; o mapa salva NPC_MoveByPath."
+
+#: gui.cpp:4652
+msgid "For the game's roads, pick \"Walk the nodes\" (Windows > Nodes, %s)."
+msgstr "Para as ruas do jogo, escolha \"Andar pelos nós\" (Janelas > Nós, %s)."
+
+#: gui.cpp:4655
+msgid "Use custom models"
+msgstr "Uso modelos personalizados"
+
+#: gui.cpp:4656
+msgid "SA-MP 0.3.DL and open.mp clients download custom models."
+msgstr "Os clientes SA-MP 0.3.DL e open.mp baixam modelos personalizados."
+
+#: gui.cpp:4657
+msgid "File > Import > Custom Model: pick a DFF and TXD and an ID."
+msgstr "Arquivo > Importar > Modelo personalizado: escolha um DFF, um TXD e um ID."
+
+#: gui.cpp:4658
+msgid "It goes into the workspace's models folder and artconfig.txt."
+msgstr "Ele vai para a pasta models do espaço de trabalho e para o artconfig.txt."
+
+#: gui.cpp:4659
+msgid "Find it in Object Browser > Custom models and place it like any object."
+msgstr "Encontre-o em Navegador de objetos > Modelos personalizados e coloque-o como qualquer objeto."
+
+#: gui.cpp:4661
+msgid "Design a textdraw"
+msgstr "Crio um textdraw"
+
+#: gui.cpp:4662
+msgid "Windows > TextDraws starts TextDraw mode: a canvas instead of the world."
+msgstr "Janelas > TextDraws inicia o modo TextDraw: uma tela em vez do mundo."
+
+#: gui.cpp:4663
+msgid "Add a text, box, sprite or model preview and drag it on the screen."
+msgstr "Adicione um texto, caixa, sprite ou prévia de modelo e arraste-o na tela."
+
+#: gui.cpp:4664
+msgid "Textdraws have their own .pwn file: Save in the TextDraws window or %s."
+msgstr "Os textdraws têm seu próprio arquivo .pwn: Salvar na janela TextDraws ou %s."
+
+#: gui.cpp:4665
+msgid "Your gamemode includes it and calls _CreateTextDraws and _ShowTextDraws(playerid)."
+msgstr "Seu gamemode o inclui e chama _CreateTextDraws e _ShowTextDraws(playerid)."
+
+#: gui.cpp:4666
+msgid "Exit in the banner or %s goes back to the map."
+msgstr "Sair no banner ou %s volta para o mapa."
+
+#: gui.cpp:4668
+msgid "Test the map in game"
+msgstr "Testo o mapa no jogo"
+
+#: gui.cpp:4669
+msgid "Test in game (%s) runs the map on a private open.mp server."
+msgstr "Testar no jogo (%s) roda o mapa em um servidor open.mp privado."
+
+#: gui.cpp:4670
+msgid "Launch game joins it. After changes, Reload map in the Test server window."
+msgstr "Iniciar o jogo entra nele. Depois de mudanças, Recarregar mapa na janela Servidor de teste."
+
+#: gui.cpp:4671
+msgid "Preferences > Test server picks the server package and port."
+msgstr "Preferências > Servidor de teste escolhe o pacote do servidor e a porta."
+
+#: gui.cpp:4672
+msgid "Map check (%s) lists what will break in game before you ship it."
+msgstr "Verificação do mapa (%s) lista o que vai quebrar no jogo antes de você publicar."
+
+#: gui.cpp:4676
+msgid "More"
+msgstr "Mais"
+
+#: gui.cpp:4677
+msgid "User guide"
+msgstr "Guia do usuário"
+
+#: gui.cpp:4678
+msgid "Setup, elements, NPCs, textdraws, testing and saving, with screenshots."
+msgstr "Configuração, elementos, NPCs, textdraws, testes e salvamento, com capturas de tela."
+
+#: gui.cpp:4680
+msgid "Keyboard shortcuts"
+msgstr "Atalhos de teclado"
+
+#: gui.cpp:4682
+msgid "Every command and its key (%s). Change them in Preferences > Shortcuts."
+msgstr "Cada comando e sua tecla (%s). Mude-os em Preferências > Atalhos."
+
+#: gui.cpp:4685
+msgid "Editor Discord"
+msgstr "Discord do editor"
+
+#: gui.cpp:4686
+msgid "Help, bug reports and editor updates."
+msgstr "Ajuda, relatos de bugs e novidades do editor."
+
+#: gui.cpp:4688
+msgid "open.mp Discord"
+msgstr "Discord do open.mp"
+
+#: gui.cpp:4689
+msgid "Scripting and server help from the open.mp community."
+msgstr "Ajuda com scripts e servidores da comunidade open.mp."
+
+#: gui.cpp:4743
+msgid "Time"
+msgstr "Hora"
+
+#: gui.cpp:4747
+msgid "Hour"
+msgstr "Hora"
+
+#: gui.cpp:4751
+msgid "Minute"
+msgstr "Minuto"
+
+#: gui.cpp:4763
+msgid "Dawn"
+msgstr "Amanhecer"
+
+#: gui.cpp:4763
+msgid "Noon"
+msgstr "Meio-dia"
+
+#: gui.cpp:4763
+msgid "Dusk"
+msgstr "Anoitecer"
+
+#: gui.cpp:4763
+msgid "Night"
+msgstr "Noite"
+
+#: gui.cpp:4774
+msgid "Weather"
+msgstr "Clima"
+
+#: gui.cpp:4782
+msgid "In game: SetPlayerTime(playerid, %d, %d); SetPlayerWeather(playerid, %d);"
+msgstr "No jogo: SetPlayerTime(playerid, %d, %d); SetPlayerWeather(playerid, %d);"
+
+#: gui.cpp:4784
+msgid "The editor only previews these; they are not saved in the map."
+msgstr "O editor só pré-visualiza isso; não é salvo no mapa."
+
+#: gui.cpp:4792
+msgid "Show"
+msgstr "Mostrar"
+
+#: gui.cpp:4793
+msgid "SA-MP elements"
+msgstr "Elementos SA-MP"
+
+#: gui.cpp:4794
+msgid "3D text labels, gang zones and tags on pickups, actors,\nplayer classes and map icons."
+msgstr "Rótulos de texto 3D, gang zones e marcas em pickups, atores,\nclasses de jogador e ícones de mapa."
+
+#: gui.cpp:4795
+msgid "Collisions"
+msgstr "Colisões"
+
+#: gui.cpp:4796
+msgid "What players and vehicles actually collide with."
+msgstr "Com o que jogadores e veículos realmente colidem."
+
+#: gui.cpp:4797
+msgid "Water"
+msgstr "Água"
+
+#: gui.cpp:4799
+msgid "Animated objects"
+msgstr "Objetos animados"
+
+#: gui.cpp:4800
+msgid "Light coronas"
+msgstr "Coronas de luz"
+
+#: gui.cpp:4801
+msgid "Street lamp and building light coronas, as the client draws them."
+msgstr "Coronas de postes e de luzes de prédios, como o cliente as desenha."
+
+#: gui.cpp:4802
+msgid "Timed objects at any hour"
+msgstr "Objetos com horário a qualquer hora"
+
+#: gui.cpp:4803
+msgid "Objects the game only shows by day or by night are always drawn."
+msgstr "Objetos que o jogo só mostra de dia ou de noite são sempre desenhados."
+
+#: gui.cpp:4805
+msgid "Every interior at once"
+msgstr "Todos os interiores de uma vez"
+
+#: gui.cpp:4806
+msgid "Off draws only the interior set on the menu bar, like the client."
+msgstr "Desligado desenha só o interior definido na barra de menus, como o cliente."
+
+#: gui.cpp:4808
+msgid "Draw distance"
+msgstr "Distância de desenho"
+
+#: gui.cpp:4809
+msgid "How far each model shows before its low-detail version, as a\nmultiple of the game's distance."
+msgstr "Até onde cada modelo aparece antes da versão de baixo detalhe, como um\nmúltiplo da distância do jogo."
+
+#: gui.cpp:4812
+msgid "World draw distance"
+msgstr "Distância de desenho do mundo"
+
+#: gui.cpp:4813
+msgid "How far the game's buildings show. Player view keeps the game's."
+msgstr "Até onde os prédios do jogo aparecem. A visão do jogador mantém a do jogo."
+
+#: gui.cpp:4815
+msgid "Map draw distance"
+msgstr "Distância de desenho do mapa"
+
+#: gui.cpp:4816
+msgid "How far your map's objects show, whatever their model's draw distance,\nand never less far than the world. Player view keeps the game's."
+msgstr "Até onde os objetos do seu mapa aparecem, qualquer que seja a distância de desenho do modelo,\ne nunca menos que o mundo. A visão do jogador mantém a do jogo."
+
+#: gui.cpp:4818
+msgid "Game"
+msgstr "Jogo"
+
+#: gui.cpp:4818
+msgid "Light"
+msgstr "Leve"
+
+#: gui.cpp:4820
+msgid "Fog"
+msgstr "Neblina"
+
+#: gui.cpp:4821
+msgid "Game: as thick as in game, which on a clear day starts 10 m out.\nLight: only towards the end of the world draw distance."
+msgstr "Jogo: tão densa quanto no jogo, que num dia claro começa a 10 m.\nLeve: só perto do fim da distância de desenho do mundo."
+
+#: gui.cpp:4823
+msgid "Focus my map"
+msgstr "Destacar meu mapa"
+
+#: gui.cpp:4824
+msgid "Dims the game's buildings so your map's objects stand out."
+msgstr "Escurece os prédios do jogo para que os objetos do seu mapa se destaquem."
+
+#: gui.cpp:4829
+msgid "Player view"
+msgstr "Visão do jogador"
+
+#: gui.cpp:4831
+msgid "As a player sees it (%s)"
+msgstr "Como um jogador vê (%s)"
+
+#: gui.cpp:4833
+msgid "Draws the map's elements the way the client would from the camera:\nnative objects within their draw distance, streamer objects within their stream\nand draw distance (300 m by default, the nearest 1000), vehicles and actors within\n200 m, and only what is in the virtual world below and the interior on the menu bar.\nSelected objects stay visible. Nothing is saved."
+msgstr "Desenha os elementos do mapa como o cliente faria a partir da câmera:\nobjetos nativos dentro da distância de desenho, objetos do streamer dentro da distância de stream\ne de desenho (300 m por padrão, os 1000 mais próximos), veículos e atores a até\n200 m, e só o que está no mundo virtual abaixo e no interior da barra de menus.\nObjetos selecionados continuam visíveis. Nada é salvo."
+
+#: gui.cpp:4840
+msgid "Virtual world"
+msgstr "Mundo virtual"
+
+#: gui.cpp:4847
+msgid "NPC nodes (NODES*.DAT)"
+msgstr "Nós de NPC (NODES*.DAT)"
+
+#: gui.cpp:4848
+msgid "Vehicle nodes"
+msgstr "Nós de veículos"
+
+#: gui.cpp:4850
+msgid "Ped nodes"
+msgstr "Nós de pedestres"
+
+#: gui.cpp:4851
+msgid "The game's path nodes. open.mp NPCs follow them with NPC_PlayNode."
+msgstr "Os nós de caminho do jogo. NPCs do open.mp os seguem com NPC_PlayNode."
+
+#: gui.cpp:4852
+msgid "Node area grid"
+msgstr "Grade de áreas de nós"
+
+#: gui.cpp:4853
+msgid "The 8x8 grid of NODES0-63.DAT areas (750 units each).\nNodes cannot be moved across these boundaries."
+msgstr "A grade 8x8 das áreas NODES0-63.DAT (750 unidades cada).\nNós não podem ser movidos através desses limites."
+
+#: gui.cpp:4858
+msgid "Highlight"
+msgstr "Destaque"
+
+#: gui.cpp:4859
+msgid "Opacity of the red overlay drawn on selected objects."
+msgstr "Opacidade da camada vermelha desenhada nos objetos selecionados."
+
+#: gui.cpp:4860
+msgid "Outline selected objects"
+msgstr "Contornar objetos selecionados"
+
+#: gui.cpp:4861
+msgid "Draws the edges of selected and hovered objects, so invisible ones\ncan be seen. Off leaves only the tint above."
+msgstr "Desenha as bordas dos objetos selecionados e sob o mouse, para que os invisíveis\npossam ser vistos. Desligado deixa só a cor acima."
+
+#: gui.cpp:4864
+msgid "Outline map objects (%s)"
+msgstr "Contornar objetos do mapa (%s)"
+
+#: gui.cpp:4867
+msgid "Graphics"
+msgstr "Gráficos"
+
+#: gui.cpp:4872
+msgid "Anti-aliasing"
+msgstr "Antisserrilhamento"
+
+#: gui.cpp:4883
+msgid "Anti-aliasing set to %s. Restart Haumea to apply it."
+msgstr "Antisserrilhamento definido como %s. Reinicie o Haumea para aplicar."
+
+#: gui.cpp:4893
+msgid "MSAA is not reported by the current renderer/device."
+msgstr "O renderizador/dispositivo atual não informa MSAA."
+
+#: gui.cpp:4895
+msgid "Restart Haumea to apply the new anti-aliasing level."
+msgstr "Reinicie o Haumea para aplicar o novo nível de antisserrilhamento."
+
+#: gui.cpp:4896
+msgid "Post effects"
+msgstr "Pós-efeitos"
+
+#: gui.cpp:4900
+msgid "Colour filter"
+msgstr "Filtro de cor"
+
+#: gui.cpp:4902
+msgid "The PC game's time-of-day colour grading."
+msgstr "A gradação de cor por hora do dia do jogo para PC."
+
+#: gui.cpp:4904
+msgid "Sky"
+msgstr "Céu"
+
+#: gui.cpp:4906
+msgid "Backface culling"
+msgstr "Culling de faces traseiras"
+
+#: gui.cpp:4908
+msgid "Interior and tunnel lighting"
+msgstr "Iluminação de interiores e túneis"
+
+#: gui.cpp:5020
+msgid "Transform limited to first %d linked object(s)"
+msgstr "Transformação limitada aos primeiros %d objeto(s) vinculado(s)"
+
+#: gui.cpp:5034
+msgid "Transform values must be finite numbers"
+msgstr "Os valores de transformação devem ser números finitos"
+
+#: gui.cpp:5064
+msgid "Rotation copied"
+msgstr "Rotação copiada"
+
+#: gui.cpp:5064
+msgid "Position copied"
+msgstr "Posição copiada"
+
+#: gui.cpp:5066
+msgid "Copy the visible X Y Z values"
+msgstr "Copiar os valores X Y Z visíveis"
+
+#: gui.cpp:5169
+msgid "Absolute"
+msgstr "Absoluto"
+
+#: gui.cpp:5175
+msgid "Delta"
+msgstr "Delta"
+
+#: gui.cpp:5180
+msgid "Delta values are offsets from the current transform and reset to zero after each edit."
+msgstr "Valores delta são deslocamentos a partir da transformação atual e voltam a zero após cada edição."
+
+#: gui.cpp:5187
+msgid "Move by"
+msgstr "Mover por"
+
+#: gui.cpp:5187
+msgid "Position"
+msgstr "Posição"
+
+#: gui.cpp:5189
+msgid "Drag to adjust. Double-click to enter an exact value."
+msgstr "Arraste para ajustar. Clique duas vezes para digitar um valor exato."
+
+#: gui.cpp:5203
+msgid "Heading"
+msgstr "Direção"
+
+#: gui.cpp:5212
+msgid "The way it faces, in degrees (the Z rotation). Drag, or double-click to type."
+msgstr "Para onde ele está virado, em graus (a rotação Z). Arraste ou clique duas vezes para digitar."
+
+#: gui.cpp:5222
+msgid "Turn by"
+msgstr "Girar por"
+
+#: gui.cpp:5222
+msgid "Rotation"
+msgstr "Rotação"
+
+#: gui.cpp:5225
+msgid "Degrees. Drag to adjust, double-click to type. Delta rotation uses the World/Local axes."
+msgstr "Graus. Arraste para ajustar, clique duas vezes para digitar. A rotação delta usa os eixos Mundo/Local."
+
+#: gui.cpp:5226
+msgid "Degrees. Drag to adjust, double-click to type."
+msgstr "Graus. Arraste para ajustar, clique duas vezes para digitar."
+
+#: gui.cpp:5239
+msgid "Copy transform"
+msgstr "Copiar transformação"
+
+#: gui.cpp:5266
+msgid "Paste transform"
+msgstr "Colar transformação"
+
+#: gui.cpp:5273
+msgid "Reset rotation"
+msgstr "Zerar rotação"
+
+#: gui.cpp:5276
+msgid "Set X, Y and Z rotation to zero."
+msgstr "Define as rotações X, Y e Z como zero."
+
+#: gui.cpp:5278
+msgid "Make upright"
+msgstr "Endireitar"
+
+#: gui.cpp:5283
+msgid "Remove tilt while preserving the object's Z heading."
+msgstr "Remove a inclinação mantendo a direção Z do objeto."
+
+#: gui.cpp:5517
+msgid "Choose Material Texture"
+msgstr "Escolher textura do material"
+
+#: gui.cpp:5526
+msgid "Select TXD..."
+msgstr "Selecionar TXD..."
+
+#: gui.cpp:5528
+msgid "Filter TXDs"
+msgstr "Filtrar TXDs"
+
+#: gui.cpp:5551
+msgid "Choose a TXD, preview its textures, then click one to assign it to this material slot."
+msgstr "Escolha um TXD, veja as texturas dele e clique em uma para atribuí-la a este slot de material."
+
+#: gui.cpp:5552
+msgid "%d texture(s)"
+msgstr "%d textura(s)"
+
+#: gui.cpp:5574
+msgid "No preview"
+msgstr "Sem prévia"
+
+#: gui.cpp:5585
+msgid "No textures found in this TXD or its parents."
+msgstr "Nenhuma textura encontrada neste TXD ou nos pais dele."
+
+#: gui.cpp:5585
+msgid "Select a TXD to see its textures."
+msgstr "Selecione um TXD para ver as texturas dele."
+
+#: gui.cpp:5587
+msgid "Filtered texture names include the source TXD."
+msgstr "Os nomes de textura filtrados incluem o TXD de origem."
+
+#: gui.cpp:5679
+msgid "No font files found."
+msgstr "Nenhum arquivo de fonte encontrado."
+
+#: gui.cpp:5683
+msgid "Font"
+msgstr "Fonte"
+
+#: gui.cpp:5688
+msgid "Preview font: %s"
+msgstr "Fonte da prévia: %s"
+
+#: gui.cpp:5690
+msgid "Preview font: %s (substitute)"
+msgstr "Fonte da prévia: %s (substituta)"
+
+#: gui.cpp:5692
+msgid "\"%s\" is not installed here. This free font has the same letter widths,\nso the text fits as in game; the letter shapes differ a little."
+msgstr "\"%s\" não está instalada aqui. Esta fonte livre tem as mesmas larguras de letra,\nentão o texto cabe como no jogo; o formato das letras muda um pouco."
+
+#: gui.cpp:5696
+msgid "\"%s\" is not installed here; the preview uses %s. Players without it get Windows' substitute font."
+msgstr "\"%s\" não está instalada aqui; a prévia usa %s. Jogadores sem ela recebem a fonte substituta do Windows."
+
+#: gui.cpp:5701
+msgid "SA-MP rejects font names of 32 characters or more."
+msgstr "O SA-MP rejeita nomes de fonte com 32 caracteres ou mais."
+
+#: gui.cpp:5738
+msgid "%d x %d texture, as SA-MP renders it"
+msgstr "Textura de %d x %d, como o SA-MP a renderiza"
+
+#: gui.cpp:5747
+msgid "Vehicle colors and respawn settings are in the Instance panel."
+msgstr "As cores e as configurações de respawn do veículo estão no painel Instância."
+
+#: gui.cpp:5756
+msgid "World object: it stays unchanged and is omitted from Pawn export. If you move, rotate, delete, or edit its materials, export removes the original per player and creates the scripted replacement."
+msgstr "Objeto do mundo: ele fica inalterado e é omitido da exportação Pawn. Se você o mover, girar, excluir ou editar os materiais dele, a exportação remove o original por jogador e cria o substituto no script."
+
+#: gui.cpp:5760
+msgid "Material controls are locked for this object."
+msgstr "Os controles de material estão bloqueados para este objeto."
+
+#: gui.cpp:5765
+msgid "Applies to %d selected (each slot to those that have it)."
+msgstr "Aplica-se a %d selecionado(s) (cada slot aos que o têm)."
+
+#: gui.cpp:5771
+msgid "No material slots are loaded for this object yet."
+msgstr "Nenhum slot de material carregado para este objeto ainda."
+
+#: gui.cpp:5775
+msgid "This model has %d materials; SA-MP can only change the first %d."
+msgstr "Este modelo tem %d materiais; o SA-MP só pode mudar os primeiros %d."
+
+#: gui.cpp:5799
+msgid "untextured"
+msgstr "sem textura"
+
+#: gui.cpp:5805
+msgid "Slot %d"
+msgstr "Slot %d"
+
+#: gui.cpp:5810
+msgid "Original"
+msgstr "Original"
+
+#: gui.cpp:5810
+msgid "Texture / color"
+msgstr "Textura / cor"
+
+#: gui.cpp:5810
+msgid "Text"
+msgstr "Texto"
+
+#: gui.cpp:5842
+msgid "Browse textures..."
+msgstr "Procurar texturas..."
+
+#: gui.cpp:5845
+msgid "Model ID"
+msgstr "ID do modelo"
+
+#: gui.cpp:5851
+msgid "-1 keeps the original texture, 0 is SA-MP's blank white texture.\nOtherwise SA-MP loads this model so its TXD is available."
+msgstr "-1 mantém a textura original, 0 é a textura branca em branco do SA-MP.\nCaso contrário o SA-MP carrega este modelo para que o TXD dele esteja disponível."
+
+#: gui.cpp:5855
+msgid "Texture"
+msgstr "Textura"
+
+#: gui.cpp:5863
+msgid "Change color"
+msgstr "Mudar cor"
+
+#: gui.cpp:5877
+msgid "As in game, a color removes the object's vertex lighting and reflections."
+msgstr "Como no jogo, uma cor remove a iluminação de vértices e os reflexos do objeto."
+
+#: gui.cpp:5879
+msgid "Color 0: the model's own color is kept."
+msgstr "Cor 0: a cor própria do modelo é mantida."
+
+#: gui.cpp:5883
+msgid "{RRGGBB} switches color (opaque) for the following text. Enter starts a new line."
+msgstr "{RRGGBB} muda a cor (opaca) do texto seguinte. Enter começa uma nova linha."
+
+#: gui.cpp:5885
+msgid "SA-MP ignores material text calls with empty text."
+msgstr "O SA-MP ignora chamadas de texto de material com texto vazio."
+
+#: gui.cpp:5887
+msgid "Font size"
+msgstr "Tamanho da fonte"
+
+#: gui.cpp:5889
+msgid "Material size"
+msgstr "Tamanho do material"
+
+#: gui.cpp:5894
+msgid "Left (top)"
+msgstr "Esquerda (topo)"
+
+#: gui.cpp:5894
+msgid "Center (middle)"
+msgstr "Centro (meio)"
+
+#: gui.cpp:5894
+msgid "Right (top)"
+msgstr "Direita (topo)"
+
+#: gui.cpp:5895
+msgid "Alignment"
+msgstr "Alinhamento"
+
+#: gui.cpp:5896
+msgid "Bold"
+msgstr "Negrito"
+
+#: gui.cpp:5899
+msgid "Text color"
+msgstr "Cor do texto"
+
+#: gui.cpp:5905
+msgid "Background"
+msgstr "Fundo"
+
+#: gui.cpp:5925
+msgid "Rescan fonts"
+msgstr "Procurar fontes de novo"
+
+#: gui.cpp:5929
+msgid "Searches your fonts folder, the GTA folder (SA-MP's fonts), the Wine prefix's\nWindows\\Fonts and the system font folders again."
+msgstr "Procura de novo na sua pasta de fontes, na pasta do GTA (fontes do SA-MP), em\nWindows\\Fonts do prefixo do Wine e nas pastas de fontes do sistema."
+
+#: gui.cpp:5932
+msgid "Open fonts folder"
+msgstr "Abrir pasta de fontes"
+
+#: gui.cpp:5934
+msgid "Your fonts folder: SA-MP's fonts and the free stand-ins are put there;\nadd other .ttf files to it, then Rescan fonts."
+msgstr "Sua pasta de fontes: as fontes do SA-MP e as substitutas livres ficam ali;\nadicione outros arquivos .ttf a ela e use Procurar fontes de novo."
+
+#: gui.cpp:5958
+msgid "Pick a colour"
+msgstr "Escolher uma cor"
+
+#: gui.cpp:5969
+msgid "Random (-1)"
+msgstr "Aleatória (-1)"
+
+#: gui.cpp:5975
+msgid "0-127 are the game's, 128-255 SA-MP's"
+msgstr "0-127 são do jogo, 128-255 do SA-MP"
+
+#: gui.cpp:6010
+msgid "Static vehicle (AddStaticVehicleEx)"
+msgstr "Veículo estático (AddStaticVehicleEx)"
+
+#: gui.cpp:6014
+msgid "A train: the engine and 3 carriages behind it, %d vehicle ids. Only the engine is written; the game adds the carriages."
+msgstr "Um trem: a locomotiva e 3 vagões atrás dela, %d ids de veículo. Só a locomotiva é gravada; o jogo adiciona os vagões."
+
+#: gui.cpp:6017
+msgid "A tram: no carriages."
+msgstr "Um bonde: sem vagões."
+
+#: gui.cpp:6018
+msgid "It runs one way with an angle over 180 and the other way up to 180. Dragging slides it along the track (hold Alt to move it freely)."
+msgstr "Ele anda num sentido com ângulo acima de 180 e no outro até 180. Arrastar o desliza pelo trilho (segure Alt para movê-lo livremente)."
+
+#: gui.cpp:6021
+msgid "Trains need Static vehicle: open.mp's CreateVehicle refuses them."
+msgstr "Trens precisam de Veículo estático: o CreateVehicle do open.mp os recusa."
+
+#: gui.cpp:6024
+msgid "A vehicle colour, 0-255. -1 picks one at random when it spawns."
+msgstr "Uma cor de veículo, 0-255. -1 escolhe uma aleatória quando ele aparece."
+
+#: gui.cpp:6027
+msgid "Respawn delay"
+msgstr "Tempo de respawn"
+
+#: gui.cpp:6028
+msgid "Seconds. -1 with a static vehicle writes AddStaticVehicle."
+msgstr "Segundos. -1 com um veículo estático grava AddStaticVehicle."
+
+#: gui.cpp:6035
+msgid "Paintjob 0"
+msgstr "Pintura 0"
+
+#: gui.cpp:6035
+msgid "Paintjob 1"
+msgstr "Pintura 1"
+
+#: gui.cpp:6035
+msgid "Paintjob 2"
+msgstr "Pintura 2"
+
+#: gui.cpp:6036
+msgid "Paintjob"
+msgstr "Pintura"
+
+#: gui.cpp:6044
+msgid "ChangeVehiclePaintjob. Colour 1 tints parts of some paintjobs."
+msgstr "ChangeVehiclePaintjob. A cor 1 tinge partes de algumas pinturas."
+
+#: gui.cpp:6049
+msgid "Number plate"
+msgstr "Placa"
+
+#: gui.cpp:6049
+msgid "default"
+msgstr "padrão"
+
+#: gui.cpp:6050
+msgid "SetVehicleNumberPlate, up to 32 characters. Empty keeps the game's plate."
+msgstr "SetVehicleNumberPlate, até 32 caracteres. Vazio mantém a placa do jogo."
+
+#: gui.cpp:6054
+msgid "Tuning parts"
+msgstr "Peças de tuning"
+
+#: gui.cpp:6092
+msgid "No parts fit this model."
+msgstr "Nenhuma peça serve neste modelo."
+
+#: gui.cpp:6095
+msgid "AddVehicleComponent. Only parts SA-MP accepts on this model are listed."
+msgstr "AddVehicleComponent. Só as peças que o SA-MP aceita neste modelo são listadas."
+
+#: gui.cpp:6158
+msgid "Sets the interior of all %d selected."
+msgstr "Define o interior de todos os %d selecionados."
+
+#: gui.cpp:6159
+msgid "Streamer objects and vehicles use it; native CreateObject objects\nshow in every interior."
+msgstr "Objetos do streamer e veículos o usam; objetos CreateObject nativos\naparecem em todos os interiores."
+
+#: gui.cpp:6163
+msgid "Only interior 0"
+msgstr "Só o interior 0"
+
+#: gui.cpp:6174
+msgid "Written as interiorid 0: streamed only to players in interior 0 (outside).\nOff: -1, every interior."
+msgstr "Gravado como interiorid 0: transmitido só para jogadores no interior 0 (exterior).\nDesligado: -1, todos os interiores."
+
+#: gui.cpp:6188
+msgid "ID: %d\n"
+msgstr "ID: %d\n"
+
+#: gui.cpp:6196
+msgid "Draw dist:"
+msgstr "Dist. de desenho:"
+
+#: gui.cpp:6201
+msgid "Min Draw dist: %.0f"
+msgstr "Dist. mín. de desenho: %.0f"
+
+#: gui.cpp:6204
+msgid "Time: %d %d (visible now: %s)"
+msgstr "Horário: %d %d (visível agora: %s)"
+
+#: gui.cpp:6206
+msgid "yes"
+msgstr "sim"
+
+#: gui.cpp:6206
+msgid "no"
+msgstr "não"
+
+#: gui.cpp:6210
+msgid "Related: %s\n"
+msgstr "Relacionado: %s\n"
+
+#: gui.cpp:6212
+msgid "Related timed: %s\n"
+msgstr "Relacionado com horário: %s\n"
+
+#: objectinst.cpp:2631
+msgid "Reference object — only the opened IPL is editable."
+msgstr "Objeto de referência — só o IPL aberto pode ser editado."
+
+#: objectinst.cpp:2634
+msgid "Locked external reference — reopen its source IPL to edit it."
+msgstr "Referência externa bloqueada — reabra o IPL de origem para editá-la."
+
+#: objectinst.cpp:2830
+msgid "Delete limited to first %d selected instance(s)"
+msgstr "Exclusão limitada às primeiras %d instância(s) selecionada(s)"
+
+#: objectinst.cpp:2971
+msgid "Pickup"
+msgstr "Pickup"
+
+#: objectinst.cpp:2972
+msgid "3D text label"
+msgstr "Rótulo de texto 3D"
+
+#: objectinst.cpp:2973
+msgid "Actor"
+msgstr "Ator"
+
+#: objectinst.cpp:2974
+msgid "Player class"
+msgstr "Classe de jogador"
+
+#: objectinst.cpp:2975
+msgid "Gang zone"
+msgstr "Gang zone"
+
+#: objectinst.cpp:2976
+msgid "Map icon"
+msgstr "Ícone de mapa"
+
+#: objectinst.cpp:2977
+msgid "NPC"
+msgstr "NPC"
+
+#: objectinst.cpp:2978
+msgid "NPC path point"
+msgstr "Ponto de caminho de NPC"
+
+#: objectinst.cpp:2979
+msgid "Sound"
+msgstr "Som"
+
+#: objectinst.cpp:2980
+msgid "Checkpoint"
+msgstr "Checkpoint"
+
+#: objectinst.cpp:2981
+msgid "Dynamic area"
+msgstr "Área dinâmica"
+
+#: objectinst.cpp:2983
+msgid "Object"
+msgstr "Objeto"
+
+#: objectinst.cpp:3464
+msgid "Placed %s"
+msgstr "%s colocado"
+
+#: objectinst.cpp:3742
+msgid "Prefab is for a different game"
+msgstr "O prefab é de outro jogo"
+
+#: objectinst.cpp:3748
+msgid "Prefab too large (%d instances, max %d)"
+msgstr "Prefab grande demais (%d instâncias, máx. %d)"
+
+#: objectinst.cpp:5636
+msgid "Copy limited to first %d selected instance(s)"
+msgstr "Cópia limitada às primeiras %d instância(s) selecionada(s)"
+
+#: objectinst.cpp:5659
+msgid "Cut limited to first %d selected instance(s)"
+msgstr "Recorte limitado às primeiras %d instância(s) selecionada(s)"
+
+#: objectinst.cpp:6205
+msgid "Prefab truncated at 256 instances (selection too large)"
+msgstr "Prefab truncado em 256 instâncias (seleção grande demais)"
+
+#: objectinst.cpp:10363
+msgid "Model -1: keeps the original texture; only the color applies."
+msgstr "Modelo -1: mantém a textura original; só a cor se aplica."
+
+#: objectinst.cpp:10367
+msgid "Model 0: SA-MP's plain white \"blanktex\"; TXD and texture names are ignored."
+msgstr "Modelo 0: o \"blanktex\" branco liso do SA-MP; os nomes de TXD e de textura são ignorados."
+
+#: objectinst.cpp:10373
+msgid "Model %d does not exist, so SA-MP ignores the whole call (color too)."
+msgstr "O modelo %d não existe, então o SA-MP ignora a chamada inteira (a cor também)."
+
+#: objectinst.cpp:10379
+msgid "\"%s\" is not in custom model %d's TXD; the original texture stays."
+msgstr "\"%s\" não está no TXD do modelo personalizado %d; a textura original fica."
+
+#: objectinst.cpp:10383
+msgid "Resolves in game: custom model %d's TXD has %s."
+msgstr "Resolve no jogo: o TXD do modelo personalizado %d tem %s."
+
+#: objectinst.cpp:10388
+msgid "TXD \"%s\" was not found; the original texture stays."
+msgstr "O TXD \"%s\" não foi encontrado; a textura original fica."
+
+#: objectinst.cpp:10392
+msgid "\"%s\" is not in TXD \"%s\" (or its parents); the original texture stays."
+msgstr "\"%s\" não está no TXD \"%s\" (nem nos pais dele); a textura original fica."
+
+#: objectinst.cpp:10397
+msgid "Model %d (%s) does not use TXD \"%s\". SA-MP loads the model's TXD, then looks the texture up by TXD name, so this only works if \"%s\" is already loaded."
+msgstr "O modelo %d (%s) não usa o TXD \"%s\". O SA-MP carrega o TXD do modelo e depois procura a textura pelo nome do TXD, então isso só funciona se \"%s\" já estiver carregado."
+
+#: objectinst.cpp:10402
+msgid "Resolves in game: model %d loads %s:%s."
+msgstr "Resolve no jogo: o modelo %d carrega %s:%s."
+
+#: objectinst.cpp:10523
+msgid "Text uses %s, defined neither in this map nor in the workspace's gamemodes or includes, so it shows without them (often a colour such as {FF6347}). Saving writes the text without them too."
+msgstr "O texto usa %s, que não está definido nem neste mapa nem nos gamemodes ou includes do espaço de trabalho, então aparece sem eles (geralmente uma cor como {FF6347}). Salvar também grava o texto sem eles."
+
+#: objectinst.cpp:10797
+msgid "Undo limited to first %d of %d imported objects"
+msgstr "Desfazer limitado aos primeiros %d de %d objetos importados"
+
+#: objectinst.cpp:10933
+msgid "Model %d was a modloader/Haumea import: open a map that uses it to move it to the server"
+msgstr "O modelo %d era uma importação do modloader/Haumea: abra um mapa que o use para movê-lo para o servidor"
+
+#: objectinst.cpp:11088
+msgid "Undo limited to first 64 of %d instances"
+msgstr "Desfazer limitado às primeiras 64 de %d instâncias"
