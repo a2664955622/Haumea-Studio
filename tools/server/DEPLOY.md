@@ -44,6 +44,32 @@ then:
 sudo systemctl reload caddy
 ```
 
+### nginx instead of Caddy
+
+The VPS that runs it (with itsneufox.com and other sites) already has nginx
+and certbot on ports 80 and 443, and Cloudflare proxies both names to it
+(SSL/TLS mode Full). There, skip Caddy: do steps 3 to 5, then get the
+certificate with `nginx-haumea-acme.conf` (only certbot's challenge) and put
+`nginx-haumea-server.conf` in its place. That one has the Caddyfile's rules
+and also passes Cloudflare's `CF-Connecting-IP` on as `X-Forwarded-For`, so
+the rate limits see each player rather than Cloudflare (it is never stored).
+From a copy of this folder:
+
+```sh
+sudo install -d -m 755 /var/www/haumea-acme
+sudo install -m 644 nginx-haumea-acme.conf /etc/nginx/sites-available/haumea-server
+sudo ln -sf /etc/nginx/sites-available/haumea-server /etc/nginx/sites-enabled/haumea-server
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot certonly --webroot -w /var/www/haumea-acme --cert-name haumea-server \
+  -d telemetry.itsneufox.xyz -d reports.itsneufox.xyz
+sudo install -m 644 nginx-haumea-server.conf /etc/nginx/sites-available/haumea-server
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+Certbot renews the certificate by itself through the same challenge folder.
+Run the `install` and `cp` commands from the folder with the files: a link
+in `sites-enabled` to a file that isn't there makes every `nginx -t` fail.
+
 ## 3. The service
 
 ```sh
