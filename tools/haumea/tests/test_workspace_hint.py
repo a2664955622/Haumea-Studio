@@ -34,19 +34,23 @@ class WorkspaceHintTests(unittest.TestCase):
 
             try:
                 play('''assert window 'TextDrawsNew'
+assert window 'CodeNew'
 assert work_area_top < 30
 click_item 'TextDrawsNew' 'DismissTextDrawsHint'
 wait 3
 assert no_window 'TextDrawsNew'
 ''')
                 play('''assert no_window 'TextDrawsNew'
+assert window 'CodeNew'
 assert item_count 'TextDraws' == 1
 click_item '*' 'Code'
 wait 3
 click_item '*' 'Map'
 wait 3
 assert no_window 'TextDrawsNew'
+assert no_window 'CodeNew'
 ''')
+                play("assert no_window 'TextDrawsNew'\nassert no_window 'CodeNew'\n")
             finally:
                 xvfb.terminate()
                 xvfb.wait(10)

@@ -4,6 +4,7 @@ wait 5
 # Workspaces share the existing top bar, with one entry for each workspace.
 assert work_area_top < 30
 assert window 'TextDrawsNew'
+assert window 'CodeNew'
 assert item_count 'Map' == 1
 assert item_count 'TextDraws' == 1
 assert item_count 'Code' == 1
@@ -16,6 +17,8 @@ wait 3
 click_item '*' 'Code'
 wait 8
 assert window 'PawnIDE'
+assert no_window 'CodeNew'
+assert file_contains "$XDG_CONFIG_HOME/haumea/savesettings.txt" 'show_code_hint 0'
 assert ide_contains 'CreateObject('
 assert ide_dirty == 0
 assert no_window 'Object Browser'

@@ -148,7 +148,8 @@ static int gNumRecentMaps;
 static bool gReopenLastMap = true;
 static bool gShowStartGuide = true;
 static bool gShowTextDrawsHint = true;
-static ImVec2 gTextDrawsHintAnchor;
+static bool gShowCodeHint = true;
+static ImVec2 gTextDrawsHintAnchor, gCodeHintAnchor;
 static float gUiScale = 1.0f;
 static int gPawnSaveFormat = PAWN_CODE_NATIVE;
 static uint32 gPawnLastSavedChangeSeq;
@@ -217,7 +218,7 @@ static bool parseIntSetting(const char *value, int *out);
 static bool savePawnMap(void);
 static void uiRunShortcut(int action);
 static void uiWorkspaceNavigation(void);
-static void uiTextDrawsHint(void);
+static void uiWorkspaceNewHints(void);
 static int uiSelectionCount(void);
 // --profile: frame times are measured for a while after the map opens.
 static FILE *gProfileReport;
@@ -6566,6 +6567,8 @@ loadSaveSettings(void)
 			if(parseBoolSetting(value, &boolValue)) gOutlineMapObjects = boolValue;
 		}else if(strcmp(key, "panel_snap") == 0){
 			if(parseBoolSetting(value, &boolValue)) gPanelSnap = boolValue;
+		}else if(strcmp(key, "show_code_hint") == 0){
+			if(parseBoolSetting(value, &boolValue)) gShowCodeHint = boolValue;
 		}else if(strcmp(key, "show_textdraws_hint") == 0){
 			if(parseBoolSetting(value, &boolValue)) gShowTextDrawsHint = boolValue;
 		}else if(strcmp(key, "show_start_guide") == 0){
@@ -6957,6 +6960,7 @@ saveSaveSettings(void)
 	fprintf(f, "reopen_last_map %d\n", gReopenLastMap ? 1 : 0);
 	fprintf(f, "show_start_guide %d\n", gShowStartGuide ? 1 : 0);
 	fprintf(f, "show_textdraws_hint %d\n", gShowTextDrawsHint ? 1 : 0);
+	fprintf(f, "show_code_hint %d\n", gShowCodeHint ? 1 : 0);
 	fprintf(f, "panel_snap %d\n", gPanelSnap ? 1 : 0);
 	fprintf(f, "outline_map_objects %d\n", gOutlineMapObjects ? 1 : 0);
 	fprintf(f, "outline_selection %d\n", gOutlineSelection ? 1 : 0);
@@ -12220,10 +12224,12 @@ InPawnIdeMode(void)
 static void
 uiWorkspaceNavigation(void)
 {
+	bool hintChanged = false;
 	if(InTextDrawMode()){
 		showPawnCodeWindow = false;
-		if(gShowTextDrawsHint){ gShowTextDrawsHint = false; saveSaveSettings(); }
+		if(gShowTextDrawsHint){ gShowTextDrawsHint = false; hintChanged = true; }
 	}
+	if(InPawnIdeMode() && gShowCodeHint){ gShowCodeHint = false; hintChanged = true; }
 	const char *labels[] = { L("Map"), L("TextDraws"), L("Code") };
 	for(int i = 0; i < 3; i++){
 		int mode = InTextDrawMode() ? 1 : (InPawnIdeMode() ? 2 : 0);
@@ -12231,41 +12237,46 @@ uiWorkspaceNavigation(void)
 			if(i == 1){
 				showPawnCodeWindow = false;
 				EnterTextDrawMode();
-				if(gShowTextDrawsHint){ gShowTextDrawsHint = false; saveSaveSettings(); }
+				if(gShowTextDrawsHint){ gShowTextDrawsHint = false; hintChanged = true; }
+			}else{
+				ExitTextDrawMode();
+				showPawnCodeWindow = i == 2;
+				if(i == 2 && gShowCodeHint){ gShowCodeHint = false; hintChanged = true; }
 			}
-			else { ExitTextDrawMode(); showPawnCodeWindow = i == 2; }
 		}
-		if(i == 1){
-			gTextDrawsHintAnchor = ImVec2((ImGui::GetItemRectMin().x + ImGui::GetItemRectMax().x) * 0.5f,
-				ImGui::GetItemRectMax().y);
-			ImGui::SetItemTooltip(_("TextDraw mode: edit the textdraw file on a canvas instead of the world."));
+		if(i == 1 || i == 2){
+			ImVec2 anchor((ImGui::GetItemRectMin().x + ImGui::GetItemRectMax().x) * 0.5f, ImGui::GetItemRectMax().y);
+			if(i == 1){
+				gTextDrawsHintAnchor = anchor;
+				ImGui::SetItemTooltip(_("TextDraw mode: edit the textdraw file on a canvas instead of the world."));
+			}else{
+				gCodeHintAnchor = anchor;
+				ImGui::SetItemTooltip("%s", ShortcutLabel(SC_WINDOW_PAWN_CODE));
+			}
 		}
-		else if(i == 2)
-			ImGui::SetItemTooltip("%s", ShortcutLabel(SC_WINDOW_PAWN_CODE));
 	}
+	if(hintChanged) saveSaveSettings();
 }
 
 
 static void
-uiTextDrawsHint(void)
+uiNewWorkspaceHint(const char *window, const char *dismiss, ImVec2 anchor, bool &visible, float offset)
 {
-	if(!gShowTextDrawsHint || !isSA() || InTextDrawMode() || InPawnIdeMode() || StartScreenOpen() ||
-	   ImGui::GetIO().AppFocusLost || ImGui::IsPopupOpen((ImGuiID)0, ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel))
-		return;
+	if(!visible) return;
 	static double appeared = -1.0;
 	if(appeared < 0.0) appeared = ImGui::GetTime();
 	const double age = ImGui::GetTime() - appeared;
 	// Five small jumps, then settle. The hint remains until used or dismissed.
 	float jump = age < 6.0 ? std::abs(std::sin(age * 3.141592653589793 / 1.2)) * 4.0f : 0.0f;
 	KeepNextEditorOverlayOnMainWindow();
-	ImGui::SetNextWindowPos(ImVec2(gTextDrawsHintAnchor.x, gTextDrawsHintAnchor.y + 12.0f - jump),
+	ImGui::SetNextWindowPos(ImVec2(anchor.x + offset, anchor.y + 12.0f - jump),
 		ImGuiCond_Always, ImVec2(0.5f, 0.0f));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 6.0f));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 	const ImU32 yellow = IM_COL32(255, 213, 79, 255);
 	ImGui::PushStyleColor(ImGuiCol_WindowBg, yellow);
-	ImGui::Begin("###TextDrawsNew", nil, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+	ImGui::Begin(window, nil, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
 		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav |
 		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking);
 	ImGui::TextColored(ImVec4(0.20f, 0.14f, 0.02f, 1.0f), "%s", _("New!"));
@@ -12275,8 +12286,8 @@ uiTextDrawsHint(void)
 	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.20f, 0.14f, 0.02f, 0.10f));
 	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.20f, 0.14f, 0.02f, 0.18f));
-	if(ImGui::SmallButton(ICON_FA_XMARK "###DismissTextDrawsHint")){
-		gShowTextDrawsHint = false;
+	if(ImGui::SmallButton(dismiss)){
+		visible = false;
 		saveSaveSettings();
 	}
 	ImGui::PopStyleColor(4);
@@ -12286,12 +12297,27 @@ uiTextDrawsHint(void)
 	ImDrawList *shadow = ImGui::GetBackgroundDrawList();
 	shadow->AddRectFilled(ImVec2(pos.x + 1, pos.y + 2), ImVec2(pos.x + size.x + 1, pos.y + size.y + 2),
 		IM_COL32(0, 0, 0, 45), 12.0f);
-	ImVec2 tip(gTextDrawsHintAnchor.x, gTextDrawsHintAnchor.y + 2.0f);
+	ImVec2 tip(anchor.x, anchor.y + 2.0f);
 	ImVec2 left(tip.x - 5.0f, pos.y + 3.0f), right(tip.x + 5.0f, pos.y + 3.0f);
 	ImGui::GetForegroundDrawList()->AddTriangleFilled(tip, right, left, yellow);
 	ImGui::End();
 	ImGui::PopStyleColor();
 	ImGui::PopStyleVar(3);
+}
+
+
+static void
+uiWorkspaceNewHints(void)
+{
+	if((!gShowTextDrawsHint && !gShowCodeHint) || !isSA() || InTextDrawMode() || InPawnIdeMode() || StartScreenOpen() ||
+	   ImGui::GetIO().AppFocusLost || ImGui::IsPopupOpen((ImGuiID)0, ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel))
+		return;
+	// Spread the balloons slightly when the buttons are close, keeping both
+	// tails anchored to their own workspace without overlapping the labels.
+	float width = ImGui::CalcTextSize(_("New!")).x + ImGui::CalcTextSize(ICON_FA_XMARK).x + 26.0f;
+	float offset = std::max(0.0f, (width + 12.0f - (gCodeHintAnchor.x - gTextDrawsHintAnchor.x)) * 0.5f);
+	uiNewWorkspaceHint("###TextDrawsNew", ICON_FA_XMARK "###DismissTextDrawsHint", gTextDrawsHintAnchor, gShowTextDrawsHint, -offset);
+	uiNewWorkspaceHint("###CodeNew", ICON_FA_XMARK "###DismissCodeHint", gCodeHintAnchor, gShowCodeHint, offset);
 }
 
 
@@ -13034,7 +13060,7 @@ gui(void)
 	DrawAddCustomModelDialog();
 	if(showTestServerWindow) TestServerWindow(&showTestServerWindow, gPawnSaveFormat);
 	if(mapPanels && showInteriorsWindow) InteriorsWindow(&showInteriorsWindow);
-	uiTextDrawsHint();
+	uiWorkspaceNewHints();
 	DrawNamakaWindow(&showNamakaWindow);	// also runs the updater's queued Namaka update
 
 
