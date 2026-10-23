@@ -2689,7 +2689,9 @@ ObjectInst::Select(void)
 		return;
 	}
 	if(m_selected) return;
+	static uint32 selectSeq;
 	m_selected = true;
+	m_selectSeq = ++selectSeq;
 	selection.InsertItem(this);
 }
 

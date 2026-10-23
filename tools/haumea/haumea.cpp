@@ -3079,7 +3079,14 @@ dogizmo(void)
 		return;
 	}
 
+	// The pivot is the first selected: the list has the latest first, so
+	// Shift+clicking more objects would otherwise move the pivot each time.
 	ObjectInst *inst = (ObjectInst*)selection.first->item;
+	for(CPtrNode *p = selection.first; p; p = p->next){
+		ObjectInst *candidate = (ObjectInst*)p->item;
+		if(!candidate->m_isDeleted && candidate->m_selectSeq < inst->m_selectSeq)
+			inst = candidate;
+	}
 	if(inst->m_isDeleted)
 		return;
 

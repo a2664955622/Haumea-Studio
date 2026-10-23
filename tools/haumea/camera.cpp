@@ -129,6 +129,9 @@ CCamera::Process(void)
 
 	static float speed = 0.0f;
 	static float sidespeed = 0.0f;
+	// Accelerating, the fly speed (Ctrl+Shift +/-) sets how fast it builds up
+	// and how fast it gets; 2 is the default.
+	float accel = 0.1f * gFlySpeed / 2.0f, maxSpeed = 70.0f * gFlySpeed / 2.0f;
 	static bool wasFlyAcceleration = gFlyAcceleration;
 	if(wasFlyAcceleration != gFlyAcceleration){
 		speed = 0.0f;
@@ -137,49 +140,49 @@ CCamera::Process(void)
 	}
 	if(gFlyAcceleration){
 		if(flyKey('W'))
-			speed += 0.1f;
+			speed += accel;
 		else if(flyKey('S'))
-			speed -= 0.1f;
+			speed -= accel;
 		else
 			speed = 0.0f;
 	}else{
 		speed = flyKey('W') ? gFlySpeed :
 		        flyKey('S') ? -gFlySpeed : 0.0f;
 	}
-	if(speed > 70.0f) speed = 70.0f;
-	if(speed < -70.0f) speed = -70.0f;
+	if(speed > maxSpeed) speed = maxSpeed;
+	if(speed < -maxSpeed) speed = -maxSpeed;
 	dolly(speed*scl*flyMul);
 
 	if(gFlyAcceleration){
 		if(flyKey('A'))
-			sidespeed -= 0.1f;
+			sidespeed -= accel;
 		else if(flyKey('D'))
-			sidespeed += 0.1f;
+			sidespeed += accel;
 		else
 			sidespeed = 0.0f;
 	}else{
 		sidespeed = flyKey('A') ? -gFlySpeed :
 		            flyKey('D') ? gFlySpeed : 0.0f;
 	}
-	if(sidespeed > 70.0f) sidespeed = 70.0f;
-	if(sidespeed < -70.0f) sidespeed = -70.0f;
+	if(sidespeed > maxSpeed) sidespeed = maxSpeed;
+	if(sidespeed < -maxSpeed) sidespeed = -maxSpeed;
 	pan(sidespeed*scl*flyMul, 0.0f);
 
 	// Straight up and down in the world, whichever way the camera looks.
 	static float upspeed = 0.0f;
 	if(gFlyAcceleration){
 		if(flyKey('E'))
-			upspeed += 0.1f;
+			upspeed += accel;
 		else if(flyKey('Q'))
-			upspeed -= 0.1f;
+			upspeed -= accel;
 		else
 			upspeed = 0.0f;
 	}else{
 		upspeed = flyKey('E') ? gFlySpeed :
 		          flyKey('Q') ? -gFlySpeed : 0.0f;
 	}
-	if(upspeed > 70.0f) upspeed = 70.0f;
-	if(upspeed < -70.0f) upspeed = -70.0f;
+	if(upspeed > maxSpeed) upspeed = maxSpeed;
+	if(upspeed < -maxSpeed) upspeed = -maxSpeed;
 	if(upspeed != 0.0f){
 		V3d rise = { 0.0f, 0.0f, upspeed*scl*flyMul };
 		m_position = add(m_position, rise);

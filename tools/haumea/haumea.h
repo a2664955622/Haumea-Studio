@@ -1313,6 +1313,7 @@ struct ObjectInst
 	// additional stuff
 	int32 m_id;	// to identify when picking
 	int m_selected;
+	uint32 m_selectSeq;	// when it was selected: the earliest is the gizmo's pivot
 	int m_highlight;	// various ways to highlight this object
 	bool m_isDeleted;	// marked for deletion (commented out in IPL)
 	bool m_editorHidden;	// hidden in the viewport by the user; editor-only, never saved
