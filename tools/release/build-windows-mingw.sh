@@ -168,5 +168,5 @@ printf '1 24 "%s"\n#include "%s"\n' "$ROOT/tools/haumea/haumea.exe.manifest" "$R
 $WINDRES -I "$ROOT/tools/haumea" "$OUT/haumea_res.rc" -O coff -o "$OUT/haumea_res.o"
 $CXX -o "$OUT/haumea.exe" "$OUT"/obj/haumea/*.o "$OUT/haumea_res.o" "$OUT/librwgta.a" "$OUT/librw.a" \
 	$GFXLIBS -lwinhttp -lws2_32 -lgdi32 -lcomdlg32 -lshell32 -lole32 -luuid -lpsapi -ldwmapi -lshlwapi \
-	-static -static-libgcc -static-libstdc++ -mwindows
+	-static -static-libgcc -static-libstdc++ -mwindows -Wl,--stack,8388608
 echo "built $OUT/haumea.exe"

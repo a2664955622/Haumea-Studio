@@ -11048,7 +11048,10 @@ prefabEntryPlace(const PrefabEntry *e, const rw::V3d &spawnPos, float heading, r
 int
 ImportPrefabAtEx(const char *path, rw::V3d spawnPos, float heading, const char *group)
 {
-	PrefabEntry entries[256];
+	// On the heap: 256 entries are about 2 MB, past the 1 MB a Windows
+	// thread's stack has (placing any prefab crashed there with a stack overflow).
+	std::vector<PrefabEntry> entryStore(256);
+	PrefabEntry *entries = entryStore.data();
 	int numEntries = 0;
 	if(!ReadPrefabEntries(path, entries, 256, &numEntries, true))
 		return 0;

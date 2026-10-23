@@ -310,6 +310,12 @@ project "haumea"
 		-- UTF-8 as the process code page: paths with any characters work.
 		files { "tools/haumea/haumea.exe.manifest" }
 	links { "winhttp", "ws2_32" }
+	-- An 8 MB main stack, as Linux gives it: Windows' 1 MB default made code
+	-- that works there overflow (placing a prefab crashed with 0xC00000FD).
+	filter { "system:windows", "toolset:msc*" }
+		linkoptions { "/STACK:8388608" }
+	filter { "system:windows", "toolset:not msc*" }
+		linkoptions { "-Wl,--stack,8388608" }
 	filter { "system:macosx" }
 		kind "ConsoleApp"
 	filter {}
