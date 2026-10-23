@@ -91,6 +91,11 @@ struct HudSettings {
 	bool wsfix;
 	float hudWidthScale, hudHeightScale;	// HudWidthScale, HudHeightScale (0.8)
 	float radarWidth, radarHeight;	// RadarWidth, RadarHeight (85.5, 78)
+	bool proportionalIcon;	// ProportionalWeaponIcon: the icon's width scaled as its height
+	bool roundOutlines;	// newer builds draw text edges as a ring that grows with the screen
+	// SA-MP 0.3.7-R3 and newer: /hudscalefix (on unless nohudscalefix=1 in sa-mp.cfg)
+	// makes the radar round on screens 16:10 and wider.
+	bool hudScaleFix;
 };
 static const struct { int w, h; } gHudResolutions[] = {
 	{ 800, 600 }, { 1024, 768 }, { 1280, 720 }, { 1366, 768 }, { 1600, 900 }, { 1920, 1080 }, { 2560, 1440 },
@@ -101,7 +106,7 @@ static const HudSettings HUD_DEFAULTS = { false, HUD_DEFAULT, 12, 0, 1500, 100, 
 	"{A9C4E4}SA-MP 0.3.7-R5 Started\n{A9C4E4}Connecting to 127.0.0.1:7777...\n"
 	"{A9C4E4}Connected. Joining the game...\n{A9C4E4}Connected to {B9C9BF}Haumea Server\n"
 	"{FFFFFF}Welcome to the server!\n{FFFF00}Player_Name: {FFFFFF}hello everyone",
-	false, 0.8f, 0.8f, 85.5f, 78.0f };
+	false, 0.8f, 0.8f, 85.5f, 78.0f, true, false, true };
 static HudSettings gHud = HUD_DEFAULTS;
 
 // The weapon's model, its icon is <model>icon in <model>.txd; its clip as
@@ -280,6 +285,12 @@ LoadTextDrawSetting(const char *key, const char *value)
 		gHud.wsfix = on != 0;
 		gHud.hudWidthScale = std::max(0.25f, std::min(gHud.hudWidthScale, 4.0f));
 		gHud.hudHeightScale = std::max(0.25f, std::min(gHud.hudHeightScale, 4.0f));
+	}else if(strcmp(key, "textdraw_hud_samp") == 0){
+		int fix = 1, icon = 1, round = 0;
+		sscanf(value, "%d %d %d", &fix, &icon, &round);
+		gHud.hudScaleFix = fix != 0;
+		gHud.proportionalIcon = icon != 0;
+		gHud.roundOutlines = round != 0;
 	}else if(strcmp(key, "textdraw_hud_messages") == 0){
 		// \n between messages, \\ for a backslash.
 		size_t n = 0;
@@ -318,6 +329,8 @@ SaveTextDrawSettings(FILE *f)
 	fprintf(f, "textdraw_hud_vehicle %s\n", gHud.vehicle);
 	fprintf(f, "textdraw_hud_chat %d %d %d %d %d\n", gHud.chat ? 1 : 0, gHud.resolution, gHud.fontSize,
 		gHud.pageSize, gHud.timestamps ? 1 : 0);
+	fprintf(f, "textdraw_hud_samp %d %d %d\n", gHud.hudScaleFix ? 1 : 0, gHud.proportionalIcon ? 1 : 0,
+		gHud.roundOutlines ? 1 : 0);
 	fprintf(f, "textdraw_hud_wsfix %d %.3f %.3f %.1f %.1f\n", gHud.wsfix ? 1 : 0, gHud.hudWidthScale,
 		gHud.hudHeightScale, gHud.radarWidth, gHud.radarHeight);
 	fputs("textdraw_hud_messages ", f);
@@ -997,10 +1010,24 @@ drawTextDraw(ImDrawList *dl, const Canvas &cv, const TextDraw &td)
 	ImU32 back = rgbaToImU32(td.backgroundColour);
 	if(td.outline > 0){
 		float o = (float)td.outline;
-		for(int oy = -1; oy <= 1; oy++)
-			for(int ox = -1; ox <= 1; ox++)
-				if(ox || oy)
-					drawGlyphs(dl, cv, td, glyphs, ox * o, oy * o, back, true);
+		if(gHud.wsfix && gHud.roundOutlines){
+			// The newer Widescreen Fix: a ring of 16, as far as the edge in
+			// 640 x 448 units, kept round on wide screens.
+			float square = (4.0f / 3.0f) / (640.0f * cv.sx / (448.0f * cv.sy));
+			for(int k = 0; k < 16; k++){
+				float a = k * 3.14159265f / 8.0f;
+				drawGlyphs(dl, cv, td, glyphs, cosf(a) * o * square, sinf(a) * o, back, true);
+			}
+		}else{
+			// CFont's edge is in the player's pixels, so it is thinner on
+			// bigger screens: in 640 x 448 units at the HUD's resolution.
+			int r = std::max(0, std::min(gHud.resolution, NUM_HUD_RESOLUTIONS - 1));
+			float ex = o * 640.0f / gHudResolutions[r].w, ey = o * 448.0f / gHudResolutions[r].h;
+			for(int oy = -1; oy <= 1; oy++)
+				for(int ox = -1; ox <= 1; ox++)
+					if(ox || oy)
+						drawGlyphs(dl, cv, td, glyphs, ox * ex, oy * ey, back, true);
+		}
 	}else if(td.shadow > 0)
 		drawGlyphs(dl, cv, td, glyphs, (float)td.shadow, (float)td.shadow, back, true);
 	drawGlyphs(dl, cv, td, glyphs, 0.0f, 0.0f, 0, false);
@@ -1156,16 +1183,28 @@ drawHud(ImDrawList *dl, const Canvas &cv)
 	}
 	if(p & HUD_RADAR){
 		// CHud::DrawRadar: 40 from the left, 104 above the bottom, 94 x 76.
-		float kx = gHud.wsfix ? square : 1.0f;
+		float aspect = 640.0f * cv.sx / (448.0f * cv.sy);
+		float kx = gHud.wsfix ? square : 1.0f, ky = 1.0f;
 		float w = (gHud.wsfix ? gHud.radarWidth : 94.0f) * kx, h = gHud.wsfix ? gHud.radarHeight : 76.0f;
-		ImVec2 centre = cv.at(40.0f * kx + w * 0.5f, 448.0f - 104.0f + h * 0.5f);
+		if(gHud.hudScaleFix && !gHud.wsfix && aspect >= 1.6f){
+			// SA-MP's ProcessHudScaleFix, round CHud::DrawRadar: 96 x 82, the
+			// x scale 0.00222 / aspect of the width and y 0.00242 of the height.
+			kx = 0.00222f * 640.0f / aspect;
+			ky = 0.00242f * 448.0f;
+			w = 96.0f * kx;
+			h = 82.0f * ky;
+		}
+		ImVec2 centre = cv.at(40.0f * kx + w * 0.5f, 448.0f - 104.0f * ky + h * 0.5f);
 		DrawRadarOnCanvas(dl, centre, ImVec2(w * 0.5f * cv.sx, h * 0.5f * cv.sy), cv.sy);
 	}
 	if(p & HUD_WEAPON){
 		// 32 from the right and 111 (0.1734 of the width) for the icon, 47 x 58.
 		rw::Texture *icon = hudWeaponIcon(gHud.weapon);
+		// The Widescreen Fix's ProportionalWeaponIcon sizes its width as its height.
+		float right = gHud.wsfix && gHud.proportionalIcon ? l.R(497.0f) + 47.0f * l.ky * (640.0f / 448.0f) /
+			(640.0f * cv.sx / (448.0f * cv.sy)) : l.R(544.0f);
 		if(icon)
-			dl->AddImage((ImTextureID)icon, cv.at(l.R(497.0f), l.T(20.0f)), cv.at(l.R(544.0f), l.T(78.0f)));
+			dl->AddImage((ImTextureID)icon, cv.at(l.R(497.0f), l.T(20.0f)), cv.at(right, l.T(78.0f)));
 	}
 	if((p & HUD_AMMO) && gHud.weapon >= 0 && gHud.weapon < NUM_HUD_WEAPONS && gHudWeapons[gHud.weapon].ammo){
 		// CHud::DrawAmmo: "total-clip", or the total for one-shot clips.
@@ -1291,7 +1330,18 @@ hudSettings(void)
 			}
 			ImGui::SetItemTooltip("%s", _("As in its GTASA.WidescreenFix.ini (0.8, 0.8, 85.5 and 78 by default)"));
 			ImGui::PopItemWidth();
+			changed |= ImGui::Checkbox(L("ProportionalWeaponIcon"), &gHud.proportionalIcon);
+			ImGui::SetItemTooltip("%s", _("The weapon icon keeps its shape (1 in the ini it ships with). Older builds\n"
+				"and 0 squeeze it to the HUD's width."));
+			changed |= ImGui::Checkbox(L("Round text outlines"), &gHud.roundOutlines);
+			ImGui::SetItemTooltip("%s", _("Newer builds draw text outlines as a soft ring that grows with the\n"
+				"screen (ReplaceTextShadowWithOutline). Off: the game's own sharp edge, a few\n"
+				"pixels wide, as older builds and the plain game draw it. Textdraws too."));
 		}
+		changed |= ImGui::Checkbox(L("/hudscalefix"), &gHud.hudScaleFix);
+		ImGui::SetItemTooltip("%s", _("SA-MP 0.3.7-R3 and newer: on 16:10 and wider screens the radar is made round\n"
+			"(96 x 82, sized by the screen's height). On unless the player turned it off\n"
+			"(nohudscalefix=1 in sa-mp.cfg). Not with the Widescreen Fix, which sizes the radar itself."));
 
 		ImGui::SeparatorText(_("SA-MP chat"));
 		changed |= ImGui::Checkbox(L("Chat"), &gHud.chat);
@@ -1305,7 +1355,8 @@ hudSettings(void)
 			resNames[i] = res[i];
 		}
 		changed |= ImGui::Combo(L("Player's screen"), &gHud.resolution, resNames, NUM_HUD_RESOLUTIONS);
-		ImGui::SetItemTooltip("%s", _("The chat is sized in the player's pixels: it takes less of a bigger screen."));
+		ImGui::SetItemTooltip("%s", _("The chat and text outlines are sized in the player's pixels: on a bigger\n"
+			"screen the chat takes less of it and outlines are thinner. Textdraws too."));
 		changed |= ImGui::SliderInt(L("/fontsize"), &gHud.fontSize, -3, 5);
 		changed |= ImGui::SliderInt(L("/pagesize"), &gHud.pageSize, 10, 20);
 		ImGui::PopItemWidth();
