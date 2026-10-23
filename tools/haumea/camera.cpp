@@ -112,13 +112,15 @@ CCamera::Process(void)
 	}
 
 	// Keyboard: W/A/S/D fly only while looking (the look button, RMB by default,
-	// held), as in Unity and Unreal; on their own they are shortcuts. Not with
+	// held), as in Unity and Unreal, and Q/E go down and up; on their own they
+	// are shortcuts. Not with
 	// Ctrl (Ctrl+D duplicates, Ctrl+S saves), nor while ImGui has the keyboard
 	// (a key held into a field). Alt (slow) and Shift (fast) still fly.
 	bool flyKeys = looking && !CPad::IsCtrlDown() && !io.WantCaptureKeyboard && !io.WantTextInput;
 	// A hold spent flying is not a click: releasing it doesn't open the
 	// viewport menu or stop placing.
-	if(flyKeys && (CPad::IsKeyDown('W') || CPad::IsKeyDown('A') || CPad::IsKeyDown('S') || CPad::IsKeyDown('D')))
+	if(flyKeys && (CPad::IsKeyDown('W') || CPad::IsKeyDown('A') || CPad::IsKeyDown('S') || CPad::IsKeyDown('D') ||
+	               CPad::IsKeyDown('Q') || CPad::IsKeyDown('E')))
 		CPad::CancelClick();
 	auto flyKey = [flyKeys](int key){ return flyKeys && CPad::IsKeyDown(key); };
 	float flyMul = 1.0f;
@@ -162,6 +164,27 @@ CCamera::Process(void)
 	if(sidespeed > 70.0f) sidespeed = 70.0f;
 	if(sidespeed < -70.0f) sidespeed = -70.0f;
 	pan(sidespeed*scl*flyMul, 0.0f);
+
+	// Straight up and down in the world, whichever way the camera looks.
+	static float upspeed = 0.0f;
+	if(gFlyAcceleration){
+		if(flyKey('E'))
+			upspeed += 0.1f;
+		else if(flyKey('Q'))
+			upspeed -= 0.1f;
+		else
+			upspeed = 0.0f;
+	}else{
+		upspeed = flyKey('E') ? gFlySpeed :
+		          flyKey('Q') ? -gFlySpeed : 0.0f;
+	}
+	if(upspeed > 70.0f) upspeed = 70.0f;
+	if(upspeed < -70.0f) upspeed = -70.0f;
+	if(upspeed != 0.0f){
+		V3d rise = { 0.0f, 0.0f, upspeed*scl*flyMul };
+		m_position = add(m_position, rise);
+		m_target = add(m_target, rise);
+	}
 
 
 

@@ -33,6 +33,7 @@ NONE = ('docs/', 'README', 'CHANGELOG', '.github/', 'tools/release/', 'tools/age
 SOURCES = {
 	'i18n.cpp': [],
 	'i18n.h': [],
+	'camera.cpp': ['fly_updown', 'ctrl_keys', 'shortcuts'],
 	'texbrowser.cpp': ['texture_browser', 'texture_studio_list', 'materials'],
 	'materialtext.cpp': ['materials', 'material_font', 'texture_browser', 'roundtrip'],
 	'custommodels.cpp': ['custom_model', 'showcase', 'roundtrip'],

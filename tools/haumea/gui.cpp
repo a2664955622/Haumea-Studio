@@ -568,16 +568,67 @@ glfwWorkAreaAt(int x, int y, bool usePoint, int *ax, int *ay, int *aw, int *ah)
 	*ah = 800;
 	if(count <= 0)
 		return;
+	GLFWmonitor *chosen = monitors[0];
 	glfwGetMonitorWorkarea(monitors[0], ax, ay, aw, ah);
-	if(!usePoint)
-		return;
-	for(int i = 0; i < count; i++){
-		int mx, my, mw, mh;
-		glfwGetMonitorWorkarea(monitors[i], &mx, &my, &mw, &mh);
-		if(x >= mx && x < mx + mw && y >= my && y < my + mh){
-			*ax = mx; *ay = my; *aw = mw; *ah = mh;
-			return;
+	if(usePoint)
+		for(int i = 0; i < count; i++){
+			int mx, my, mw, mh;
+			glfwGetMonitorWorkarea(monitors[i], &mx, &my, &mw, &mh);
+			if(x >= mx && x < mx + mw && y >= my && y < my + mh){
+				*ax = mx; *ay = my; *aw = mw; *ah = mh;
+				chosen = monitors[i];
+				break;
+			}
 		}
+	// Wayland gives the monitor in pixels and windows in scaled units: with
+	// display scaling the window would open bigger than the screen.
+	if(!glfwCanPositionWindows()){
+		float sx = 1.0f, sy = 1.0f;
+		glfwGetMonitorContentScale(chosen, &sx, &sy);
+		if(sx > 1.0f) *aw = (int)(*aw / sx);
+		if(sy > 1.0f) *ah = (int)(*ah / sy);
+	}
+}
+
+// The title bar and borders round the window: GLFW sizes and places its
+// inside, so they have to fit on the monitor as well. Before the window has
+// a frame (the borderless splash, or not shown yet) a usual one.
+static void
+glfwFrameExtents(GLFWwindow *window, int *l, int *t, int *r, int *b)
+{
+	*l = *t = *r = *b = 0;
+	if(glfwGetWindowAttrib(window, GLFW_DECORATED) && glfwGetWindowAttrib(window, GLFW_VISIBLE))
+		glfwGetWindowFrameSize(window, l, t, r, b);
+	if(*l == 0 && *t == 0 && *r == 0 && *b == 0){
+		*l = *r = *b = 8;
+		*t = 32;
+	}
+}
+
+// Where the editor window opens on the monitor, its frame included: the
+// saved size if it fits, else the work area less the frame; the saved place
+// kept on the monitor, else centred. Logged, for reports of windows that
+// open too big or off the screen.
+static void
+fitEditorWindow(GLFWwindow *window, bool usePosition, int *x, int *y, int *width, int *height)
+{
+	int ax, ay, aw, ah, l, t, r, b;
+	glfwWorkAreaAt(gSavedWindowX + 40, gSavedWindowY + 40, usePosition, &ax, &ay, &aw, &ah);
+	glfwFrameExtents(window, &l, &t, &r, &b);
+	int roomW = aw - l - r, roomH = ah - t - b;
+	*width = max(min(gSavedWindowWidth, roomW), min(640, roomW));
+	*height = max(min(gSavedWindowHeight, roomH), min(480, roomH));
+	*x = ax + l + (roomW - *width) / 2;
+	*y = ay + t + (roomH - *height) / 2;
+	if(usePosition){
+		*x = clamp(gSavedWindowX, ax + l, max(ax + l, ax + aw - r - *width));
+		*y = clamp(gSavedWindowY, ay + t, max(ay + t, ay + ah - b - *height));
+	}
+	static bool logged;
+	if(!logged){
+		logged = true;
+		log("Window: work area %d,%d %dx%d, frame %d %d %d %d; opens at %d,%d %dx%d%s\n", ax, ay, aw, ah,
+			l, t, r, b, *x, *y, *width, *height, gSavedWindowMaximized ? ", maximized" : "");
 	}
 }
 #endif
@@ -611,22 +662,11 @@ ApplyInitialEditorWindowState(void)
 		return;
 	bool canPosition = glfwCanPositionWindows();
 	bool usePosition = canPosition && gSavedWindowPlacementValid;
-	int ax, ay, aw, ah;
-	glfwWorkAreaAt(gSavedWindowX + 40, gSavedWindowY + 40, usePosition, &ax, &ay, &aw, &ah);
-	int width = min(gSavedWindowWidth, aw - 40);
-	int height = min(gSavedWindowHeight, ah - 60);
-	width = max(width, 640);
-	height = max(height, 480);
+	int x, y, width, height;
+	fitEditorWindow(window, usePosition, &x, &y, &width, &height);
 	glfwSetWindowSize(window, width, height);
-	if(canPosition){
-		int x = ax + (aw - width) / 2;
-		int y = ay + (ah - height) / 2;
-		if(usePosition){
-			x = clamp(gSavedWindowX, ax, max(ax, ax + aw - width));
-			y = clamp(gSavedWindowY, ay, max(ay, ay + ah - height));
-		}
+	if(canPosition)
 		glfwSetWindowPos(window, x, y);
-	}
 	gSavedWindowWidth = width;
 	gSavedWindowHeight = height;
 	if(gSavedWindowMaximized)
@@ -680,18 +720,13 @@ GetInitialEditorWindowRect(int *x, int *y, int *width, int *height, bool *canPos
 		return false;
 	*canPosition = glfwCanPositionWindows();
 	bool usePosition = *canPosition && gSavedWindowPlacementValid;
-	int ax, ay, aw, ah;
-	glfwWorkAreaAt(gSavedWindowX + 40, gSavedWindowY + 40, usePosition, &ax, &ay, &aw, &ah);
-	*width = max(min(gSavedWindowWidth, aw - 40), 640);
-	*height = max(min(gSavedWindowHeight, ah - 60), 480);
-	*x = ax + (aw - *width) / 2;
-	*y = ay + (ah - *height) / 2;
+	fitEditorWindow(window, usePosition, x, y, width, height);
 	if(gSavedWindowMaximized){
-		// Grow to the whole work area; maximizing afterwards is then seamless.
-		*x = ax; *y = ay; *width = aw; *height = ah;
-	}else if(usePosition){
-		*x = clamp(gSavedWindowX, ax, max(ax, ax + aw - *width));
-		*y = clamp(gSavedWindowY, ay, max(ay, ay + ah - *height));
+		// Grow to the whole work area, less the frame; maximizing afterwards is then seamless.
+		int ax, ay, aw, ah, l, t, r, b;
+		glfwWorkAreaAt(gSavedWindowX + 40, gSavedWindowY + 40, usePosition, &ax, &ay, &aw, &ah);
+		glfwFrameExtents(window, &l, &t, &r, &b);
+		*x = ax + l; *y = ay + t; *width = aw - l - r; *height = ah - t - b;
 	}
 	return true;
 #else
@@ -8002,14 +8037,14 @@ uiCameraPreferences(void)
 	ImGui::SameLine();
 	ImGui::TextDisabled("(?)");
 	ImGui::SetItemTooltip("%s", gCameraLookButton == 1 ?
-		_("Hold it and drag to look, and fly with W/A/S/D while it's held;\n"
+		_("Hold it and drag to look, and fly with W/A/S/D (Q/E down and up) while it's held;\n"
 		"a click without dragging still selects.\n"
 		"While brushing, LMB paints, so hold RMB to look.") :
-		_("Hold it and drag to look, and fly with W/A/S/D while it's held;\n"
+		_("Hold it and drag to look, and fly with W/A/S/D (Q/E down and up) while it's held;\n"
 		"a click without dragging still selects."));
 	ImGui::SeparatorText(_("Flying"));
 	changed |= ImGui::Checkbox(_("Accelerate fly movement"), &gFlyAcceleration);
-	ImGui::SetItemTooltip(_("When off, flying (W/A/S/D with the look button held) goes at the constant fly speed below."));
+	ImGui::SetItemTooltip(_("When off, flying (W/A/S/D and Q/E with the look button held) goes at the constant fly speed below."));
 	ImGui::BeginDisabled(gFlyAcceleration);
 	ImGui::SliderFloat(_("Fly speed"), &gFlySpeed, 0.1f, 70.0f, "%.2f");
 	ImGui::EndDisabled();

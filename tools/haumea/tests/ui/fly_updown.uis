@@ -1,0 +1,19 @@
+# Flying with the look button (RMB) held: E goes up, Q down, along the world's Z.
+open "$UI_FIXTURES/ui_map.pwn"
+camera 2490 -1670 30 2495 -1660 30
+wait 10
+assert camera_target.z ~ 30
+move 50% 50%
+hold right
+wait 2
+hold E
+wait 30
+release E
+wait 2
+assert camera_target.z > 31
+hold Q
+wait 60
+release Q
+release right
+wait 2
+assert camera_target.z < 30

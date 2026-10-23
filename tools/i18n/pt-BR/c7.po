@@ -1901,19 +1901,19 @@ msgstr "Segure Alt ao arrastar para posicionar um painel livremente."
 
 #: tools/haumea/gui.cpp:7823
 msgid ""
-"Hold it and drag to look, and fly with W/A/S/D while it's held;\n"
+"Hold it and drag to look, and fly with W/A/S/D (Q/E down and up) while it's held;\n"
 "a click without dragging still selects."
 msgstr ""
-"Segure e arraste para olhar, e voe com W/A/S/D enquanto segura;\n"
+"Segure e arraste para olhar, e voe com W/A/S/D (Q/E descem e sobem) enquanto segura;\n"
 "um clique sem arrastar ainda seleciona."
 
 #: tools/haumea/gui.cpp:7820
 msgid ""
-"Hold it and drag to look, and fly with W/A/S/D while it's held;\n"
+"Hold it and drag to look, and fly with W/A/S/D (Q/E down and up) while it's held;\n"
 "a click without dragging still selects.\n"
 "While brushing, LMB paints, so hold RMB to look."
 msgstr ""
-"Segure e arraste para olhar, e voe com W/A/S/D enquanto segura;\n"
+"Segure e arraste para olhar, e voe com W/A/S/D (Q/E descem e sobem) enquanto segura;\n"
 "um clique sem arrastar ainda seleciona.\n"
 "Com o pincel, o LMB pinta, então segure o RMB para olhar."
 
@@ -4221,8 +4221,8 @@ msgstr ""
 "Mudanças não salvas sempre perguntam antes."
 
 #: tools/haumea/gui.cpp:7827
-msgid "When off, flying (W/A/S/D with the look button held) goes at the constant fly speed below."
-msgstr "Desligado, o voo (W/A/S/D com o botão de olhar segurado) vai na velocidade de voo constante abaixo."
+msgid "When off, flying (W/A/S/D and Q/E with the look button held) goes at the constant fly speed below."
+msgstr "Desligado, o voo (W/A/S/D e Q/E com o botão de olhar segurado) vai na velocidade de voo constante abaixo."
 
 #: tools/haumea/maptools.cpp:787
 msgid ""
