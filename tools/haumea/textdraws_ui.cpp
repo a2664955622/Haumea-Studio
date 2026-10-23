@@ -938,7 +938,9 @@ exactTarget(int w, int h)
 	}
 	if(gExactColor) gExactColor->destroy();
 	if(gExactDepth) gExactDepth->destroy();
-	gExactColor = rw::Raster::create(w, h, 32, rw::Raster::C8888|rw::Raster::CAMERATEXTURE);
+	// No alpha channel: blending translucent textdraws in lowers the alpha,
+	// and the picture, drawn over the editor's background, came out darker.
+	gExactColor = rw::Raster::create(w, h, 32, rw::Raster::C888|rw::Raster::CAMERATEXTURE);
 	gExactDepth = rw::Raster::create(w, h, 0, rw::Raster::ZBUFFER);
 	gExactReady = false;
 	if(gExactColor == nil || gExactDepth == nil)
@@ -979,6 +981,10 @@ renderExactScreen(int w, int h)
 	void *raster = rw::GetRenderStatePtr(rw::TEXTURERASTER);
 	int filter = rw::GetRenderState(rw::TEXTUREFILTER);
 	int addrU = rw::GetRenderState(rw::TEXTUREADDRESSU), addrV = rw::GetRenderState(rw::TEXTUREADDRESSV);
+	int alphaTest = rw::GetRenderState(rw::ALPHATESTFUNC);
+	// No alpha test, as for the interface: it cut the faint edges of soft
+	// sprites (lamp_shad_64's glow) away.
+	rw::SetRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
 	rw::SetRenderState(rw::VERTEXALPHA, 1);
 	rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
 	rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
@@ -1008,6 +1014,7 @@ renderExactScreen(int w, int h)
 	rw::SetRenderState(rw::TEXTUREFILTER, filter);
 	rw::SetRenderState(rw::TEXTUREADDRESSU, addrU);
 	rw::SetRenderState(rw::TEXTUREADDRESSV, addrV);
+	rw::SetRenderState(rw::ALPHATESTFUNC, alphaTest);
 	gExactCamera->endUpdate();
 	gExactReady = true;
 }
