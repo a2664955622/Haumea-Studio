@@ -19,3 +19,26 @@ click_item '*' 'Add to server'
 wait 10
 assert toast_contains "Added -1000"
 assert file_contains "$SERVER/models/artconfig.txt" "AddSimpleModel(-1, 19379, -1000,"
+# Its TXD gives 0.3.DL textdraw sprites, as mdl-1000:<texture>.
+key Escape
+wait 3
+click_item '*' 'Windows'
+wait 3
+click_item '*' 'TextDraws'
+wait 8
+click_item 'TextDraws' 'Sprite'
+wait 5
+scroll_until 'TextDraws' 'Sprite TXD'
+click_item 'TextDraws' 'Sprite TXD'
+wait 3
+click_item '*' 'mdl-1000  (ui_barrel)'
+wait 5
+scroll_until 'TextDraws' '##s'
+click_item 'TextDraws' '##s'
+wait 5
+move 900 400
+shortcut save_map_as
+wait 5
+click_item 'Save TextDraws As' 'Save'
+wait 5
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "\"mdl-1000:"

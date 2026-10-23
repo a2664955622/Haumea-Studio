@@ -60,6 +60,16 @@ IsCustomModel(int editorId)
 	return false;
 }
 
+void
+ListCustomSimpleModels(std::vector<int> &pawnIds)
+{
+	pawnIds.clear();
+	for(size_t i = 0; i < gModels.size(); i++)
+		if(gModels[i].editorId > CUSTOM_MODEL_BASE)
+			pawnIds.push_back(PawnModelId(gModels[i].editorId));
+	std::sort(pawnIds.begin(), pawnIds.end(), [](int a, int b){ return a > b; });
+}
+
 static bool
 isDir(const std::string &path)
 {

@@ -665,9 +665,32 @@ fileExists(const std::string &path)
 }
 
 // The client looks sprite TXDs up in models/txd, then models and SA-MP's folder.
+// SA-MP 0.3.DL (and open.mp): "mdl-2018:name" is a texture in the TXD of the
+// custom model AddSimpleModel added as -2018, which players download. The
+// open map's custom models give it here. -2 when the name isn't one.
+static int
+customSpriteTxdSlot(const std::string &name)
+{
+	if(name.size() < 5 || rw::strncmp_ci(name.c_str(), "mdl-", 4) != 0)
+		return -2;
+	int id = atoi(name.c_str() + 4);
+	int editorId = EditorModelId(-id);
+	if(id < 1000 || id > 30000 || !IsCustomModel(editorId))
+		return -1;
+	ObjectDef *obj = GetObjectDef(editorId);
+	if(obj == nil || obj->m_txdSlot < 0)
+		return -1;
+	if(!IsTxdLoaded(obj->m_txdSlot))
+		LoadTxd(obj->m_txdSlot);
+	return obj->m_txdSlot;
+}
+
 static int
 spriteTxdSlot(const std::string &name)
 {
+	int custom = customSpriteTxdSlot(name);
+	if(custom != -2)
+		return custom;	// not kept: the map, and its custom models, can change
 	std::string key = lowered(name);
 	std::map<std::string, int>::iterator it = gSpriteTxds.find(key);
 	if(it != gSpriteTxds.end())
@@ -3571,11 +3594,36 @@ spritePicker(TextDraw &td)
 		if(ImGui::Selectable((std::string(ICON_FA_STAR " ") + _("Favourites")).c_str(), txdName == FAVOURITES))
 			txdName = FAVOURITES;
 		std::string want = lowered(txdFilter);
+		// The open map's custom models first: their TXDs as mdl-<id>.
+		std::vector<int> customs;
+		ListCustomSimpleModels(customs);
+		if(!customs.empty())
+			ImGui::SeparatorText(_("Custom models (0.3.DL)"));
+		for(int id : customs){
+			char key[32], label[160];
+			snprintf(key, sizeof(key), "mdl%d", id);
+			ObjectDef *obj = GetObjectDef(EditorModelId(id));
+			const char *file = obj && obj->m_txdSlot >= 0 ? GetCustomModelTxdName(obj->m_txdSlot) : "";
+			snprintf(label, sizeof(label), "%s  (%s)", key, file ? file : "");
+			if(want.empty() || lowered(label).find(want) != std::string::npos)
+				if(ImGui::Selectable(label, rw::strcmp_ci(key, txdName.c_str()) == 0))
+					txdName = key;
+		}
+		if(!customs.empty())
+			ImGui::SeparatorText(_("The game's"));
 		for(size_t i = 0; i < txds.size(); i++)
 			if(want.empty() || lowered(txds[i]).find(want) != std::string::npos)
 				if(ImGui::Selectable(txds[i].c_str(), rw::strcmp_ci(txds[i].c_str(), txdName.c_str()) == 0))
 					txdName = txds[i];
 		ImGui::EndCombo();
+	}
+	ImGui::SetItemTooltip("%s", _("The game's TXDs, and the custom models' of the open map (AddSimpleModel):\n"
+		"those are mdl-<id> (mdl-2018 for -2018), for players on 0.3.DL or open.mp."));
+	if(customSpriteTxdSlot(txdName) != -2 || customSpriteTxdSlot(td.text.substr(0, td.text.find(':'))) != -2){
+		UiBadge("0.3.DL", _("A custom model's texture: players on 0.3.DL and open.mp download it;\n"
+			"0.3.7 players see nothing there."));
+		if(customSpriteTxdSlot(td.text.substr(0, td.text.find(':'))) == -1)
+			ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.3f, 1.0f), "%s", _("The open map has no custom model with that ID."));
 	}
 	static char filter[64];
 	ImGui::SetNextItemWidth(-FLT_MIN);

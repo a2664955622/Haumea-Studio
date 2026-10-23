@@ -990,6 +990,13 @@ msgstr "Um arquivo .pwn ou .inc só com textdraws; o seu gamemode o inclui."
 msgid "A copy of the shape under it, this far down and right. 0 for none."
 msgstr "Uma cópia da forma por baixo, deslocada isto para baixo e para a direita. 0 para nenhuma."
 
+msgid ""
+"A custom model's texture: players on 0.3.DL and open.mp download it;\n"
+"0.3.7 players see nothing there."
+msgstr ""
+"Textura de um modelo personalizado: jogadores no 0.3.DL e open.mp a baixam;\n"
+"jogadores no 0.3.7 não veem nada ali."
+
 msgid "A driver recording: the NPC must be in a vehicle"
 msgstr "Uma gravação de motorista: o NPC precisa estar em um veículo"
 
@@ -2448,6 +2455,9 @@ msgstr "A importação personalizada precisa de .dff e .txd correspondentes na m
 
 msgid "Custom models"
 msgstr "Modelos personalizados"
+
+msgid "Custom models (0.3.DL)"
+msgstr "Modelos personalizados (0.3.DL)"
 
 #, c-format
 msgid "Custom models that couldn't be loaded: %d (see the log)"
@@ -7937,11 +7947,21 @@ msgstr "O objeto do jogo cujas configurações o novo modelo herda (19379 é uma
 msgid "The game skin whose settings the new skin takes."
 msgstr "A skin do jogo cujas configurações a nova skin herda."
 
+msgid "The game's"
+msgstr "Do jogo"
+
 msgid "The game's HUD under the textdraws, where SA-MP shows it, to check they don't cover it."
 msgstr "O HUD do jogo sob os textdraws, onde o SA-MP o mostra, para conferir que não o cobrem."
 
 msgid "The game's NODES*.DAT files couldn't be loaded."
 msgstr "Não foi possível carregar os arquivos NODES*.DAT do jogo."
+
+msgid ""
+"The game's TXDs, and the custom models' of the open map (AddSimpleModel):\n"
+"those are mdl-<id> (mdl-2018 for -2018), for players on 0.3.DL or open.mp."
+msgstr ""
+"Os TXDs do jogo e os dos modelos personalizados do mapa aberto (AddSimpleModel):\n"
+"esses são mdl-<id> (mdl-2018 para -2018), para jogadores no 0.3.DL ou open.mp."
 
 msgid "The game's path nodes. open.mp NPCs follow them with NPC_PlayNode."
 msgstr "Os nós de caminho do jogo. NPCs do open.mp os seguem com NPC_PlayNode."
@@ -8008,6 +8028,9 @@ msgid ""
 msgstr ""
 "Os objetos desenhados: todo objeto do script, a seleção ou um grupo.\n"
 "Veículos, elementos SA-MP e objetos do mundo sem mudanças ficam de fora."
+
+msgid "The open map has no custom model with that ID."
+msgstr "O mapa aberto não tem modelo personalizado com esse ID."
 
 msgid "The parent was deleted, so this attachment is not exported."
 msgstr "O pai foi excluído, então este anexo não é exportado."

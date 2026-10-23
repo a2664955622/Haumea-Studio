@@ -3095,3 +3095,31 @@ msgstr "Escolha uma imagem"
 #: tools/haumea/textdraws_ui.cpp
 msgid "Images"
 msgstr "Imagens"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid ""
+"A custom model's texture: players on 0.3.DL and open.mp download it;\n"
+"0.3.7 players see nothing there."
+msgstr ""
+"Textura de um modelo personalizado: jogadores no 0.3.DL e open.mp a baixam;\n"
+"jogadores no 0.3.7 não veem nada ali."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Custom models (0.3.DL)"
+msgstr "Modelos personalizados (0.3.DL)"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "The game's"
+msgstr "Do jogo"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid ""
+"The game's TXDs, and the custom models' of the open map (AddSimpleModel):\n"
+"those are mdl-<id> (mdl-2018 for -2018), for players on 0.3.DL or open.mp."
+msgstr ""
+"Os TXDs do jogo e os dos modelos personalizados do mapa aberto (AddSimpleModel):\n"
+"esses são mdl-<id> (mdl-2018 para -2018), para jogadores no 0.3.DL ou open.mp."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "The open map has no custom model with that ID."
+msgstr "O mapa aberto não tem modelo personalizado com esse ID."

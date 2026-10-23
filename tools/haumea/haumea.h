@@ -38,6 +38,7 @@ typedef unsigned int uint;
 int PawnModelId(int editorId);
 int EditorModelId(int pawnId);
 bool IsCustomModel(int editorId);
+void ListCustomSimpleModels(std::vector<int> &pawnIds);	// AddSimpleModel's, -1000 to -30000
 void LoadCustomModelsForMap(const char *mapPath, const std::string &source);
 const char *GetCustomModelsDir(void);	// the server's models folder, or nil
 const char *GetCustomModelDffPath(int editorId);
