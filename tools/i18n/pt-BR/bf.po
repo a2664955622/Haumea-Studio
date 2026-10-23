@@ -862,10 +862,6 @@ msgstr "Lado maior (m)"
 msgid "Loose (data/Paths)"
 msgstr "Arquivos soltos (data/Paths)"
 
-#: tools/haumea/textdraws_ui.cpp:1244
-msgid "Map editing is off."
-msgstr "A edição do mapa está desligada."
-
 #: tools/haumea/sapaths.cpp:6933
 msgid ""
 "Marks this node as a highway node.\n"
@@ -971,10 +967,6 @@ msgstr ""
 "Nós navi: pontos de faixa nas ligações de veículos que definem a largura da via,\n"
 "o número de faixas e a direção do trânsito entre dois nós"
 
-#: tools/haumea/textdraws_ui.cpp:1303
-msgid "New"
-msgstr "Novo"
-
 #: tools/haumea/textdraws_ui.cpp:1082
 msgid "New textdraws"
 msgstr "Novos textdraws"
@@ -1007,10 +999,6 @@ msgstr "Ainda não há predefinições: dê um nome aos filtros à direita e sal
 #: tools/haumea/sapaths.cpp:7039
 msgid "No reciprocal link found (one-way connection)."
 msgstr "Nenhuma ligação recíproca encontrada (conexão de mão única)."
-
-#: tools/haumea/textdraws_ui.cpp:1424
-msgid "No textdraws yet."
-msgstr "Ainda não há textdraws."
 
 #: tools/haumea/textdraws_ui.cpp:903
 #, c-format
@@ -1086,10 +1074,6 @@ msgstr "Abrir"
 #: tools/haumea/textdraws_ui.cpp:1191
 msgid "Open TextDraws"
 msgstr "Abrir textdraws"
-
-#: tools/haumea/textdraws_ui.cpp:1306
-msgid "Open..."
-msgstr "Abrir..."
 
 #: tools/haumea/textdraws_ui.cpp:1034
 #, c-format
@@ -2273,3 +2257,287 @@ msgstr "O que o HUD mostra"
 #: tools/haumea/textdraws_ui.cpp
 msgid "Zone name"
 msgstr "Nome da zona"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Window"
+msgstr "Janela"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Widescreen Fix"
+msgstr "Widescreen Fix"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "As with the Widescreen Fix"
+msgstr "Como com o Widescreen Fix"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "ThirteenAG's GTA SA Widescreen Fix: the HUD unstretched and smaller, the radar round.\nMany players have it; check your textdraws both ways."
+msgstr "O GTA SA Widescreen Fix do ThirteenAG: o HUD sem esticar e menor, o radar redondo.\nMuitos jogadores o têm; confira seus textdraws dos dois jeitos."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "HudWidthScale, HudHeightScale"
+msgstr "HudWidthScale, HudHeightScale"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "RadarWidth, RadarHeight"
+msgstr "RadarWidth, RadarHeight"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "As in its GTASA.WidescreenFix.ini (0.8, 0.8, 85.5 and 78 by default)"
+msgstr "Como no GTASA.WidescreenFix.ini dele (0.8, 0.8, 85.5 e 78 por padrão)"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Main"
+msgstr "Principal"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "copy"
+msgstr "cópia"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Click on an image layer to take its colour"
+msgstr "Clique numa camada de imagem para pegar a cor dela"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Saved colours, and a colour typed as 0xRRGGBBAA, #RRGGBB, rgba(...) or numbers"
+msgstr "Cores salvas, e uma cor digitada como 0xRRGGBBAA, #RRGGBB, rgba(...) ou números"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Not a colour"
+msgstr "Não é uma cor"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Pick from an image"
+msgstr "Pegar de uma imagem"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Then click on an image layer on the canvas (Esc stops)."
+msgstr "Depois clique numa camada de imagem na tela (Esc cancela)."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Saved colours"
+msgstr "Cores salvas"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Remove"
+msgstr "Remover"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "None yet."
+msgstr "Nenhuma ainda."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Save this colour"
+msgstr "Salvar esta cor"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Image file"
+msgstr "Arquivo de imagem"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "full path to a PNG, BMP or TGA"
+msgstr "caminho completo de um PNG, BMP ou TGA"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Enter loads it. Only the editor shows it: the Pawn has it as a comment."
+msgstr "Enter a carrega. Só o editor a mostra: no Pawn ela fica como comentário."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "%d x %d pixels"
+msgstr "%d x %d pixels"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Fill the screen"
+msgstr "Preencher a tela"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "%d selected: changes go to all of them."
+msgstr "%d selecionados: as mudanças vão para todos."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "The fields show the one clicked last."
+msgstr "Os campos mostram o último clicado."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Content"
+msgstr "Conteúdo"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Layout"
+msgstr "Disposição"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Rename..."
+msgstr "Renomear..."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "An artboard: a screen of its own, shown and hidden in Pawn with\n<prefix>_Show<Board>(playerid) and _Hide<Board>(playerid). Right-click for more."
+msgstr "Uma prancheta: uma tela própria, mostrada e escondida no Pawn com\n<prefixo>_Show<Board>(playerid) e _Hide<Board>(playerid). Clique direito para mais."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Board"
+msgstr "Prancheta"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "New artboard"
+msgstr "Nova prancheta"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "The player's screen shape. Textdraws stretch with it; the chat doesn't."
+msgstr "O formato da tela do jogador. Os textdraws esticam com ele; o chat não."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Compare"
+msgstr "Comparar"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Small views of this board at 4:3, 16:9 and 21:9 in the corner."
+msgstr "Vistas pequenas desta prancheta em 4:3, 16:9 e 21:9 no canto."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Grid"
+msgstr "Grade"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Grid spacing, in canvas units (640 x 448)"
+msgstr "Espaçamento da grade, em unidades da tela (640 x 448)"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Snap"
+msgstr "Encaixar"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Dragged textdraws snap to the screen's edges and centre, to the others\nand to the grid. Hold Ctrl while dragging to place freely."
+msgstr "Textdraws arrastados encaixam nas bordas e no centro da tela, nos outros\ne na grade. Segure Ctrl ao arrastar para posicionar livremente."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "How far the arrow keys move the selection; Shift moves ten times as far."
+msgstr "Quanto as setas movem a seleção; Shift move dez vezes mais."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Click through locked"
+msgstr "Clicar através dos travados"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Clicks on a locked textdraw go to what is under it.\nAlt+click picks the next one down under the cursor."
+msgstr "Cliques num textdraw travado vão para o que está embaixo dele.\nAlt+clique pega o próximo abaixo do cursor."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "The wheel zooms round the cursor, the middle button pans."
+msgstr "A roda aproxima em volta do cursor, o botão do meio arrasta a vista."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Copied %d textdraws"
+msgstr "%d textdraws copiados"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "New textdraw file"
+msgstr "Novo arquivo de textdraws"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Open a textdraw file"
+msgstr "Abrir um arquivo de textdraws"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "image"
+msgstr "imagem"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Ungroup"
+msgstr "Desagrupar"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Move to artboard"
+msgstr "Mover para a prancheta"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Show or hide the group in the editor"
+msgstr "Mostrar ou esconder o grupo no editor"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Lock or unlock the group"
+msgstr "Travar ou destravar o grupo"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Click to select the group, on the arrow to fold it. Right-click to rename."
+msgstr "Clique para selecionar o grupo, na seta para recolhê-lo. Clique direito para renomear."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Shown in the editor (it is in the file either way)"
+msgstr "Mostrado no editor (está no arquivo de qualquer jeito)"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Locked: not dragged on the canvas"
+msgstr "Travado: não é arrastado na tela"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "%d textdraws"
+msgstr "%d textdraws"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "No textdraws on this board yet."
+msgstr "Nenhum textdraw nesta prancheta ainda."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Gives them one group name and keeps them together in the list.\nA group hides, locks and is selected as one."
+msgstr "Dá a eles um nome de grupo e os mantém juntos na lista.\nUm grupo se esconde, trava e é selecionado como um só."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "To each other, or to the screen when one is selected"
+msgstr "Entre si, ou à tela quando só um está selecionado"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "To the screen"
+msgstr "À tela"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Left edges"
+msgstr "Bordas esquerdas"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Centres across"
+msgstr "Centros na horizontal"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Right edges"
+msgstr "Bordas direitas"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Top edges"
+msgstr "Bordas de cima"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Middles"
+msgstr "Meios"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Bottom edges"
+msgstr "Bordas de baixo"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Space evenly across"
+msgstr "Espaçar igualmente na horizontal"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Space evenly down"
+msgstr "Espaçar igualmente na vertical"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Add"
+msgstr "Adicionar"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Image"
+msgstr "Imagem"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "A picture to build on: a mock-up or a screenshot (PNG, BMP or TGA).\nIt is a layer like the others, only the editor shows it; the eyedropper picks its colours."
+msgstr "Uma imagem para construir em cima: um rascunho ou uma captura de tela (PNG, BMP ou TGA).\nÉ uma camada como as outras, só o editor a mostra; o conta-gotas pega as cores dela."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Layers - %s"
+msgstr "Camadas - %s"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Click a textdraw, or drag a box round several. Alt+click picks the one under it."
+msgstr "Clique num textdraw, ou arraste uma caixa em volta de vários. Alt+clique pega o de baixo."

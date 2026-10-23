@@ -32,9 +32,9 @@ click_item 'TextDraws' 'Save As...'
 wait 5
 click_item 'Save TextDraws As' 'Save'
 wait 5
-assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "); // locked in Haumea"
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "); // Haumea: locked"
 # The game's HUD and SA-MP's chat under the textdraws.
-click_item 'TextDraws' 'Game HUD'
+click_item '*' 'Game HUD'
 wait 5
 assert textdraws == 1
 # The Log keeps what was said, the save included.

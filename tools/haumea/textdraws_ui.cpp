@@ -11,6 +11,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <algorithm>
+#include <functional>
 #include <map>
 #ifdef _WIN32
 #include <windows.h>
@@ -31,6 +32,29 @@ static bool gStillPending;	// take the still frame after this frame's world
 static rw::Texture *gStillFrame;
 static std::vector<std::string> gRecent;
 static const int MAX_RECENT_TEXTDRAW_FILES = 8;
+
+// The canvas: the player's screen shape, zoom and pan, the grid and snapping.
+enum { TD_SCREEN_WINDOW, TD_SCREEN_4_3, TD_SCREEN_16_10, TD_SCREEN_16_9, TD_SCREEN_21_9, NUM_TD_SCREENS };
+static const float gScreenAspects[NUM_TD_SCREENS] = { 0.0f, 4.0f / 3.0f, 16.0f / 10.0f, 16.0f / 9.0f, 21.0f / 9.0f };
+static const char *gScreenNames[NUM_TD_SCREENS] = { N_("Window"), "4:3", "16:10", "16:9", "21:9" };
+static int gScreen = TD_SCREEN_WINDOW;
+static float gZoom = 1.0f, gPanX, gPanY;	// the pan in pixels, from the centred canvas
+static bool gSnap = true, gGrid, gCompare;
+static float gGridSize = 10.0f;
+static float gNudge = 1.0f;	// the arrow keys' step; Shift ten times it
+static bool gClickThroughLocked = true;
+// Selection: gSel in file order; gSelected is the one the panel edits.
+static std::vector<int> gSel;
+// The artboard on the canvas, and boards made but still empty.
+static std::string gBoard;
+static std::vector<std::string> gEmptyBoards;
+// Colours the user saved, shared by every colour field (and kept in the settings).
+static std::vector<unsigned int> gSavedColours;
+// The eyedropper: a colour field asks, the next click on the canvas answers
+// with the reference image's colour there.
+static ImGuiID gPickFor;
+static bool gPicking, gPicked;
+static unsigned int gPickedColour;
 
 // CHud's layout on the 640x448 screen, under the textdraws as in game:
 // gta-reversed's Hud.cpp, and gta_sa.exe 1.0 US for what it doesn't have
@@ -147,13 +171,6 @@ ExitTextDrawMode(void)
 }
 
 void
-SelectTextDraw(int index)
-{
-	EnterTextDrawMode();
-	gSelected = index;
-}
-
-void
 TextDrawsAfterWorldRender(void)
 {
 	if(!gStillPending)
@@ -199,6 +216,27 @@ LoadTextDrawSetting(const char *key, const char *value)
 		gBackground = atoi(value) == TD_BACKGROUND_PLAIN ? TD_BACKGROUND_PLAIN : TD_BACKGROUND_STILL;
 	else if(strcmp(key, "textdraw_canvas_colour") == 0)
 		gCanvasColour = (unsigned int)strtoul(value, nil, 16);
+	else if(strcmp(key, "textdraw_saved_colours") == 0){
+		gSavedColours.clear();
+		for(const char *p = value; *p; ){
+			char *end;
+			unsigned long c = strtoul(p, &end, 16);
+			if(end == p)
+				break;
+			gSavedColours.push_back((unsigned int)c);
+			p = end;
+		}
+	}else if(strcmp(key, "textdraw_canvas") == 0){
+		int snap = 1, grid = 0, through = 1, compare = 0;
+		sscanf(value, "%d %d %d %f %f %d %d", &gScreen, &snap, &grid, &gGridSize, &gNudge, &through, &compare);
+		gScreen = std::max(0, std::min(gScreen, NUM_TD_SCREENS - 1));
+		gSnap = snap != 0;
+		gGrid = grid != 0;
+		gClickThroughLocked = through != 0;
+		gCompare = compare != 0;
+		gGridSize = std::max(1.0f, std::min(gGridSize, 200.0f));
+		gNudge = std::max(0.01f, std::min(gNudge, 100.0f));
+	}
 	else if(strcmp(key, "textdraw_hud") == 0){
 		int show = 0;
 		sscanf(value, "%d %x %d %d %d %d %d %d %d %d %d %d", &show, (unsigned int*)&gHud.parts,
@@ -246,6 +284,12 @@ SaveTextDrawSettings(FILE *f)
 {
 	fprintf(f, "textdraw_background %d\n", gBackground);
 	fprintf(f, "textdraw_canvas_colour %08X\n", gCanvasColour);
+	fputs("textdraw_saved_colours", f);
+	for(unsigned int c : gSavedColours)
+		fprintf(f, " %08X", c);
+	fputc('\n', f);
+	fprintf(f, "textdraw_canvas %d %d %d %g %g %d %d\n", gScreen, gSnap ? 1 : 0, gGrid ? 1 : 0, gGridSize, gNudge,
+		gClickThroughLocked ? 1 : 0, gCompare ? 1 : 0);
 	fprintf(f, "textdraw_hud %d %x %d %d %d %d %d %d %d %d %d %d\n", gHud.show ? 1 : 0, (unsigned int)gHud.parts,
 		gHud.hour, gHud.minute, gHud.money, gHud.health, gHud.armour, gHud.breath,
 		gHud.wanted, gHud.weapon, gHud.ammo, gHud.clip);
@@ -539,7 +583,7 @@ DescribeTextDrawColours(const TextDraw &td)
 static void
 textDrawBounds(const TextDraw &td, float *x0, float *y0, float *x1, float *y1)
 {
-	if(td.font == TD_FONT_SPRITE || td.font == TD_FONT_PREVIEW){
+	if(td.font == TD_FONT_SPRITE || td.font == TD_FONT_PREVIEW || td.font == TD_FONT_REFERENCE){
 		*x0 = td.x; *y0 = td.y;
 		*x1 = td.x + td.sizeX; *y1 = td.y + td.sizeY;
 		return;
@@ -658,21 +702,30 @@ struct Canvas {
 	ImVec2 at(float cx, float cy) const { return ImVec2(x + cx * sx, y + cy * sy); }
 };
 
-// The game screen is the 3D view's free area between the docked panels,
-// at the window's shape, as a player's screen would be.
-static Canvas
-getCanvas(void)
+// The free area between the docked panels, under the canvas toolbar.
+static float gToolbarHeight;	// measured when the toolbar is drawn
+static void
+canvasArea(ImVec2 *pos, ImVec2 *size)
 {
 	ImGuiViewport *vp = ImGui::GetMainViewport();
-	ImVec2 pos = vp->WorkPos, size = vp->WorkSize;
+	*pos = vp->WorkPos;
+	*size = vp->WorkSize;
 #ifdef IMGUI_HAS_DOCK
 	ImGuiDockNode *central = ImGui::DockBuilderGetCentralNode(ImHashStr("HaumeaDockSpace"));
 	if(central && central->Size.x > 32.0f && central->Size.y > 32.0f){
-		pos = central->Pos;
-		size = central->Size;
+		*pos = central->Pos;
+		*size = central->Size;
 	}
 #endif
-	float aspect = vp->Size.x / std::max(1.0f, vp->Size.y);
+	pos->y += gToolbarHeight;
+	size->y = std::max(32.0f, size->y - gToolbarHeight);
+}
+
+// The screen fitted in a rectangle: its shape is the window's, as a
+// player's screen would be, or the one picked.
+static Canvas
+fitCanvas(ImVec2 pos, ImVec2 size, float aspect)
+{
 	float w = size.x, h = size.x / aspect;
 	if(h > size.y){
 		h = size.y;
@@ -683,6 +736,33 @@ getCanvas(void)
 	c.y = pos.y + (size.y - h) * 0.5f;
 	c.sx = w / 640.0f;
 	c.sy = h / 448.0f;
+	c.areaY = pos.y;
+	return c;
+}
+
+static float
+screenAspect(int screen)
+{
+	if(screen > TD_SCREEN_WINDOW && screen < NUM_TD_SCREENS)
+		return gScreenAspects[screen];
+	ImGuiViewport *vp = ImGui::GetMainViewport();
+	return vp->Size.x / std::max(1.0f, vp->Size.y);
+}
+
+// The canvas as edited: fitted with a margin, then zoomed and panned.
+static Canvas
+getCanvas(void)
+{
+	ImVec2 pos, size;
+	canvasArea(&pos, &size);
+	float margin = ImGui::GetFontSize();
+	Canvas c = fitCanvas(ImVec2(pos.x + margin, pos.y + margin),
+		ImVec2(size.x - margin * 2.0f, size.y - margin * 2.0f), screenAspect(gScreen));
+	float cx = pos.x + size.x * 0.5f, cy = pos.y + size.y * 0.5f;
+	c.sx *= gZoom;
+	c.sy *= gZoom;
+	c.x = cx - 320.0f * c.sx + gPanX;
+	c.y = cy - 224.0f * c.sy + gPanY;
 	c.areaY = pos.y;
 	return c;
 }
@@ -760,6 +840,57 @@ TextDrawsBeforeWorldRender(void)
 	}
 }
 
+// ---- Reference images ----
+
+struct RefImage { rw::Image *image; rw::Texture *texture; };
+static std::map<std::string, RefImage> gRefImages;	// by file, nil when it can't be read
+
+// PNG, BMP or TGA, read once and kept as 32-bit for the eyedropper.
+static const RefImage*
+refImage(const std::string &path)
+{
+	std::map<std::string, RefImage>::iterator it = gRefImages.find(path);
+	if(it != gRefImages.end())
+		return it->second.texture ? &it->second : nil;
+	RefImage ref = { nil, nil };
+	std::string low = lowered(path);
+	auto ends = [&](const char *ext){ return low.size() > 4 && low.compare(low.size() - 4, 4, ext) == 0; };
+	rw::Image *image = ends(".png") ? rw::readPNG(path.c_str()) : ends(".bmp") ? rw::readBMP(path.c_str()) :
+		ends(".tga") ? rw::readTGA(path.c_str()) : nil;
+	if(image){
+		image->unpalettize();
+		image->convertTo32();
+		rw::Raster *raster = rw::Raster::createFromImage(image);
+		if(raster){
+			ref.image = image;
+			ref.texture = rw::Texture::create(raster);
+			ref.texture->setFilter(rw::Texture::LINEAR);
+		}else
+			image->destroy();
+	}
+	if(ref.texture == nil && !path.empty())
+		log("TextDraws: could not read the reference image %s (PNG, BMP or TGA)\n", path.c_str());
+	gRefImages[path] = ref;
+	return ref.texture ? &gRefImages[path] : nil;
+}
+
+// The image's colour at a point of the canvas, or false when it isn't over it.
+static bool
+refImageColour(const TextDraw &td, float cx, float cy, unsigned int *rgba)
+{
+	const RefImage *ref = refImage(td.text);
+	if(ref == nil || td.sizeX == 0.0f || td.sizeY == 0.0f)
+		return false;
+	float u = (cx - td.x) / td.sizeX, v = (cy - td.y) / td.sizeY;	// a negative size mirrors it
+	if(u < 0.0f || u >= 1.0f || v < 0.0f || v >= 1.0f)
+		return false;
+	rw::Image *im = ref->image;
+	int px = std::min(im->width - 1, (int)(u * im->width)), py = std::min(im->height - 1, (int)(v * im->height));
+	const uint8 *p = im->pixels + py * im->stride + px * 4;
+	*rgba = (unsigned int)p[0] << 24 | (unsigned int)p[1] << 16 | (unsigned int)p[2] << 8 | 0xFF;
+	return true;
+}
+
 static void
 drawGlyphs(ImDrawList *dl, const Canvas &cv, const TextDraw &td, const std::vector<Glyph> &glyphs,
 	float dx, float dy, ImU32 overrideColour, bool useOverride)
@@ -783,6 +914,20 @@ drawTextDraw(ImDrawList *dl, const Canvas &cv, const TextDraw &td)
 {
 	float x0, y0, x1, y1;
 	textDrawBounds(td, &x0, &y0, &x1, &y1);
+	if(td.font == TD_FONT_REFERENCE){
+		// Drawn in its colour: the alpha is how much of it shows.
+		const RefImage *ref = refImage(td.text);
+		ImVec2 uv0(x1 < x0 ? 1.0f : 0.0f, y1 < y0 ? 1.0f : 0.0f), uv1(1.0f - uv0.x, 1.0f - uv0.y);
+		if(x1 < x0) std::swap(x0, x1);
+		if(y1 < y0) std::swap(y0, y1);
+		if(ref)
+			dl->AddImage((ImTextureID)ref->texture, cv.at(x0, y0), cv.at(x1, y1), uv0, uv1, rgbaToImU32(td.colour));
+		else{
+			dl->AddRect(cv.at(x0, y0), cv.at(x1, y1), IM_COL32(255, 80, 80, 200));
+			dl->AddText(cv.at(x0 + 2.0f, y0 + 2.0f), IM_COL32(255, 120, 120, 255), td.text.empty() ? "?" : td.text.c_str());
+		}
+		return;
+	}
 	if(td.font == TD_FONT_SPRITE){
 		// A negative width or height mirrors it, as in game (e.g. LD_DRV:tvcorn's four corners).
 		rw::Texture *tex = spriteTexture(td.text);
@@ -1147,27 +1292,520 @@ hudSettings(void)
 		SaveEditorSettings();
 }
 
-// ---- On-screen editing ----
+// ---- Selection and editing ----
 
-static void
-selectTextDraw(int index)
+static bool
+onBoard(const TextDraw &td)
 {
-	gSelected = index;
+	return td.board == gBoard;
 }
 
-// The canvas: the still frame or a plain colour where the world was, the
-// map's read-only textdraws, then the file's, which can be dragged.
-void
-DrawTextDrawsOverlay(void)
+// Drawn on the canvas: on this board and not hidden.
+static bool
+shown(const TextDraw &td)
 {
-	if(!gMode)
-		return;
+	return onBoard(td) && !td.hidden;
+}
+
+static bool
+isSelected(int i)
+{
+	return std::binary_search(gSel.begin(), gSel.end(), i);
+}
+
+static void
+selectOnly(int i)
+{
+	gSel.clear();
+	if(i >= 0)
+		gSel.push_back(i);
+	gSelected = i;
+}
+
+static void
+addToSelection(int i)
+{
+	std::vector<int>::iterator it = std::lower_bound(gSel.begin(), gSel.end(), i);
+	if(it == gSel.end() || *it != i)
+		gSel.insert(it, i);
+	gSelected = i;
+}
+
+static void
+toggleSelected(int i)
+{
+	std::vector<int>::iterator it = std::lower_bound(gSel.begin(), gSel.end(), i);
+	if(it != gSel.end() && *it == i){
+		gSel.erase(it);
+		if(gSelected == i)
+			gSelected = gSel.empty() ? -1 : gSel.back();
+	}else
+		addToSelection(i);
+}
+
+// After an undo, a delete or a board switch: only what exists and is on the board.
+static void
+validateSelection(void)
+{
 	std::vector<TextDraw> &tds = GetTextDraws();
-	loadFonts();
-	Canvas cv = getCanvas();
-	ImDrawList *dl = ImGui::GetBackgroundDrawList();
-	ImGuiViewport *vp = ImGui::GetMainViewport();
-	dl->AddRectFilled(vp->Pos, ImVec2(vp->Pos.x + vp->Size.x, vp->Pos.y + vp->Size.y), IM_COL32(24, 26, 30, 255));
+	std::vector<int> keep;
+	for(int i : gSel)
+		if(i >= 0 && i < (int)tds.size() && onBoard(tds[i]))
+			keep.push_back(i);
+	gSel.swap(keep);
+	if(!isSelected(gSelected))
+		gSelected = gSel.empty() ? -1 : gSel.back();
+}
+
+void
+SelectTextDraw(int index)
+{
+	EnterTextDrawMode();
+	std::vector<TextDraw> &tds = GetTextDraws();
+	if(index >= 0 && index < (int)tds.size())
+		gBoard = tds[index].board;
+	selectOnly(index);
+}
+
+// Canvas-unit bounds, smallest corner first (mirrored sprites have them the other way).
+static void
+boundsOf(const TextDraw &td, float *x0, float *y0, float *x1, float *y1)
+{
+	textDrawBounds(td, x0, y0, x1, y1);
+	if(*x1 < *x0) std::swap(*x0, *x1);
+	if(*y1 < *y0) std::swap(*y0, *y1);
+}
+
+// Moved as a whole: a text's wrap or box edge (TextSize's x, a position on
+// the screen for left and right alignment) moves with it.
+static void
+moveBy(TextDraw &td, float dx, float dy)
+{
+	td.x += dx;
+	td.y += dy;
+	bool isText = td.font < TD_FONT_SPRITE;
+	if(isText && (td.alignment == 1 || td.alignment == 3))
+		td.sizeX += dx;
+}
+
+static void
+deleteSelected(void)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	for(int k = (int)gSel.size() - 1; k >= 0; k--)
+		tds.erase(tds.begin() + gSel[k]);
+	selectOnly(-1);
+	TextDrawsChanged();
+}
+
+// Copies after the last one, offset unless in place; the copies end up selected.
+static void
+appendCopies(const std::vector<TextDraw> &copies, float offset)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	gSel.clear();
+	for(TextDraw td : copies){
+		td.name[0] = '\0';
+		td.board = gBoard;
+		moveBy(td, offset, offset);
+		tds.push_back(td);
+		gSel.push_back((int)tds.size() - 1);
+	}
+	gSelected = gSel.empty() ? -1 : gSel.back();
+	TextDrawsChanged();
+}
+
+static std::vector<TextDraw>
+selectedCopies(void)
+{
+	std::vector<TextDraw> out;
+	std::vector<TextDraw> &tds = GetTextDraws();
+	for(int i : gSel)
+		out.push_back(tds[i]);
+	return out;
+}
+
+static std::vector<TextDraw> gClipboard;
+
+// One step towards the top (later in the file) or the bottom, past the
+// textdraws that aren't selected.
+static void
+restackSelected(bool up)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	bool moved = false;
+	if(up){
+		for(int k = (int)gSel.size() - 1; k >= 0; k--){
+			int i = gSel[k];
+			if(i + 1 < (int)tds.size() && !isSelected(i + 1)){
+				std::swap(tds[i], tds[i + 1]);
+				gSel[k] = i + 1;
+				if(gSelected == i) gSelected = i + 1;
+				moved = true;
+			}
+		}
+	}else{
+		for(size_t k = 0; k < gSel.size(); k++){
+			int i = gSel[k];
+			if(i > 0 && !isSelected(i - 1)){
+				std::swap(tds[i], tds[i - 1]);
+				gSel[k] = i - 1;
+				if(gSelected == i) gSelected = i - 1;
+				moved = true;
+			}
+		}
+	}
+	if(moved)
+		TextDrawsChanged();
+}
+
+// The selection moved to before file index `at` (tds.size() for the end),
+// in its order; it stays selected.
+static void
+moveSelectionTo(int at)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	if(gSel.empty())
+		return;
+	std::vector<TextDraw> moving, rest;
+	int primary = -1, before = 0;
+	for(int i = 0; i < (int)tds.size(); i++){
+		if(isSelected(i)){
+			if(i == gSelected) primary = (int)moving.size();
+			moving.push_back(tds[i]);
+		}else{
+			if(i < at) before++;
+			rest.push_back(tds[i]);
+		}
+	}
+	rest.insert(rest.begin() + before, moving.begin(), moving.end());
+	tds.swap(rest);
+	gSel.clear();
+	for(int k = 0; k < (int)moving.size(); k++)
+		gSel.push_back(before + k);
+	gSelected = primary >= 0 ? before + primary : gSel.back();
+	TextDrawsChanged();
+}
+
+// A group is one name on its textdraws, kept together in the file.
+static void
+groupSelected(const char *name)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	for(int i : gSel)
+		tds[i].group = name;
+	if(!gSel.empty())
+		moveSelectionTo(gSel.front());
+	TextDrawsChanged();
+}
+
+static void
+selectGroup(const std::string &group, bool add)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	if(!add)
+		selectOnly(-1);
+	for(int i = 0; i < (int)tds.size(); i++)
+		if(onBoard(tds[i]) && tds[i].group == group)
+			addToSelection(i);
+}
+
+static std::string
+newGroupName(void)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	for(int n = 1; ; n++){
+		std::string name = std::string(_("Group")) + " " + std::to_string(n);
+		bool used = false;
+		for(const TextDraw &td : tds)
+			used |= td.group == name;
+		if(!used)
+			return name;
+	}
+}
+
+// Align to the selection's edges, or to the screen's with one selected.
+enum { ALIGN_LEFT, ALIGN_HCENTRE, ALIGN_RIGHT, ALIGN_TOP, ALIGN_VCENTRE, ALIGN_BOTTOM };
+static void
+alignSelected(int how, bool toScreen)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	float X0 = 1e9f, Y0 = 1e9f, X1 = -1e9f, Y1 = -1e9f;
+	for(int i : gSel){
+		float x0, y0, x1, y1;
+		boundsOf(tds[i], &x0, &y0, &x1, &y1);
+		X0 = std::min(X0, x0); Y0 = std::min(Y0, y0);
+		X1 = std::max(X1, x1); Y1 = std::max(Y1, y1);
+	}
+	if(toScreen || gSel.size() == 1){
+		X0 = 0.0f; Y0 = 0.0f; X1 = 640.0f; Y1 = 448.0f;
+	}
+	for(int i : gSel){
+		TextDraw &td = tds[i];
+		if(td.locked)
+			continue;
+		float x0, y0, x1, y1;
+		boundsOf(td, &x0, &y0, &x1, &y1);
+		float dx = 0.0f, dy = 0.0f;
+		switch(how){
+		case ALIGN_LEFT: dx = X0 - x0; break;
+		case ALIGN_HCENTRE: dx = (X0 + X1) * 0.5f - (x0 + x1) * 0.5f; break;
+		case ALIGN_RIGHT: dx = X1 - x1; break;
+		case ALIGN_TOP: dy = Y0 - y0; break;
+		case ALIGN_VCENTRE: dy = (Y0 + Y1) * 0.5f - (y0 + y1) * 0.5f; break;
+		case ALIGN_BOTTOM: dy = Y1 - y1; break;
+		}
+		moveBy(td, dx, dy);
+	}
+	TextDrawsChanged();
+}
+
+// Equal gaps between three or more, the outer ones staying.
+static void
+distributeSelected(bool across)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	if(gSel.size() < 3)
+		return;
+	struct Item { int i; float a, b; };
+	std::vector<Item> items;
+	float total = 0.0f;
+	for(int i : gSel){
+		float x0, y0, x1, y1;
+		boundsOf(tds[i], &x0, &y0, &x1, &y1);
+		Item it = { i, across ? x0 : y0, across ? x1 : y1 };
+		items.push_back(it);
+		total += it.b - it.a;
+	}
+	std::sort(items.begin(), items.end(), [](const Item &p, const Item &q){ return p.a < q.a; });
+	float span = items.back().b - items.front().a;
+	float gap = (span - total) / (float)(items.size() - 1);
+	float at = items.front().a;
+	for(const Item &it : items){
+		if(!tds[it.i].locked)
+			moveBy(tds[it.i], across ? at - it.a : 0.0f, across ? 0.0f : at - it.a);
+		at += it.b - it.a + gap;
+	}
+	TextDrawsChanged();
+}
+
+// ---- Artboards ----
+
+// The boards in order: the file's, then those made but still empty.
+static void
+listBoards(std::vector<std::string> &out)
+{
+	TextDrawBoards(GetTextDraws(), out);
+	if(out.empty())
+		out.push_back(std::string());
+	for(const std::string &b : gEmptyBoards)
+		if(std::find(out.begin(), out.end(), b) == out.end())
+			out.push_back(b);
+	if(std::find(out.begin(), out.end(), gBoard) == out.end())
+		out.push_back(gBoard);
+}
+
+static const char*
+boardLabel(const std::string &board)
+{
+	return board.empty() ? _("Main") : board.c_str();
+}
+
+static void
+switchBoard(const std::string &board)
+{
+	gBoard = board;
+	selectOnly(-1);
+}
+
+static void
+renameBoard(const std::string &from, const std::string &to)
+{
+	if(from == to || to.empty())
+		return;
+	for(TextDraw &td : GetTextDraws())
+		if(td.board == from)
+			td.board = to;
+	std::replace(gEmptyBoards.begin(), gEmptyBoards.end(), from, to);
+	if(gBoard == from)
+		gBoard = to;
+	TextDrawsChanged();
+}
+
+static std::string
+newBoardName(const char *base)
+{
+	std::vector<std::string> boards;
+	listBoards(boards);
+	for(int n = 1; ; n++){
+		std::string name = std::string(base) + (n > 1 ? " " + std::to_string(n) : "");
+		if(std::find(boards.begin(), boards.end(), name) == boards.end())
+			return name;
+	}
+}
+
+static void
+duplicateBoard(const std::string &board)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	std::string copy = newBoardName((std::string(boardLabel(board)) + " " + _("copy")).c_str());
+	size_t n = tds.size();
+	for(size_t i = 0; i < n; i++)
+		if(tds[i].board == board){
+			TextDraw td = tds[i];
+			td.name[0] = '\0';
+			td.board = copy;
+			tds.push_back(td);
+		}
+	gEmptyBoards.push_back(copy);
+	switchBoard(copy);
+	TextDrawsChanged();
+}
+
+static void
+deleteBoard(const std::string &board)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	tds.erase(std::remove_if(tds.begin(), tds.end(), [&](const TextDraw &td){ return td.board == board; }), tds.end());
+	gEmptyBoards.erase(std::remove(gEmptyBoards.begin(), gEmptyBoards.end(), board), gEmptyBoards.end());
+	std::vector<std::string> boards;
+	listBoards(boards);
+	boards.erase(std::remove(boards.begin(), boards.end(), board), boards.end());
+	switchBoard(boards.empty() ? std::string() : boards.front());
+	TextDrawsChanged();
+}
+
+// ---- The canvas ----
+
+// Dragging the selection: where it started, and each one as it was.
+static bool gDragging, gDragMoved;
+static ImVec2 gDragStart;
+static std::vector<std::pair<int, TextDraw>> gDragFrom;
+static bool gResizing;
+// The box drawn on empty canvas to select what it touches.
+static bool gMarquee, gMarqueeAdd;
+static ImVec2 gMarqueeStart;
+static bool gPanning;
+
+static void
+startDrag(void)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	gDragging = true;
+	gDragMoved = false;
+	gDragStart = ImGui::GetIO().MousePos;
+	gDragFrom.clear();
+	for(int i : gSel)
+		if(!tds[i].locked)
+			gDragFrom.push_back(std::make_pair(i, tds[i]));
+}
+
+// The textdraws under a point, the top one first.
+static void
+textDrawsAt(const Canvas &cv, ImVec2 p, std::vector<int> &out)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	out.clear();
+	for(int i = (int)tds.size() - 1; i >= 0; i--){
+		if(!shown(tds[i]))
+			continue;
+		float x0, y0, x1, y1;
+		boundsOf(tds[i], &x0, &y0, &x1, &y1);
+		ImVec2 a = cv.at(x0, y0), b = cv.at(x1, y1);
+		b.x = std::max(b.x, a.x + 6.0f);
+		b.y = std::max(b.y, a.y + 6.0f);
+		if(p.x >= a.x && p.x <= b.x && p.y >= a.y && p.y <= b.y)
+			out.push_back(i);
+	}
+}
+
+// Snaps the moved selection's edges and centre to the screen's, the grid's
+// and the other textdraws'. Returns the correction; guides are drawn.
+static float
+snapAxis(const float edges[3], const std::vector<float> &targets, float reach, float *guide)
+{
+	float best = reach, fix = 0.0f;
+	for(float t : targets)
+		for(int e = 0; e < 3; e++)
+			if(fabsf(t - edges[e]) < best){
+				best = fabsf(t - edges[e]);
+				fix = t - edges[e];
+				*guide = t;
+			}
+	return fix;
+}
+
+static void
+dragSelection(const Canvas &cv, ImDrawList *dl)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	ImGuiIO &io = ImGui::GetIO();
+	ImVec2 d(io.MousePos.x - gDragStart.x, io.MousePos.y - gDragStart.y);
+	if(!gDragMoved && d.x * d.x + d.y * d.y < 9.0f)
+		return;
+	gDragMoved = true;
+	float dx = d.x / cv.sx, dy = d.y / cv.sy;
+	if(gSnap && !io.KeyCtrl && !gDragFrom.empty()){
+		float X0 = 1e9f, Y0 = 1e9f, X1 = -1e9f, Y1 = -1e9f;
+		for(const auto &f : gDragFrom){
+			float x0, y0, x1, y1;
+			boundsOf(f.second, &x0, &y0, &x1, &y1);
+			X0 = std::min(X0, x0); Y0 = std::min(Y0, y0);
+			X1 = std::max(X1, x1); Y1 = std::max(Y1, y1);
+		}
+		std::vector<float> xs = { 0.0f, 320.0f, 640.0f }, ys = { 0.0f, 224.0f, 448.0f };
+		for(int i = 0; i < (int)tds.size(); i++){
+			if(isSelected(i) || !shown(tds[i]))
+				continue;
+			float x0, y0, x1, y1;
+			boundsOf(tds[i], &x0, &y0, &x1, &y1);
+			xs.push_back(x0); xs.push_back((x0 + x1) * 0.5f); xs.push_back(x1);
+			ys.push_back(y0); ys.push_back((y0 + y1) * 0.5f); ys.push_back(y1);
+		}
+		if(gGrid)
+			for(float g = 0.0f; g <= 640.0f; g += gGridSize){
+				xs.push_back(g);
+				if(g <= 448.0f) ys.push_back(g);
+			}
+		float ex[3] = { X0 + dx, (X0 + X1) * 0.5f + dx, X1 + dx };
+		float ey[3] = { Y0 + dy, (Y0 + Y1) * 0.5f + dy, Y1 + dy };
+		float gx = -1.0f, gy = -1.0f;
+		dx += snapAxis(ex, xs, 6.0f / cv.sx, &gx);
+		dy += snapAxis(ey, ys, 6.0f / cv.sy, &gy);
+		ImU32 guide = IM_COL32(255, 70, 200, 220);
+		if(gx >= 0.0f)
+			dl->AddLine(cv.at(gx, 0.0f), cv.at(gx, 448.0f), guide);
+		if(gy >= 0.0f)
+			dl->AddLine(cv.at(0.0f, gy), cv.at(640.0f, gy), guide);
+	}
+	for(const auto &f : gDragFrom){
+		TextDraw td = f.second;
+		moveBy(td, dx, dy);
+		tds[f.first] = td;
+	}
+	TextDrawsChanged();
+	if(gSelected >= 0)
+		ImGui::SetTooltip("%.1f, %.1f", tds[gSelected].x, tds[gSelected].y);
+}
+
+static void
+drawGrid(ImDrawList *dl, const Canvas &cv)
+{
+	if(!gGrid || gGridSize * cv.sx < 4.0f)
+		return;
+	ImU32 line = IM_COL32(255, 255, 255, 28);
+	for(float x = gGridSize; x < 640.0f; x += gGridSize)
+		dl->AddLine(cv.at(x, 0.0f), cv.at(x, 448.0f), line);
+	for(float y = gGridSize; y < 448.0f; y += gGridSize)
+		dl->AddLine(cv.at(0.0f, y), cv.at(640.0f, y), line);
+	dl->AddLine(cv.at(320.0f, 0.0f), cv.at(320.0f, 448.0f), IM_COL32(255, 255, 255, 50));
+	dl->AddLine(cv.at(0.0f, 224.0f), cv.at(640.0f, 224.0f), IM_COL32(255, 255, 255, 50));
+}
+
+// The screen as a player sees it: background, HUD, the map's textdraws, the board's.
+static void
+drawScreen(ImDrawList *dl, const Canvas &cv)
+{
 	if(gBackground == TD_BACKGROUND_STILL && gStillFrame)
 		dl->AddImage((ImTextureID)gStillFrame, cv.at(0, 0), cv.at(640, 448));
 	else
@@ -1175,34 +1813,123 @@ DrawTextDrawsOverlay(void)
 	if(gHud.show)
 		drawHud(dl, cv);
 	const std::vector<TextDraw> &mapTds = GetMapTextDraws();
-	for(size_t i = 0; i < mapTds.size(); i++){
+	for(size_t i = 0; i < mapTds.size(); i++)
 		drawTextDraw(dl, cv, mapTds[i]);
+	const std::vector<TextDraw> &tds = GetTextDraws();
+	for(size_t i = 0; i < tds.size(); i++)
+		if(shown(tds[i]))
+			drawTextDraw(dl, cv, tds[i]);
+}
+
+// Small views of the board on other screen shapes, in the canvas's corner.
+static void
+drawCompare(ImDrawList *dl)
+{
+	ImVec2 pos, size;
+	canvasArea(&pos, &size);
+	static const int shapes[] = { TD_SCREEN_4_3, TD_SCREEN_16_9, TD_SCREEN_21_9 };
+	float h = std::max(60.0f, size.y * 0.18f), pad = ImGui::GetFontSize() * 0.5f;
+	float x = pos.x + size.x - pad;
+	for(int k = IM_ARRAYSIZE(shapes) - 1; k >= 0; k--){
+		float w = h * gScreenAspects[shapes[k]];
+		x -= w;
+		ImVec2 p(x, pos.y + size.y - pad - h);
+		Canvas cv = fitCanvas(p, ImVec2(w, h), gScreenAspects[shapes[k]]);
+		dl->AddRectFilled(ImVec2(p.x - 3, p.y - 3 - ImGui::GetFontSize()), ImVec2(p.x + w + 3, p.y + h + 3),
+			IM_COL32(20, 22, 26, 230), 4.0f);
+		dl->PushClipRect(cv.at(0, 0), cv.at(640, 448), true);
+		drawScreen(dl, cv);
+		dl->PopClipRect();
+		dl->AddText(ImVec2(p.x, p.y - ImGui::GetFontSize() - 1), IM_COL32(220, 220, 220, 255), gScreenNames[shapes[k]]);
+		x -= pad * 2.0f;
+	}
+}
+
+// The canvas: the still frame or a plain colour where the world was, the
+// map's read-only textdraws, then the board's, which are edited here.
+void
+DrawTextDrawsOverlay(void)
+{
+	if(!gMode)
+		return;
+	std::vector<TextDraw> &tds = GetTextDraws();
+	ImGuiIO &io = ImGui::GetIO();
+	loadFonts();
+	validateSelection();
+	Canvas cv = getCanvas();
+	ImVec2 areaPos, areaSize;
+	canvasArea(&areaPos, &areaSize);
+	ImVec2 areaEnd(areaPos.x + areaSize.x, areaPos.y + areaSize.y);
+	ImDrawList *dl = ImGui::GetBackgroundDrawList();
+	ImGuiViewport *vp = ImGui::GetMainViewport();
+	dl->AddRectFilled(vp->Pos, ImVec2(vp->Pos.x + vp->Size.x, vp->Pos.y + vp->Size.y), IM_COL32(24, 26, 30, 255));
+	dl->PushClipRect(areaPos, areaEnd, true);
+	drawScreen(dl, cv);
+	const std::vector<TextDraw> &mapTds = GetMapTextDraws();
+	for(size_t i = 0; i < mapTds.size(); i++){
 		float x0, y0, x1, y1;
-		textDrawBounds(mapTds[i], &x0, &y0, &x1, &y1);
+		boundsOf(mapTds[i], &x0, &y0, &x1, &y1);
 		dl->AddRect(cv.at(x0, y0), cv.at(x1, y1), IM_COL32(160, 160, 170, 120));
 	}
-	for(size_t i = 0; i < tds.size(); i++)
-		drawTextDraw(dl, cv, tds[i]);
-	if(gSelected >= (int)tds.size())
-		gSelected = -1;
+	drawGrid(dl, cv);
 	// The screen's edge, so textdraws can be placed against it.
 	dl->AddRect(cv.at(0, 0), cv.at(640, 448), IM_COL32(255, 255, 255, 60));
 
-	// Invisible windows over the textdraws take the clicks and drags.
+	// Invisible windows over the textdraws take the clicks and drags; locked
+	// ones let them through to what is under them (unless that is turned off).
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
 		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
 		ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoScrollbar;
-	static int dragging = -1;
-	static bool resizing;
-	for(int i = (int)tds.size() - 1; i >= 0; i--){
+#ifdef IMGUI_HAS_DOCK
+	flags |= ImGuiWindowFlags_NoDocking;
+#endif
+	int hovered = -1;
+	if(gPicking){
+		// The eyedropper: the top image layer under the click gives its colour.
+		ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+		ImVec2 m = io.MousePos;
+		bool inside = m.x >= areaPos.x && m.y >= areaPos.y && m.x < areaEnd.x && m.y < areaEnd.y;
+		float cx = (m.x - cv.x) / cv.sx, cy = (m.y - cv.y) / cv.sy;
+		unsigned int under = 0;
+		bool over = false;
+		for(int i = (int)tds.size() - 1; i >= 0 && !over; i--)
+			if(shown(tds[i]) && tds[i].font == TD_FONT_REFERENCE)
+				over = refImageColour(tds[i], cx, cy, &under);
+		if(inside && !io.WantCaptureMouse){
+			if(over){
+				ImGui::BeginTooltip();
+				ImGui::ColorButton("##under", ImVec4((under >> 24 & 0xFF) / 255.0f, (under >> 16 & 0xFF) / 255.0f,
+					(under >> 8 & 0xFF) / 255.0f, 1.0f));
+				ImGui::SameLine();
+				ImGui::Text("0x%08X", under);
+				ImGui::EndTooltip();
+			}
+			if(ImGui::IsMouseClicked(0)){
+				if(over){
+					gPickedColour = under & 0xFFFFFF00u;
+					gPicked = true;
+				}else
+					Toast(TOAST_SELECTION, "%s", _("Click on an image layer to take its colour"));
+				gPicking = !over;
+			}
+		}
+		if(ImGui::IsKeyPressed(ImGuiKey_Escape))
+			gPicking = false;
+	}
+	for(int i = (int)tds.size() - 1; i >= 0 && !gPicking; i--){
 		TextDraw &td = tds[i];
+		if(!shown(td) || (td.locked && gClickThroughLocked))
+			continue;
 		float x0, y0, x1, y1;
-		textDrawBounds(td, &x0, &y0, &x1, &y1);
-		if(x1 < x0) std::swap(x0, x1);	// mirrored sprites
-		if(y1 < y0) std::swap(y0, y1);
+		boundsOf(td, &x0, &y0, &x1, &y1);
 		ImVec2 p0 = cv.at(x0, y0), p1 = cv.at(x1, y1);
 		if(p1.x - p0.x < 6.0f) p1.x = p0.x + 6.0f;
 		if(p1.y - p0.y < 6.0f) p1.y = p0.y + 6.0f;
+		// Only the part inside the area, so it never covers the panels.
+		p0.x = std::max(p0.x, areaPos.x); p0.y = std::max(p0.y, areaPos.y);
+		p1.x = std::min(p1.x, areaEnd.x); p1.y = std::min(p1.y, areaEnd.y);
+		if(p1.x - p0.x < 1.0f || p1.y - p0.y < 1.0f)
+			continue;
 		char id[32];
 		snprintf(id, sizeof(id), "##tdhit%d", i);
 		ImGui::SetNextWindowPos(p0);
@@ -1212,37 +1939,60 @@ DrawTextDrawsOverlay(void)
 		ImGui::Begin(id, nil, flags);
 		ImGui::InvisibleButton("hit", ImVec2(p1.x - p0.x, p1.y - p0.y));
 		if(ImGui::IsItemActivated()){
-			selectTextDraw(i);
-			dragging = i;
-			resizing = false;
-		}
-		if(ImGui::IsItemHovered()){
-			const char *name = td.name[0] ? td.name : _("textdraw");
-			if(td.locked)
-				ImGui::SetTooltip(ICON_FA_LOCK " %s", name);
-			else
-				ImGui::SetTooltip("%s", name);
-		}
-		if(dragging == i && !resizing && !td.locked && ImGui::IsItemActive()){
-			ImVec2 d = ImGui::GetIO().MouseDelta;
-			if(d.x != 0.0f || d.y != 0.0f){
-				td.x += d.x / cv.sx;
-				td.y += d.y / cv.sy;
-				if(td.useBox && td.alignment == 1) td.sizeX += d.x / cv.sx;
-				if(td.useBox && td.alignment == 3) td.sizeX += d.x / cv.sx;
-				TextDrawsChanged();
+			gResizing = false;
+			if(io.KeyAlt){
+				// Alt+click: the next one down under the cursor, for stacks.
+				std::vector<int> under;
+				textDrawsAt(cv, io.MousePos, under);
+				std::vector<int>::iterator it = std::find(under.begin(), under.end(), gSelected);
+				int next = under.empty() ? i : it == under.end() || it + 1 == under.end() ? under.front() : *(it + 1);
+				selectOnly(next);
+			}else{
+				if(io.KeyShift || io.KeyCtrl)
+					toggleSelected(i);
+				else if(!isSelected(i))
+					selectOnly(i);
+				else
+					gSelected = i;
+				if(isSelected(i))
+					startDrag();
 			}
+		}
+		if(ImGui::IsItemHovered() && !gDragging){
+			hovered = i;
+			const char *name = td.name[0] ? td.name : _("textdraw");
+			ImGui::SetItemTooltip("%s%s%s", name, td.group.empty() ? "" : "  -  ", td.group.c_str());
 		}
 		ImGui::End();
 		ImGui::PopStyleVar(2);
-		if(i == gSelected)
-			dl->AddRect(p0, p1, IM_COL32(255, 220, 60, 255), 0.0f, 0, 1.5f);
+	}
+	if(gDragging){
+		if(ImGui::IsMouseDown(0))
+			dragSelection(cv, dl);
+		else
+			gDragging = false;
 	}
 
-	// A handle at the selected one's corner resizes it: letters for text,
+	// Outlines: what the mouse is over, the selection, the one being edited.
+	if(hovered >= 0 && !isSelected(hovered)){
+		float x0, y0, x1, y1;
+		boundsOf(tds[hovered], &x0, &y0, &x1, &y1);
+		dl->AddRect(cv.at(x0, y0), cv.at(x1, y1), IM_COL32(120, 190, 255, 200), 0.0f, 0, 1.0f);
+	}
+	for(int i : gSel){
+		if(!shown(tds[i]))
+			continue;
+		float x0, y0, x1, y1;
+		boundsOf(tds[i], &x0, &y0, &x1, &y1);
+		ImU32 c = tds[i].locked ? IM_COL32(200, 200, 200, 200) : i == gSelected ? IM_COL32(255, 220, 60, 255) :
+			IM_COL32(255, 220, 60, 150);
+		dl->AddRect(cv.at(x0, y0), cv.at(x1, y1), c, 0.0f, 0, i == gSelected ? 1.5f : 1.0f);
+	}
+
+	// A handle at the one selected's corner resizes it: letters for text,
 	// the box's edge for a box, the size for sprites and models. Dragged
 	// past the opposite edge, a sprite's size goes negative and it mirrors.
-	if(gSelected >= 0 && !tds[gSelected].locked){
+	if(gSel.size() == 1 && gSelected >= 0 && shown(tds[gSelected]) && !tds[gSelected].locked){
 		TextDraw &td = tds[gSelected];
 		float x0, y0, x1, y1;
 		textDrawBounds(td, &x0, &y0, &x1, &y1);
@@ -1255,16 +2005,16 @@ DrawTextDrawsOverlay(void)
 		ImGui::Begin("##tdresize", nil, flags & ~ImGuiWindowFlags_NoBringToFrontOnFocus);
 		ImGui::InvisibleButton("resize", ImVec2(hs * 2, hs * 2));
 		if(ImGui::IsItemActivated()){
-			dragging = gSelected;
-			resizing = true;
+			gResizing = true;
+			gDragging = false;
 		}
 		if(ImGui::IsItemHovered() || ImGui::IsItemActive())
 			ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNWSE);
-		if(resizing && ImGui::IsItemActive()){
-			ImVec2 d = ImGui::GetIO().MouseDelta;
+		if(gResizing && ImGui::IsItemActive()){
+			ImVec2 d = io.MouseDelta;
 			float dx = d.x / cv.sx, dy = d.y / cv.sy;
 			if(dx != 0.0f || dy != 0.0f){
-				if(td.font == TD_FONT_SPRITE || td.font == TD_FONT_PREVIEW){
+				if(td.font >= TD_FONT_SPRITE){
 					td.sizeX += dx;
 					td.sizeY += dy;
 				}else if(td.useBox){
@@ -1286,21 +2036,240 @@ DrawTextDrawsOverlay(void)
 			IM_COL32(255, 220, 60, 255));
 	}
 	if(!ImGui::IsMouseDown(0))
-		dragging = -1;
+		gResizing = false;
+
+	// On empty canvas: drag a box to select, click to clear; the wheel zooms
+	// round the cursor, the middle button pans.
+	ImVec2 m = io.MousePos;
+	bool inArea = m.x >= areaPos.x && m.y >= areaPos.y && m.x < areaEnd.x && m.y < areaEnd.y;
+	if(inArea && !io.WantCaptureMouse){
+		if(ImGui::IsMouseClicked(0) && !gPicking){
+			gMarquee = true;
+			gMarqueeAdd = io.KeyShift || io.KeyCtrl;
+			gMarqueeStart = m;
+		}
+		if(io.MouseWheel != 0.0f && !io.KeyCtrl){
+			float cxU = (m.x - cv.x) / cv.sx, cyU = (m.y - cv.y) / cv.sy;
+			gZoom = std::max(0.25f, std::min(gZoom * powf(1.15f, io.MouseWheel), 8.0f));
+			Canvas after = getCanvas();
+			gPanX += m.x - (after.x + cxU * after.sx);
+			gPanY += m.y - (after.y + cyU * after.sy);
+		}
+		if(ImGui::IsMouseClicked(2))
+			gPanning = true;
+	}
+	if(gPanning){
+		if(ImGui::IsMouseDown(2)){
+			gPanX += io.MouseDelta.x;
+			gPanY += io.MouseDelta.y;
+			ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
+		}else
+			gPanning = false;
+	}
+	if(gMarquee){
+		ImVec2 a(std::min(gMarqueeStart.x, m.x), std::min(gMarqueeStart.y, m.y));
+		ImVec2 b(std::max(gMarqueeStart.x, m.x), std::max(gMarqueeStart.y, m.y));
+		bool boxed = b.x - a.x > 3.0f || b.y - a.y > 3.0f;
+		if(ImGui::IsMouseDown(0)){
+			if(boxed){
+				dl->AddRectFilled(a, b, IM_COL32(120, 190, 255, 40));
+				dl->AddRect(a, b, IM_COL32(120, 190, 255, 200));
+			}
+		}else{
+			gMarquee = false;
+			if(!gMarqueeAdd)
+				selectOnly(-1);
+			if(boxed)
+				for(int i = 0; i < (int)tds.size(); i++){
+					if(!shown(tds[i]))
+						continue;
+					float x0, y0, x1, y1;
+					boundsOf(tds[i], &x0, &y0, &x1, &y1);
+					ImVec2 p = cv.at(x0, y0), q = cv.at(x1, y1);
+					if(p.x <= b.x && q.x >= a.x && p.y <= b.y && q.y >= a.y)
+						addToSelection(i);
+				}
+		}
+	}
+
+	// Arrow keys nudge the selection while no field has the keyboard.
+	ImGuiContext *g = ImGui::GetCurrentContext();
+	bool canvasHasKeys = !io.WantTextInput && !ImGui::IsAnyItemActive() &&
+		(g->NavWindow == nil || strncmp(g->NavWindow->Name, "##td", 4) == 0);
+	if(canvasHasKeys && !gSel.empty()){
+		float step = gNudge * (io.KeyShift ? 10.0f : 1.0f);
+		float dx = 0.0f, dy = 0.0f;
+		if(ImGui::IsKeyPressed(ImGuiKey_LeftArrow)) dx -= step;
+		if(ImGui::IsKeyPressed(ImGuiKey_RightArrow)) dx += step;
+		if(ImGui::IsKeyPressed(ImGuiKey_UpArrow)) dy -= step;
+		if(ImGui::IsKeyPressed(ImGuiKey_DownArrow)) dy += step;
+		if(dx != 0.0f || dy != 0.0f){
+			for(int i : gSel)
+				if(!tds[i].locked)
+					moveBy(tds[i], dx, dy);
+			TextDrawsChanged();
+		}
+	}
+	if(canvasHasKeys && io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_A, false)){
+		selectOnly(-1);
+		for(int i = 0; i < (int)tds.size(); i++)
+			if(shown(tds[i]))
+				addToSelection(i);
+	}
+	dl->PopClipRect();
+	if(gCompare)
+		drawCompare(dl);
 }
 
 // ---- Window ----
 
+// A colour typed the ways scripts write them: 0xRRGGBBAA, #RRGGBB[AA],
+// {RRGGBB}, rgb(r, g, b), rgba(r, g, b, a), "r g b [a]" or "r, g, b[, a]",
+// or a decimal like -1. A missing alpha is opaque.
+static bool
+parseColourText(const char *text, unsigned int *out)
+{
+	std::string s = text;
+	size_t a = s.find_first_not_of(" \t"), b = s.find_last_not_of(" \t");
+	if(a == std::string::npos)
+		return false;
+	s = s.substr(a, b - a + 1);
+	std::string low = s;
+	for(char &c : low)
+		c = (char)tolower((unsigned char)c);
+	auto hex = [&](std::string h) -> bool {
+		if(h.size() != 6 && h.size() != 8)
+			return false;
+		for(char c : h)
+			if(!isxdigit((unsigned char)c))
+				return false;
+		unsigned int v = (unsigned int)strtoul(h.c_str(), nil, 16);
+		*out = h.size() == 6 ? v << 8 | 0xFF : v;
+		return true;
+	};
+	if(low.compare(0, 2, "0x") == 0)
+		return hex(low.substr(2));
+	if(low[0] == '#')
+		return hex(low.substr(1));
+	if(low[0] == '{' && low.back() == '}')
+		return hex(low.substr(1, low.size() - 2));
+	// Numbers: rgb(...), rgba(...), or three or four of them.
+	std::string nums = low;
+	if(nums.compare(0, 5, "rgba(") == 0) nums = nums.substr(5);
+	else if(nums.compare(0, 4, "rgb(") == 0) nums = nums.substr(4);
+	for(char &c : nums)
+		if(c == ',' || c == '(' || c == ')')
+			c = ' ';
+	std::vector<long> v;
+	char *p = &nums[0], *end;
+	while(true){
+		long n = strtol(p, &end, 10);
+		if(end == p)
+			break;
+		v.push_back(n);
+		p = end;
+	}
+	while(*p == ' ') p++;
+	if(*p != '\0')
+		return hex(low);
+	if(v.size() == 1){	// a decimal colour, as Pawn prints them (-1 is white)
+		*out = (unsigned int)v[0];
+		return true;
+	}
+	if(v.size() != 3 && v.size() != 4)
+		return false;
+	for(long n : v)
+		if(n < 0 || n > 255)
+			return false;
+	*out = (unsigned int)v[0] << 24 | (unsigned int)v[1] << 16 | (unsigned int)v[2] << 8 |
+		(unsigned int)(v.size() == 4 ? v[3] : 255);
+	return true;
+}
+
 static bool
 colourEdit(const char *label, unsigned int *rgba)
 {
+	bool changed = false;
 	float c[4] = { (*rgba >> 24 & 0xFF) / 255.0f, (*rgba >> 16 & 0xFF) / 255.0f,
 		(*rgba >> 8 & 0xFF) / 255.0f, (*rgba & 0xFF) / 255.0f };
-	if(!ImGui::ColorEdit4(label, c, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf))
-		return false;
-	*rgba = (unsigned int)(c[0] * 255.0f + 0.5f) << 24 | (unsigned int)(c[1] * 255.0f + 0.5f) << 16 |
-		(unsigned int)(c[2] * 255.0f + 0.5f) << 8 | (unsigned int)(c[3] * 255.0f + 0.5f);
-	return true;
+	ImGui::PushID(label);
+	ImGuiID id = ImGui::GetID("##edit");
+	if(gPicked && gPickFor == id){
+		*rgba = gPickedColour | (*rgba & 0xFF);	// the image's colour, this field's alpha
+		gPicked = false;
+		changed = true;
+	}
+	float w = ImGui::CalcItemWidth() - ImGui::GetFrameHeight() - ImGui::GetStyle().ItemInnerSpacing.x;
+	ImGui::SetNextItemWidth(std::max(ImGui::GetFontSize() * 4.0f, w));
+	if(ImGui::ColorEdit4("##edit", c, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf)){
+		*rgba = (unsigned int)(c[0] * 255.0f + 0.5f) << 24 | (unsigned int)(c[1] * 255.0f + 0.5f) << 16 |
+			(unsigned int)(c[2] * 255.0f + 0.5f) << 8 | (unsigned int)(c[3] * 255.0f + 0.5f);
+		changed = true;
+	}
+	ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+	if(ImGui::Button(ICON_FA_PAINTBRUSH "##palette", ImVec2(ImGui::GetFrameHeight(), 0)))
+		ImGui::OpenPopup("##colours");
+	ImGui::SetItemTooltip("%s", _("Saved colours, and a colour typed as 0xRRGGBBAA, #RRGGBB, rgba(...) or numbers"));
+	if(ImGui::BeginPopup("##colours")){
+		static char typed[64];
+		if(ImGui::IsWindowAppearing())
+			snprintf(typed, sizeof(typed), "0x%08X", *rgba);
+		ImGui::SetNextItemWidth(ImGui::GetFontSize() * 12.0f);
+		bool enter = ImGui::InputText("##typed", typed, sizeof(typed), ImGuiInputTextFlags_EnterReturnsTrue);
+		unsigned int parsed;
+		bool ok = parseColourText(typed, &parsed);
+		ImGui::SameLine();
+		ImGui::BeginDisabled(!ok);
+		if(ImGui::Button(L("Use")) || (enter && ok)){
+			*rgba = parsed;
+			changed = true;
+		}
+		ImGui::EndDisabled();
+		if(!ok && typed[0])
+			ImGui::TextDisabled("%s", _("Not a colour"));
+		if(ImGui::Button(LI(ICON_FA_DROPLET, "Pick from an image"))){
+			gPicking = true;
+			gPickFor = id;
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SetItemTooltip("%s", _("Then click on an image layer on the canvas (Esc stops)."));
+		ImGui::SeparatorText(_("Saved colours"));
+		int perRow = 8, remove = -1;
+		for(int i = 0; i < (int)gSavedColours.size(); i++){
+			unsigned int s = gSavedColours[i];
+			ImVec4 v((s >> 24 & 0xFF) / 255.0f, (s >> 16 & 0xFF) / 255.0f, (s >> 8 & 0xFF) / 255.0f, (s & 0xFF) / 255.0f);
+			if(i % perRow)
+				ImGui::SameLine();
+			ImGui::PushID(i);
+			if(ImGui::ColorButton("##saved", v, ImGuiColorEditFlags_AlphaPreviewHalf)){
+				*rgba = s;
+				changed = true;
+			}
+			if(ImGui::BeginPopupContextItem()){
+				if(ImGui::MenuItem(L("Remove")))
+					remove = i;
+				ImGui::EndPopup();
+			}
+			ImGui::SetItemTooltip("0x%08X", s);
+			ImGui::PopID();
+		}
+		if(gSavedColours.empty())
+			ImGui::TextDisabled("%s", _("None yet."));
+		if(remove >= 0){
+			gSavedColours.erase(gSavedColours.begin() + remove);
+			SaveEditorSettings();
+		}
+		if(ImGui::Button(LI(ICON_FA_PLUS, "Save this colour")) &&
+		   std::find(gSavedColours.begin(), gSavedColours.end(), *rgba) == gSavedColours.end()){
+			gSavedColours.push_back(*rgba);
+			SaveEditorSettings();
+		}
+		ImGui::EndPopup();
+	}
+	ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+	ImGui::TextUnformatted(label, ImGui::FindRenderedTextEnd(label));
+	ImGui::PopID();
+	return changed;
 }
 
 static void
@@ -1311,7 +2280,13 @@ addTextDraw(int font)
 	td.x = 280.0f;
 	td.y = 200.0f;
 	td.font = font;
-	if(font == TD_FONT_SPRITE){
+	if(font == TD_FONT_REFERENCE){
+		td.text = "";
+		td.x = 160.0f; td.y = 112.0f;
+		td.sizeX = 320.0f; td.sizeY = 224.0f;
+		td.colour = 0xFFFFFF99;
+		td.locked = false;
+	}else if(font == TD_FONT_SPRITE){
 		td.text = "LD_BEAT:chit";
 		td.sizeX = td.sizeY = 32.0f;
 		td.colour = 0xFFFFFFFF;
@@ -1330,8 +2305,9 @@ addTextDraw(int font)
 		td.boxColour = 0x00000099;
 	}else
 		td.text = "Text";
+	td.board = gBoard;
 	GetTextDraws().push_back(td);
-	gSelected = (int)GetTextDraws().size() - 1;
+	selectOnly((int)GetTextDraws().size() - 1);
 	TextDrawsChanged();
 }
 
@@ -1375,100 +2351,182 @@ spritePicker(TextDraw &td)
 	ImGui::EndChild();
 }
 
+// The panel's settings for what is selected. With several, a change goes to
+// all of them: the edited one's value is shown, positions move by the same step.
 static void
-properties(TextDraw &td)
+properties(void)
 {
-	// What it is, what it shows, then where; the style is closed by default.
+	std::vector<TextDraw> &tds = GetTextDraws();
+	TextDraw &td = tds[gSelected];
+	const bool many = gSel.size() > 1;
 	bool changed = false;
-	ImGui::InputText(L("Variable"), td.name, sizeof(td.name));
-	if(ImGui::IsItemDeactivatedAfterEdit()) changed = true;
-	ImGui::SetItemTooltip("%s", _("The Pawn variable. Empty or not a plain name makes one up."));
-	int scope = td.perPlayer ? 1 : 0;
-	const char *scopes[] = { _("To everyone (TextDrawCreate)"), _("Per player (CreatePlayerTextDraw)") };
-	if(ImGui::Combo(L("Shown"), &scope, scopes, IM_ARRAYSIZE(scopes))){
-		td.perPlayer = scope == 1;
+	// Sets the field on every selected textdraw (image layers only move).
+	auto all = [&](const std::function<void(TextDraw &)> &set){
+		for(int i : gSel)
+			if(tds[i].font != TD_FONT_REFERENCE)
+				set(tds[i]);
 		changed = true;
-	}
-	static const char *fonts[] = { N_("0 Beckett (gothic)"), N_("1 Aharoni"), N_("2 Bank Gothic (capitals)"),
-		N_("3 Pricedown (capitals)"), N_("4 Sprite"), N_("5 Model preview") };
-	const char *fontNames[IM_ARRAYSIZE(fonts)];
-	for(int i = 0; i < IM_ARRAYSIZE(fonts); i++)
-		fontNames[i] = _(fonts[i]);
-	changed |= ImGui::Combo(L("Font"), &td.font, fontNames, IM_ARRAYSIZE(fonts));
-	bool isText = td.font != TD_FONT_SPRITE && td.font != TD_FONT_PREVIEW;
-	if(td.font == TD_FONT_SPRITE){
-		char buf[256];
-		snprintf(buf, sizeof(buf), "%s", td.text.c_str());
-		if(ImGui::InputText(L("Sprite"), buf, sizeof(buf))){
-			td.text = buf;
+	};
+	bool isText = td.font < TD_FONT_SPRITE;
+	if(td.font == TD_FONT_REFERENCE && !many){
+		// Not a textdraw: its file, its place and how much of it shows.
+		char path[1024];
+		snprintf(path, sizeof(path), "%s", td.text.c_str());
+		if(ImGui::InputTextWithHint(L("Image file"), _("full path to a PNG, BMP or TGA"), path, sizeof(path),
+			ImGuiInputTextFlags_EnterReturnsTrue)){
+			td.text = path;
+			gRefImages.erase(td.text);	// read it again
 			changed = true;
 		}
-		spritePicker(td);
-	}else if(isText){
-		char buf[1024];
-		snprintf(buf, sizeof(buf), "%s", td.text.c_str());
-		if(ImGui::InputTextMultiline(L("Text"), buf, sizeof(buf), ImVec2(-FLT_MIN, ImGui::GetFontSize() * 3.5f))){
-			td.text = buf;
-			changed = true;
-		}
-		ImGui::SetItemTooltip("%s", _("~n~ new line, ~r~ ~g~ ~b~ ~y~ ~p~ ~w~ ~l~ colours, ~h~ lighter, _ blank"));
-	}else{
-		changed |= ImGui::InputInt(L("Model"), &td.previewModel);
-		float rot[3] = { td.previewRotX, td.previewRotY, td.previewRotZ };
-		if(ImGui::DragFloat3(L("Rotation"), rot, 1.0f, -360.0f, 360.0f, "%.1f")){
-			td.previewRotX = rot[0]; td.previewRotY = rot[1]; td.previewRotZ = rot[2];
-			changed = true;
-		}
-		changed |= ImGui::DragFloat(L("Zoom"), &td.previewZoom, 0.01f, 0.1f, 10.0f, "%.2f");
-		int cols[2] = { td.previewColour1, td.previewColour2 };
-		if(ImGui::InputInt2(L("Vehicle colours"), cols)){
-			td.previewColour1 = cols[0]; td.previewColour2 = cols[1];
-			changed = true;
-		}
-	}
-	changed |= colourEdit(td.font == TD_FONT_SPRITE ? L("Tint") : L("Colour"), &td.colour);
-
-	ImGui::SeparatorText(_("Position"));
-	float pos[2] = { td.x, td.y };
-	if(ImGui::DragFloat2(L("Position"), pos, 0.5f, -100.0f, 740.0f, "%.2f")){
-		td.x = pos[0]; td.y = pos[1];
-		changed = true;
-	}
-	ImGui::SetItemTooltip("%s", _("On the 640x448 canvas every resolution is scaled to."));
-	float size[2] = { td.sizeX, td.sizeY };
-	if(ImGui::DragFloat2(L("Text size"), size, 0.5f, -1280.0f, 1280.0f, "%.2f")){
-		td.sizeX = size[0]; td.sizeY = size[1];
-		changed = true;
-	}
-	ImGui::SetItemTooltip("%s", td.font >= TD_FONT_SPRITE ? _("Width and height. A negative one mirrors a sprite.") :
-		_("Left: the box's right edge. Centre: width and height are swapped (the second is the width).\n"
-		"Right: the box's left edge. Text wraps there."));
-
-	if(ImGui::CollapsingHeader(L("Style"))){
-		if(isText){
-			float letter[2] = { td.letterX, td.letterY };
-			if(ImGui::DragFloat2(L("Letter size"), letter, 0.005f, 0.0f, 10.0f, "%.3f")){
-				td.letterX = letter[0]; td.letterY = letter[1];
-				changed = true;
-			}
-			int align = td.alignment - 1;
-			const char *aligns[] = { _("Left"), _("Centre"), _("Right") };
-			if(ImGui::Combo(L("Alignment"), &align, aligns, IM_ARRAYSIZE(aligns))){
-				td.alignment = align + 1;
-				changed = true;
-			}
-			changed |= ImGui::Checkbox(L("Proportional"), &td.proportional);
-			ImGui::SetItemTooltip("%s", _("Letters take their own width instead of a fixed one."));
+		ImGui::SetItemTooltip("%s", _("Enter loads it. Only the editor shows it: the Pawn has it as a comment."));
+		if(const RefImage *ref = refImage(td.text)){
+			ImGui::TextDisabled(_("%d x %d pixels"), ref->image->width, ref->image->height);
 			ImGui::SameLine();
-			changed |= ImGui::Checkbox(L("Box"), &td.useBox);
-			if(td.useBox)
-				changed |= colourEdit(L("Box colour"), &td.boxColour);
-			changed |= ImGui::SliderInt(L("Shadow"), &td.shadow, 0, 10);
-			changed |= ImGui::SliderInt(L("Outline"), &td.outline, 0, 10);
+			if(ImGui::SmallButton(L("Fill the screen"))){
+				td.x = 0.0f; td.y = 0.0f; td.sizeX = 640.0f; td.sizeY = 448.0f;
+				changed = true;
+			}
 		}
-		changed |= colourEdit(td.font == TD_FONT_PREVIEW ? L("Background") : L("Shadow/outline colour"), &td.backgroundColour);
-		changed |= ImGui::Checkbox(L("Selectable"), &td.selectable);
-		ImGui::SetItemTooltip("%s", _("Players can click it while SelectTextDraw is on (OnPlayerClickTextDraw)."));
+		float pos[2] = { td.x, td.y }, size[2] = { td.sizeX, td.sizeY };
+		if(ImGui::DragFloat2(L("Position"), pos, 0.5f, -640.0f, 1280.0f, "%.1f")){
+			td.x = pos[0]; td.y = pos[1];
+			changed = true;
+		}
+		if(ImGui::DragFloat2(L("Size"), size, 0.5f, -1280.0f, 1280.0f, "%.1f")){
+			td.sizeX = size[0]; td.sizeY = size[1];
+			changed = true;
+		}
+		int opacity = (int)((td.colour & 0xFF) * 100 / 255);
+		if(ImGui::SliderInt(L("Opacity"), &opacity, 0, 100, "%d%%")){
+			td.colour = (td.colour & 0xFFFFFF00u) | (unsigned int)(opacity * 255 / 100);
+			changed = true;
+		}
+		if(changed)
+			TextDrawsChanged();
+		return;
+	}
+	if(many){
+		ImGui::TextColored(ImVec4(1.0f, 0.86f, 0.35f, 1.0f), _("%d selected: changes go to all of them."), (int)gSel.size());
+		ImGui::SetItemTooltip("%s", _("The fields show the one clicked last."));
+	}
+
+	if(ImGui::BeginTabBar("##td_props")){
+		if(ImGui::BeginTabItem(L("Content"))){
+			if(!many){
+				ImGui::InputText(L("Variable"), td.name, sizeof(td.name));
+				if(ImGui::IsItemDeactivatedAfterEdit()) changed = true;
+				ImGui::SetItemTooltip("%s", _("The Pawn variable. Empty or not a plain name makes one up."));
+			}
+			int scope = td.perPlayer ? 1 : 0;
+			const char *scopes[] = { _("To everyone (TextDrawCreate)"), _("Per player (CreatePlayerTextDraw)") };
+			if(ImGui::Combo(L("Shown"), &scope, scopes, IM_ARRAYSIZE(scopes)))
+				all([&](TextDraw &t){ t.perPlayer = scope == 1; });
+			static const char *fonts[] = { N_("0 Beckett (gothic)"), N_("1 Aharoni"), N_("2 Bank Gothic (capitals)"),
+				N_("3 Pricedown (capitals)"), N_("4 Sprite"), N_("5 Model preview") };
+			const char *fontNames[IM_ARRAYSIZE(fonts)];
+			for(int i = 0; i < IM_ARRAYSIZE(fonts); i++)
+				fontNames[i] = _(fonts[i]);
+			int font = td.font;
+			if(ImGui::Combo(L("Font"), &font, fontNames, IM_ARRAYSIZE(fonts)))
+				all([&](TextDraw &t){ t.font = font; });
+			if(td.font == TD_FONT_SPRITE && !many){
+				char buf[256];
+				snprintf(buf, sizeof(buf), "%s", td.text.c_str());
+				if(ImGui::InputText(L("Sprite"), buf, sizeof(buf))){
+					td.text = buf;
+					changed = true;
+				}
+				spritePicker(td);
+			}else if(isText){
+				char buf[1024];
+				snprintf(buf, sizeof(buf), "%s", td.text.c_str());
+				if(ImGui::InputTextMultiline(L("Text"), buf, sizeof(buf), ImVec2(-FLT_MIN, ImGui::GetFontSize() * 3.5f))){
+					std::string text = buf;
+					all([&](TextDraw &t){
+						if(t.font < TD_FONT_SPRITE)
+							t.text = text;
+					});
+				}
+				ImGui::SetItemTooltip("%s", _("~n~ new line, ~r~ ~g~ ~b~ ~y~ ~p~ ~w~ ~l~ colours, ~h~ lighter, _ blank"));
+			}else if(td.font == TD_FONT_PREVIEW){
+				int model = td.previewModel;
+				if(ImGui::InputInt(L("Model"), &model))
+					all([&](TextDraw &t){ t.previewModel = model; });
+				float rot[3] = { td.previewRotX, td.previewRotY, td.previewRotZ };
+				if(ImGui::DragFloat3(L("Rotation"), rot, 1.0f, -360.0f, 360.0f, "%.1f"))
+					all([&](TextDraw &t){ t.previewRotX = rot[0]; t.previewRotY = rot[1]; t.previewRotZ = rot[2]; });
+				float zoom = td.previewZoom;
+				if(ImGui::DragFloat(L("Zoom"), &zoom, 0.01f, 0.1f, 10.0f, "%.2f"))
+					all([&](TextDraw &t){ t.previewZoom = zoom; });
+				int cols[2] = { td.previewColour1, td.previewColour2 };
+				if(ImGui::InputInt2(L("Vehicle colours"), cols))
+					all([&](TextDraw &t){ t.previewColour1 = cols[0]; t.previewColour2 = cols[1]; });
+			}
+			unsigned int colour = td.colour;
+			if(colourEdit(td.font == TD_FONT_SPRITE ? L("Tint") : L("Colour"), &colour))
+				all([&](TextDraw &t){ t.colour = colour; });
+			bool selectable = td.selectable;
+			if(ImGui::Checkbox(L("Selectable"), &selectable))
+				all([&](TextDraw &t){ t.selectable = selectable; });
+			ImGui::SetItemTooltip("%s", _("Players can click it while SelectTextDraw is on (OnPlayerClickTextDraw)."));
+			ImGui::EndTabItem();
+		}
+		if(ImGui::BeginTabItem(L("Layout"))){
+			float pos[2] = { td.x, td.y };
+			if(ImGui::DragFloat2(L("Position"), pos, 0.5f, -100.0f, 740.0f, "%.2f")){
+				float dx = pos[0] - td.x, dy = pos[1] - td.y;
+				for(int i : gSel)
+					moveBy(tds[i], dx, dy);
+				changed = true;
+			}
+			ImGui::SetItemTooltip("%s", _("On the 640x448 canvas every resolution is scaled to."));
+			if(!many){
+				float size[2] = { td.sizeX, td.sizeY };
+				if(ImGui::DragFloat2(L("Text size"), size, 0.5f, -1280.0f, 1280.0f, "%.2f")){
+					td.sizeX = size[0]; td.sizeY = size[1];
+					changed = true;
+				}
+				ImGui::SetItemTooltip("%s", td.font >= TD_FONT_SPRITE ? _("Width and height. A negative one mirrors a sprite.") :
+					_("Left: the box's right edge. Centre: width and height are swapped (the second is the width).\n"
+					"Right: the box's left edge. Text wraps there."));
+			}
+			if(isText){
+				float letter[2] = { td.letterX, td.letterY };
+				if(ImGui::DragFloat2(L("Letter size"), letter, 0.005f, 0.0f, 10.0f, "%.3f"))
+					all([&](TextDraw &t){ t.letterX = letter[0]; t.letterY = letter[1]; });
+				int align = td.alignment - 1;
+				const char *aligns[] = { _("Left"), _("Centre"), _("Right") };
+				if(ImGui::Combo(L("Alignment"), &align, aligns, IM_ARRAYSIZE(aligns)))
+					all([&](TextDraw &t){ t.alignment = align + 1; });
+				bool proportional = td.proportional;
+				if(ImGui::Checkbox(L("Proportional"), &proportional))
+					all([&](TextDraw &t){ t.proportional = proportional; });
+				ImGui::SetItemTooltip("%s", _("Letters take their own width instead of a fixed one."));
+			}
+			ImGui::EndTabItem();
+		}
+		if(ImGui::BeginTabItem(L("Style"))){
+			if(isText){
+				bool box = td.useBox;
+				if(ImGui::Checkbox(L("Box"), &box))
+					all([&](TextDraw &t){ t.useBox = box; });
+				if(td.useBox){
+					unsigned int boxColour = td.boxColour;
+					if(colourEdit(L("Box colour"), &boxColour))
+						all([&](TextDraw &t){ t.boxColour = boxColour; });
+				}
+				int shadow = td.shadow, outline = td.outline;
+				if(ImGui::SliderInt(L("Shadow"), &shadow, 0, 10))
+					all([&](TextDraw &t){ t.shadow = shadow; });
+				if(ImGui::SliderInt(L("Outline"), &outline, 0, 10))
+					all([&](TextDraw &t){ t.outline = outline; });
+			}
+			unsigned int back = td.backgroundColour;
+			if(colourEdit(td.font == TD_FONT_PREVIEW ? L("Background") : L("Shadow/outline colour"), &back))
+				all([&](TextDraw &t){ t.backgroundColour = back; });
+			ImGui::EndTabItem();
+		}
+		ImGui::EndTabBar();
 	}
 	if(changed)
 		TextDrawsChanged();
@@ -1695,29 +2753,209 @@ drawPopups(void)
 
 // ---- Mode ----
 
-static void
-drawBanner(void)
+// An icon button with a tooltip; label is "ICON###English id".
+static bool
+iconButton(const char *label, const char *tooltip, bool active = false)
 {
-	Canvas cv = getCanvas();
-	KeepNextEditorOverlayOnMainWindow();
-	// In the band above the canvas when there is one, so it covers less of it.
-	ImGui::SetNextWindowPos(ImVec2(cv.at(320, 0).x, cv.areaY + ImGui::GetFontSize() * 0.5f), ImGuiCond_Always,
-		ImVec2(0.5f, 0.0f));
-	ImGui::SetNextWindowBgAlpha(0.85f);
-	if(ImGui::Begin("##textdraw_mode_banner", nil, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
-		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav |
-		ImGuiWindowFlags_NoDocking)){
-		ImGui::AlignTextToFramePadding();
-		ImGui::TextColored(ImVec4(0.95f, 0.75f, 0.20f, 1.0f), "%s", TI(ICON_FA_FONT, "TextDraw mode"));
-		ImGui::SameLine();
-		ImGui::Text("%s%s", GetTextDrawFileName(), TextDrawFileHasUnsavedChanges() ? " *" : "");
-		ImGui::SameLine();
-		ImGui::TextDisabled("%s", _("Map editing is off."));
-		ImGui::SameLine();
-		if(ImGui::Button(LI(ICON_FA_XMARK, "Exit")))
-			ExitTextDrawMode();
-		ImGui::SetItemTooltip(_("Back to the map (%s)"), ShortcutLabel(SC_CANCEL));
+	if(active)
+		ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+	bool pressed = ImGui::Button(label);
+	if(active)
+		ImGui::PopStyleColor();
+	ImGui::SetItemTooltip("%s", tooltip);
+	return pressed;
+}
+
+// The artboards as tabs: click to open one, right-click to rename,
+// duplicate or delete it, + to add one.
+static void
+boardTabs(void)
+{
+	std::vector<std::string> boards;
+	listBoards(boards);
+	static std::string renaming;
+	static char renameBuf[64];
+	bool openRename = false;
+	static std::string shownBoard = "\x01";	// forces the tab bar onto gBoard after a switch elsewhere
+	if(ImGui::BeginTabBar("##boards", ImGuiTabBarFlags_FittingPolicyScroll | ImGuiTabBarFlags_NoTooltip)){
+		for(size_t b = 0; b < boards.size(); b++){
+			char label[96];
+			snprintf(label, sizeof(label), "%s###board%s", boardLabel(boards[b]), boards[b].c_str());
+			ImGuiTabItemFlags flags = boards[b] == gBoard && shownBoard != gBoard ? ImGuiTabItemFlags_SetSelected : 0;
+			bool open = ImGui::BeginTabItem(label, nil, flags);
+			if(ImGui::BeginPopupContextItem()){
+				if(ImGui::MenuItem(L("Rename..."))){
+					renaming = boards[b];
+					snprintf(renameBuf, sizeof(renameBuf), "%s", boardLabel(boards[b]));
+					openRename = true;
+				}
+				if(ImGui::MenuItem(L("Duplicate")))
+					duplicateBoard(boards[b]);
+				ImGui::BeginDisabled(boards.size() < 2);
+				if(ImGui::MenuItem(L("Delete")))
+					deleteBoard(boards[b]);
+				ImGui::EndDisabled();
+				ImGui::EndPopup();
+			}
+			ImGui::SetItemTooltip("%s", _("An artboard: a screen of its own, shown and hidden in Pawn with\n"
+				"<prefix>_Show<Board>(playerid) and _Hide<Board>(playerid). Right-click for more."));
+			if(open){
+				if(shownBoard == gBoard && boards[b] != gBoard)
+					switchBoard(boards[b]);
+				ImGui::EndTabItem();
+			}
+		}
+		shownBoard = gBoard;
+		if(ImGui::TabItemButton(ICON_FA_PLUS "###add_board", ImGuiTabItemFlags_Trailing)){
+			std::string name = newBoardName(_("Board"));
+			gEmptyBoards.push_back(name);
+			switchBoard(name);
+		}
+		ImGui::SetItemTooltip("%s", _("New artboard"));
+		ImGui::EndTabBar();
 	}
+	if(openRename)
+		ImGui::OpenPopup("##rename_board");
+	if(ImGui::BeginPopup("##rename_board")){
+		if(ImGui::IsWindowAppearing())
+			ImGui::SetKeyboardFocusHere();
+		bool enter = ImGui::InputText("##name", renameBuf, sizeof(renameBuf), ImGuiInputTextFlags_EnterReturnsTrue);
+		ImGui::SameLine();
+		if((ImGui::Button(L("Rename")) || enter) && renameBuf[0]){
+			std::string to = renameBuf;
+			if(to == _("Main") && renaming.empty())
+				to.clear();
+			renameBoard(renaming, to);
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+}
+
+// Above the canvas: the mode and file, the artboards, then how the canvas shows.
+static void
+drawToolbar(void)
+{
+	ImGuiViewport *vp = ImGui::GetMainViewport();
+	ImVec2 pos = vp->WorkPos, size = vp->WorkSize;
+#ifdef IMGUI_HAS_DOCK
+	ImGuiDockNode *central = ImGui::DockBuilderGetCentralNode(ImHashStr("HaumeaDockSpace"));
+	if(central && central->Size.x > 32.0f && central->Size.y > 32.0f){
+		pos = central->Pos;
+		size = central->Size;
+	}
+#endif
+	KeepNextEditorOverlayOnMainWindow();
+	ImGui::SetNextWindowPos(pos);
+	ImGui::SetNextWindowSize(ImVec2(size.x, 0.0f));
+	ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav |
+		ImGuiWindowFlags_NoMove;
+#ifdef IMGUI_HAS_DOCK
+	flags |= ImGuiWindowFlags_NoDocking;
+#endif
+	if(!ImGui::Begin("##textdraw_toolbar", nil, flags)){
+		ImGui::End();
+		return;
+	}
+	ImGui::AlignTextToFramePadding();
+	ImGui::TextColored(ImVec4(0.95f, 0.75f, 0.20f, 1.0f), "%s", TI(ICON_FA_FONT, "TextDraw mode"));
+	ImGui::SameLine();
+	ImGui::Text("%s%s", GetTextDrawFileName(), TextDrawFileHasUnsavedChanges() ? " *" : "");
+	ImGui::SameLine();
+	float exitWidth = ImGui::CalcTextSize(LI(ICON_FA_XMARK, "Exit")).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+	float tabsWidth = ImGui::GetContentRegionAvail().x - exitWidth - ImGui::GetStyle().ItemSpacing.x * 2.0f;
+	ImGui::BeginChild("##boards_area", ImVec2(std::max(60.0f, tabsWidth), ImGui::GetFrameHeight()), ImGuiChildFlags_None,
+		ImGuiWindowFlags_NoScrollbar);
+	boardTabs();
+	ImGui::EndChild();
+	ImGui::SameLine();
+	if(ImGui::Button(LI(ICON_FA_XMARK, "Exit")))
+		ExitTextDrawMode();
+	ImGui::SetItemTooltip(_("Back to the map (%s)"), ShortcutLabel(SC_CANCEL));
+
+	// Second row: the screen, the background, the HUD, then the grid and the zoom.
+	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 5.5f);
+	const char *screens[NUM_TD_SCREENS];
+	for(int i = 0; i < NUM_TD_SCREENS; i++)
+		screens[i] = i == TD_SCREEN_WINDOW ? _(gScreenNames[i]) : gScreenNames[i];
+	if(ImGui::Combo("##screen", &gScreen, screens, NUM_TD_SCREENS)){
+		gZoom = 1.0f; gPanX = gPanY = 0.0f;
+		SaveEditorSettings();
+	}
+	ImGui::SetItemTooltip("%s", _("The player's screen shape. Textdraws stretch with it; the chat doesn't."));
+	ImGui::SameLine();
+	if(ImGui::Checkbox(L("Compare"), &gCompare))
+		SaveEditorSettings();
+	ImGui::SetItemTooltip("%s", _("Small views of this board at 4:3, 16:9 and 21:9 in the corner."));
+	ImGui::SameLine();
+	ImGui::TextDisabled("|");
+	ImGui::SameLine();
+	int background = gBackground;
+	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 7.0f);
+	const char *backgrounds[] = { _("Plain"), _("Still frame") };
+	if(ImGui::Combo("##background", &background, backgrounds, IM_ARRAYSIZE(backgrounds))){
+		gBackground = background;
+		if(gBackground == TD_BACKGROUND_STILL && gStillFrame == nil)
+			gStillPending = true;	// taken from the world on the next frame
+		SaveEditorSettings();
+	}
+	ImGui::SetItemTooltip("%s", _("Still frame: the world as the camera saw it when TextDraw mode started."));
+	if(gBackground == TD_BACKGROUND_PLAIN){
+		ImGui::SameLine();
+		float c[4] = { (gCanvasColour >> 24 & 0xFF) / 255.0f, (gCanvasColour >> 16 & 0xFF) / 255.0f,
+			(gCanvasColour >> 8 & 0xFF) / 255.0f, 1.0f };
+		if(ImGui::ColorEdit3("##canvas", c, ImGuiColorEditFlags_NoInputs)){
+			gCanvasColour = (unsigned int)(c[0] * 255.0f + 0.5f) << 24 | (unsigned int)(c[1] * 255.0f + 0.5f) << 16 |
+				(unsigned int)(c[2] * 255.0f + 0.5f) << 8 | 0xFF;
+			SaveEditorSettings();
+		}
+	}
+	ImGui::SameLine();
+	hudSettings();
+	ImGui::SameLine();
+	ImGui::TextDisabled("|");
+	ImGui::SameLine();
+	if(ImGui::Checkbox(L("Grid"), &gGrid))
+		SaveEditorSettings();
+	if(gGrid){
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(ImGui::GetFontSize() * 3.0f);
+		if(ImGui::DragFloat("##grid", &gGridSize, 0.5f, 1.0f, 200.0f, "%.0f"))
+			gGridSize = std::max(1.0f, gGridSize);
+		if(ImGui::IsItemDeactivatedAfterEdit())
+			SaveEditorSettings();
+		ImGui::SetItemTooltip("%s", _("Grid spacing, in canvas units (640 x 448)"));
+	}
+	ImGui::SameLine();
+	if(ImGui::Checkbox(L("Snap"), &gSnap))
+		SaveEditorSettings();
+	ImGui::SetItemTooltip("%s", _("Dragged textdraws snap to the screen's edges and centre, to the others\n"
+		"and to the grid. Hold Ctrl while dragging to place freely."));
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 3.0f);
+	if(ImGui::DragFloat("##nudge", &gNudge, 0.05f, 0.01f, 100.0f, ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT " %.2f"))
+		gNudge = std::max(0.01f, gNudge);
+	if(ImGui::IsItemDeactivatedAfterEdit())
+		SaveEditorSettings();
+	ImGui::SetItemTooltip("%s", _("How far the arrow keys move the selection; Shift moves ten times as far."));
+	ImGui::SameLine();
+	if(ImGui::Checkbox(L("Click through locked"), &gClickThroughLocked))
+		SaveEditorSettings();
+	ImGui::SetItemTooltip("%s", _("Clicks on a locked textdraw go to what is under it.\n"
+		"Alt+click picks the next one down under the cursor."));
+	ImGui::SameLine();
+	ImGui::TextDisabled("|");
+	ImGui::SameLine();
+	if(ImGui::SmallButton("-##zoom")){ gZoom = std::max(0.25f, gZoom / 1.25f); }
+	ImGui::SameLine();
+	ImGui::Text("%.0f%%", gZoom * 100.0f);
+	ImGui::SetItemTooltip("%s", _("The wheel zooms round the cursor, the middle button pans."));
+	ImGui::SameLine();
+	if(ImGui::SmallButton("+##zoom")){ gZoom = std::min(8.0f, gZoom * 1.25f); }
+	ImGui::SameLine();
+	if(ImGui::SmallButton(L("Fit"))){ gZoom = 1.0f; gPanX = gPanY = 0.0f; }
+	gToolbarHeight = ImGui::GetWindowSize().y;
 	ImGui::End();
 }
 
@@ -1727,7 +2965,6 @@ TextDrawModeShortcut(int action)
 	if(!gMode)
 		return false;
 	std::vector<TextDraw> &tds = GetTextDraws();
-	bool selected = gSelected >= 0 && gSelected < (int)tds.size();
 	switch(action){
 	case SC_UNDO:
 		if(UndoTextDraws())
@@ -1741,23 +2978,56 @@ TextDrawModeShortcut(int action)
 	case SC_OPEN_MAP: RequestTextDrawFileClose(showOpenDialog); return true;
 	case SC_SAVE_MAP: saveOrAsk(); return true;
 	case SC_SAVE_MAP_AS: showFileDialog(true); return true;
-	case SC_CANCEL: ExitTextDrawMode(); return true;
+	case SC_CANCEL:
+		if(!gSel.empty())
+			selectOnly(-1);
+		else
+			ExitTextDrawMode();
+		return true;
 	case SC_DELETE:
-		if(selected){
-			tds.erase(tds.begin() + gSelected);
-			gSelected = -1;
-			TextDrawsChanged();
-		}
+		if(!gSel.empty())
+			deleteSelected();
 		return true;
 	case SC_DUPLICATE:
-		if(selected){
-			TextDraw copy = tds[gSelected];
-			copy.name[0] = '\0';
-			copy.x += 10.0f; copy.y += 10.0f;
-			tds.push_back(copy);
-			gSelected = (int)tds.size() - 1;
-			TextDrawsChanged();
+		if(!gSel.empty())
+			appendCopies(selectedCopies(), 10.0f);
+		return true;
+	case SC_COPY:
+		if(!gSel.empty()){
+			gClipboard = selectedCopies();
+			Toast(TOAST_COPY_PASTE, _("Copied %d textdraws"), (int)gClipboard.size());
 		}
+		return true;
+	case SC_CUT:
+		if(!gSel.empty()){
+			gClipboard = selectedCopies();
+			deleteSelected();
+		}
+		return true;
+	case SC_PASTE:
+		if(!gClipboard.empty())
+			appendCopies(gClipboard, 10.0f);
+		return true;
+	case SC_PASTE_IN_PLACE:
+		if(!gClipboard.empty())
+			appendCopies(gClipboard, 0.0f);
+		return true;
+	case SC_GROUP_SELECTION:
+		if(!gSel.empty())
+			groupSelected(newGroupName().c_str());
+		return true;
+	case SC_HIDE_SELECTION:
+		for(int i : gSel)
+			tds[i].hidden = true;
+		if(!gSel.empty())
+			TextDrawsChanged();
+		selectOnly(-1);
+		return true;
+	case SC_SHOW_ALL:
+		for(TextDraw &td : tds)
+			if(onBoard(td))
+				td.hidden = false;
+		TextDrawsChanged();
 		return true;
 	// The rest works as usual: testing, windows, the interface size.
 	case SC_TEST_IN_GAME:
@@ -1771,24 +3041,24 @@ TextDrawModeShortcut(int action)
 static void
 fileBar(void)
 {
-	if(ImGui::Button(LI(ICON_FA_FILE, "New")))
+	char label[64];
+	snprintf(label, sizeof(label), ICON_FA_FILE "###New");
+	if(iconButton(label, _("New textdraw file")))
 		RequestTextDrawFileClose(newFile);
 	ImGui::SameLine();
-	if(ImGui::Button(LI(ICON_FA_FOLDER_OPEN, "Open...")))
+	if(iconButton(ICON_FA_FOLDER_OPEN "###Open...", _("Open a textdraw file")))
 		RequestTextDrawFileClose(showOpenDialog);
 	ImGui::SameLine();
-	if(ImGui::Button(LI(ICON_FA_FLOPPY_DISK, "Save")))
+	if(iconButton(ICON_FA_FLOPPY_DISK "###Save", ShortcutLabel(SC_SAVE_MAP)))
 		saveOrAsk();
-	ImGui::SetItemTooltip("%s", ShortcutLabel(SC_SAVE_MAP));
 	ImGui::SameLine();
-	if(ImGui::Button(L("Save As...")))
+	if(iconButton(ICON_FA_FILE_EXPORT "###Save As...", _("Save As...")))
 		showFileDialog(true);
 	ImGui::SameLine();
 	ImGui::BeginDisabled(gRecent.empty());
-	if(ImGui::Button(ICON_FA_CLOCK_ROTATE_LEFT "##recent"))
+	if(iconButton(ICON_FA_CLOCK_ROTATE_LEFT "##recent", _("Recent textdraw files")))
 		ImGui::OpenPopup("recent");
 	ImGui::EndDisabled();
-	ImGui::SetItemTooltip("%s", _("Recent textdraw files"));
 	if(ImGui::BeginPopup("recent")){
 		static std::string chosen;
 		for(size_t i = 0; i < gRecent.size(); i++){
@@ -1808,12 +3078,285 @@ fileBar(void)
 		}
 		ImGui::EndPopup();
 	}
+	ImGui::SameLine(0.0f, ImGui::GetFontSize());
+	if(iconButton(ICON_FA_ROTATE_LEFT "###Undo", ShortcutLabel(SC_UNDO)))
+		UndoTextDraws();
+	ImGui::SameLine();
+	if(iconButton(ICON_FA_ROTATE_RIGHT "###Redo", ShortcutLabel(SC_REDO)))
+		RedoTextDraws();
 	ImGui::TextDisabled(TextDrawFileHasUnsavedChanges() ? _("Unsaved changes - %s") : _("Saved - %s"),
 		GetTextDrawFileName());
 	if(GetTextDrawFilePath()[0])
 		ImGui::SetItemTooltip(_("%s\nInclude it in your gamemode and call %s_CreateTextDraws()\n"
 			"from OnGameModeInit and %s_ShowTextDraws(playerid)."), GetTextDrawFilePath(),
 			TextDrawFilePrefix(GetTextDrawFilePath()).c_str(), TextDrawFilePrefix(GetTextDrawFilePath()).c_str());
+}
+
+// What a row in the layers shows: its kind and a bit of its text.
+static std::string
+layerLabel(const TextDraw &td)
+{
+	if(td.font == TD_FONT_REFERENCE){
+		const char *file = td.text.c_str() + (td.text.find_last_of("/\\") == std::string::npos ? 0 :
+			td.text.find_last_of("/\\") + 1);
+		return std::string(ICON_FA_FILE " ") + _("image") + "  " + file;
+	}
+	const char *kind = td.font == TD_FONT_SPRITE ? _("sprite") : td.font == TD_FONT_PREVIEW ? _("model") :
+		td.useBox ? _("box") : _("text");
+	std::string preview = td.name[0] ? std::string(td.name) : td.text.substr(0, 28);
+	std::replace(preview.begin(), preview.end(), '\n', ' ');
+	return std::string(td.perPlayer ? ICON_FA_USER " " : ICON_FA_GLOBE " ") + kind + "  " + preview;
+}
+
+// Small flat toggles at the start of a row: shown and locked.
+static bool
+rowToggle(const char *on, const char *off, bool value, const char *id, const char *tooltip)
+{
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2.0f, 0.0f));
+	if(!value)
+		ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+	char label[48];
+	snprintf(label, sizeof(label), "%s##%s", value ? on : off, id);
+	bool pressed = ImGui::SmallButton(label);
+	if(!value)
+		ImGui::PopStyleColor();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleColor();
+	ImGui::SetItemTooltip("%s", tooltip);
+	return pressed;
+}
+
+static void
+rowMenu(int i)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	if(!isSelected(i))
+		selectOnly(i);
+	if(ImGui::MenuItem(L("Duplicate"), ShortcutLabel(SC_DUPLICATE)))
+		appendCopies(selectedCopies(), 10.0f);
+	if(ImGui::MenuItem(L("Delete"), ShortcutLabel(SC_DELETE)))
+		deleteSelected();
+	ImGui::Separator();
+	if(ImGui::MenuItem(L("Group"), ShortcutLabel(SC_GROUP_SELECTION)))
+		groupSelected(newGroupName().c_str());
+	if(ImGui::MenuItem(L("Ungroup"))){
+		for(int k : gSel)
+			tds[k].group.clear();
+		TextDrawsChanged();
+	}
+	std::vector<std::string> boards;
+	listBoards(boards);
+	if(boards.size() > 1 && ImGui::BeginMenu(L("Move to artboard"))){
+		for(const std::string &b : boards)
+			if(b != gBoard && ImGui::MenuItem(boardLabel(b))){
+				for(int k : gSel)
+					tds[k].board = b;
+				selectOnly(-1);
+				TextDrawsChanged();
+			}
+		ImGui::EndMenu();
+	}
+}
+
+// The board's textdraws, the top one first: groups fold, the eye hides one
+// in the editor, the lock keeps it in place; drag a row to restack.
+static void
+layers(void)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	ImGuiIO &io = ImGui::GetIO();
+	static std::vector<std::string> folded;
+	ImGui::BeginChild("list", ImVec2(0, ImGui::GetFontSize() * 11.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY);
+	std::string openGroup;	// the group the rows above belong to
+	bool any = false;
+	int dropAt = -1;
+	for(int i = (int)tds.size() - 1; i >= 0; i--){
+		TextDraw &td = tds[i];
+		if(!onBoard(td))
+			continue;
+		any = true;
+		ImGui::PushID(i);
+		if(!td.group.empty() && td.group != openGroup){
+			// A group's header: its toggles act on every member.
+			openGroup = td.group;
+			bool isFolded = std::find(folded.begin(), folded.end(), td.group) != folded.end();
+			bool allHidden = true, allLocked = true;
+			for(const TextDraw &t : tds)
+				if(onBoard(t) && t.group == td.group){
+					allHidden &= t.hidden;
+					allLocked &= t.locked;
+				}
+			if(rowToggle(ICON_FA_EYE, ICON_FA_EYE_SLASH, !allHidden, "geye", _("Show or hide the group in the editor"))){
+				for(TextDraw &t : tds)
+					if(onBoard(t) && t.group == td.group)
+						t.hidden = !allHidden;
+				TextDrawsChanged();
+			}
+			ImGui::SameLine();
+			if(rowToggle(ICON_FA_LOCK, ICON_FA_LOCK, allLocked, "glock", _("Lock or unlock the group"))){
+				for(TextDraw &t : tds)
+					if(onBoard(t) && t.group == td.group)
+						t.locked = !allLocked;
+				TextDrawsChanged();
+			}
+			ImGui::SameLine();
+			char header[96];
+			snprintf(header, sizeof(header), "%s " ICON_FA_LAYER_GROUP " %s##group", isFolded ? ">" : "v", td.group.c_str());
+			bool all = true;
+			for(int k = 0; k < (int)tds.size(); k++)
+				if(onBoard(tds[k]) && tds[k].group == td.group)
+					all &= isSelected(k);
+			if(ImGui::Selectable(header, all, ImGuiSelectableFlags_AllowOverlap)){
+				if(io.MousePos.x < ImGui::GetItemRectMin().x + ImGui::GetFontSize()){
+					if(isFolded) folded.erase(std::find(folded.begin(), folded.end(), td.group));
+					else folded.push_back(td.group);
+				}else
+					selectGroup(td.group, io.KeyShift || io.KeyCtrl);
+			}
+			ImGui::SetItemTooltip("%s", _("Click to select the group, on the arrow to fold it. Right-click to rename."));
+			if(ImGui::BeginPopupContextItem("##group_menu")){
+				static char name[64];
+				if(ImGui::IsWindowAppearing())
+					snprintf(name, sizeof(name), "%s", td.group.c_str());
+				ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10.0f);
+				if(ImGui::InputText("##rename", name, sizeof(name), ImGuiInputTextFlags_EnterReturnsTrue) && name[0]){
+					std::string from = td.group;
+					for(TextDraw &t : tds)
+						if(t.group == from)
+							t.group = name;
+					std::replace(folded.begin(), folded.end(), from, std::string(name));
+					TextDrawsChanged();
+					ImGui::CloseCurrentPopup();
+				}
+				if(ImGui::MenuItem(L("Ungroup"))){
+					std::string from = td.group;
+					for(TextDraw &t : tds)
+						if(t.group == from)
+							t.group.clear();
+					TextDrawsChanged();
+				}
+				ImGui::EndPopup();
+			}
+			if(isFolded){
+				ImGui::PopID();
+				while(i > 0 && (!onBoard(tds[i - 1]) || tds[i - 1].group == openGroup))
+					i--;
+				continue;
+			}
+		}else if(td.group.empty())
+			openGroup.clear();
+
+		if(!td.group.empty())
+			ImGui::Indent(ImGui::GetFontSize());
+		if(rowToggle(ICON_FA_EYE, ICON_FA_EYE_SLASH, !td.hidden, "eye", _("Shown in the editor (it is in the file either way)"))){
+			td.hidden = !td.hidden;
+			TextDrawsChanged();
+		}
+		ImGui::SameLine();
+		if(rowToggle(ICON_FA_LOCK, ICON_FA_LOCK, td.locked, "lock", _("Locked: not dragged on the canvas"))){
+			td.locked = !td.locked;
+			TextDrawsChanged();
+		}
+		ImGui::SameLine();
+		std::string label = layerLabel(td) + "##td" + std::to_string(i);
+		if(ImGui::Selectable(label.c_str(), isSelected(i), ImGuiSelectableFlags_AllowOverlap)){
+			if(io.KeyCtrl)
+				toggleSelected(i);
+			else if(io.KeyShift && gSelected >= 0){
+				int a = std::min(gSelected, i), b = std::max(gSelected, i);
+				for(int k = a; k <= b; k++)
+					if(onBoard(tds[k]))
+						addToSelection(k);
+				gSelected = i;
+			}else
+				selectOnly(i);
+		}
+		if(ImGui::BeginPopupContextItem("##row_menu")){
+			rowMenu(i);
+			ImGui::EndPopup();
+		}
+		if(ImGui::BeginDragDropSource()){
+			if(!isSelected(i))
+				selectOnly(i);
+			ImGui::SetDragDropPayload("HAUMEA_TD_ROW", &i, sizeof(i));
+			ImGui::Text(_("%d textdraws"), (int)gSel.size());
+			ImGui::EndDragDropSource();
+		}
+		if(ImGui::BeginDragDropTarget()){
+			if(ImGui::AcceptDragDropPayload("HAUMEA_TD_ROW"))
+				dropAt = i + 1;	// above this row: after it in the file
+			ImGui::EndDragDropTarget();
+		}
+		if(!td.group.empty())
+			ImGui::Unindent(ImGui::GetFontSize());
+		ImGui::PopID();
+	}
+	if(!any)
+		ImGui::TextDisabled("%s", _("No textdraws on this board yet."));
+	ImGui::EndChild();
+	if(dropAt >= 0)
+		moveSelectionTo(dropAt);
+}
+
+// What to do with the selection: copies, order, lock, groups, alignment.
+static void
+selectionActions(void)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	if(ImGui::Button(LI(ICON_FA_COPY, "Duplicate")))
+		appendCopies(selectedCopies(), 10.0f);
+	ImGui::SetItemTooltip("%s", ShortcutLabel(SC_DUPLICATE));
+	ImGui::SameLine();
+	if(ImGui::Button(LI(ICON_FA_TRASH, "Delete")))
+		deleteSelected();
+	ImGui::SetItemTooltip("%s", ShortcutLabel(SC_DELETE));
+	if(gSel.empty())
+		return;
+	ImGui::SameLine();
+	if(ImGui::Button(L("Up")))
+		restackSelected(true);
+	ImGui::SetItemTooltip("%s", _("Drawn later, so over the others."));
+	ImGui::SameLine();
+	if(ImGui::Button(L("Down")))
+		restackSelected(false);
+	ImGui::SetItemTooltip("%s", _("Drawn earlier, so under the others."));
+	bool locked = true;
+	for(int i : gSel)
+		locked &= tds[i].locked;
+	if(ImGui::Checkbox(LI(ICON_FA_LOCK, "Locked"), &locked)){
+		for(int i : gSel)
+			tds[i].locked = locked;
+		TextDrawsChanged();
+	}
+	ImGui::SetItemTooltip("%s", _("Can't be dragged or resized on the canvas. The fields here still change it."));
+	ImGui::SameLine();
+	if(ImGui::Button(LI(ICON_FA_LAYER_GROUP, "Group")))
+		groupSelected(newGroupName().c_str());
+	ImGui::SetItemTooltip("%s", _("Gives them one group name and keeps them together in the list.\n"
+		"A group hides, locks and is selected as one."));
+	ImGui::SameLine();
+	if(ImGui::Button(LI(ICON_FA_TABLE_COLUMNS, "Align")))
+		ImGui::OpenPopup("##align");
+	ImGui::SetItemTooltip("%s", _("To each other, or to the screen when one is selected"));
+	if(ImGui::BeginPopup("##align")){
+		static bool toScreen;
+		ImGui::Checkbox(L("To the screen"), &toScreen);
+		ImGui::Separator();
+		static const char *names[] = { N_("Left edges"), N_("Centres across"), N_("Right edges"),
+			N_("Top edges"), N_("Middles"), N_("Bottom edges") };
+		for(int k = 0; k < IM_ARRAYSIZE(names); k++)
+			if(ImGui::MenuItem(_(names[k])))
+				alignSelected(k, toScreen);
+		ImGui::Separator();
+		ImGui::BeginDisabled(gSel.size() < 3);
+		if(ImGui::MenuItem(L("Space evenly across")))
+			distributeSelected(true);
+		if(ImGui::MenuItem(L("Space evenly down")))
+			distributeSelected(false);
+		ImGui::EndDisabled();
+		ImGui::EndPopup();
+	}
 }
 
 void
@@ -1823,8 +3366,9 @@ DrawTextDrawsWindow(void)
 	if(!gMode)
 		return;
 	UpdateTextDrawsUndo();
-	drawBanner();
-	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 24.0f, ImGui::GetFontSize() * 34.0f), ImGuiCond_FirstUseEver);
+	validateSelection();
+	drawToolbar();
+	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 24.0f, ImGui::GetFontSize() * 38.0f), ImGuiCond_FirstUseEver);
 	bool open = true;
 	// ###textdraws, not LI(): the ID the window has always had, so saved layouts stay.
 	char title[64];
@@ -1835,31 +3379,10 @@ DrawTextDrawsWindow(void)
 			ExitTextDrawMode();
 		return;
 	}
-	std::vector<TextDraw> &tds = GetTextDraws();
 	fileBar();
-
-	int background = gBackground;
-	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 9.0f);
-	const char *backgrounds[] = { _("Plain"), _("Still frame") };
-	if(ImGui::Combo(L("Background"), &background, backgrounds, IM_ARRAYSIZE(backgrounds))){
-		gBackground = background;
-		if(gBackground == TD_BACKGROUND_STILL && gStillFrame == nil){
-			// Taken from the world on the next frame.
-			gStillPending = true;
-		}
-		SaveEditorSettings();
-	}
-	ImGui::SetItemTooltip("%s", _("Still frame: the world as the camera saw it when TextDraw mode started."));
-	if(gBackground == TD_BACKGROUND_PLAIN){
-		ImGui::SameLine();
-		if(colourEdit("##canvas", &gCanvasColour))
-			SaveEditorSettings();
-	}
-	hudSettings();
 
 	const std::vector<TextDraw> &mapTds = GetMapTextDraws();
 	if(!mapTds.empty()){
-		ImGui::Separator();
 		char inMap[128];
 		snprintf(inMap, sizeof(inMap), _("%d in the map (read-only)"), (int)mapTds.size());
 		ImGui::TextColored(ImVec4(1.0f, 0.78f, 0.25f, 1.0f), ICON_FA_TRIANGLE_EXCLAMATION " %s", inMap);
@@ -1869,8 +3392,8 @@ DrawTextDrawsWindow(void)
 		if(ImGui::SmallButton(L("Move to a separate file...")))
 			OfferMoveMapTextDraws(GetPawnMapPath());
 	}
-	ImGui::Separator();
 
+	ImGui::SeparatorText(_("Add"));
 	if(ImGui::Button(LI(ICON_FA_PLUS, "Text##add"))) addTextDraw(TD_FONT_AHARONI);
 	ImGui::SameLine();
 	if(ImGui::Button(LI(ICON_FA_PLUS, "Box##add"))) addTextDraw(-1);
@@ -1878,64 +3401,22 @@ DrawTextDrawsWindow(void)
 	if(ImGui::Button(LI(ICON_FA_PLUS, "Sprite##add"))) addTextDraw(TD_FONT_SPRITE);
 	ImGui::SameLine();
 	if(ImGui::Button(LI(ICON_FA_PLUS, "Model##add"))) addTextDraw(TD_FONT_PREVIEW);
+	ImGui::SameLine();
+	if(ImGui::Button(LI(ICON_FA_PLUS, "Image##add"))) addTextDraw(TD_FONT_REFERENCE);
+	ImGui::SetItemTooltip("%s", _("A picture to build on: a mock-up or a screenshot (PNG, BMP or TGA).\n"
+		"It is a layer like the others, only the editor shows it; the eyedropper picks its colours."));
 
-	ImGui::BeginChild("list", ImVec2(0, ImGui::GetFontSize() * 8.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY);
-	for(size_t i = 0; i < tds.size(); i++){
-		const TextDraw &td = tds[i];
-		char label[160];
-		const char *kind = td.font == TD_FONT_SPRITE ? _("sprite") : td.font == TD_FONT_PREVIEW ? _("model") :
-			td.useBox ? _("box") : _("text");
-		std::string preview = td.text.substr(0, 28);
-		std::replace(preview.begin(), preview.end(), '\n', ' ');
-		snprintf(label, sizeof(label), "%s%s %s  %s##td%d", td.locked ? ICON_FA_LOCK " " : "",
-			td.perPlayer ? ICON_FA_USER : ICON_FA_GLOBE, kind, preview.c_str(), (int)i);
-		if(ImGui::Selectable(label, gSelected == (int)i))
-			gSelected = (int)i;
-	}
-	if(tds.empty())
-		ImGui::TextDisabled("%s", _("No textdraws yet."));
-	ImGui::EndChild();
+	char layersTitle[96];
+	snprintf(layersTitle, sizeof(layersTitle), _("Layers - %s"), boardLabel(gBoard));
+	ImGui::SeparatorText(layersTitle);
+	layers();
+	selectionActions();
 
-	if(gSelected >= 0 && gSelected < (int)tds.size()){
-		if(ImGui::Button(LI(ICON_FA_COPY, "Duplicate"))){
-			TextDraw copy = tds[gSelected];
-			copy.name[0] = '\0';
-			copy.x += 10.0f; copy.y += 10.0f;
-			tds.push_back(copy);
-			gSelected = (int)tds.size() - 1;
-			TextDrawsChanged();
-		}
-		ImGui::SameLine();
-		if(ImGui::Button(L("Up")) && gSelected > 0){
-			std::swap(tds[gSelected], tds[gSelected-1]);
-			gSelected--;
-			TextDrawsChanged();
-		}
-		ImGui::SetItemTooltip("%s", _("Drawn earlier, so under the others."));
-		ImGui::SameLine();
-		if(ImGui::Button(L("Down")) && gSelected + 1 < (int)tds.size()){
-			std::swap(tds[gSelected], tds[gSelected+1]);
-			gSelected++;
-			TextDrawsChanged();
-		}
-		ImGui::SetItemTooltip("%s", _("Drawn later, so over the others."));
-		ImGui::SameLine();
-		if(ImGui::Button(LI(ICON_FA_TRASH, "Delete"))){
-			tds.erase(tds.begin() + gSelected);
-			gSelected = -1;
-			TextDrawsChanged();
-		}
-		if(gSelected >= 0){
-			ImGui::SameLine();
-			if(ImGui::Checkbox(LI(ICON_FA_LOCK, "Locked"), &tds[gSelected].locked))
-				TextDrawsChanged();
-			ImGui::SetItemTooltip("%s", _("Can't be dragged or resized on the canvas. The fields here still change it."));
-		}
-		if(gSelected >= 0){
-			ImGui::Separator();
-			properties(tds[gSelected]);
-		}
-	}
+	if(gSelected >= 0){
+		ImGui::Separator();
+		properties();
+	}else
+		ImGui::TextDisabled("%s", _("Click a textdraw, or drag a box round several. Alt+click picks the one under it."));
 	ImGui::End();
 	if(!open)
 		ExitTextDrawMode();

@@ -7,6 +7,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <algorithm>
 #include <map>
 #ifdef _WIN32
 #include <windows.h>
@@ -167,6 +168,9 @@ static void writeCompatDefines(FILE *f);
 static void writeGlobals(FILE *f, const std::vector<TextDraw> &tds, const char *prefix);
 static void writeFunctions(FILE *f, const std::vector<TextDraw> &tds, const char *prefix);
 
+static void boardSuffixes(const std::vector<std::string> &boards, std::vector<std::string> &out);
+static void codeBoards(const std::vector<TextDraw> &tds, std::vector<std::string> &out);
+
 std::string
 BuildTextDrawFileCode(const char *path)
 {
@@ -177,8 +181,18 @@ BuildTextDrawFileCode(const char *path)
 		return std::string();
 	fprintf(f, "// TextDraws made with Haumea Studio.\n"
 		"// Call %s_CreateTextDraws() from OnGameModeInit and %s_ShowTextDraws(playerid)\n"
-		"// when a player should see them (it also creates the per-player ones).\n"
-		"\n#tryinclude <open.mp>\n#if !defined _INC_open_mp\n\t#include <a_samp>\n#endif\n", p, p);
+		"// when a player should see them (it also creates the per-player ones).\n", p, p);
+	std::vector<std::string> boards, suffixes;
+	codeBoards(gTextDraws, boards);
+	if(boards.size() > 1){
+		boardSuffixes(boards, suffixes);
+		fprintf(f, "// Each artboard is shown and hidden on its own, with %s_Show<Board>(playerid)\n"
+			"// and %s_Hide<Board>(playerid) for", p, p);
+		for(size_t b = 0; b < suffixes.size(); b++)
+			fprintf(f, "%s %s", b == 0 ? "" : b + 1 == suffixes.size() ? " and" : ",", suffixes[b].c_str());
+		fprintf(f, ".\n// Call %s_ResetPlayer(playerid) from OnPlayerDisconnect.\n", p);
+	}
+	fputs("\n#tryinclude <open.mp>\n#if !defined _INC_open_mp\n\t#include <a_samp>\n#endif\n", f);
 	writeCompatDefines(f);
 	writeGlobals(f, gTextDraws, p);
 	writeFunctions(f, gTextDraws, p);
@@ -417,13 +431,76 @@ writeCompatDefines(FILE *f)
 		"#endif\n\n", f);
 }
 
+void
+TextDrawBoards(const std::vector<TextDraw> &tds, std::vector<std::string> &out)
+{
+	out.clear();
+	for(size_t i = 0; i < tds.size(); i++)
+		if(std::find(out.begin(), out.end(), tds[i].board) == out.end())
+			out.push_back(tds[i].board);
+	std::vector<std::string>::iterator main = std::find(out.begin(), out.end(), std::string());
+	if(main != out.end() && main != out.begin()){
+		out.erase(main);
+		out.insert(out.begin(), std::string());
+	}
+}
+
+std::string
+TextDrawBoardSuffix(const std::string &board)
+{
+	std::string out;
+	bool upper = true;
+	for(size_t i = 0; i < board.size(); i++){
+		unsigned char c = (unsigned char)board[i];
+		if(isalnum(c) || c == '_'){
+			out += upper ? (char)toupper(c) : (char)c;
+			upper = false;
+		}else
+			upper = true;
+	}
+	if(out.empty())
+		return "Main";
+	if(isdigit((unsigned char)out[0]))
+		out = "Board" + out;
+	return out.substr(0, 24);
+}
+
+// The boards the Pawn has functions for: those with textdraws, not only images.
+static void
+codeBoards(const std::vector<TextDraw> &tds, std::vector<std::string> &out)
+{
+	std::vector<TextDraw> game;
+	for(const TextDraw &td : tds)
+		if(td.font != TD_FONT_REFERENCE)
+			game.push_back(td);
+	TextDrawBoards(game, out);
+}
+
+// The Show/Hide functions' suffix for each board, made unique.
+static void
+boardSuffixes(const std::vector<std::string> &boards, std::vector<std::string> &out)
+{
+	out.clear();
+	for(size_t i = 0; i < boards.size(); i++){
+		std::string s = TextDrawBoardSuffix(boards[i]), base = s;
+		for(int n = 2; std::find(out.begin(), out.end(), s) != out.end(); n++)
+			s = base + std::to_string(n);
+		out.push_back(s);
+	}
+}
+
 static void
 writeGlobals(FILE *f, const std::vector<TextDraw> &tds, const char *prefix)
 {
-	std::vector<std::string> names;
+	std::vector<std::string> names, boards;
 	buildNames(tds, prefix, names);
+	codeBoards(tds, boards);
 	for(size_t i = 0; i < tds.size(); i++)
-		if(tds[i].perPlayer)
+		if(tds[i].font == TD_FONT_REFERENCE)
+			continue;
+		else if(tds[i].perPlayer && boards.size() > 1)	// made by Show<Board> once, so "not made yet" first
+			fprintf(f, "new PlayerText:%s[MAX_PLAYERS] = { PlayerText:INVALID_TEXT_DRAW, ... };\n", names[i].c_str());
+		else if(tds[i].perPlayer)
 			fprintf(f, "new PlayerText:%s[MAX_PLAYERS];\n", names[i].c_str());
 		else
 			fprintf(f, "new Text:%s;\n", names[i].c_str());
@@ -439,8 +516,10 @@ WriteTextDrawsPawnGlobals(FILE *f, const char *prefix)
 	writeGlobals(f, gMapTextDraws, prefix);
 }
 
+static void writeNote(FILE *f, const TextDraw &td);
+
 static void
-writeTextDraw(FILE *f, const TextDraw &td, const std::string &name)
+writeTextDraw(FILE *f, const TextDraw &td, const std::string &name, const char *ind = "\t")
 {
 	TextDraw def;
 	InitTextDraw(&def);
@@ -449,45 +528,77 @@ writeTextDraw(FILE *f, const TextDraw &td, const std::string &name)
 	std::string target = td.perPlayer ? "playerid, " + name + "[playerid]" : name;
 	const char *n = name.c_str();
 	if(td.perPlayer)
-		fprintf(f, "\t%s[playerid] = CreatePlayerTextDraw(playerid, %.3f, %.3f, ", n, td.x, td.y);
+		fprintf(f, "%s%s[playerid] = CreatePlayerTextDraw(playerid, %.3f, %.3f, ", ind, n, td.x, td.y);
 	else
-		fprintf(f, "\t%s = TextDrawCreate(%.3f, %.3f, ", n, td.x, td.y);
+		fprintf(f, "%s%s = TextDrawCreate(%.3f, %.3f, ", ind, n, td.x, td.y);
 	writeString(f, td.text.empty() ? std::string("_") : td.text);
-	fputs(td.locked ? "); // locked in Haumea\n" : ");\n", f);
+	fputs(");", f);
+	if(td.locked || td.hidden || !td.group.empty() || !td.board.empty()){
+		fputs(" // Haumea:", f);
+		writeNote(f, td);
+	}
+	fputs("\n", f);
 	const char *t = target.c_str();
 	const char *p = fn.c_str();
 	if(td.letterX != def.letterX || td.letterY != def.letterY)
-		fprintf(f, "\t%sLetterSize(%s, %.3f, %.3f);\n", p, t, td.letterX, td.letterY);
+		fprintf(f, "%s%sLetterSize(%s, %.3f, %.3f);\n", ind, p, t, td.letterX, td.letterY);
 	if(td.sizeX != def.sizeX || td.sizeY != def.sizeY)
-		fprintf(f, "\t%sTextSize(%s, %.3f, %.3f);\n", p, t, td.sizeX, td.sizeY);
+		fprintf(f, "%s%sTextSize(%s, %.3f, %.3f);\n", ind, p, t, td.sizeX, td.sizeY);
 	if(td.alignment != def.alignment)
-		fprintf(f, "\t%sAlignment(%s, TEXT_DRAW_ALIGN:%d);\n", p, t, td.alignment);
+		fprintf(f, "%s%sAlignment(%s, TEXT_DRAW_ALIGN:%d);\n", ind, p, t, td.alignment);
 	if(td.colour != def.colour)
-		fprintf(f, "\t%sColour(%s, 0x%08X);\n", p, t, td.colour);
+		fprintf(f, "%s%sColour(%s, 0x%08X);\n", ind, p, t, td.colour);
 	if(td.useBox)
-		fprintf(f, "\t%sUseBox(%s, true);\n", p, t);
+		fprintf(f, "%s%sUseBox(%s, true);\n", ind, p, t);
 	if(td.useBox && td.boxColour != def.boxColour)
-		fprintf(f, "\t%sBoxColour(%s, 0x%08X);\n", p, t, td.boxColour);
+		fprintf(f, "%s%sBoxColour(%s, 0x%08X);\n", ind, p, t, td.boxColour);
 	if(td.shadow != def.shadow)
-		fprintf(f, "\t%sSetShadow(%s, %d);\n", p, t, td.shadow);
+		fprintf(f, "%s%sSetShadow(%s, %d);\n", ind, p, t, td.shadow);
 	if(td.outline != def.outline)
-		fprintf(f, "\t%sSetOutline(%s, %d);\n", p, t, td.outline);
+		fprintf(f, "%s%sSetOutline(%s, %d);\n", ind, p, t, td.outline);
 	if(td.backgroundColour != def.backgroundColour)
-		fprintf(f, "\t%sBackgroundColour(%s, 0x%08X);\n", p, t, td.backgroundColour);
+		fprintf(f, "%s%sBackgroundColour(%s, 0x%08X);\n", ind, p, t, td.backgroundColour);
 	if(td.font != def.font)
-		fprintf(f, "\t%sFont(%s, TEXT_DRAW_FONT:%d);\n", p, t, td.font);
+		fprintf(f, "%s%sFont(%s, TEXT_DRAW_FONT:%d);\n", ind, p, t, td.font);
 	if(td.proportional != def.proportional)
-		fprintf(f, "\t%sSetProportional(%s, %s);\n", p, t, td.proportional ? "true" : "false");
+		fprintf(f, "%s%sSetProportional(%s, %s);\n", ind, p, t, td.proportional ? "true" : "false");
 	if(td.selectable)
-		fprintf(f, "\t%sSetSelectable(%s, true);\n", p, t);
+		fprintf(f, "%s%sSetSelectable(%s, true);\n", ind, p, t);
 	if(td.font == TD_FONT_PREVIEW){
-		fprintf(f, "\t%sSetPreviewModel(%s, %d);\n", p, t, td.previewModel);
-		fprintf(f, "\t%sSetPreviewRot(%s, %.3f, %.3f, %.3f, %.3f);\n", p, t,
+		fprintf(f, "%s%sSetPreviewModel(%s, %d);\n", ind, p, t, td.previewModel);
+		fprintf(f, "%s%sSetPreviewRot(%s, %.3f, %.3f, %.3f, %.3f);\n", ind, p, t,
 			td.previewRotX, td.previewRotY, td.previewRotZ, td.previewZoom);
 		if(td.previewColour1 != -1 || td.previewColour2 != -1)
-			fprintf(f, "\t%sSetPreviewVehicleColours(%s, %d, %d);\n", p, t,
+			fprintf(f, "%s%sSetPreviewVehicleColours(%s, %d, %d);\n", ind, p, t,
 				td.previewColour1, td.previewColour2);
 	}
+}
+
+// The editor's words after "// Haumea:".
+static void
+writeNote(FILE *f, const TextDraw &td)
+{
+	if(td.locked) fputs(" locked", f);
+	if(td.hidden) fputs(" hidden", f);
+	if(!td.group.empty()){
+		fputs(" group ", f);
+		writeString(f, td.group);
+	}
+	if(!td.board.empty()){
+		fputs(" board ", f);
+		writeString(f, td.board);
+	}
+}
+
+// A reference image: a comment only the editor reads, where it is in the stack.
+static void
+writeReference(FILE *f, const TextDraw &td)
+{
+	fputs("\t// Haumea: reference ", f);
+	writeString(f, td.text);
+	fprintf(f, " %.3f %.3f %.3f %.3f 0x%08X", td.x, td.y, td.sizeX, td.sizeY, td.colour);
+	writeNote(f, td);
+	fputc('\n', f);
 }
 
 static void
@@ -497,18 +608,76 @@ writeFunctions(FILE *f, const std::vector<TextDraw> &tds, const char *prefix)
 	buildNames(tds, prefix, names);
 	fprintf(f, "stock %s_CreateTextDraws()\n{\n", prefix);
 	for(size_t i = 0; i < tds.size(); i++)
-		if(!tds[i].perPlayer)
+		if(tds[i].font == TD_FONT_REFERENCE)
+			writeReference(f, tds[i]);
+		else if(!tds[i].perPlayer)
 			writeTextDraw(f, tds[i], names[i]);
 	fprintf(f, "}\n\n");
+	std::vector<std::string> boards, suffixes;
+	codeBoards(tds, boards);
+	if(boards.size() <= 1){
+		fprintf(f, "stock %s_ShowTextDraws(playerid)\n{\n", prefix);
+		for(size_t i = 0; i < tds.size(); i++)
+			if(tds[i].perPlayer && tds[i].font != TD_FONT_REFERENCE)
+				writeTextDraw(f, tds[i], names[i]);
+		for(size_t i = 0; i < tds.size(); i++)
+			if(tds[i].font == TD_FONT_REFERENCE)
+				continue;
+			else if(tds[i].perPlayer)
+				fprintf(f, "\tPlayerTextDrawShow(playerid, %s[playerid]);\n", names[i].c_str());
+			else
+				fprintf(f, "\tTextDrawShowForPlayer(playerid, %s);\n", names[i].c_str());
+		fprintf(f, "}\n\n");
+		return;
+	}
+	// Artboards: each one shown and hidden on its own. Show<Board> makes its
+	// per-player textdraws the first time, Hide<Board> destroys them.
+	boardSuffixes(boards, suffixes);
+	for(size_t b = 0; b < boards.size(); b++){
+		const char *s = suffixes[b].c_str();
+		fprintf(f, "stock %s_Show%s(playerid)\n{\n", prefix, s);
+		for(size_t i = 0; i < tds.size(); i++)
+			if(tds[i].perPlayer && tds[i].font != TD_FONT_REFERENCE && tds[i].board == boards[b]){
+				fprintf(f, "\tif(%s[playerid] == PlayerText:INVALID_TEXT_DRAW)\n\t{\n", names[i].c_str());
+				writeTextDraw(f, tds[i], names[i], "\t\t");
+				fprintf(f, "\t}\n");
+			}
+		for(size_t i = 0; i < tds.size(); i++)
+			if(tds[i].board != boards[b] || tds[i].font == TD_FONT_REFERENCE)
+				continue;
+			else if(tds[i].perPlayer)
+				fprintf(f, "\tPlayerTextDrawShow(playerid, %s[playerid]);\n", names[i].c_str());
+			else
+				fprintf(f, "\tTextDrawShowForPlayer(playerid, %s);\n", names[i].c_str());
+		fprintf(f, "}\n\n");
+		fprintf(f, "stock %s_Hide%s(playerid)\n{\n", prefix, s);
+		for(size_t i = 0; i < tds.size(); i++)
+			if(tds[i].board != boards[b] || tds[i].font == TD_FONT_REFERENCE)
+				continue;
+			else if(tds[i].perPlayer)
+				fprintf(f, "\tif(%s[playerid] != PlayerText:INVALID_TEXT_DRAW)\n\t{\n"
+					"\t\tPlayerTextDrawDestroy(playerid, %s[playerid]);\n"
+					"\t\t%s[playerid] = PlayerText:INVALID_TEXT_DRAW;\n\t}\n",
+					names[i].c_str(), names[i].c_str(), names[i].c_str());
+			else
+				fprintf(f, "\tTextDrawHideForPlayer(playerid, %s);\n", names[i].c_str());
+		fprintf(f, "}\n\n");
+	}
 	fprintf(f, "stock %s_ShowTextDraws(playerid)\n{\n", prefix);
+	for(size_t b = 0; b < boards.size(); b++)
+		fprintf(f, "\t%s_Show%s(playerid);\n", prefix, suffixes[b].c_str());
+	fprintf(f, "}\n\n");
+	// The server drops a leaving player's textdraws; forget them so the next
+	// player with that id gets their own.
+	fprintf(f, "stock %s_ResetPlayer(playerid)\n{\n", prefix);
+	bool any = false;
 	for(size_t i = 0; i < tds.size(); i++)
-		if(tds[i].perPlayer)
-			writeTextDraw(f, tds[i], names[i]);
-	for(size_t i = 0; i < tds.size(); i++)
-		if(tds[i].perPlayer)
-			fprintf(f, "\tPlayerTextDrawShow(playerid, %s[playerid]);\n", names[i].c_str());
-		else
-			fprintf(f, "\tTextDrawShowForPlayer(playerid, %s);\n", names[i].c_str());
+		if(tds[i].perPlayer && tds[i].font != TD_FONT_REFERENCE){
+			fprintf(f, "\t%s[playerid] = PlayerText:INVALID_TEXT_DRAW;\n", names[i].c_str());
+			any = true;
+		}
+	if(!any)
+		fprintf(f, "\t#pragma unused playerid\n");
 	fprintf(f, "}\n\n");
 }
 
@@ -525,7 +694,7 @@ struct TdCall {
 	std::string lhs;	// "x = TextDrawCreate(...)": x, without [playerid]
 	std::string name;
 	std::vector<std::string> args;
-	bool locked;	// "// locked in Haumea" follows on its line
+	std::string note;	// a "// Haumea: ..." comment after it on its line
 };
 
 static std::string
@@ -566,7 +735,16 @@ scanCalls(const std::string &src, std::vector<TdCall> &calls)
 		char c = src[i];
 		// Skip comments and strings.
 		if(c == '/' && i + 1 < n && src[i+1] == '/'){
+			size_t start = i;
 			while(i < n && src[i] != '\n') i++;
+			// A reference image the editor keeps in the file.
+			static const char mark[] = "// Haumea: reference";
+			if(src.compare(start, sizeof(mark) - 1, mark) == 0){
+				TdCall call;
+				call.name = "#reference";
+				call.note = src.substr(start + 10, i - start - 10);
+				calls.push_back(call);
+			}
 			continue;
 		}
 		if(c == '/' && i + 1 < n && src[i+1] == '*'){
@@ -597,7 +775,6 @@ scanCalls(const std::string &src, std::vector<TdCall> &calls)
 		// Arguments, split at top-level commas.
 		TdCall call;
 		call.name = word;
-		call.locked = false;
 		int depth = 0;
 		std::string arg;
 		size_t k = j + 1;
@@ -626,8 +803,14 @@ scanCalls(const std::string &src, std::vector<TdCall> &calls)
 		if(!trim(arg).empty() || !call.args.empty())
 			call.args.push_back(trim(arg));
 		size_t eol = src.find('\n', k);
-		if(k < n && src.substr(k, (eol == std::string::npos ? n : eol) - k).find("// locked in Haumea") != std::string::npos)
-			call.locked = true;
+		if(k < n){
+			std::string rest = src.substr(k, (eol == std::string::npos ? n : eol) - k);
+			size_t note = rest.find("// Haumea:");
+			if(note != std::string::npos)
+				call.note = rest.substr(note + 10);
+			else if(rest.find("// locked in Haumea") != std::string::npos)	// before groups and hiding
+				call.note = " locked";
+		}
 		// The variable it is stored in.
 		size_t b = start;
 		while(b > 0 && isspace((unsigned char)src[b-1])) b--;
@@ -722,6 +905,33 @@ parseString(const std::string &arg, std::string *out)
 	return true;
 }
 
+// The editor's note after "// Haumea:": words, and group/board "name".
+static void
+parseNote(const std::string &note, TextDraw &td)
+{
+	for(size_t at = 0; at < note.size(); ){
+		while(at < note.size() && isspace((unsigned char)note[at])) at++;
+		size_t end = at;
+		while(end < note.size() && !isspace((unsigned char)note[end])) end++;
+		std::string word = note.substr(at, end - at);
+		if(word == "locked") td.locked = true;
+		else if(word == "hidden") td.hidden = true;
+		else if(word == "group" || word == "board"){
+			size_t q = note.find('"', end), q2 = q;
+			while(q2 != std::string::npos){	// past escaped quotes
+				q2 = note.find('"', q2 + 1);
+				if(q2 == std::string::npos || note[q2-1] != '\\')
+					break;
+			}
+			if(q != std::string::npos && q2 != std::string::npos){
+				parseString(note.substr(q, q2 - q + 1), word == "group" ? &td.group : &td.board);
+				end = q2 + 1;
+			}
+		}
+		at = end;
+	}
+}
+
 int
 ImportTextDrawsFromSource(const std::string &source, std::vector<TextDraw> &out)
 {
@@ -731,6 +941,33 @@ ImportTextDrawsFromSource(const std::string &source, std::vector<TextDraw> &out)
 	int added = 0;
 	for(size_t i = 0; i < calls.size(); i++){
 		TdCall &c = calls[i];
+		if(c.name == "#reference"){
+			// reference "file" x y w h 0xRRGGBBAA, then the editor's words.
+			TextDraw td;
+			InitTextDraw(&td);
+			td.font = TD_FONT_REFERENCE;
+			size_t q = c.note.find('"'), q2 = q;
+			while(q2 != std::string::npos){
+				q2 = c.note.find('"', q2 + 1);
+				if(q2 == std::string::npos || c.note[q2-1] != '\\')
+					break;
+			}
+			if(q == std::string::npos || q2 == std::string::npos || !parseString(c.note.substr(q, q2 - q + 1), &td.text))
+				continue;
+			char *end = nil;
+			const char *p = c.note.c_str() + q2 + 1;
+			float v[4];
+			for(int k = 0; k < 4; k++){
+				v[k] = strtof(p, &end);
+				p = end;
+			}
+			td.x = v[0]; td.y = v[1]; td.sizeX = v[2]; td.sizeY = v[3];
+			td.colour = (unsigned int)strtoul(p, &end, 16);
+			parseNote(end, td);
+			out.push_back(td);
+			added++;
+			continue;
+		}
 		bool player = c.name == "CreatePlayerTextDraw";
 		if(c.name == "TextDrawCreate" || player){
 			size_t first = player ? 1 : 0;
@@ -744,7 +981,7 @@ ImportTextDrawsFromSource(const std::string &source, std::vector<TextDraw> &out)
 				continue;
 			td.x = x;
 			td.y = y;
-			td.locked = c.locked;
+			parseNote(c.note, td);
 			snprintf(td.name, sizeof(td.name), "%s", c.lhs.c_str());
 			byHandle[c.lhs] = out.size();
 			out.push_back(td);

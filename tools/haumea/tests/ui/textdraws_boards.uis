@@ -1,0 +1,28 @@
+# Artboards: screens of their own in one file, each with Show/Hide functions;
+# image layers are kept as comments only the editor reads.
+open "$UI_FIXTURES/ui_map.pwn"
+click_item '*' 'Windows'
+wait 3
+click_item '*' 'TextDraws'
+wait 5
+click_item 'TextDraws' 'Text'
+wait 3
+click_item '*' 'add_board'
+wait 5
+click_item 'TextDraws' 'Box'
+wait 3
+click_item 'TextDraws' 'Image'
+wait 3
+set_item 'TextDraws' 'Image file' "$UI_FIXTURES/missing_reference.png"
+key Enter
+wait 5
+assert textdraws == 3
+click_item 'TextDraws' 'Save As...'
+wait 5
+click_item 'Save TextDraws As' 'Save'
+wait 5
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "_ShowMain(playerid)"
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "_HideBoard(playerid)"
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "_ResetPlayer(playerid)"
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "// Haumea: board \"Board\""
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "// Haumea: reference \""

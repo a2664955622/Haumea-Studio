@@ -1083,7 +1083,8 @@ TEXTDRAW_FIELDS_DOC = inspect.cleandoc("""
 	  (left alignment: box right edge and wrap; centre: size_y is the width; sprites/models: width, height; a negative one mirrors a sprite)
 	- alignment: 1 left, 2 centre, 3 right; colour, use_box, box_colour, background_colour (shadow/outline,
 	  or a model preview's background); shadow, outline: sizes; proportional, selectable: true/false
-	- locked: true/false, keeps it from being dragged on the user's canvas
+	- locked: true/false, keeps it from being dragged on the user's canvas; hidden: true/false, not drawn
+	  in the editor (still in the file); group: a name shared by textdraws edited together
 	- preview_model, preview_rot ([x, y, z] degrees), preview_zoom, preview_colours ([colour1, colour2])
 	""")
 

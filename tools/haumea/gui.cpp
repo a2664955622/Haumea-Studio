@@ -3032,6 +3032,8 @@ uiMainmenu(void)
 			ImGui::EndMenu();
 		}
 
+		// The map's tools, not shown while TextDraw mode edits the textdraws.
+		if(!InTextDrawMode()){
 		uiToolbar();
 
 		// Interior the editor shows; new objects are placed in it.
@@ -3051,6 +3053,7 @@ uiMainmenu(void)
 				ImGui::SetItemTooltip(_("The selected object is in interior %d. Change it under Position\n"
 					"in Object Info."), selected->m_area);
 			}
+		}
 		}
 		ImGui::EndMainMenuBar();
 	}
@@ -12857,7 +12860,10 @@ gui(void)
 			ClearSelection();
 	}
 
-	if(showTimeWeatherWindow){
+	// TextDraw mode keeps only its own panel and the editor's general windows:
+	// the map's panels go, and their docks give the canvas the room.
+	const bool mapPanels = !InTextDrawMode();
+	if(mapPanels && showTimeWeatherWindow){
 		uiNextPanelSizeConstraints();
 		ImGui::Begin(LI(ICON_FA_CLOUD_SUN, "Time & Weather"), &showTimeWeatherWindow);
 		uiFitItemsToPanel();
@@ -12865,7 +12871,7 @@ gui(void)
 		ImGui::End();
 	}
 
-	if(showViewWindow){
+	if(mapPanels && showViewWindow){
 		ImGui::SetNextWindowSize(ImVec2(460.0f, 640.0f), ImGuiCond_FirstUseEver);
 		uiNextPanelSizeConstraints();
 		ImGui::Begin(LI(ICON_FA_EYE, "View"), &showViewWindow);
@@ -12874,9 +12880,9 @@ gui(void)
 		ImGui::End();
 	}
 
-	if(showToolsWindow) uiToolsWindow();
+	if(mapPanels && showToolsWindow) uiToolsWindow();
 	if(showLicensesWindow) DrawLicensesWindow(&showLicensesWindow);
-	if(showMapCheckWindow)
+	if(mapPanels && showMapCheckWindow)
 		uiMapCheckWindow();
 	if(showPreferencesWindow)
 		uiPreferencesWindow();
@@ -12892,15 +12898,15 @@ gui(void)
 		if(gSaNodeJustSelected)
 			showInstanceWindow = true;
 	}
-	if(showInstanceWindow) uiInstWindow();
+	if(mapPanels && showInstanceWindow) uiInstWindow();
 
-	if(showEditorWindow) uiEditorWindow();
+	if(mapPanels && showEditorWindow) uiEditorWindow();
 
-	if(showDiffWindow) uiDiffWindow();
+	if(mapPanels && showDiffWindow) uiDiffWindow();
 
-	if(showMapObjectsWindow) uiMapObjectsWindow();
+	if(mapPanels && showMapObjectsWindow) uiMapObjectsWindow();
 
-	if(showBrowserWindow){
+	if(mapPanels && showBrowserWindow){
 		uiBrowserWindow();
 		// ImGui X button can set showBrowserWindow to false
 		if(!showBrowserWindow){
@@ -12909,15 +12915,17 @@ gui(void)
 			if(gBrushMode) ExitBrushMode();
 		}
 	}
-	uiTextureBrowserWindow();
-	uiPawnCodeWindow();
-	SAPaths::DrawNodesWindow(&showNodesWindow);
+	if(mapPanels){
+		uiTextureBrowserWindow();
+		uiPawnCodeWindow();
+		SAPaths::DrawNodesWindow(&showNodesWindow);
+	}
 	SAPaths::UpdateNodesUndo();
 	DrawTextDrawsWindow();
 	DrawTextDrawsOverlay();
 	DrawAddCustomModelDialog();
 	if(showTestServerWindow) TestServerWindow(&showTestServerWindow, gPawnSaveFormat);
-	if(showInteriorsWindow) InteriorsWindow(&showInteriorsWindow);
+	if(mapPanels && showInteriorsWindow) InteriorsWindow(&showInteriorsWindow);
 	DrawNamakaWindow(&showNamakaWindow);	// also runs the updater's queued Namaka update
 
 

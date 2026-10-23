@@ -2384,7 +2384,7 @@ agentTextDrawJson(size_t index, const TextDraw &td)
 		"{\"index\":%d,\"name\":\"%s\",\"per_player\":%s,\"x\":%.3f,\"y\":%.3f,\"font\":%d,"
 		"\"letter_x\":%.3f,\"letter_y\":%.3f,\"size_x\":%.3f,\"size_y\":%.3f,\"alignment\":%d,"
 		"\"colour\":%s,\"use_box\":%s,\"box_colour\":%s,\"background_colour\":%s,"
-		"\"shadow\":%d,\"outline\":%d,\"proportional\":%s,\"selectable\":%s,\"locked\":%s,"
+		"\"shadow\":%d,\"outline\":%d,\"proportional\":%s,\"selectable\":%s,\"locked\":%s,\"hidden\":%s,"
 		"\"preview_model\":%d,\"preview_rot\":[%.3f,%.3f,%.3f],\"preview_zoom\":%.3f,"
 		"\"preview_colours\":[%d,%d],\"text\":\"",
 		(int)index, jsonEscapeBytes(td.name).c_str(), td.perPlayer ? "true" : "false", td.x, td.y, td.font,
@@ -2392,9 +2392,11 @@ agentTextDrawJson(size_t index, const TextDraw &td)
 		jsonColor(td.colour).c_str(), td.useBox ? "true" : "false", jsonColor(td.boxColour).c_str(),
 		jsonColor(td.backgroundColour).c_str(), td.shadow, td.outline,
 		td.proportional ? "true" : "false", td.selectable ? "true" : "false", td.locked ? "true" : "false",
+		td.hidden ? "true" : "false",
 		td.previewModel, td.previewRotX, td.previewRotY, td.previewRotZ, td.previewZoom,
 		td.previewColour1, td.previewColour2);
-	return std::string(buf) + jsonEscapeBytes(td.text.c_str()) + "\"}";
+	return std::string(buf) + jsonEscapeBytes(td.text.c_str()) + "\",\"group\":\"" +
+		jsonEscapeBytes(td.group.c_str()) + "\"}";
 }
 
 // key=value lines, as "properties" takes them.
@@ -2436,6 +2438,8 @@ applyTextDrawFields(TextDraw &td, const std::vector<std::string> &lines, size_t 
 		else if(key == "proportional") { ok = parseBoolField(value, &b); td.proportional = b; }
 		else if(key == "selectable") { ok = parseBoolField(value, &b); td.selectable = b; }
 		else if(key == "locked") { ok = parseBoolField(value, &b); td.locked = b; }
+		else if(key == "hidden") { ok = parseBoolField(value, &b); td.hidden = b; }
+		else if(key == "group") td.group = value;
 		else if(key == "preview_model") { ok = parseInt(value, &n); td.previewModel = n; }
 		else if(key == "preview_zoom") { ok = parseFloat(value, &f); td.previewZoom = f; }
 		else if(key == "preview_rot"){
