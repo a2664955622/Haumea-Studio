@@ -1860,8 +1860,8 @@ msgid "Width X (m)"
 msgstr "Largura X (m)"
 
 #: tools/haumea/textdraws_ui.cpp:972
-msgid "Width and height."
-msgstr "Largura e altura."
+msgid "Width and height. A negative one mirrors a sprite."
+msgstr "Largura e altura. Um valor negativo espelha o sprite."
 
 #: tools/haumea/sapaths.cpp:6859
 msgid ""
@@ -2121,3 +2121,11 @@ msgstr "Enquanto o Namaka trabalha no editor, uma linha sobre a vista 3D diz o q
 #: tools/haumea/keycast.cpp:122
 msgid "drag"
 msgstr "arrastar"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Locked"
+msgstr "Travado"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Can't be dragged or resized on the canvas. The fields here still change it."
+msgstr "Não pode ser arrastado nem redimensionado na tela. Os campos aqui ainda o alteram."

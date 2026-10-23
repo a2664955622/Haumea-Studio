@@ -450,7 +450,7 @@ writeTextDraw(FILE *f, const TextDraw &td, const std::string &name)
 	else
 		fprintf(f, "\t%s = TextDrawCreate(%.3f, %.3f, ", n, td.x, td.y);
 	writeString(f, td.text.empty() ? std::string("_") : td.text);
-	fputs(");\n", f);
+	fputs(td.locked ? "); // locked in Haumea\n" : ");\n", f);
 	const char *t = target.c_str();
 	const char *p = fn.c_str();
 	if(td.letterX != def.letterX || td.letterY != def.letterY)
@@ -522,6 +522,7 @@ struct TdCall {
 	std::string lhs;	// "x = TextDrawCreate(...)": x, without [playerid]
 	std::string name;
 	std::vector<std::string> args;
+	bool locked;	// "// locked in Haumea" follows on its line
 };
 
 static std::string
@@ -593,6 +594,7 @@ scanCalls(const std::string &src, std::vector<TdCall> &calls)
 		// Arguments, split at top-level commas.
 		TdCall call;
 		call.name = word;
+		call.locked = false;
 		int depth = 0;
 		std::string arg;
 		size_t k = j + 1;
@@ -620,6 +622,9 @@ scanCalls(const std::string &src, std::vector<TdCall> &calls)
 		}
 		if(!trim(arg).empty() || !call.args.empty())
 			call.args.push_back(trim(arg));
+		size_t eol = src.find('\n', k);
+		if(k < n && src.substr(k, (eol == std::string::npos ? n : eol) - k).find("// locked in Haumea") != std::string::npos)
+			call.locked = true;
 		// The variable it is stored in.
 		size_t b = start;
 		while(b > 0 && isspace((unsigned char)src[b-1])) b--;
@@ -736,6 +741,7 @@ ImportTextDrawsFromSource(const std::string &source, std::vector<TextDraw> &out)
 				continue;
 			td.x = x;
 			td.y = y;
+			td.locked = c.locked;
 			snprintf(td.name, sizeof(td.name), "%s", c.lhs.c_str());
 			byHandle[c.lhs] = out.size();
 			out.push_back(td);

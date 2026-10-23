@@ -1,0 +1,32 @@
+# TextDraw mode: a sprite dragged past its own corner mirrors (negative size),
+# and a locked textdraw stays put on the canvas and is saved locked.
+open "$UI_FIXTURES/ui_map.pwn"
+click_item '*' 'Windows'
+wait 3
+click_item '*' 'TextDraws'
+wait 5
+click_item 'TextDraws' 'Sprite'
+wait 5
+assert textdraws == 1
+assert textdraw.0.size_x == 32
+drag_item '*' 'resize' -120 -120
+wait 5
+assert textdraw.0.size_x < 0
+assert textdraw.0.size_y < 0
+# The mirrored sprite still takes clicks and drags.
+drag_item '*' 'hit' 60 0
+wait 5
+assert textdraw.0.x > 300
+click_item 'TextDraws' 'Locked'
+wait 5
+assert textdraw.0.locked == 1
+assert textdraw.0.x > 300
+drag_item '*' 'hit' 100 60
+wait 5
+assert textdraw.0.x < 400
+assert no_item '*' 'resize'
+click_item 'TextDraws' 'Save As...'
+wait 5
+click_item 'Save TextDraws As' 'Save'
+wait 5
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "); // locked in Haumea"

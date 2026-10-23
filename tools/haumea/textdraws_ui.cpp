@@ -649,10 +649,13 @@ drawTextDraw(ImDrawList *dl, const Canvas &cv, const TextDraw &td)
 	float x0, y0, x1, y1;
 	textDrawBounds(td, &x0, &y0, &x1, &y1);
 	if(td.font == TD_FONT_SPRITE){
+		// A negative width or height mirrors it, as in game (e.g. LD_DRV:tvcorn's four corners).
 		rw::Texture *tex = spriteTexture(td.text);
+		ImVec2 uv0(x1 < x0 ? 1.0f : 0.0f, y1 < y0 ? 1.0f : 0.0f), uv1(1.0f - uv0.x, 1.0f - uv0.y);
+		if(x1 < x0) std::swap(x0, x1);
+		if(y1 < y0) std::swap(y0, y1);
 		if(tex)
-			dl->AddImage((ImTextureID)tex, cv.at(x0, y0), cv.at(x1, y1), ImVec2(0, 0), ImVec2(1, 1),
-				rgbaToImU32(td.colour));
+			dl->AddImage((ImTextureID)tex, cv.at(x0, y0), cv.at(x1, y1), uv0, uv1, rgbaToImU32(td.colour));
 		else
 			dl->AddRect(cv.at(x0, y0), cv.at(x1, y1), IM_COL32(255, 80, 80, 200));
 		return;
@@ -661,6 +664,8 @@ drawTextDraw(ImDrawList *dl, const Canvas &cv, const TextDraw &td)
 		// Rendered with its own background, rotation and zoom, then drawn in
 		// TextDrawColor like any textdraw texture (DrawTextDrawRuntimeTexture).
 		rw::Texture *tex = previewTexture(td);
+		if(x1 < x0) std::swap(x0, x1);
+		if(y1 < y0) std::swap(y0, y1);
 		if(tex)
 			dl->AddImage((ImTextureID)tex, cv.at(x0, y0), cv.at(x1, y1), ImVec2(0, 1), ImVec2(1, 0),
 				rgbaToImU32(td.colour));
@@ -735,6 +740,8 @@ DrawTextDrawsOverlay(void)
 		TextDraw &td = tds[i];
 		float x0, y0, x1, y1;
 		textDrawBounds(td, &x0, &y0, &x1, &y1);
+		if(x1 < x0) std::swap(x0, x1);	// mirrored sprites
+		if(y1 < y0) std::swap(y0, y1);
 		ImVec2 p0 = cv.at(x0, y0), p1 = cv.at(x1, y1);
 		if(p1.x - p0.x < 6.0f) p1.x = p0.x + 6.0f;
 		if(p1.y - p0.y < 6.0f) p1.y = p0.y + 6.0f;
@@ -751,9 +758,14 @@ DrawTextDrawsOverlay(void)
 			dragging = i;
 			resizing = false;
 		}
-		if(ImGui::IsItemHovered())
-			ImGui::SetTooltip("%s", td.name[0] ? td.name : _("textdraw"));
-		if(dragging == i && !resizing && ImGui::IsItemActive()){
+		if(ImGui::IsItemHovered()){
+			const char *name = td.name[0] ? td.name : _("textdraw");
+			if(td.locked)
+				ImGui::SetTooltip(ICON_FA_LOCK " %s", name);
+			else
+				ImGui::SetTooltip("%s", name);
+		}
+		if(dragging == i && !resizing && !td.locked && ImGui::IsItemActive()){
 			ImVec2 d = ImGui::GetIO().MouseDelta;
 			if(d.x != 0.0f || d.y != 0.0f){
 				td.x += d.x / cv.sx;
@@ -770,8 +782,9 @@ DrawTextDrawsOverlay(void)
 	}
 
 	// A handle at the selected one's corner resizes it: letters for text,
-	// the box's edge for a box, the size for sprites and models.
-	if(gSelected >= 0){
+	// the box's edge for a box, the size for sprites and models. Dragged
+	// past the opposite edge, a sprite's size goes negative and it mirrors.
+	if(gSelected >= 0 && !tds[gSelected].locked){
 		TextDraw &td = tds[gSelected];
 		float x0, y0, x1, y1;
 		textDrawBounds(td, &x0, &y0, &x1, &y1);
@@ -794,8 +807,8 @@ DrawTextDrawsOverlay(void)
 			float dx = d.x / cv.sx, dy = d.y / cv.sy;
 			if(dx != 0.0f || dy != 0.0f){
 				if(td.font == TD_FONT_SPRITE || td.font == TD_FONT_PREVIEW){
-					td.sizeX = std::max(1.0f, td.sizeX + dx);
-					td.sizeY = std::max(1.0f, td.sizeY + dy);
+					td.sizeX += dx;
+					td.sizeY += dy;
 				}else if(td.useBox){
 					if(td.alignment == 2) td.sizeY = std::max(1.0f, td.sizeY + dx * 2.0f);
 					else td.sizeX += dx;
@@ -958,6 +971,8 @@ properties(TextDraw &td)
 	changed |= colourEdit(td.font == TD_FONT_SPRITE ? L("Tint") : L("Colour"), &td.colour);
 
 	ImGui::SeparatorText(_("Position"));
+	changed |= ImGui::Checkbox(LI(ICON_FA_LOCK, "Locked"), &td.locked);
+	ImGui::SetItemTooltip("%s", _("Can't be dragged or resized on the canvas. The fields here still change it."));
 	float pos[2] = { td.x, td.y };
 	if(ImGui::DragFloat2(L("Position"), pos, 0.5f, -100.0f, 740.0f, "%.2f")){
 		td.x = pos[0]; td.y = pos[1];
@@ -969,7 +984,7 @@ properties(TextDraw &td)
 		td.sizeX = size[0]; td.sizeY = size[1];
 		changed = true;
 	}
-	ImGui::SetItemTooltip("%s", td.font >= TD_FONT_SPRITE ? _("Width and height.") :
+	ImGui::SetItemTooltip("%s", td.font >= TD_FONT_SPRITE ? _("Width and height. A negative one mirrors a sprite.") :
 		_("Left: the box's right edge. Centre: width and height are swapped (the second is the width).\n"
 		"Right: the box's left edge. Text wraps there."));
 
@@ -1415,8 +1430,8 @@ DrawTextDrawsWindow(void)
 			td.useBox ? _("box") : _("text");
 		std::string preview = td.text.substr(0, 28);
 		std::replace(preview.begin(), preview.end(), '\n', ' ');
-		snprintf(label, sizeof(label), "%s %s  %s##td%d", td.perPlayer ? ICON_FA_USER : ICON_FA_GLOBE,
-			kind, preview.c_str(), (int)i);
+		snprintf(label, sizeof(label), "%s%s %s  %s##td%d", td.locked ? ICON_FA_LOCK " " : "",
+			td.perPlayer ? ICON_FA_USER : ICON_FA_GLOBE, kind, preview.c_str(), (int)i);
 		if(ImGui::Selectable(label, gSelected == (int)i))
 			gSelected = (int)i;
 	}

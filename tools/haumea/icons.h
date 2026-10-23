@@ -15,6 +15,7 @@
 #define ICON_FA_CUBE            "\xef\x86\xb2"  // f1b2
 #define ICON_FA_RIGHT_FROM_BRACKET "\xef\x8b\xb5" // f2f5
 #define ICON_FA_CLOCK           "\xef\x80\x97"  // f017
+#define ICON_FA_LOCK            "\xef\x80\xa3"  // f023
 #define ICON_FA_EYE             "\xef\x81\xae"  // f06e
 #define ICON_FA_PAINTBRUSH      "\xef\x87\xbc"  // f1fc
 #define ICON_FA_WRENCH          "\xef\x82\xad"  // f0ad

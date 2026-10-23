@@ -783,7 +783,7 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		return compare(v, arg(1), atof(arg(2).c_str()));
 	}
 	if(what.compare(0, 9, "textdraw.") == 0){
-		// textdraw.N.x|y|letter_x|letter_y|size_x|size_y
+		// textdraw.N.x|y|letter_x|letter_y|size_x|size_y|locked
 		std::vector<TextDraw> &tds = GetTextDraws();
 		size_t dot = what.find('.', 9);
 		int index = atoi(what.c_str() + 9);
@@ -791,7 +791,7 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		if(index < 0 || index >= (int)tds.size()){ why = "no such textdraw"; return false; }
 		const TextDraw &td = tds[index];
 		double v = field == "x" ? td.x : field == "y" ? td.y : field == "letter_x" ? td.letterX :
-			field == "letter_y" ? td.letterY : field == "size_x" ? td.sizeX : td.sizeY;
+			field == "letter_y" ? td.letterY : field == "size_x" ? td.sizeX : field == "locked" ? (double)td.locked : td.sizeY;
 		snprintf(buf, sizeof(buf), "%s is %g", what.c_str(), v);
 		why = buf;
 		return compare(v, arg(1), atof(arg(2).c_str()));

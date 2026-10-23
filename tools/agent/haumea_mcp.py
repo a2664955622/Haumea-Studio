@@ -1080,9 +1080,10 @@ TEXTDRAW_FIELDS_DOC = inspect.cleandoc("""
 	  or "TXD:texture" for a sprite (font 4), e.g. "LD_BEAT:chit"
 	- font: 0 Beckett, 1 Aharoni, 2 Bank Gothic, 3 Pricedown, 4 sprite, 5 model preview
 	- letter_x, letter_y: letter size (default 0.48, 1.12); size_x, size_y: TextDrawTextSize
-	  (left alignment: box right edge and wrap; centre: size_y is the width; sprites/models: width, height)
+	  (left alignment: box right edge and wrap; centre: size_y is the width; sprites/models: width, height; a negative one mirrors a sprite)
 	- alignment: 1 left, 2 centre, 3 right; colour, use_box, box_colour, background_colour (shadow/outline,
 	  or a model preview's background); shadow, outline: sizes; proportional, selectable: true/false
+	- locked: true/false, keeps it from being dragged on the user's canvas
 	- preview_model, preview_rot ([x, y, z] degrees), preview_zoom, preview_colours ([colour1, colour2])
 	""")
 

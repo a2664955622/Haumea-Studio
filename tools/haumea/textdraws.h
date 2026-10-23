@@ -35,6 +35,7 @@ struct TextDraw
 	int previewModel;
 	float previewRotX, previewRotY, previewRotZ, previewZoom;
 	int previewColour1, previewColour2;
+	bool locked;	// can't be dragged on the canvas; saved as a comment after its create line
 };
 
 void InitTextDraw(TextDraw *td);	// the client's defaults
