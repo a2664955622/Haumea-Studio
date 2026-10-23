@@ -19,7 +19,7 @@ newer jobs. Nothing here is automatic: pushing and releasing are your call.
   publishing a draft makes its tag `v1.0.0.<build>-<channel>` and nothing
   runs again. `tools/release/release_plan.py` decides what a run may release: only beta
   and production, production only from main, never over an existing tag.
-  The release has the update bundles, the Namaka bundles and `SHA256SUMS`
+  The release has the installers, portable downloads, update bundles and `SHA256SUMS`
   (see `.github/workflows/build-haumea.yml`).
 - **Version numbers work as open.mp's do.** `tools/haumea/version.h` holds
   MAJOR.MINOR.PATCH (`HAUMEA_VERSION_MAJOR/MINOR/PATCH`, 1.0.0 now); the
@@ -64,11 +64,15 @@ newer jobs. Nothing here is automatic: pushing and releasing are your call.
    public yet, and no one is offered the update.
 3. Check the draft on the Releases page:
    - the name and tag say the right version and channel;
-   - the assets: `haumea-windows-gl3.tar.gz`, `haumea-linux-amd64.tar.gz`,
-     `haumea-macos.zip`, `haumea-namaka-windows-x86_64.zip`,
-     `haumea-namaka-linux-x86_64.zip`, `SHA256SUMS` (and, once crash reports
-     are on main, `haumea-symbols-<version>.zip`, which the report server
-     fetches);
+   - the download table points to one installer or portable download per platform;
+   - Windows: `Haumea-Studio-Windows-Setup.exe`, `Haumea-Studio-Windows-Portable.zip`;
+   - Linux: `Haumea-Studio-Linux-Setup.run`, `haumea-linux-amd64.tar.gz`;
+   - macOS: `Haumea-Studio-macOS-Apple-Silicon-Portable.zip`;
+   - updater/support files: `haumea-windows-gl3.tar.gz`,
+     `haumea-symbols-<version>.zip` and `SHA256SUMS`;
+   - no separate Namaka ZIPs: Windows and Linux already include the assistant payload;
+   - run both installers, launch the installed editor, then uninstall and confirm
+     that maps and settings remain; the Windows CI installer job checks this too;
    - download one bundle and check it against `SHA256SUMS`.
 4. Edit the draft's text: the body is the run's notes, this version's
    CHANGELOG section and the license line. For the first beta, paste the

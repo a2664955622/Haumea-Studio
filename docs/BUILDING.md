@@ -96,3 +96,34 @@ all. A test that can't run says why. After an intended change to the exporter,
 
 CI builds Linux, Windows and macOS for `main` and pull requests, and runs `run_all.sh --fixture`
 on Linux under Xvfb.
+
+## Package downloads
+
+`tools/release/package_downloads.py` stages the editor, fonts, prefabs, translations,
+licences and (on Windows/Linux) Namaka in one folder. Use a new staging directory:
+
+```sh
+python3 tools/release/package_downloads.py --platform linux \
+  --engine bin/linux-amd64-gl3/Release/haumea \
+  --namaka /path/to/Haumea-Namaka-linux-x86_64.zip \
+  --stage /tmp/haumea-linux-stage --output /tmp/haumea-downloads
+```
+
+This makes the portable/update tarball and a self-extracting `.run` installer. The
+installer uses Python 3.10+, installs for the current user and keeps settings in
+the existing config folder. Re-running the installer updates its managed files;
+`python3 ~/.local/share/haumea-studio/install-linux.py --uninstall` removes them
+(use the printed path when `XDG_DATA_HOME` is set). Added files and settings stay.
+
+For Windows, pass `--platform windows`, an editor `.exe`, `--glfw /path/to/glfw3.dll`
+and the Windows Namaka ZIP. Put the app-local MSVC runtime DLLs beside the input
+editor; the packager includes them. It writes one portable ZIP with a `Haumea Studio`
+folder and the legacy updater tarball. Compile `tools/release/haumea.iss` with
+Inno Setup 6 (`ISCC /DBundleDir=... /DOutputDir=... /DAppVersion=1.0.0.1 haumea.iss`)
+to make the per-user Windows setup program. The `installer-windows` CI job builds
+and exercises installation/uninstallation on every run. No release is published
+unless the manual release workflow requests it.
+
+For macOS, pass `--platform macos` and the Apple Silicon editor, without `--namaka`
+or `--glfw`. The portable ZIP preserves the executable bit; GLFW must be installed
+on the target Mac.

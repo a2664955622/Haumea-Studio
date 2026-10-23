@@ -135,7 +135,15 @@ jobs:
           New-Item -ItemType Directory -Force -Path $lang | Out-Null
           Copy-Item "haumea\tools\haumea\lang\*.po" $lang
           $glfwDll = "glfw-3.3.4.bin.WIN64\lib-vc2015\glfw3.dll"
-          if (Test-Path $glfwDll) { Copy-Item $glfwDll $bundle }
+          if (!(Test-Path $glfwDll)) { throw 'GLFW DLL missing' }
+          Copy-Item $glfwDll $bundle
+          # App-local MSVC runtime: portable and per-user installs need no admin setup.
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vs = & $vswhere -latest -products '*' -property installationPath
+          $crt = Get-ChildItem "$vs\VC\Redist\MSVC\*\x64\Microsoft.VC*.CRT" -Directory |
+            Sort-Object FullName -Descending | Select-Object -First 1
+          if (!$crt) { throw 'MSVC redistributable runtime missing' }
+          Copy-Item "$($crt.FullName)\*.dll" $bundle
 
       - name: Upload Windows editor bundle
         uses: actions/upload-artifact@v4
@@ -665,10 +673,66 @@ jobs:
           name: haumea-namaka-windows-x86_64
           path: dist/agent/${{ env.BUNDLE }}.zip
 
+  installer-windows:
+    needs: [build-windows, agent-bundle-windows]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: haumea
+      - uses: actions/download-artifact@v4
+        with:
+          name: haumea-windows-gl3
+          path: dist/windows
+      - uses: actions/download-artifact@v4
+        with:
+          name: haumea-namaka-windows-x86_64
+          path: dist/namaka
+      - name: Stage the complete Windows distribution
+        shell: pwsh
+        run: |
+          python haumea/tools/release/package_downloads.py --platform windows `
+            --engine dist/windows/haumea.exe --glfw dist/windows/glfw3.dll `
+            --namaka dist/namaka/Haumea-Namaka-windows-x86_64.zip `
+            --stage dist/windows-bundle --output dist/portable
+      - name: Build the Windows installer
+        shell: pwsh
+        run: |
+          $compiler = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (!(Test-Path $compiler)) { choco install innosetup --version=6.7.3 --yes --no-progress }
+          if (!(Test-Path $compiler)) { throw 'Inno Setup compiler not found' }
+          & $compiler "/DBundleDir=$env:GITHUB_WORKSPACE\dist\windows-bundle" `
+            "/DOutputDir=$env:GITHUB_WORKSPACE\dist\setup" `
+            "/DAppVersion=${{ needs.build-windows.outputs.version }}" haumea/tools/release/haumea.iss
+          if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed' }
+      - name: Check installation and uninstallation
+        shell: pwsh
+        run: |
+          $dest = Join-Path $env:RUNNER_TEMP 'Haumea install test'
+          $setup = Start-Process dist/setup/Haumea-Studio-Windows-Setup.exe -Wait -PassThru `
+            -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$dest`""
+          if ($setup.ExitCode -ne 0) { throw 'Installation failed' }
+          foreach ($file in @('haumea.exe', 'glfw3.dll', 'START_HERE.txt', 'lang/pt-BR.po', 'namaka/namaka_install.py')) {
+            if (!(Test-Path (Join-Path $dest $file))) { throw "Missing installed file: $file" }
+          }
+          & "$dest/haumea.exe" --version
+          if ($LASTEXITCODE -ne 0) { throw 'Installed editor does not start' }
+          Set-Content "$dest/keep-map.pwn" '// user map'
+          $uninstall = Start-Process "$dest/unins000.exe" -Wait -PassThru `
+            -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'
+          if ($uninstall.ExitCode -ne 0) { throw 'Uninstallation failed' }
+          if (Test-Path "$dest/haumea.exe") { throw 'Editor was not uninstalled' }
+          if (!(Test-Path "$dest/keep-map.pwn")) { throw 'Uninstall removed a user map' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: haumea-windows-installer
+          path: dist/setup/Haumea-Studio-Windows-Setup.exe
+          if-no-files-found: error
+
   release:
     # A manual run asking for a draft or a release.
     if: github.event_name == 'workflow_dispatch' && inputs.release != 'build only'
-    needs: [build-windows, build-linux, build-macos, test-linux, pawn, agent-bundle-linux, agent-bundle-windows]
+    needs: [build-windows, build-linux, build-macos, test-linux, pawn, agent-bundle-linux, agent-bundle-windows, installer-windows]
     runs-on: ubuntu-latest
 
     steps:
@@ -726,73 +790,26 @@ jobs:
           pattern: haumea-namaka-*
           path: dist/namaka
 
-      # The updater (tools/haumea/updatecore.cpp) installs a platform's
-      # bundle by its MANIFEST after checking it against SHA256SUMS. macOS
-      # has no update bundle: its users download haumea-macos.zip (the editor
-      # with its fonts, prefabs and translations, like the Linux bundle).
-      - name: Make the update bundles and SHA256SUMS
+      - name: Download the Windows installer
+        uses: actions/download-artifact@v4
+        with:
+          name: haumea-windows-installer
+          path: dist/release
+
+      # One portable per platform; Namaka is included in Windows and Linux.
+      # The tar names remain stable for editors already using auto-update.
+      - name: Make the portable downloads, Linux installer and SHA256SUMS
         run: |
-          mkdir -p dist/release dist/linux-bundle dist/macos-bundle
-          # GPL-2.0-or-later: every bundle carries the licence and the notices
-          # for what it includes (in its MANIFEST like any shipped file).
-          for f in LICENSE THIRD_PARTY_NOTICES.md; do
-            if [ ! -s "haumea/$f" ]; then
-              echo "::error::$f is missing: every release bundle ships it"; exit 1
-            fi
-            cp "haumea/$f" dist/linux-bundle/ && cp "haumea/$f" dist/windows/ && cp "haumea/$f" dist/macos-bundle/
-          done
-          install -m 755 dist/linux/haumea dist/linux-bundle/haumea
-          cp -r haumea/fonts dist/linux-bundle/fonts
-          cp -r haumea/tools/haumea/prefabs dist/linux-bundle/prefabs
-          # Translations beside the editor, in the MANIFEST like any shipped
-          # file, so an update brings new catalogs. Windows stages its own.
-          mkdir -p dist/linux-bundle/lang
-          cp haumea/tools/haumea/lang/*.po dist/linux-bundle/lang/
-          ls dist/windows/lang/*.po >/dev/null || { echo "::error::the Windows bundle has no lang/*.po"; exit 1; }
-          # Namaka (the AI companion) ships in each editor bundle's namaka/: its
-          # wheel and wheelhouse from the Namaka bundle, and its installer.
-          stage_namaka() {
-            unpacked=$(mktemp -d)
-            python3 -m zipfile -e "$1" "$unpacked"
-            from=$(find "$unpacked" -mindepth 1 -maxdepth 1 -type d | head -n 1)
-            mkdir -p "$2/namaka"
-            cp "$from"/haumea_namaka-*.whl "$2/namaka/"
-            cp -r "$from/wheelhouse" "$2/namaka/wheelhouse"
-            cp haumea/tools/release/namaka_install.py "$2/namaka/"
-          }
-          stage_namaka dist/namaka/haumea-namaka-linux-x86_64/Haumea-Namaka-linux-x86_64.zip dist/linux-bundle
-          stage_namaka dist/namaka/haumea-namaka-windows-x86_64/Haumea-Namaka-windows-x86_64.zip dist/windows
-          for zip in dist/namaka/*/Haumea-Namaka-*.zip; do
-            for f in LICENSE THIRD_PARTY_NOTICES.md; do
-              python3 -c 'import sys, zipfile; sys.exit(not any(n.endswith("/" + sys.argv[2]) for n in zipfile.ZipFile(sys.argv[1]).namelist()))' "$zip" "$f" ||
-                { echo "::error::$zip has no $f"; exit 1; }
-            done
-          done
-          cp dist/namaka/haumea-namaka-linux-x86_64/Haumea-Namaka-linux-x86_64.zip \
-            dist/release/haumea-namaka-linux-x86_64.zip
-          cp dist/namaka/haumea-namaka-windows-x86_64/Haumea-Namaka-windows-x86_64.zip \
-            dist/release/haumea-namaka-windows-x86_64.zip
-          python3 haumea/tools/release/make_update_bundle.py dist/linux-bundle dist/release/haumea-linux-amd64.tar.gz
-          python3 haumea/tools/release/make_update_bundle.py dist/windows dist/release/haumea-windows-gl3.tar.gz
-          # macOS: a zip, so lang/ (and fonts, prefabs) sit beside the editor.
-          install -m 755 dist/macos/haumea dist/macos-bundle/haumea
-          cp -r haumea/fonts dist/macos-bundle/fonts
-          cp -r haumea/tools/haumea/prefabs dist/macos-bundle/prefabs
-          mkdir -p dist/macos-bundle/lang
-          cp haumea/tools/haumea/lang/*.po dist/macos-bundle/lang/
-          python3 - dist/macos-bundle dist/release/haumea-macos.zip <<'PY'
-          import os, sys, zipfile
-          src, out = sys.argv[1], sys.argv[2]
-          with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
-              for root, _, files in sorted(os.walk(src)):
-                  for name in sorted(files):
-                      path = os.path.join(root, name)
-                      info = zipfile.ZipInfo(os.path.relpath(path, src), (1980, 1, 1, 0, 0, 0))
-                      info.external_attr = (os.stat(path).st_mode & 0o777 | 0o100000) << 16	# keeps haumea executable
-                      info.compress_type = zipfile.ZIP_DEFLATED
-                      with open(path, 'rb') as f:
-                          z.writestr(info, f.read())
-          PY
+          python3 haumea/tools/release/package_downloads.py --platform windows \
+            --engine dist/windows/haumea.exe --glfw dist/windows/glfw3.dll \
+            --namaka dist/namaka/haumea-namaka-windows-x86_64/Haumea-Namaka-windows-x86_64.zip \
+            --stage dist/windows-bundle --output dist/release
+          python3 haumea/tools/release/package_downloads.py --platform linux \
+            --engine dist/linux/haumea \
+            --namaka dist/namaka/haumea-namaka-linux-x86_64/Haumea-Namaka-linux-x86_64.zip \
+            --stage dist/linux-bundle --output dist/release
+          python3 haumea/tools/release/package_downloads.py --platform macos \
+            --engine dist/macos/haumea --stage dist/macos-bundle --output dist/release
           # The symbols for crash reports (tools/server/symbols.py reads this zip);
           # not part of any bundle.
           python3 haumea/tools/release/make_symbols.py \
@@ -812,6 +829,22 @@ jobs:
           {
             if [ -n "$NOTES" ]; then printf '%s\n\n' "$NOTES"; fi
             echo "Haumea Studio $version, channel **${{ steps.plan.outputs.channel }}**"
+            echo
+            echo '## Downloads'
+            echo
+            echo '| Platform | Install (recommended) | Portable |'
+            echo '| --- | --- | --- |'
+            base="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/${{ steps.plan.outputs.tag }}"
+            echo "| Windows 64-bit | [Setup.exe]($base/Haumea-Studio-Windows-Setup.exe) | [Portable ZIP]($base/Haumea-Studio-Windows-Portable.zip) |"
+            echo "| Linux x86_64 | [Setup.run]($base/Haumea-Studio-Linux-Setup.run) | [Portable tar.gz]($base/haumea-linux-amd64.tar.gz) |"
+            echo "| macOS Apple Silicon | | [Portable ZIP]($base/Haumea-Studio-macOS-Apple-Silicon-Portable.zip) |"
+            echo
+            echo 'Download **one file** for your platform. Windows and Linux include Namaka; no companion ZIP is needed.'
+            echo 'Windows: run Setup.exe, or extract the entire portable ZIP and open haumea.exe.'
+            echo 'Linux: run `sh Haumea-Studio-Linux-Setup.run` (Python 3.10+, libglfw3 and curl required).'
+            echo 'macOS: install GLFW (`brew install glfw`), extract the ZIP and run `./haumea` from its folder.'
+            echo
+            echo 'The Windows `.tar.gz` is used by the built-in updater. The symbols ZIP is for crash reports, and SHA256SUMS verifies downloads. These are not extra installs.'
             echo
             python3 haumea/tools/release/changelog_section.py "${version%.*}" haumea/CHANGELOG.md || true
             echo

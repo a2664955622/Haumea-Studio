@@ -63,6 +63,18 @@ carries its full license text in its `.dist-info` folder.
 | `typing-inspection` | MIT | Victorien Plot | https://github.com/pydantic/typing-inspection |
 | `uvicorn` | BSD-3-Clause | Tom Christie | https://github.com/Kludex/uvicorn |
 
+## Windows distribution
+
+The MSVC Windows downloads include the Microsoft Visual C++ Runtime DLLs
+beside the editor. These are Microsoft components distributed under the
+Microsoft Visual Studio license terms, rather than Haumea Studio's GPL.
+See [Microsoft's redistribution documentation](https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files)
+and the [Visual Studio license directory](https://visualstudio.microsoft.com/license-terms/).
+
+The Windows setup program is built with [Inno Setup](https://jrsoftware.org/),
+Copyright (C) 1997-2026 Jordan Russell; portions Copyright (C) 2000-2026
+Martijn Laan. Its original copyright notices remain in the setup program.
+
 ## Data from other projects
 
 | Data | Source |

@@ -69,16 +69,37 @@ New to Haumea Studio? Read the **[user guide](docs/USER_GUIDE.md)**.
 Download Haumea Studio from the [releases page](https://github.com/itsneufox/Haumea-Studio/releases).
 You also need GTA San Andreas, and, to test maps, an open.mp or SA-MP server folder.
 
-**Windows**: put `haumea.exe` and `glfw3.dll` in one folder and run `haumea.exe`.
+Download **one file** for your platform. Namaka is included in the Windows and Linux downloads;
+there is no separate companion ZIP to install.
+
+| Platform | Install (recommended) | Portable |
+| --- | --- | --- |
+| Windows 64-bit | `Haumea-Studio-Windows-Setup.exe` | `Haumea-Studio-Windows-Portable.zip` |
+| Linux x86_64 | `Haumea-Studio-Linux-Setup.run` | `haumea-linux-amd64.tar.gz` |
+| macOS Apple Silicon | | `Haumea-Studio-macOS-Apple-Silicon-Portable.zip` |
+
+**Windows**: run Setup to add Haumea Studio to the Start menu. It installs for your account
+and can be removed from Windows Settings. For portable use, extract the **entire** ZIP,
+open the `Haumea Studio` folder and double-click `haumea.exe`. Keep its folders and DLLs beside it.
 
 **Linux** (x86_64, glibc 2.38 or newer: Ubuntu 24.04, Debian 13, Fedora 39 or later):
 
 ```sh
-sudo apt install libglfw3 zenity        # Fedora: sudo dnf install glfw zenity
-                                        # Arch:   sudo pacman -S glfw zenity
-chmod +x haumea
-./haumea
+sudo apt install libglfw3 curl python3 zenity  # Fedora: sudo dnf install glfw curl python3 zenity
+                                            # Arch: sudo pacman -S glfw curl python zenity
+sh Haumea-Studio-Linux-Setup.run
 ```
+
+The installer needs Python 3.10+ and adds Haumea Studio to your applications menu. Run it
+as your normal user. It installs in `$XDG_DATA_HOME/haumea-studio` (usually
+`~/.local/share/haumea-studio`) and prints the uninstall command. For portable use, extract
+`haumea-linux-amd64.tar.gz` into its own folder and run `./haumea` there.
+
+**macOS**: install GLFW with `brew install glfw`, extract the ZIP and run `./haumea` from
+the `Haumea Studio` folder in Terminal. This build is for Apple Silicon.
+
+The Windows `.tar.gz` is for automatic updates; the symbols ZIP is for crash reports.
+You do not need either to install. `SHA256SUMS` contains download checksums.
 
 `kdialog` also works instead of `zenity`. Without either, type paths instead of browsing.
 Your graphics driver must support OpenGL 3.3 (Mesa does).

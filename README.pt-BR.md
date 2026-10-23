@@ -69,16 +69,39 @@ Começando com o Haumea Studio? Leia o **[guia do usuário](docs/USER_GUIDE.pt-B
 Baixe o Haumea Studio na [página de releases](https://github.com/itsneufox/Haumea-Studio/releases).
 Você também precisa do GTA San Andreas e, para testar mapas, de uma pasta de servidor open.mp ou SA-MP.
 
-**Windows**: coloque `haumea.exe` e `glfw3.dll` numa pasta e execute `haumea.exe`.
+Baixe **um arquivo** para sua plataforma. Os downloads para Windows e Linux já incluem o
+Namaka; não é preciso baixar um ZIP separado do assistente.
+
+| Plataforma | Instalação (recomendada) | Portátil |
+| --- | --- | --- |
+| Windows 64 bits | `Haumea-Studio-Windows-Setup.exe` | `Haumea-Studio-Windows-Portable.zip` |
+| Linux x86_64 | `Haumea-Studio-Linux-Setup.run` | `haumea-linux-amd64.tar.gz` |
+| macOS Apple Silicon | | `Haumea-Studio-macOS-Apple-Silicon-Portable.zip` |
+
+**Windows**: execute o Setup para adicionar o Haumea Studio ao menu Iniciar. A instalação
+é feita para sua conta e pode ser removida nas Configurações do Windows. Para usar a versão
+portátil, extraia o ZIP **inteiro**, abra a pasta `Haumea Studio` e execute `haumea.exe`.
+Mantenha as pastas e DLLs ao lado dele.
 
 **Linux** (x86_64, glibc 2.38 ou mais nova: Ubuntu 24.04, Debian 13, Fedora 39 ou posterior):
 
 ```sh
-sudo apt install libglfw3 zenity        # Fedora: sudo dnf install glfw zenity
-                                        # Arch:   sudo pacman -S glfw zenity
-chmod +x haumea
-./haumea
+sudo apt install libglfw3 curl python3 zenity  # Fedora: sudo dnf install glfw curl python3 zenity
+                                            # Arch: sudo pacman -S glfw curl python zenity
+sh Haumea-Studio-Linux-Setup.run
 ```
+
+O instalador precisa do Python 3.10+ e adiciona o Haumea Studio ao menu de aplicativos.
+Execute-o com seu usuário normal. Ele instala em `$XDG_DATA_HOME/haumea-studio` (normalmente
+`~/.local/share/haumea-studio`) e mostra o comando para desinstalar. Para usar a versão
+portátil, extraia `haumea-linux-amd64.tar.gz` numa pasta própria e execute `./haumea` nela.
+
+**macOS**: instale o GLFW com `brew install glfw`, extraia o ZIP e execute `./haumea` na
+pasta `Haumea Studio` pelo Terminal. Essa versão é para Apple Silicon.
+
+O `.tar.gz` do Windows serve para atualizações automáticas, e o ZIP de símbolos, para
+relatórios de falhas. Eles não são necessários para instalar. O arquivo `SHA256SUMS`
+contém as somas de verificação dos downloads.
 
 O `kdialog` também funciona no lugar do `zenity`. Sem nenhum dos dois, digite os caminhos em vez de procurar.
 O driver de vídeo precisa suportar OpenGL 3.3 (o Mesa suporta).
