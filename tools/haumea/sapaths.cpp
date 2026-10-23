@@ -5293,6 +5293,18 @@ drawNodeSphere(const rw::V3d &pos, const rw::RGBA &col, bool vehicle)
 		RenderWireSphere(&sphere, col, nil);
 }
 
+// Nodes sit on the ground: drawn there, the lines between them dip in and
+// out of the terrain and most of them hide behind it. Drawn a little higher.
+static const float NODE_DRAW_LIFT = 0.3f;
+
+static rw::V3d
+nodeDrawPosition(const Node &node)
+{
+	rw::V3d p = getNodePosition(node);
+	p.z += NODE_DRAW_LIFT;
+	return p;
+}
+
 static void
 drawNodeSet(bool vehicles)
 {
@@ -5312,7 +5324,7 @@ drawNodeSet(bool vehicles)
 		rw::RGBA baseCol = vehicles ? red : magenta;
 		for(uint32 i = start; i < end; i++){
 			Node &node = area.nodes[i];
-			rw::V3d p = getNodePosition(node);
+			rw::V3d p = nodeDrawPosition(node);
 			if(TheCamera.distanceTo(p) > PATH_DRAW_DIST)
 				continue;
 
@@ -5321,7 +5333,8 @@ drawNodeSet(bool vehicles)
 			sphere.center = p;
 			sphere.radius = NODE_DRAW_RADIUS;
 			float hitT = 0.0f;
-			if(IntersectRaySphere(ray, sphere, &hitT) && hitT >= 0.0f && hitT < hoveredNodeHitT){
+			// Not while looking round: the cursor is hidden and held still.
+			if(!gCameraLooking && IntersectRaySphere(ray, sphere, &hitT) && hitT >= 0.0f && hitT < hoveredNodeHitT){
 				hoveredNode = &node;
 				hoveredNodeHitT = hitT;
 				c = cyan;
@@ -5335,7 +5348,7 @@ drawNodeSet(bool vehicles)
 				Node *other = getNode(area.nodeLinks[slot]);
 				if(other == nil)
 					continue;
-				rw::V3d q = getNodePosition(*other);
+				rw::V3d q = nodeDrawPosition(*other);
 				if(TheCamera.distanceTo(q) > PATH_DRAW_DIST && TheCamera.distanceTo(p) > PATH_DRAW_DIST)
 					continue;
 				bool selected = &node == selectedNode || other == selectedNode;
@@ -5357,7 +5370,7 @@ drawVehicleLanes(void)
 			continue;
 		for(uint32 i = 0; i < area.numVehicleNodes; i++){
 			Node &node = area.nodes[i];
-			rw::V3d p = getNodePosition(node);
+			rw::V3d p = nodeDrawPosition(node);
 			if(TheCamera.distanceTo(p) > PATH_DRAW_DIST)
 				continue;
 			for(int li = 0; li < node.numLinks(); li++){
@@ -5374,7 +5387,7 @@ drawVehicleLanes(void)
 				if(naviArea == nil || !naviArea->loaded || naviAddr.nodeId() >= naviArea->naviNodes.size())
 					continue;
 				DiskCarPathLink &navi = naviArea->naviNodes[naviAddr.nodeId()];
-				rw::V3d q = getNodePosition(*other);
+				rw::V3d q = nodeDrawPosition(*other);
 				rw::V3d dir = sub(q, p);
 				dir.z = 0.0f;
 				if(length(dir) < 0.001f)

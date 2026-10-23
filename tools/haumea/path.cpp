@@ -166,7 +166,7 @@ DrawNodePatch(rw::V3d positions[], NodeTable &nodes, int idx, ObjectInst *inst, 
 		CSphere sphere;
 		sphere.radius = 1.0f;
 		sphere.center = positions[i];
-		if(SphereIntersect(sphere, ray) || nd == guiHoveredNode){
+		if((!gCameraLooking && SphereIntersect(sphere, ray)) || nd == guiHoveredNode){
 			hoveredNode = nd;
 			c = cyan;
 		}

@@ -96,7 +96,7 @@ static const struct { int w, h; } gHudResolutions[] = {
 	{ 800, 600 }, { 1024, 768 }, { 1280, 720 }, { 1366, 768 }, { 1600, 900 }, { 1920, 1080 }, { 2560, 1440 },
 };
 static const int NUM_HUD_RESOLUTIONS = IM_ARRAYSIZE(gHudResolutions);
-static const HudSettings HUD_DEFAULTS = { false, HUD_DEFAULT, 12, 0, 1500, 100, 50, 100, 0, 1, 120, 17, "Ganton", "Infernus",
+static const HudSettings HUD_DEFAULTS = { false, HUD_DEFAULT, 12, 0, 1500, 100, 50, 100, 5, 1, 120, 17, "Ganton", "Infernus",
 	true, 5, 0, 10, false,
 	"{A9C4E4}SA-MP 0.3.7-R5 Started\n{A9C4E4}Connecting to 127.0.0.1:7777...\n"
 	"{A9C4E4}Connected. Joining the game...\n{A9C4E4}Connected to {B9C9BF}Haumea Server\n"
