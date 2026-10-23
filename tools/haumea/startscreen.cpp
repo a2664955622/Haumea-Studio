@@ -272,8 +272,11 @@ gameSection(bool gameLoaded)
 	std::string problem;
 	bool ok = CheckGameDir(gGameField, &problem);
 	bool changed = gameLoaded && ok && strcmp(gGameField, GetGameDir()) != 0;
-	if(!ok)
-		ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.4f, 1.0f), "%s", problem.c_str());
+	if(!ok){
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.45f, 0.4f, 1.0f));
+		ImGui::TextWrapped("%s", problem.c_str());
+		ImGui::PopStyleColor();
+	}
 	else if(changed){
 		if(ImGui::Button(_("Use this game folder"))){
 			SetGameDir(gGameField, nil);
@@ -599,7 +602,7 @@ DrawStartScreen(bool gameLoaded)
 	static bool filled;
 	if(!filled){
 		filled = true;
-		snprintf(gGameField, sizeof(gGameField), "%s", GetGameDir());
+		snprintf(gGameField, sizeof(gGameField), "%s", GetSuggestedGameDir());
 	}
 	ImGuiIO &io = ImGui::GetIO();
 	ImVec2 size(std::min(io.DisplaySize.x - 40.0f, ImGui::GetFontSize() * 62.0f),

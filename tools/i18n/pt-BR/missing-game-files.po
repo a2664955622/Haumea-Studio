@@ -1,0 +1,6 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Missing or unreadable GTA files: %s. Restore them or choose another GTA San Andreas folder."
+msgstr "Arquivos do GTA ausentes ou ilegíveis: %s. Restaure os arquivos ou escolha outra pasta do GTA San Andreas."

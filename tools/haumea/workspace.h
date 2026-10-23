@@ -13,6 +13,7 @@
 // and moves <GTA>/haumea_data to the config folder once. Call first.
 void InitWorkspace(void);
 
+const char *GetSuggestedGameDir(void); // chosen/saved path even when it needs repair
 const char *GetGameDir(void);	// absolute; empty until one is chosen
 const char *GetWorkspaceDir(void);	// absolute; empty when none is set
 const char *GetConfigDir(void);	// absolute, created on demand
@@ -29,7 +30,7 @@ std::string WorkspaceDefaultDir(const char *relative);
 // Whether path is inside the game folder, which Haumea never writes to.
 bool IsInGameDir(const char *path);
 
-// A GTA San Andreas folder has gta_sa.exe, or models/gta3.img and data/.
+// Check the readable core GTA files needed before loading the scene.
 bool CheckGameDir(const char *dir, std::string *problem);
 // A server folder has gamemodes/, filterscripts/, scriptfiles/ or a server
 // executable. Only a warning: any folder can be the workspace.

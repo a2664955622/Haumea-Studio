@@ -1653,10 +1653,6 @@ msgstr "Isto é %s, não uma versão oficial: atualiza para a próxima versão o
 msgid "This is %s."
 msgstr "Esta é a %s."
 
-#: tools/haumea/workspace.cpp:439
-msgid "This is not a GTA San Andreas folder: it has no gta_sa.exe, or models/gta3.img and data/."
-msgstr "Esta não é uma pasta do GTA San Andreas: não tem gta_sa.exe, nem models/gta3.img e data/."
-
 #: tools/haumea/updater.cpp:670
 msgid "This release has no download for this platform."
 msgstr "Esta versão não tem download para esta plataforma."

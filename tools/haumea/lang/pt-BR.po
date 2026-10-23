@@ -4694,6 +4694,10 @@ msgstr "Espelhar"
 msgid "Mirrors a copy, for symmetric builds: the selection stays."
 msgstr "Espelha uma cópia, para construções simétricas: a seleção fica."
 
+#, c-format
+msgid "Missing or unreadable GTA files: %s. Restore them or choose another GTA San Andreas folder."
+msgstr "Arquivos do GTA ausentes ou ilegíveis: %s. Restaure os arquivos ou escolha outra pasta do GTA San Andreas."
+
 msgid "Mission passed theme (0.3.7-R2)"
 msgstr "Tema de missão cumprida (0.3.7-R2)"
 
@@ -8259,9 +8263,6 @@ msgid ""
 msgstr ""
 "Este é um nó de caminho de barcos/água.\n"
 "Só barcos usam este nó para navegar."
-
-msgid "This is not a GTA San Andreas folder: it has no gta_sa.exe, or models/gta3.img and data/."
-msgstr "Esta não é uma pasta do GTA San Andreas: não tem gta_sa.exe, nem models/gta3.img e data/."
 
 msgid ""
 "This link crosses a road.\n"

@@ -67,7 +67,7 @@ SOURCES = {
 	'playerview.cpp': ['player_view'],
 	'interiors.cpp': ['interiors'],
 	'startscreen.cpp': ['startscreen', 'startscreen_launch', 'first_run'],
-	'workspace.cpp': ['workspace', 'startscreen', 'first_run'],
+	'workspace.cpp': ['workspace', 'startscreen', 'first_run', 'pawn_ide'],
 	'shortcuts.cpp': ['shortcuts', 'preferences_rebind', 'ctrl_keys'],
 	'vehiclemods.cpp': ['el_vehicle'],
 	'agentbridge.cpp': [],	# the agent tests don't need the real game

@@ -895,6 +895,15 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
  }
  if(what == "ide_dirty") return compare(PawnEditorHasUnsavedChanges() ? 1 : 0, arg(1), atof(arg(2).c_str()));
 
+	if(what == "game_problem_contains"){
+		CheckGameDir(GetSuggestedGameDir(), &why);
+		return why.find(arg(1)) != std::string::npos;
+	}
+	if(what == "game_folder_contains"){
+		why = GetSuggestedGameDir();
+		return why.find(arg(1)) != std::string::npos;
+	}
+
 	if(what == "pawn_contains" || what == "pawn_lacks"){
 		std::string text = pawnText(arg(2) == "streamer");
 		bool found = text.find(arg(1)) != std::string::npos;

@@ -28,6 +28,7 @@ static const char *MIGRATED_MARKER = "migrated-from-game-folder";
 static const int MAX_RECENT_WORKSPACES = 8;
 
 static std::string gGameDir;
+static std::string gSuggestedGameDir;
 static std::string gWorkspaceDir;
 // What workspace.cfg holds; --game and --workspace only last for the run.
 static std::string gSavedGameDir, gSavedWorkspaceDir;
@@ -433,11 +434,31 @@ CheckGameDir(const char *dir, std::string *problem)
 		why = _("Choose the GTA San Andreas folder.");
 	else if(!isDirectory(base))
 		why = _("This folder does not exist.");
-	else if(isFile(resolveUnder(base, "gta_sa.exe")) ||
-	        (isFile(resolveUnder(base, "models/gta3.img")) && isDirectory(resolveUnder(base, "data"))))
-		why.clear();
-	else
-		why = _("This is not a GTA San Andreas folder: it has no gta_sa.exe, or models/gta3.img and data/.");
+	else{
+		// An executable alone is not enough: loading uses these files before
+		// a scene exists. Keep missing installs on the folder chooser instead
+		// of reaching FindVersion's fatal exit or null texture consumers.
+		static const char *required[] = {
+			"data/gta.dat", "data/default.dat", "models/gta3.img",
+			"models/gta_int.img", "models/particle.txd", "data/timecyc.dat",
+		};
+		std::string missing;
+		for(const char *relative : required){
+			std::string path = resolveUnder(base, relative);
+			FILE *f = fopen(path.c_str(), "rb");
+			bool readable = f && fgetc(f) != EOF;
+			if(f) fclose(f);
+			if(!readable){
+				if(!missing.empty()) missing += ", ";
+				missing += relative;
+			}
+		}
+		if(!missing.empty()){
+			char message[1024];
+			snprintf(message, sizeof(message), _("Missing or unreadable GTA files: %s. Restore them or choose another GTA San Andreas folder."), missing.c_str());
+			why = message;
+		}
+	}
 	if(problem)
 		*problem = why;
 	return why.empty();
@@ -477,6 +498,12 @@ const char*
 GetGameDir(void)
 {
 	return gGameDir.c_str();
+}
+
+const char*
+GetSuggestedGameDir(void)
+{
+	return gGameDir.empty() ? gSuggestedGameDir.c_str() : gGameDir.c_str();
 }
 
 const char*
@@ -696,6 +723,10 @@ InitWorkspace(void)
 	candidates.push_back(savedGame);
 	if(const char *env = getenv("HAUMEA_GAME_DIR"))
 		candidates.push_back(env);
+	// Keep the explicitly chosen/saved path visible when it is incomplete.
+	// The user can repair it in place or browse to another installation.
+	for(const std::string &candidate : candidates)
+		if(!candidate.empty()){ gSuggestedGameDir = normalizeDir(candidate.c_str()); break; }
 	candidates.push_back(currentDir());
 	candidates.push_back(dirOfExecutable());
 	for(const std::string &candidate : candidates)
@@ -912,7 +943,7 @@ statusLine(bool ok, const std::string &message, bool warningOnly)
 bool
 WorkspaceSetupNeeded(void)
 {
-	return gSetupNeeded;
+	return gSetupNeeded || !CheckGameDir(gGameDir.c_str(), nil);
 }
 
 // The first-run choice from the start screen: the game folder (checked
@@ -920,7 +951,8 @@ WorkspaceSetupNeeded(void)
 void
 FinishWorkspaceSetup(const char *game, const char *workspace)
 {
-	SetGameDir(game, nil);
+	if(!SetGameDir(game, nil))
+		return;
 	SetWorkspaceDir(workspace);
 	migrateOldData();
 	gSetupNeeded = false;
