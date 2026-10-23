@@ -427,10 +427,24 @@ index cabfeff..207402b 100644
  #endif
  
 diff --git a/src/gl/gl3device.cpp b/src/gl/gl3device.cpp
-index 5275fe5..dbe882e 100644
+index 5275fe5..224413f 100644
 --- a/src/gl/gl3device.cpp
 +++ b/src/gl/gl3device.cpp
-@@ -1423,7 +1423,11 @@ showRaster(Raster *raster, uint32 flags)
+@@ -1398,7 +1398,12 @@ clearCamera(Camera *cam, RGBA *col, uint32 mode)
+ 		mask |= GL_STENCIL_BUFFER_BIT;
+ 	glDepthMask(GL_TRUE);
+ 	glClear(mask);
+-	glDepthMask(rwStateCache.zwrite);
++	// Back to the mask GL had, which the state cache believes it has; the
++	// wanted one (rwStateCache.zwrite) is set at the next draw if it differs.
++	// Restoring zwrite here left GL writing depth while the cache thought it
++	// wasn't, so the next draw without depth writes (the sky) wrote depth
++	// over the screen and hid the world for a frame.
++	glDepthMask(oldGlState.depthMask);
+ 
+ 	if(setScissor)
+ 		glDisable(GL_SCISSOR_TEST);
+@@ -1423,7 +1428,11 @@ showRaster(Raster *raster, uint32 flags)
  		SDL_GL_SetSwapInterval(0);
  	SDL_GL_SwapWindow(glGlobals.window);
  #elif defined(LIBRW_GLFW)
@@ -443,7 +457,7 @@ index 5275fe5..dbe882e 100644
  		glfwSwapInterval(1);
  	else
  		glfwSwapInterval(0);
-@@ -1447,10 +1451,14 @@ rasterRenderFast(Raster *raster, int32 x, int32 y)
+@@ -1447,10 +1456,14 @@ rasterRenderFast(Raster *raster, int32 x, int32 y)
  	case Raster::CAMERATEXTURE:
  		switch(src->type){
  		case Raster::CAMERA:
