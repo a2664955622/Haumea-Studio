@@ -638,7 +638,10 @@ RenderInst(ObjectInst *inst)
 	gta::colourCode.alpha = 255;
 
 	// Showing its material indexes, it isn't tinted: the outline still marks it.
-	if(inst->m_selected && inst->m_highlight < HIGHLIGHT_SELECTION && !inst->m_showingMaterialIndexes)
+	// A building drawn in place of its selected LOD (close up) is tinted as the
+	// selection too, or flying in would make the selection look unselected.
+	bool selected = inst->m_selected || (inst->m_lod && inst->m_lod->m_selected);
+	if(selected && inst->m_highlight < HIGHLIGHT_SELECTION && !inst->m_showingMaterialIndexes)
 		inst->m_highlight = HIGHLIGHT_SELECTION;
 	highlightColor = highlightCols[inst->m_highlight];
 	highlightAlpha = inst->m_highlight == HIGHLIGHT_SELECTION ?
@@ -808,6 +811,12 @@ BuildRenderList(void)
 		inst = (ObjectInst*)p->item;
 		inst->m_numChildrenRendered = 0;
 		inst->m_highlight = HIGHLIGHT_NONE;
+	}
+	// And the other way: a LOD drawn far away for its selected building.
+	for(p = instances.first; p; p = p->next){
+		inst = (ObjectInst*)p->item;
+		if(inst->m_selected && inst->m_lod && inst->m_lod->m_highlight < HIGHLIGHT_SELECTION)
+			inst->m_lod->m_highlight = HIGHLIGHT_SELECTION;
 	}
 
 //	log("%d visible instances\n", numVisibleInsts);
