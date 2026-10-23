@@ -164,7 +164,7 @@ struct RadarFrameSpace {
 	V2 origin;
 	float range, c, s;	// the camera's heading, cached as CalculateCachedSinCos does
 	ImVec2 centre;
-	float radius;
+	float rx, ry;	// an ellipse where the screen is stretched
 
 	V2 toRadar(float wx, float wy) const {
 		float dx = (wx - origin.x) / range, dy = (wy - origin.y) / range;
@@ -174,7 +174,7 @@ struct RadarFrameSpace {
 		return { origin.x + (r.x * c - r.y * s) * range, origin.y + (r.x * s + r.y * c) * range };
 	}
 	ImVec2 toScreen(V2 r) const {
-		return ImVec2(centre.x + r.x * radius, centre.y - r.y * radius);
+		return ImVec2(centre.x + r.x * rx, centre.y - r.y * ry);
 	}
 };
 
@@ -237,7 +237,7 @@ viewRect(ImVec2 *pos, ImVec2 *size)
 #endif
 }
 
-void drawRadarDisc(ImDrawList *dl, const std::vector<Zone> &zones, ImVec2 centre, float radius, float k);
+void drawRadarDisc(ImDrawList *dl, const std::vector<Zone> &zones, ImVec2 centre, ImVec2 radius, float k);
 
 // CHud::DrawRadar's place on a 640 x 448 screen: 40 from the left, the
 // circle's centre 66 above the bottom, 38 across (the height's half).
@@ -291,17 +291,17 @@ drawRadar(const std::vector<Zone> &zones)
 		ImGui::EndPopup();
 	}
 
-	drawRadarDisc(ImGui::GetWindowDrawList(), zones, centre, radius, k);
+	drawRadarDisc(ImGui::GetWindowDrawList(), zones, centre, ImVec2(radius, radius), k);
 	ImGui::End();
 }
 
-// The radar itself: the map around the camera in a circle of the radius,
+// The radar itself: the map around the camera in an ellipse of the radii,
 // the disc around it, the player's arrow and the N. k: pixels per unit of
 // the 448-high screen.
 void
-drawRadarDisc(ImDrawList *dl, const std::vector<Zone> &zones, ImVec2 centre, float radius, float k)
+drawRadarDisc(ImDrawList *dl, const std::vector<Zone> &zones, ImVec2 centre, ImVec2 radius, float k)
 {
-	float ring = 4.0f * k;
+	ImVec2 ring(4.0f * k * radius.x / radius.y, 4.0f * k);
 	RadarFrameSpace f;
 	f.origin = { TheCamera.m_position.x, TheCamera.m_position.y };
 	f.range = gRange;
@@ -309,12 +309,13 @@ drawRadarDisc(ImDrawList *dl, const std::vector<Zone> &zones, ImVec2 centre, flo
 	f.c = cosf(heading);
 	f.s = sinf(heading);
 	f.centre = centre;
-	f.radius = radius;
+	f.rx = radius.x;
+	f.ry = radius.y;
 
 	ImDrawListFlags oldFlags = dl->Flags;
 	dl->Flags &= ~ImDrawListFlags_AntiAliasedFill;	// no seams between tiles and zones
 	// DrawRadarMap: the sea, the tiles around the player, then the gang zones.
-	dl->AddCircleFilled(centre, radius, SEA, CIRCLE_SIDES);
+	dl->AddEllipseFilled(centre, radius, SEA, 0.0f, CIRCLE_SIDES);
 	float reach = gRange * 1.5f;
 	int x0 = (int)floorf((f.origin.x - reach + MAP_EDGE) / TILE_SIZE), x1 = (int)floorf((f.origin.x + reach + MAP_EDGE) / TILE_SIZE);
 	int y0 = (int)floorf((MAP_EDGE - f.origin.y - reach) / TILE_SIZE), y1 = (int)floorf((MAP_EDGE - f.origin.y + reach) / TILE_SIZE);
@@ -335,21 +336,22 @@ drawRadarDisc(ImDrawList *dl, const std::vector<Zone> &zones, ImVec2 centre, flo
 
 	// CHud: the disc around it (a quarter, mirrored), the player and the N.
 	if(rw::Texture *disc = hudTexture(HUD_DISC)){
-		float r = radius + ring;
+		float rx = radius.x + ring.x, ry = radius.y + ring.y;
 		ImTextureID id = (ImTextureID)disc;
-		dl->AddImage(id, ImVec2(centre.x - r, centre.y - r), centre, ImVec2(0, 0), ImVec2(1, 1));
-		dl->AddImage(id, ImVec2(centre.x, centre.y - r), ImVec2(centre.x + r, centre.y), ImVec2(1, 0), ImVec2(0, 1));
-		dl->AddImage(id, ImVec2(centre.x - r, centre.y), ImVec2(centre.x, centre.y + r), ImVec2(0, 1), ImVec2(1, 0));
-		dl->AddImage(id, centre, ImVec2(centre.x + r, centre.y + r), ImVec2(1, 1), ImVec2(0, 0));
+		dl->AddImage(id, ImVec2(centre.x - rx, centre.y - ry), centre, ImVec2(0, 0), ImVec2(1, 1));
+		dl->AddImage(id, ImVec2(centre.x, centre.y - ry), ImVec2(centre.x + rx, centre.y), ImVec2(1, 0), ImVec2(0, 1));
+		dl->AddImage(id, ImVec2(centre.x - rx, centre.y), ImVec2(centre.x, centre.y + ry), ImVec2(0, 1), ImVec2(1, 0));
+		dl->AddImage(id, centre, ImVec2(centre.x + rx, centre.y + ry), ImVec2(1, 1), ImVec2(0, 0));
 	}else
-		dl->AddCircle(centre, radius + ring * 0.5f, IM_COL32(0, 0, 0, 255), CIRCLE_SIDES, ring);
+		dl->AddEllipse(centre, ImVec2(radius.x + ring.x * 0.5f, radius.y + ring.y * 0.5f), IM_COL32(0, 0, 0, 255),
+			0.0f, CIRCLE_SIDES, ring.y);
 	// The camera looks up the radar, so the player's arrow points straight up.
 	if(rw::Texture *arrow = hudTexture(HUD_CENTRE))
 		drawSprite(dl, arrow, centre, 8.0f * k, 0.0f);
 	else
 		dl->AddTriangleFilled(ImVec2(centre.x, centre.y - 6.0f * k), ImVec2(centre.x + 4.0f * k, centre.y + 4.0f * k),
 			ImVec2(centre.x - 4.0f * k, centre.y + 4.0f * k), IM_COL32_WHITE);
-	ImVec2 north(centre.x + f.s * radius, centre.y - f.c * radius);
+	ImVec2 north(centre.x + f.s * radius.x, centre.y - f.c * radius.y);
 	if(rw::Texture *n = hudTexture(HUD_NORTH))
 		drawSprite(dl, n, north, 8.0f * k, 0.0f);
 	else
@@ -468,7 +470,7 @@ RadarFrame(void)
 }
 
 void
-DrawRadarOnCanvas(ImDrawList *dl, ImVec2 centre, float radius, float k)
+DrawRadarOnCanvas(ImDrawList *dl, ImVec2 centre, ImVec2 radius, float k)
 {
 	static std::vector<Zone> zones;
 	collectZones(zones);

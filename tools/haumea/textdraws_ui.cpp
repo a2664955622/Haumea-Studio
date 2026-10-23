@@ -60,6 +60,11 @@ struct HudSettings {
 	int pageSize;	// /pagesize, 10 to 20 lines
 	bool timestamps;	// /timestamp
 	char messages[2048];	// one per line, {RRGGBB} colours
+	// ThirteenAG's GTA SA Widescreen Fix, which many players have: the HUD
+	// unstretched and smaller, the radar round. Its ini's values.
+	bool wsfix;
+	float hudWidthScale, hudHeightScale;	// HudWidthScale, HudHeightScale (0.8)
+	float radarWidth, radarHeight;	// RadarWidth, RadarHeight (85.5, 78)
 };
 static const struct { int w, h; } gHudResolutions[] = {
 	{ 800, 600 }, { 1024, 768 }, { 1280, 720 }, { 1366, 768 }, { 1600, 900 }, { 1920, 1080 }, { 2560, 1440 },
@@ -69,7 +74,8 @@ static const HudSettings HUD_DEFAULTS = { false, HUD_DEFAULT, 12, 0, 1500, 100, 
 	true, 5, 0, 10, false,
 	"{A9C4E4}SA-MP 0.3.7-R5 Started\n{A9C4E4}Connecting to 127.0.0.1:7777...\n"
 	"{A9C4E4}Connected. Joining the game...\n{A9C4E4}Connected to {B9C9BF}Haumea Server\n"
-	"{FFFFFF}Welcome to the server!\n{FFFF00}Player_Name: {FFFFFF}hello everyone" };
+	"{FFFFFF}Welcome to the server!\n{FFFF00}Player_Name: {FFFFFF}hello everyone",
+	false, 0.8f, 0.8f, 85.5f, 78.0f };
 static HudSettings gHud = HUD_DEFAULTS;
 
 // The weapon's model, its icon is <model>icon in <model>.txd; its clip as
@@ -213,6 +219,12 @@ LoadTextDrawSetting(const char *key, const char *value)
 		gHud.resolution = std::max(0, std::min(gHud.resolution, NUM_HUD_RESOLUTIONS - 1));
 		gHud.fontSize = std::max(-3, std::min(gHud.fontSize, 5));
 		gHud.pageSize = std::max(10, std::min(gHud.pageSize, 20));
+	}else if(strcmp(key, "textdraw_hud_wsfix") == 0){
+		int on = 0;
+		sscanf(value, "%d %f %f %f %f", &on, &gHud.hudWidthScale, &gHud.hudHeightScale, &gHud.radarWidth, &gHud.radarHeight);
+		gHud.wsfix = on != 0;
+		gHud.hudWidthScale = std::max(0.25f, std::min(gHud.hudWidthScale, 4.0f));
+		gHud.hudHeightScale = std::max(0.25f, std::min(gHud.hudHeightScale, 4.0f));
 	}else if(strcmp(key, "textdraw_hud_messages") == 0){
 		// \n between messages, \\ for a backslash.
 		size_t n = 0;
@@ -241,6 +253,8 @@ SaveTextDrawSettings(FILE *f)
 	fprintf(f, "textdraw_hud_vehicle %s\n", gHud.vehicle);
 	fprintf(f, "textdraw_hud_chat %d %d %d %d %d\n", gHud.chat ? 1 : 0, gHud.resolution, gHud.fontSize,
 		gHud.pageSize, gHud.timestamps ? 1 : 0);
+	fprintf(f, "textdraw_hud_wsfix %d %.3f %.3f %.1f %.1f\n", gHud.wsfix ? 1 : 0, gHud.hudWidthScale,
+		gHud.hudHeightScale, gHud.radarWidth, gHud.radarHeight);
 	fputs("textdraw_hud_messages ", f);
 	for(const char *p = gHud.messages; *p; p++)
 		if(*p == '\n') fputs("\\n", f);
@@ -864,17 +878,18 @@ hudText(ImDrawList *dl, const Canvas &cv, const char *text, float x, float y, in
 
 // CSprite2d::DrawBarChart with its black border.
 static void
-hudBar(ImDrawList *dl, const Canvas &cv, float x, float y, float w, float h, int percent, unsigned int colour)
+hudBar(ImDrawList *dl, const Canvas &cv, float x, float y, float w, float h, float bx, float by, int percent,
+	unsigned int colour)
 {
 	float fill = x + w * std::min(100, std::max(0, percent)) / 100.0f;
 	unsigned int dark = ((colour >> 25 & 0x7F) << 24) | ((colour >> 17 & 0x7F) << 16) | ((colour >> 9 & 0x7F) << 8) | 0xFF;
 	dl->AddRectFilled(cv.at(x, y), cv.at(fill, y + h), rgbaToImU32(colour));
 	dl->AddRectFilled(cv.at(fill, y), cv.at(x + w, y + h), rgbaToImU32(dark));
 	ImU32 black = IM_COL32(0, 0, 0, 255);
-	dl->AddRectFilled(cv.at(x, y), cv.at(x + w, y + 2.0f), black);
-	dl->AddRectFilled(cv.at(x, y + h - 2.0f), cv.at(x + w, y + h), black);
-	dl->AddRectFilled(cv.at(x, y), cv.at(x + 2.0f, y + h), black);
-	dl->AddRectFilled(cv.at(x + w - 2.0f, y), cv.at(x + w, y + h), black);
+	dl->AddRectFilled(cv.at(x, y), cv.at(x + w, y + by), black);
+	dl->AddRectFilled(cv.at(x, y + h - by), cv.at(x + w, y + h), black);
+	dl->AddRectFilled(cv.at(x, y), cv.at(x + bx, y + h), black);
+	dl->AddRectFilled(cv.at(x + w - bx, y), cv.at(x + w, y + h), black);
 }
 
 // CChatWindow: Arial bold at GetFontSize's size for the screen width
@@ -937,22 +952,40 @@ drawChat(ImDrawList *dl, const Canvas &cv)
 	}
 }
 
+// Where the HUD's 640x448 numbers land. The game stretches them to the
+// screen. The Widescreen Fix makes them square ((4/3) / aspect across) and
+// scales them by HudWidthScale and HudHeightScale, keeping each part against
+// its edge (its Frontend.ixx); the radar is only made square.
+struct HudLayout {
+	float kx, ky;
+	float R(float x) const { return 640.0f - kx * (640.0f - x); }	// from the right edge
+	float T(float y) const { return y * ky; }	// from the top
+	float B(float y) const { return 448.0f - ky * (448.0f - y); }	// from the bottom
+};
+
 static void
 drawHud(ImDrawList *dl, const Canvas &cv)
 {
 	const int p = gHud.parts;
 	char buf[64];
+	float square = (4.0f / 3.0f) / (640.0f * cv.sx / (448.0f * cv.sy));
+	HudLayout l = { 1.0f, 1.0f };
+	if(gHud.wsfix){
+		l.kx = square * gHud.hudWidthScale;
+		l.ky = gHud.hudHeightScale;
+	}
 	if(p & HUD_RADAR){
-		// CHud::DrawRadar: 40 from the left, centre 66 above the bottom, 38 across.
-		float radius = 38.0f * cv.sy;
-		ImVec2 left = cv.at(40.0f, 448.0f - 66.0f);
-		DrawRadarOnCanvas(dl, ImVec2(left.x + radius, left.y), radius, cv.sy);
+		// CHud::DrawRadar: 40 from the left, 104 above the bottom, 94 x 76.
+		float kx = gHud.wsfix ? square : 1.0f;
+		float w = (gHud.wsfix ? gHud.radarWidth : 94.0f) * kx, h = gHud.wsfix ? gHud.radarHeight : 76.0f;
+		ImVec2 centre = cv.at(40.0f * kx + w * 0.5f, 448.0f - 104.0f + h * 0.5f);
+		DrawRadarOnCanvas(dl, centre, ImVec2(w * 0.5f * cv.sx, h * 0.5f * cv.sy), cv.sy);
 	}
 	if(p & HUD_WEAPON){
 		// 32 from the right and 111 (0.1734 of the width) for the icon, 47 x 58.
 		rw::Texture *icon = hudWeaponIcon(gHud.weapon);
 		if(icon)
-			dl->AddImage((ImTextureID)icon, cv.at(497.0f, 20.0f), cv.at(544.0f, 78.0f));
+			dl->AddImage((ImTextureID)icon, cv.at(l.R(497.0f), l.T(20.0f)), cv.at(l.R(544.0f), l.T(78.0f)));
 	}
 	if((p & HUD_AMMO) && gHud.weapon >= 0 && gHud.weapon < NUM_HUD_WEAPONS && gHudWeapons[gHud.weapon].ammo){
 		// CHud::DrawAmmo: "total-clip", or the total for one-shot clips.
@@ -962,36 +995,43 @@ drawHud(ImDrawList *dl, const Canvas &cv)
 			snprintf(buf, sizeof(buf), "%d", gHud.ammo);
 		else
 			snprintf(buf, sizeof(buf), "%d-%d", std::min(gHud.ammo - inClip, 9999), inClip);
-		hudText(dl, cv, buf, 520.5f, 63.0f, TD_FONT_AHARONI, 0.3f, 0.7f, 2, true, 1, HUD_LIGHT_BLUE);
+		hudText(dl, cv, buf, l.R(520.5f), l.T(63.0f), TD_FONT_AHARONI, 0.3f * l.kx, 0.7f * l.ky, 2, true, 1, HUD_LIGHT_BLUE);
 	}
 	if(p & HUD_CLOCK){
 		snprintf(buf, sizeof(buf), "%02d:%02d", gHud.hour, gHud.minute);
-		hudText(dl, cv, buf, 608.0f, 22.0f, TD_FONT_PRICEDOWN, 0.55f, 1.1f, 3, false, 2, HUD_LIGHT_GRAY);
+		hudText(dl, cv, buf, l.R(608.0f), l.T(22.0f), TD_FONT_PRICEDOWN, 0.55f * l.kx, 1.1f * l.ky, 3, false, 2,
+			HUD_LIGHT_GRAY);
 	}
-	if(p & HUD_HEALTH)	// 141 from the right, 77 - 10 down, 109 wide at max health 100 / 176
-		hudBar(dl, cv, 499.0f + 109.0f - 109.0f * 100.0f / 176.0f, 67.0f, 109.0f * 100.0f / 176.0f, 9.0f,
+	if(p & HUD_HEALTH){	// 141 from the right, 77 - 10 down, 109 wide at max health 100 / 176
+		float w = 109.0f * 100.0f / 176.0f;
+		hudBar(dl, cv, l.R(499.0f + 109.0f - w), l.T(67.0f), w * l.kx, 9.0f * l.ky, 2.0f * l.kx, 2.0f * l.ky,
 			gHud.health, HUD_RED);
+	}
 	if((p & HUD_ARMOUR) && gHud.armour > 1)	// 94 from the right, 48 - 3 down
-		hudBar(dl, cv, 546.0f, 45.0f, 62.0f, 9.0f, gHud.armour, HUD_LIGHT_GRAY);
+		hudBar(dl, cv, l.R(546.0f), l.T(45.0f), 62.0f * l.kx, 9.0f * l.ky, 2.0f * l.kx, 2.0f * l.ky,
+			gHud.armour, HUD_LIGHT_GRAY);
 	if(p & HUD_BREATH)	// under water: 62 - 6 down
-		hudBar(dl, cv, 546.0f, 56.0f, 62.0f, 9.0f, gHud.breath, HUD_LIGHT_BLUE);
+		hudBar(dl, cv, l.R(546.0f), l.T(56.0f), 62.0f * l.kx, 9.0f * l.ky, 2.0f * l.kx, 2.0f * l.ky,
+			gHud.breath, HUD_LIGHT_BLUE);
 	if(p & HUD_MONEY){
 		if(gHud.money < 0)
 			snprintf(buf, sizeof(buf), "-$%07d", -gHud.money);
 		else
 			snprintf(buf, sizeof(buf), "$%08d", gHud.money);
-		hudText(dl, cv, buf, 608.0f, 77.0f, TD_FONT_PRICEDOWN, 0.55f, 1.1f, 3, false, 2,
+		hudText(dl, cv, buf, l.R(608.0f), l.T(77.0f), TD_FONT_PRICEDOWN, 0.55f * l.kx, 1.1f * l.ky, 3, false, 2,
 			gHud.money < 0 ? HUD_RED : HUD_GREEN);
 	}
 	if((p & HUD_WANTED) && gHud.wanted > 0)	// six stars (']'), the first on the right, 18 apart
 		for(int i = 0; i < 6; i++)
-			hudText(dl, cv, "]", 611.0f - 18.0f * i, 102.0f, TD_FONT_BECKETT, 0.605f, 1.21f, 3, true, 1,
-				i < gHud.wanted ? HUD_GOLD : HUD_BLACK);
+			hudText(dl, cv, "]", l.R(611.0f - 18.0f * i), l.T(102.0f), TD_FONT_BECKETT, 0.605f * l.kx, 1.21f * l.ky,
+				3, true, 1, i < gHud.wanted ? HUD_GOLD : HUD_BLACK);
 	if((p & HUD_VEHICLE) && gHud.vehicle[0])
-		hudText(dl, cv, gHud.vehicle, 608.0f, 344.0f, TD_FONT_BANK_GOTHIC, 1.0f, 1.5f, 3, true, 2, HUD_GREEN);
+		hudText(dl, cv, gHud.vehicle, l.R(608.0f), l.B(344.0f), TD_FONT_BANK_GOTHIC, 1.0f * l.kx, 1.5f * l.ky,
+			3, true, 2, HUD_GREEN);
 	if((p & HUD_ZONE) && gHud.zone[0]){
 		// The line ends 104 - 76 above the bottom.
-		hudText(dl, cv, gHud.zone, 608.0f, 420.0f, TD_FONT_BECKETT, 1.2f, 1.9f, 3, true, 2, HUD_LIGHT_BLUE, true);
+		hudText(dl, cv, gHud.zone, l.R(608.0f), l.B(420.0f), TD_FONT_BECKETT, 1.2f * l.kx, 1.9f * l.ky, 3, true, 2,
+			HUD_LIGHT_BLUE, true);
 	}
 	if(gHud.chat)
 		drawChat(dl, cv);
@@ -1050,6 +1090,28 @@ hudSettings(void)
 		ImGui::InputText(L("Zone name"), gHud.zone, sizeof(gHud.zone));
 		changed |= ImGui::IsItemDeactivatedAfterEdit();
 		ImGui::PopItemWidth();
+
+		ImGui::SeparatorText(_("Widescreen Fix"));
+		changed |= ImGui::Checkbox(L("As with the Widescreen Fix"), &gHud.wsfix);
+		ImGui::SetItemTooltip("%s", _("ThirteenAG's GTA SA Widescreen Fix: the HUD unstretched and smaller, the radar round.\n"
+			"Many players have it; check your textdraws both ways."));
+		if(gHud.wsfix){
+			ImGui::PushItemWidth(w);
+			float scale[2] = { gHud.hudWidthScale, gHud.hudHeightScale };
+			if(ImGui::DragFloat2(L("HudWidthScale, HudHeightScale"), scale, 0.01f, 0.25f, 4.0f, "%.2f")){
+				gHud.hudWidthScale = scale[0];
+				gHud.hudHeightScale = scale[1];
+				changed = true;
+			}
+			float radar[2] = { gHud.radarWidth, gHud.radarHeight };
+			if(ImGui::DragFloat2(L("RadarWidth, RadarHeight"), radar, 0.5f, 10.0f, 300.0f, "%.1f")){
+				gHud.radarWidth = radar[0];
+				gHud.radarHeight = radar[1];
+				changed = true;
+			}
+			ImGui::SetItemTooltip("%s", _("As in its GTASA.WidescreenFix.ini (0.8, 0.8, 85.5 and 78 by default)"));
+			ImGui::PopItemWidth();
+		}
 
 		ImGui::SeparatorText(_("SA-MP chat"));
 		changed |= ImGui::Checkbox(L("Chat"), &gHud.chat);
