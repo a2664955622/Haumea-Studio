@@ -802,6 +802,12 @@ getCanvas(void)
 	return c;
 }
 
+float
+TextDrawCanvasZoom(void)
+{
+	return gZoom;
+}
+
 // For UI scripts: a canvas x (or y) on the screen; ruler, the middle of the ruler strip.
 float
 TextDrawCanvasToScreen(float at, bool vertical, bool ruler)
@@ -2835,6 +2841,8 @@ dragSelection(const Canvas &cv, ImDrawList *dl)
 		ImGui::SetTooltip("%.1f, %.1f", tds[gSelected].x, tds[gSelected].y);
 }
 
+static const float MAX_ZOOM = 16.0f;
+
 static void
 drawGrid(ImDrawList *dl, const Canvas &cv)
 {
@@ -3182,15 +3190,17 @@ DrawTextDrawsOverlay(void)
 	// round the cursor, the middle button pans.
 	ImVec2 m = io.MousePos;
 	bool inArea = m.x >= areaPos.x && m.y >= areaPos.y && m.x < areaEnd.x && m.y < areaEnd.y;
-	if(inArea && !io.WantCaptureMouse){
-		if(ImGui::IsMouseClicked(0) && !gPicking && !grabbed){
-			gMarquee = true;
-			gMarqueeAdd = io.KeyShift || io.KeyCtrl;
-			gMarqueeStart = m;
-		}
+	if(inArea && !io.WantCaptureMouse && ImGui::IsMouseClicked(0) && !gPicking && !grabbed){
+		gMarquee = true;
+		gMarqueeAdd = io.KeyShift || io.KeyCtrl;
+		gMarqueeStart = m;
+	}
+	// Over the textdraws too, which take the mouse for clicks and drags;
+	// not over the panels.
+	if(inArea && (ctx->HoveredWindow == nil || strncmp(ctx->HoveredWindow->Name, "##td", 4) == 0)){
 		if(io.MouseWheel != 0.0f && !io.KeyCtrl){
 			float cxU = (m.x - cv.x) / cv.sx, cyU = (m.y - cv.y) / cv.sy;
-			gZoom = std::max(0.25f, std::min(gZoom * powf(1.15f, io.MouseWheel), 8.0f));
+			gZoom = std::max(0.25f, std::min(gZoom * powf(1.15f, io.MouseWheel), MAX_ZOOM));
 			Canvas after = getCanvas();
 			gPanX += m.x - (after.x + cxU * after.sx);
 			gPanY += m.y - (after.y + cyU * after.sy);
@@ -4516,9 +4526,9 @@ drawToolbar(void)
 	if(ImGui::SmallButton("-##zoom")){ gZoom = std::max(0.25f, gZoom / 1.25f); }
 	ImGui::SameLine();
 	ImGui::Text("%.0f%%", gZoom * 100.0f);
-	ImGui::SetItemTooltip("%s", _("The wheel zooms round the cursor, the middle button pans."));
+	ImGui::SetItemTooltip("%s", _("The wheel zooms round the cursor, the middle button pans.\nCtrl+wheel sizes the interface instead."));
 	ImGui::SameLine();
-	if(ImGui::SmallButton("+##zoom")){ gZoom = std::min(8.0f, gZoom * 1.25f); }
+	if(ImGui::SmallButton("+##zoom")){ gZoom = std::min(MAX_ZOOM, gZoom * 1.25f); }
 	ImGui::SameLine();
 	if(ImGui::SmallButton(L("Fit"))){ gZoom = 1.0f; gPanX = gPanY = 0.0f; }
 	gToolbarHeight = ImGui::GetWindowSize().y;

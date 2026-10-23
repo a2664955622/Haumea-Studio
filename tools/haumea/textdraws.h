@@ -112,7 +112,8 @@ bool TextDrawModeHidesWorld(void);	// false for the frame the still frame is tak
 void EnterTextDrawMode(void);
 void ExitTextDrawMode(void);
 void DrawTextDrawsWindow(void);
-float TextDrawCanvasToScreen(float at, bool vertical, bool ruler);	// for UI scripts	// the mode's panel, banner and popups
+float TextDrawCanvasToScreen(float at, bool vertical, bool ruler);	// for UI scripts
+float TextDrawCanvasZoom(void);	// 1 when it fits	// the mode's panel, banner and popups
 void DrawTextDrawsOverlay(void);	// the canvas
 // Each line's text colours as RRGGBBAA, after the ~colour~, ~h~ and ~n~
 // tokens (tests: --textdraw-colours).

@@ -14,6 +14,14 @@ wait 5
 assert textdraws == 7
 assert textdraw.0.size_y > 89
 assert textdraw.0.size_y < 91
+# The wheel zooms over a textdraw too (it takes the mouse for drags).
+move td:320 td:224
+wheel 2
+wait 3
+assert textdraw_zoom > 1.2
+wheel -2
+wait 3
+assert textdraw_zoom < 1.01
 # Its bottom right handle, from 400,269 to 440,309: 200 x 130.
 drag td:400 td:269 td:440 td:309 12
 wait 5

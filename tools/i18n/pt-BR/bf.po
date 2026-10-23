@@ -2410,8 +2410,12 @@ msgid "Clicks on a locked textdraw go to what is under it.\nAlt+click picks the 
 msgstr "Cliques num textdraw travado vão para o que está embaixo dele.\nAlt+clique pega o próximo abaixo do cursor."
 
 #: tools/haumea/textdraws_ui.cpp
-msgid "The wheel zooms round the cursor, the middle button pans."
-msgstr "A roda aproxima em volta do cursor, o botão do meio arrasta a vista."
+msgid ""
+"The wheel zooms round the cursor, the middle button pans.\n"
+"Ctrl+wheel sizes the interface instead."
+msgstr ""
+"A roda aproxima em volta do cursor, o botão do meio arrasta a vista.\n"
+"Ctrl+roda muda o tamanho da interface."
 
 #: tools/haumea/textdraws_ui.cpp
 msgid "Copied %d textdraws"
