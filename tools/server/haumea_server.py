@@ -27,6 +27,7 @@ import collections
 import datetime as dt
 import hashlib
 import hmac
+import html
 import http.cookies
 import http.server
 import json
@@ -76,7 +77,7 @@ DEFAULTS = {
 	'DISCORD_WEBHOOK_URL': '',
 	'HAUMEA_ALERT_SPIKE': '10',	# reports of one group in an hour
 	'HAUMEA_ALERT_EVERY': '60',	# seconds between alert messages
-	'HAUMEA_DAILY_SUMMARY': '0',	# 1: a summary every day at 09:00 UTC
+	'HAUMEA_DAILY_SUMMARY': '1',	# 1: a summary every day at 09:00 UTC
 	'HAUMEA_PING_DAYS': '365',
 	'HAUMEA_REPORT_DAYS': '183',
 }
@@ -458,29 +459,180 @@ class Alerter:
 		          {'name': 'OS / GPU', 'value': '\n'.join(f'{o} / {g or "?"} ({n})' for o, g, n in oses)[:900] or '?'}]
 		if detail:
 			fields.append({'name': 'Note', 'value': detail[:900]})
-		return {'title': f'{heading}: {title}'[:250], 'color': colour, 'fields': fields,
+		return {'title': f'{heading}: {title}'[:250],
+		        'description': 'Full dashboard details are attached as a standalone HTML report.',
+		        'color': colour, 'fields': fields,
 		        'url': f"{self.s.config['HAUMEA_PUBLIC_URL']}/dashboard/group/{group}"}
 
 	def flush(self):
-		"""Sends what is queued as one message (Discord takes ten embeds; the
-		rest is summed up). False when Discord asked to wait."""
+		"""Send at most 20 queued alerts in one message. Discord takes ten
+		embeds; the HTML attachment includes details for the whole batch. False
+		when Discord asked to wait."""
 		pending = self.s.store.q('SELECT id, kind, group_id, detail FROM alerts WHERE sent = 0 ORDER BY id')
 		if not pending or not self.url:
 			return True
-		embeds = [e for e in (self.embed(k, g, d) for _, k, g, d in pending[:9]) if e]
+		batch = pending[:20]
+		embeds = [e for e in (self.embed(k, g, d) for _, k, g, d in batch[:9]) if e]
 		if len(pending) > 9:
-			embeds.append({'title': f'and {len(pending) - 9} more alerts', 'color': 0x95A5A6,
+			remaining = max(0, len(pending) - len(batch))
+			description = 'Dashboard details for these alerts are in the attached HTML.'
+			if remaining:
+				description += f' {remaining} alerts remain queued for later messages.'
+			embeds.append({'title': f'{len(batch) - 9} additional alerts',
+			               'description': description,
+			               'color': 0x95A5A6,
 			               'url': f"{self.s.config['HAUMEA_PUBLIC_URL']}/dashboard"})
-		ok = self.post({'username': 'Haumea Studio', 'embeds': embeds})
+		group_ids = list(dict.fromkeys(p[2] for p in batch if p[2] is not None))
+		attachment = self.report_attachment(group_ids) if group_ids else None
+		ok = self.post({'username': 'Haumea Studio', 'embeds': embeds,
+		                'allowed_mentions': {'parse': []}}, attachment=attachment)
 		if ok:
-			ids = [p[0] for p in pending]
+			ids = [p[0] for p in batch]
 			self.s.store.q(f'UPDATE alerts SET sent = 1 WHERE id IN ({",".join("?" * len(ids))})', ids)
 		return ok
 
-	def post(self, payload, attempts=3):
-		data = json.dumps(payload).encode()
+	def report_attachment(self, group_ids):
+		"""Render an offline snapshot of the dashboard details for alert groups."""
+		esc = lambda value: html.escape(str(value if value is not None else ''), quote=True)
+		t = dashboard.utc_now()
+		statuses = dashboard.statuses(self.s, t)
+		sections = []
+		for gid in group_ids:
+			row = self.s.store.q('SELECT title, version, signature, kind, issue_key, count, '
+			                    'first_seen, last_seen FROM crash_groups WHERE id = ?', (gid,))
+			if not row:
+				continue
+			title, version, signature, kind, issue, count, first, last = row[0]
+			latest = self.s.store.q('SELECT received, body FROM reports WHERE group_id = ? ORDER BY received DESC LIMIT 1',
+			                        (gid,))
+			r = json.loads(latest[0][1]) if latest else {}
+			received = latest[0][0] if latest else ''
+			state, state_text = statuses.get(gid, ('open', 'Open'))
+			try:
+				installs = self.s.store.q("SELECT COUNT(DISTINCT json_extract(body, '$.uid')) FROM reports "
+				                         'WHERE group_id = ?', (gid,))[0][0]
+			except sqlite3.OperationalError:
+				installs = 0
+			stats = [('Reports', f'{count:,}'),
+			         ('Installs with daily ping', f'{installs:,}' if installs else '–'),
+			         ('First seen', first), ('Last seen', last)]
+			kpis = ''.join(f'<div class="kpi"><span>{esc(label)}</span><strong>{esc(value)}</strong></div>'
+			                for label, value in stats)
+			frames, named = dashboard.symbolized_frames(self.s, r) if r else ('', False)
+			counts = dict(self.s.store.q('SELECT substr(received, 1, 10), COUNT(*) FROM reports WHERE group_id = ? '
+			                            'AND received >= ? GROUP BY 1',
+			                            (gid, dashboard.stamp(t - dt.timedelta(days=dashboard.SPARK_DAYS)))))
+			day = lambda n: (t - dt.timedelta(days=n)).strftime('%Y-%m-%d')
+			series = [(day(i), counts.get(day(i), 0)) for i in range(dashboard.SPARK_DAYS - 1, -1, -1)]
+			peak = max((n for _, n in series), default=1) or 1
+			bars = ''.join(f'<div class="bar"><i title="{esc(date)}: {n}" style="height:{max(2, round(n * 100 / peak))}%"></i>'
+			               f'<span>{esc(date[5:])}</span></div>' for date, n in series)
+			splits = []
+			for column, label in (("CASE WHEN os_version != '' THEN os_version ELSE os END", 'System'),
+			                      ('gl_renderer', 'GPU'), ('channel', 'Channel')):
+				rows = self.s.store.q(f'SELECT {column}, COUNT(*) FROM reports WHERE group_id = ? GROUP BY 1 '
+				                      'ORDER BY 2 DESC LIMIT 5', (gid,))
+				values = ''.join(f'<li><span>{esc(value or "?")}</span><b>{n:,}</b></li>' for value, n in rows)
+				splits.append(f'<div class="card"><h3>{label}</h3><ul>{values or "<li>–</li>"}</ul></div>')
+			related = self.s.store.q('SELECT id, version, count, fixed_in FROM crash_groups WHERE issue_key = ? AND id != ? '
+			                        'ORDER BY id', (issue, gid)) if issue else []
+			related_rows = ''.join(f'<tr><td>Group {other_id}</td><td>{esc(other_version)}</td><td>{other_count:,}</td>'
+			                      f'<td>{"Fixed in " + esc(other_fixed) if other_fixed else "Open"}</td></tr>'
+			                      for other_id, other_version, other_count, other_fixed in related)
+			related_html = (f'<div class="scroll"><table><thead><tr><th>Group</th><th>Version</th><th>Reports</th>'
+			                f'<th>Status</th></tr></thead><tbody>{related_rows}</tbody></table></div>' if related
+			                else '<p class="muted">No linked groups in other versions.</p>')
+			reports = self.s.store.q('SELECT received, os, os_version, gl_renderer, body FROM reports WHERE group_id = ? '
+			                        'ORDER BY received DESC LIMIT 50', (gid,))
+			report_rows = []
+			for report_received, os_, os_version, renderer, report_body in reports:
+				try:
+					context = json.loads(report_body).get('context', {})
+				except (TypeError, ValueError):
+					context = {}
+				place = ' · '.join(x for x in (context.get('window', ''),
+					                            (context.get('mode', '') + ' mode') if context.get('mode') else '') if x)
+				report_rows.append(f'<tr><td>{esc(report_received)}</td><td>{esc(dashboard.system(os_, os_version))}</td>'
+				                   f'<td>{esc(renderer or "?")}</td><td>{esc(place or "–")}</td></tr>')
+			history = (f'<div class="scroll"><table><thead><tr><th>Received (UTC)</th><th>System</th><th>GPU</th>'
+			           f'<th>Focused window</th></tr></thead><tbody>{"".join(report_rows)}</tbody></table></div>'
+			           if report_rows else '<p class="muted">No reports are retained.</p>')
+			fields = ('kind', 'reason', 'address', 'message', 'version', 'commit', 'channel', 'os', 'os_version', 'arch',
+			          'gl_renderer', 'gl_version', 'build_id', 'created')
+			meta = ''.join(f'<div><span>{esc(key.replace("_", " "))}</span><strong>{esc(r.get(key) or "–")}</strong></div>'
+			               for key in fields)
+			context = r.get('context', {})
+			meta += ''.join(f'<div><span>{label}</span><strong>{esc(context.get(key) or "–")}</strong></div>'
+			                for key, label in (('mode', 'mode'), ('window', 'window')))
+			log_text = '\n'.join(r.get('log', [])) if r else ''
+			for private_id in (r.get('uid'), r.get('id')):
+				if private_id:
+					log_text = log_text.replace(private_id, '[redacted id]')
+			logs = esc(log_text)
+			log_section = f'<section class="card"><h3>Latest report log</h3><pre>{logs or "(empty)"}</pre></section>'
+			alert = self.s.store.q('SELECT kind, detail FROM alerts WHERE group_id = ? ORDER BY id DESC LIMIT 1', (gid,))
+			trigger = (alert[0][0] + (': ' + alert[0][1] if alert[0][1] else '')) if alert else 'crash group alert'
+			sections.append(f'''<article>
+			<header><p class="badge {esc(state)}">{esc(state_text)} · {esc(kind)}</p>
+			<h2>{esc(title)}</h2><p class="muted">Version {esc(version)} · signature {esc(signature)} · group {gid}</p>
+			<p class="muted">Alert trigger: {esc(trigger)}</p></header>
+			<div class="kpis">{kpis}</div>
+			<div class="row"><section class="card grow"><h3>Latest stack</h3>
+			<p class="muted">{('Names from build symbols' if named else 'Offsets only; no symbols available for this build')}</p>
+			<div class="frames">{frames or '<p>No retained report.</p>'}</div></section>
+			<section class="card grow"><h3>Reports per day · last {dashboard.SPARK_DAYS} days</h3><div class="chart">{bars}</div></section></div>
+			<div class="row">{''.join(splits)}</div>
+			<section class="card"><h3>Latest report details</h3><p class="muted">Received {esc(received)} UTC</p>
+			<div class="fields">{meta}</div></section>{log_section}
+			<section class="card"><h3>Same issue in other versions</h3>{related_html}</section>
+			<section class="card"><h3>Latest reports · up to 50</h3>{history}</section></article>''')
+		if not sections:
+			return None
+		stamp = now().strftime('%Y-%m-%d %H:%M:%S UTC')
+		document = f'''<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
+<title>Haumea Studio crash and error details</title><style>
+:root{{color-scheme:dark}}body{{margin:0;background:#0f1115;color:#e6e8ec;font:14px/1.5 system-ui,sans-serif}}
+main{{max-width:1100px;margin:auto;padding:28px;display:grid;gap:24px}}h1,h2,h3,p{{margin:0}}h1{{font-size:24px}}h2{{font-size:20px;overflow-wrap:anywhere}}
+.muted{{color:#9aa1ad}}article{{display:grid;gap:14px;padding-bottom:28px;border-bottom:1px solid #30343c}}article>header{{display:grid;gap:8px}}
+.badge{{color:#ffbd82;background:#38291e;border-radius:6px;padding:4px 8px;width:max-content}}.regression{{color:#ff9c8f}}
+.kpis{{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}}.kpi,.card{{background:#171a20;border:1px solid #292d35;border-radius:10px;padding:16px}}
+.kpi{{display:grid;gap:4px;color:#9aa1ad}}.kpi strong{{font-size:18px;color:#e6e8ec}}.row{{display:flex;flex-wrap:wrap;gap:12px}}.grow{{flex:1 1 420px;min-width:0}}
+.frames{{font-family:ui-monospace,monospace;display:grid;gap:5px;overflow-wrap:anywhere}}.frame{{display:flex;gap:10px}}.frame .i{{color:#707784;min-width:24px}}.crash{{color:#ff9d7a}}
+.fields{{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}}.fields>div{{display:grid;gap:3px;overflow-wrap:anywhere}}.fields span{{color:#9aa1ad;text-transform:capitalize;font-size:12px}}
+pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:#101216;border-radius:7px;padding:12px;max-height:800px;overflow:auto}}
+.chart{{display:flex;align-items:flex-end;gap:3px;min-height:135px;overflow-x:auto}}.bar{{height:130px;min-width:23px;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;text-align:center;font-size:10px;color:#9aa1ad}}
+.bar i{{display:block;min-height:2px;background:#f08a3c;border-radius:3px 3px 0 0}}ul{{margin:0;padding:0;list-style:none;display:grid;gap:6px}}li{{display:flex;justify-content:space-between;gap:12px;overflow-wrap:anywhere}}
+.scroll{{overflow-x:auto}}table{{border-collapse:collapse;width:100%;font-size:13px}}th,td{{text-align:left;padding:9px;border-bottom:1px solid #292d35;vertical-align:top}}th{{color:#9aa1ad;white-space:nowrap}}
+footer{{color:#9aa1ad;font-size:12px}}@media(max-width:600px){{main{{padding:16px}}}}
+</style></head><body><main><header><h1>Haumea Studio · crash and error report details</h1>
+<p class="muted">Offline dashboard snapshot generated {esc(stamp)}. Install IDs and report IDs are excluded.</p></header>
+{''.join(sections)}<footer>Diagnostic information is from reports voluntarily sent by the editor. Keep this file in the private developer channel.</footer>
+</main></body></html>'''
+		return ('haumea-crash-details.html', document.encode('utf-8', 'replace'))
+
+	def post(self, payload, attachment=None, attempts=3):
+		wire_payload = dict(payload)
+		if attachment:
+			filename, content = attachment
+			wire_payload['attachments'] = [{'id': 0, 'filename': filename,
+			                                'description': 'Self-contained dashboard snapshot; no login required'}]
+			boundary = '----haumea-' + os.urandom(16).hex()
+			encoded = json.dumps(wire_payload).encode('utf-8')
+			data = (b'--' + boundary.encode() + b'\r\n'
+			        b'Content-Disposition: form-data; name="payload_json"\r\n'
+			        b'Content-Type: application/json\r\n\r\n' + encoded + b'\r\n'
+			        b'--' + boundary.encode() + b'\r\n'
+			        + f'Content-Disposition: form-data; name="files[0]"; filename="{filename}"\r\n'.encode()
+			        + b'Content-Type: text/html; charset=utf-8\r\n\r\n' + content + b'\r\n'
+			        + b'--' + boundary.encode() + b'--\r\n')
+			content_type = f'multipart/form-data; boundary={boundary}'
+		else:
+			data = json.dumps(wire_payload).encode('utf-8')
+			content_type = 'application/json'
 		for _ in range(attempts):
-			req = urllib.request.Request(self.url, data=data, headers={'Content-Type': 'application/json',
+			req = urllib.request.Request(self.url, data=data, headers={'Content-Type': content_type,
 			                                                            'User-Agent': 'haumea-server'})
 			try:
 				with urllib.request.urlopen(req, timeout=15):
@@ -501,16 +653,35 @@ class Alerter:
 		return False
 
 	def daily_summary(self):
-		day = (now() - dt.timedelta(days=1)).strftime('%Y-%m-%d')
+		day = (now().date() - dt.timedelta(days=1)).strftime('%Y-%m-%d')
+		start = day + 'T00:00:00Z'
+		end = (dt.datetime.strptime(day, '%Y-%m-%d').replace(tzinfo=dt.timezone.utc) + dt.timedelta(days=1))
+		end = iso(end)
 		users = self.s.store.q('SELECT COUNT(*) FROM active_days WHERE day = ?', (day,))[0][0]
+		new_installs = self.s.store.q('SELECT COUNT(*) FROM installs WHERE first_seen >= ? AND first_seen < ?',
+		                             (start, end))[0][0]
+		report_counts = dict((kind, count) for kind, count in self.s.store.q(
+			'SELECT kind, COUNT(*) FROM reports WHERE received >= ? AND received < ? GROUP BY kind', (start, end)))
+		groups = self.s.store.q('SELECT COUNT(DISTINCT group_id) FROM reports WHERE received >= ? AND received < ?',
+		                        (start, end))[0][0]
+		os_counts = self.s.store.q('SELECT os, COUNT(*) FROM active_days WHERE day = ? GROUP BY os ORDER BY 2 DESC',
+		                           (day,))
+		channel_counts = self.s.store.q('SELECT channel, COUNT(*) FROM active_days WHERE day = ? '
+		                                'GROUP BY channel ORDER BY 2 DESC', (day,))
 		top = self.s.store.q('SELECT g.title, g.version, COUNT(r.id) FROM reports r JOIN crash_groups g '
-		                     'ON g.id = r.group_id WHERE r.received >= ? GROUP BY g.id ORDER BY 3 DESC LIMIT 5',
-		                     (day + 'T00:00:00Z',))
-		lines = '\n'.join(f'{n}× {t} ({v})' for t, v, n in top) or 'No reports.'
-		return self.post({'username': 'Haumea Studio', 'embeds': [{
+		                     'ON g.id = r.group_id WHERE r.received >= ? AND r.received < ? '
+		                     'GROUP BY g.id ORDER BY 3 DESC LIMIT 5', (start, end))
+		lines = '\n'.join(f'{n}× {title} ({version})' for title, version, n in top) or 'No reports.'
+		os_line = ' · '.join(f'{name}: {n}' for name, n in os_counts) or 'No pings'
+		channel_line = ' · '.join(f'{name}: {n}' for name, n in channel_counts) or 'No pings'
+		return self.post({'username': 'Haumea Studio', 'allowed_mentions': {'parse': []}, 'embeds': [{
 			'title': f'Daily summary for {day}', 'color': 0x3498DB,
-			'fields': [{'name': 'Active installs', 'value': str(users), 'inline': True},
-			           {'name': 'Top crashes', 'value': lines[:1000]}]}]})
+			'fields': [{'name': 'Installs', 'value': f'Active: {users:,}\nNew: {new_installs:,}', 'inline': True},
+			           {'name': 'Reports', 'value': f'Crashes: {report_counts.get("crash", 0):,}\n'
+			            f'Errors: {report_counts.get("error", 0):,}\nGroups: {groups:,}', 'inline': True},
+			           {'name': 'Active by system', 'value': os_line[:1000], 'inline': True},
+			           {'name': 'Active by channel', 'value': channel_line[:1000], 'inline': True},
+			           {'name': 'Top reported groups', 'value': lines[:1000]}]}]})
 
 
 # ---- dashboard -------------------------------------------------------------------
@@ -673,7 +844,7 @@ class Server(socketserver.ThreadingMixIn, http.server.HTTPServer):
 def background(service, stop):
 	"""Alerts every HAUMEA_ALERT_EVERY seconds, the cleanup and the daily
 	summary once a day."""
-	last_cleanup = last_summary = ''
+	last_cleanup = ''
 	every = max(5, int(service.config['HAUMEA_ALERT_EVERY']))
 	while not stop.wait(every):
 		try:
@@ -682,9 +853,13 @@ def background(service, stop):
 			if day != last_cleanup:
 				service.cleanup()
 				last_cleanup = day
-			if service.config['HAUMEA_DAILY_SUMMARY'] == '1' and day != last_summary and now().hour >= 9:
+			if service.config['HAUMEA_DAILY_SUMMARY'] == '1' and now().hour >= 9:
+				sent_day = service.store.q("SELECT value FROM state WHERE key = 'daily_summary_sent_day'")
+				if sent_day and sent_day[0][0] == day:
+					continue
 				if service.alerter.url and service.alerter.daily_summary():
-					last_summary = day
+					service.store.q("INSERT INTO state (key, value) VALUES ('daily_summary_sent_day', ?) "
+					                "ON CONFLICT (key) DO UPDATE SET value = excluded.value", (day,))
 		except Exception as e:	# keep the service up; the next round retries
 			print(f'background: {type(e).__name__}: {e}', file=sys.stderr)
 

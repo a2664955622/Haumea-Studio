@@ -16,8 +16,9 @@ code { background: #f2f2f2; padding: 1px 4px; border-radius: 3px; }
 
 <p>Haumea Studio can send two kinds of information to its developer: a small
 daily usage ping, and reports when it crashes or hits an error. Both can be
-turned off in the editor's preferences. Nothing else is collected, and none of
-it is sold or shared.</p>
+turned off in the editor's preferences. Nothing else is collected. Crash
+diagnostics may be shared with the developer's maintainers in a private Discord
+channel so they can investigate without dashboard access.</p>
 
 <h2>The daily ping</h2>
 <p>At most once a day, Haumea Studio sends:</p>
@@ -50,10 +51,12 @@ is on too. Reports are kept for 6 months.</p>
 requests per address in memory only, for a minute, to stop floods.</p>
 
 <h2>Who sees it</h2>
-<p>Only the developer, on a password-protected page. New kinds of crashes are
-also summed up in a private Discord channel of the developer's (the version,
-system, graphics card and where in the code it happened; never log lines or
-install IDs).</p>
+<p>The developer can view reports on a password-protected page. Crash alerts
+also go to the developer's private Discord channel with a self-contained HTML
+snapshot of the dashboard details, including the latest report's stack,
+system, graphics card and log lines. The attachment excludes install IDs and
+can be read by channel members without dashboard access, so the channel is
+kept private.</p>
 
 <h2>Questions</h2>
 <p>Haumea Studio is free software under the GNU GPL; its source shows exactly

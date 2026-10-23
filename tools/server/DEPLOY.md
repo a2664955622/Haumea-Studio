@@ -99,11 +99,11 @@ HAUMEA_DASH_PASSWORD=pick-a-long-random-password
 # Discord alerts: in your Discord channel, Settings > Integrations >
 # Webhooks > New Webhook > Copy Webhook URL, and paste it here.
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+HAUMEA_DAILY_SUMMARY=1
 
 # Optional (defaults shown)
 #HAUMEA_ALERT_SPIKE=10        reports of one crash group in an hour that alert as a spike
 #HAUMEA_ALERT_EVERY=60        seconds between alert messages (alerts in between are sent together)
-#HAUMEA_DAILY_SUMMARY=0       1: a daily summary at 09:00 UTC
 #HAUMEA_PING_DAYS=365         pings are deleted this long after an install's last one
 #HAUMEA_REPORT_DAYS=183       reports are deleted after this long
 #HAUMEA_RATE_PINGS=30         per IP address per minute (counted in memory only)
@@ -113,6 +113,14 @@ DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
 `pwgen -s 32 1` or `openssl rand -base64 24` makes a good password. The
 webhook URL is a secret: anyone with it can post to the channel. It lives only
 in this file; the service never logs it.
+
+Crash alerts attach `haumea-crash-details.html`, a self-contained snapshot of
+the crash group's dashboard details, including the latest report's stack,
+system information and log. It has no dashboard login requirement and excludes
+install IDs. Anyone who can read the Discord channel can read the attachment,
+so use a private channel for the webhook. The regular daily message is sent
+once per UTC day after 09:00 and summarizes active and new installs, reports,
+systems, channels and the top reported groups.
 
 ## 4b. Cloudflare Access for the dashboard
 
