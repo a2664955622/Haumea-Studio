@@ -2964,7 +2964,8 @@ uiMainmenu(void)
 			ImGui::SetItemTooltip(_("Runs the map as it is now on a private open.mp test server.\nYour map file and your own server are not touched."));
 			if(ImGui::MenuItem(TI(ICON_FA_GAMEPAD, "Launch game"), nil, false, isSA()))
 				TestServerLaunchGame();
-			ImGui::SetItemTooltip(_("Starts SA-MP and joins the test server."));
+			ImGui::SetItemTooltip(_("Starts the game (open.mp's launcher, or SA-MP) and joins the test server.\n"
+				"Which one: Preferences > Test server."));
 			ImGui::Separator();
 			if(ImGui::MenuItem(TI(ICON_FA_ROTATE, "Reload Game Files..."))){
 				finishTransformPanelEdit();

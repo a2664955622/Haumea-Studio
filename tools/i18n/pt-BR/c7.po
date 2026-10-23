@@ -4437,10 +4437,6 @@ msgstr "para código Streamer"
 msgid "for native code"
 msgstr "para código nativo"
 
-#: tools/haumea/testserver.cpp:1315
-msgid "for samp.exe"
-msgstr "para o samp.exe"
-
 #: tools/haumea/gui.cpp:11196
 msgid "front passenger"
 msgstr "passageiro da frente"
@@ -4489,10 +4485,6 @@ msgstr "nenhum tamanho de célula reduz a esse número de zonas"
 #: tools/haumea/gui.cpp:7961
 msgid "no group"
 msgstr "sem grupo"
-
-#: tools/haumea/testserver.cpp:1076
-msgid "no samp.exe in the game folder"
-msgstr "nenhum samp.exe na pasta do jogo"
 
 #: tools/haumea/maptools.cpp:952
 msgid "no such model"

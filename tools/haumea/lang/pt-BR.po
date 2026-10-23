@@ -2882,6 +2882,13 @@ msgstr "Emmet"
 msgid "Empty part"
 msgstr "Parte vazia"
 
+msgid ""
+"Empty: the game folder's, or where its installer puts it\n"
+"(Program Files\\Open Multiplayer Launcher)."
+msgstr ""
+"Vazio: o da pasta do jogo, ou onde o instalador o coloca\n"
+"(Program Files\\Open Multiplayer Launcher)."
+
 msgid "Enable Notifications"
 msgstr "Ativar notificações"
 
@@ -4189,6 +4196,9 @@ msgstr "Iniciar o jogo"
 
 msgid "Launch game joins it. After changes, Reload map in the Test server window."
 msgstr "Iniciar o jogo entra nele. Depois de mudanças, Recarregar mapa na janela Servidor de teste."
+
+msgid "Launch game with"
+msgstr "Abrir o jogo com"
 
 #, c-format
 msgid "Layers - %s"
@@ -6728,6 +6738,9 @@ msgstr "SA-MP"
 msgid "SA-MP %s found"
 msgstr "SA-MP %s encontrado"
 
+msgid "SA-MP (samp.exe)"
+msgstr "SA-MP (samp.exe)"
+
 msgid "SA-MP 0.3.7 and open.mp with 0.3.7 clients allowed"
 msgstr "SA-MP 0.3.7 e open.mp com clientes 0.3.7 permitidos"
 
@@ -7545,8 +7558,12 @@ msgstr "Começar a rota no NPC"
 msgid "Starting"
 msgstr "Iniciando"
 
-msgid "Starts SA-MP and joins the test server."
-msgstr "Inicia o SA-MP e entra no servidor de teste."
+msgid ""
+"Starts the game (open.mp's launcher, or SA-MP) and joins the test server.\n"
+"Which one: Preferences > Test server."
+msgstr ""
+"Abre o jogo (o launcher do open.mp, ou o SA-MP) e entra no servidor de teste.\n"
+"Qual deles: Preferências > Servidor de teste."
 
 msgid "Static vehicle (AddStaticVehicleEx)"
 msgstr "Veículo estático (AddStaticVehicleEx)"
@@ -9110,6 +9127,9 @@ msgstr "não foi possível rodar o pawncc"
 msgid "could not start samp.exe"
 msgstr "não foi possível iniciar o samp.exe"
 
+msgid "could not start the open.mp launcher"
+msgstr "não foi possível abrir o launcher do open.mp"
+
 msgid "could not start wine"
 msgstr "não foi possível iniciar o wine"
 
@@ -9170,8 +9190,8 @@ msgstr "para código Streamer"
 msgid "for native code"
 msgstr "para código nativo"
 
-msgid "for samp.exe"
-msgstr "para o samp.exe"
+msgid "for the game"
+msgstr "para o jogo"
 
 msgid "front passenger"
 msgstr "passageiro da frente"
@@ -9270,8 +9290,11 @@ msgstr "sem grupo"
 msgid "no key"
 msgstr "sem tecla"
 
-msgid "no samp.exe in the game folder"
-msgstr "nenhum samp.exe na pasta do jogo"
+msgid "no open.mp launcher found; set where omp-launcher.exe is in Preferences > Test server"
+msgstr "nenhum launcher do open.mp encontrado; indique onde está o omp-launcher.exe em Preferências > Servidor de teste"
+
+msgid "no samp.exe in the game folder, and no open.mp launcher"
+msgstr "não há samp.exe na pasta do jogo, nem launcher do open.mp"
 
 msgid "no such model"
 msgstr "modelo inexistente"
@@ -9303,6 +9326,9 @@ msgstr "pasta npcmodes/recordings"
 msgid "object"
 msgstr "objeto"
 
+msgid "omp-launcher.exe: not found"
+msgstr "omp-launcher.exe: não encontrado"
+
 #, c-format
 msgid "only inside %s"
 msgstr "só dentro de %s"
@@ -9324,6 +9350,15 @@ msgstr ""
 "Os NPCs do open.mp andam e dirigem pelos NODES0-63.DAT com NPC_PlayNode.\n"
 "O SA-MP e o próprio jogo não leem os arquivos que você salva aqui."
 
+msgid "open.mp launcher"
+msgstr "Launcher do open.mp"
+
+msgid "open.mp launcher (SA-MP if not found)"
+msgstr "Launcher do open.mp (SA-MP se não houver)"
+
+msgid "open.mp launcher only"
+msgstr "Só o launcher do open.mp"
+
 msgid "open.mp only"
 msgstr "só open.mp"
 
@@ -9340,6 +9375,13 @@ msgstr ""
 "um helper <map>_OnNPCFinishMovePath(npcid, pathid): chame-o do seu\n"
 "OnNPCFinishMovePath e o NPC recomeça o caminho (invertido a cada vez\n"
 "em ida e volta)."
+
+msgid ""
+"open.mp's launcher joins with the open.mp client, which some games need\n"
+"(SA-MP's can crash where open.mp's doesn't)."
+msgstr ""
+"O launcher do open.mp entra com o cliente do open.mp, que alguns jogos precisam\n"
+"(o do SA-MP pode travar onde o do open.mp não trava)."
 
 msgid "opening a map"
 msgstr "abrindo um mapa"

@@ -434,8 +434,6 @@ msgid "Launch game"
 msgstr "Iniciar o jogo"
 
 #: gui.cpp:2775
-msgid "Starts SA-MP and joins the test server."
-msgstr "Inicia o SA-MP e entra no servidor de teste."
 
 #: gui.cpp:2777
 msgid "Reload Game Files..."

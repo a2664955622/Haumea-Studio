@@ -3123,3 +3123,67 @@ msgstr ""
 #: tools/haumea/textdraws_ui.cpp
 msgid "The open map has no custom model with that ID."
 msgstr "O mapa aberto não tem modelo personalizado com esse ID."
+
+#: tools/haumea/testserver.cpp
+msgid "open.mp launcher (SA-MP if not found)"
+msgstr "Launcher do open.mp (SA-MP se não houver)"
+
+#: tools/haumea/testserver.cpp
+msgid "open.mp launcher only"
+msgstr "Só o launcher do open.mp"
+
+#: tools/haumea/testserver.cpp
+msgid ""
+"Empty: the game folder's, or where its installer puts it\n"
+"(Program Files\\Open Multiplayer Launcher)."
+msgstr ""
+"Vazio: o da pasta do jogo, ou onde o instalador o coloca\n"
+"(Program Files\\Open Multiplayer Launcher)."
+
+#: tools/haumea/testserver.cpp
+msgid "Launch game with"
+msgstr "Abrir o jogo com"
+
+#: tools/haumea/testserver.cpp
+msgid "SA-MP (samp.exe)"
+msgstr "SA-MP (samp.exe)"
+
+#: tools/haumea/testserver.cpp
+msgid "could not start the open.mp launcher"
+msgstr "não foi possível abrir o launcher do open.mp"
+
+#: tools/haumea/testserver.cpp
+msgid "for the game"
+msgstr "para o jogo"
+
+#: tools/haumea/testserver.cpp
+msgid "no open.mp launcher found; set where omp-launcher.exe is in Preferences > Test server"
+msgstr "nenhum launcher do open.mp encontrado; indique onde está o omp-launcher.exe em Preferências > Servidor de teste"
+
+#: tools/haumea/testserver.cpp
+msgid "no samp.exe in the game folder, and no open.mp launcher"
+msgstr "não há samp.exe na pasta do jogo, nem launcher do open.mp"
+
+#: tools/haumea/testserver.cpp
+msgid "omp-launcher.exe: not found"
+msgstr "omp-launcher.exe: não encontrado"
+
+#: tools/haumea/testserver.cpp
+msgid "open.mp launcher"
+msgstr "Launcher do open.mp"
+
+#: tools/haumea/testserver.cpp
+msgid ""
+"open.mp's launcher joins with the open.mp client, which some games need\n"
+"(SA-MP's can crash where open.mp's doesn't)."
+msgstr ""
+"O launcher do open.mp entra com o cliente do open.mp, que alguns jogos precisam\n"
+"(o do SA-MP pode travar onde o do open.mp não trava)."
+
+#: tools/haumea/gui.cpp
+msgid ""
+"Starts the game (open.mp's launcher, or SA-MP) and joins the test server.\n"
+"Which one: Preferences > Test server."
+msgstr ""
+"Abre o jogo (o launcher do open.mp, ou o SA-MP) e entra no servidor de teste.\n"
+"Qual deles: Preferências > Servidor de teste."

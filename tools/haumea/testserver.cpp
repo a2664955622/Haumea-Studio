@@ -219,10 +219,15 @@ tsReadText(const std::string &path)
 
 // ---- settings -------------------------------------------------------------
 
+// What Launch game starts: open.mp's launcher when there is one, or samp.exe.
+enum { TS_CLIENT_AUTO, TS_CLIENT_OPENMP, TS_CLIENT_SAMP, NUM_TS_CLIENTS };
+
 static struct {
 	char package[1024];	// server folder, .tar.gz or .zip; empty: the workspace server
 	char nickname[24];
 	char winePrefix[1024];	// empty: the one the game folder is in
+	char launcher[1024];	// omp-launcher.exe; empty: looked for
+	int client;	// TS_CLIENT_*
 	int port;
 	bool loaded;
 } gTsSettings;
@@ -263,6 +268,10 @@ tsLoadSettings(void)
 			strncpy(gTsSettings.winePrefix, value.c_str(), sizeof(gTsSettings.winePrefix)-1);
 		else if(key == "port")
 			gTsSettings.port = clamp(atoi(value.c_str()), 1024, 65535);
+		else if(key == "launcher")
+			strncpy(gTsSettings.launcher, value.c_str(), sizeof(gTsSettings.launcher)-1);
+		else if(key == "client")
+			gTsSettings.client = clamp(atoi(value.c_str()), 0, NUM_TS_CLIENTS - 1);
 	}
 }
 
@@ -273,7 +282,8 @@ tsSaveSettings(void)
 	snprintf(port, sizeof(port), "%d", gTsSettings.port);
 	tsWriteText(tsSettingsPath(), std::string("package=") + gTsSettings.package +
 		"\nnickname=" + gTsSettings.nickname + "\nwineprefix=" + gTsSettings.winePrefix +
-		"\nport=" + port + "\n");
+		"\nport=" + port + "\nlauncher=" + gTsSettings.launcher +
+		"\nclient=" + std::to_string(gTsSettings.client) + "\n");
 }
 
 // The wine prefix the GTA folder is in (…/drive_c/…), unless one is set.
@@ -1066,27 +1076,83 @@ TestServerIsRunning(void)
 	return tsRunning(&gTsServer);
 }
 
+#ifndef _WIN32
+// A path as Windows programs under wine see it: C:\\... inside the prefix's
+// drive_c, Z:\\... (the whole file system) elsewhere.
+static std::string
+tsWindowsPath(const std::string &path, const std::string &prefix)
+{
+	std::string drive = tsJoin(prefix, "drive_c");
+	std::string out = path.compare(0, drive.size(), drive) == 0 ? "C:" + path.substr(drive.size()) : "Z:" + path;
+	for(char &ch : out)
+		if(ch == '/')
+			ch = '\\';
+	return out;
+}
+#endif
+
+// open.mp's launcher: the one set in the preferences, a portable one in the
+// game folder, or where its installer puts it.
+static std::string
+tsFindLauncher(void)
+{
+	if(gTsSettings.launcher[0])
+		return tsIsFile(gTsSettings.launcher) ? std::string(gTsSettings.launcher) : std::string();
+	std::string found = tsFindName(tsGameDir(), "omp-launcher.exe");
+	if(!found.empty())
+		return found;
+	std::vector<std::string> programs;
+#ifdef _WIN32
+	if(const char *p = getenv("ProgramFiles(x86)")) programs.push_back(p);
+	if(const char *p = getenv("ProgramFiles")) programs.push_back(p);
+#else
+	std::string prefix = tsWinePrefix();
+	if(!prefix.empty()){
+		programs.push_back(tsJoin(prefix, "drive_c/Program Files (x86)"));
+		programs.push_back(tsJoin(prefix, "drive_c/Program Files"));
+	}
+#endif
+	for(const std::string &dir : programs){
+		std::string exe = tsJoin(tsJoin(dir, "Open Multiplayer Launcher"), "omp-launcher.exe");
+		if(tsIsFile(exe))
+			return exe;
+	}
+	return "";
+}
+
 void
 TestServerLaunchGame(void)
 {
 	tsLoadSettings();
 	std::string game = tsGameDir();
-	std::string client = tsFindName(game, "samp.exe");
-	if(client.empty()){
-		tsFail(N_("no samp.exe in the game folder"));
+	std::string launcher = gTsSettings.client == TS_CLIENT_SAMP ? std::string() : tsFindLauncher();
+	if(gTsSettings.client == TS_CLIENT_OPENMP && launcher.empty()){
+		tsFail(N_("no open.mp launcher found; set where omp-launcher.exe is in Preferences > Test server"));
 		return;
 	}
-	char address[64];
+	std::string client = launcher.empty() ? tsFindName(game, "samp.exe") : launcher;
+	if(client.empty()){
+		tsFail(N_("no samp.exe in the game folder, and no open.mp launcher"));
+		return;
+	}
+	char address[64], port[16];
 	snprintf(address, sizeof(address), "127.0.0.1:%d", gTsSettings.port);
+	snprintf(port, sizeof(port), "%d", gTsSettings.port);
 	std::string nick = gTsSettings.nickname[0] ? gTsSettings.nickname : "Haumea";
 #ifdef _WIN32
-	// samp.exe takes the address; the nickname comes from its registry key.
-	HKEY key;
-	if(RegCreateKeyExA(HKEY_CURRENT_USER, "Software\\SAMP", 0, nil, 0, KEY_SET_VALUE, nil, &key, nil) == ERROR_SUCCESS){
-		RegSetValueExA(key, "PlayerName", 0, REG_SZ, (const BYTE*)nick.c_str(), (DWORD)nick.size() + 1);
-		RegCloseKey(key);
+	std::string commandLine;
+	if(!launcher.empty()){
+		// open.mp's launcher joins straight away with all four given.
+		commandLine = tsQuote(client) + " -h 127.0.0.1 -p " + port + " -n " + tsQuote(nick) + " -g " + tsQuote(game);
+	}else{
+		// samp.exe takes the address; the nickname comes from its registry key.
+		HKEY key;
+		if(RegCreateKeyExA(HKEY_CURRENT_USER, "Software\\SAMP", 0, nil, 0, KEY_SET_VALUE, nil, &key, nil) == ERROR_SUCCESS){
+			RegSetValueExA(key, "PlayerName", 0, REG_SZ, (const BYTE*)nick.c_str(), (DWORD)nick.size() + 1);
+			RegCloseKey(key);
+		}
+		commandLine = tsQuote(client) + " " + address;
 	}
-	std::string commandLine = tsQuote(client) + " " + address;
 	std::vector<char> cmd(commandLine.begin(), commandLine.end());
 	cmd.push_back('\0');
 	STARTUPINFOA si;
@@ -1094,7 +1160,7 @@ TestServerLaunchGame(void)
 	si.cb = sizeof(si);
 	PROCESS_INFORMATION pi;
 	if(!CreateProcessA(nil, cmd.data(), nil, nil, FALSE, 0, nil, game.c_str(), &si, &pi)){
-		tsFail(N_("could not start samp.exe"));
+		tsFail(launcher.empty() ? N_("could not start samp.exe") : N_("could not start the open.mp launcher"));
 		return;
 	}
 	CloseHandle(pi.hThread);
@@ -1105,13 +1171,18 @@ TestServerLaunchGame(void)
 		tsFail(N_("the game folder is not in a wine prefix; set one in Preferences > Test server"));
 		return;
 	}
-	// The nickname goes to wine reg as an argument, never through a shell:
-	// SA-MP names may contain $.
+	// Arguments go to wine as they are, never through a shell: SA-MP names
+	// may contain $.
 	std::vector<std::string> env = { "WINEPREFIX=" + prefix, "WINEDEBUG=-all" };
 	TsExecArgs reg, play;
 	tsMakeExecArgs(&reg, { "wine", "reg", "add", "HKCU\\Software\\SAMP", "/v", "PlayerName",
 		"/d", nick, "/f" }, env);
-	tsMakeExecArgs(&play, { "wine", "samp.exe", address }, env);
+	if(!launcher.empty())
+		tsMakeExecArgs(&play, { "wine", client, "-h", "127.0.0.1", "-p", port, "-n", nick,
+			"-g", tsWindowsPath(game, prefix) }, env);
+	else
+		tsMakeExecArgs(&play, { "wine", "samp.exe", address }, env);
+	bool setName = launcher.empty();
 	pid_t pid = fork();
 	if(pid == 0){
 		setsid();
@@ -1119,14 +1190,16 @@ TestServerLaunchGame(void)
 			_exit(127);
 		int devnull = open("/dev/null", O_RDWR);
 		dup2(devnull, 0); dup2(devnull, 1); dup2(devnull, 2);
-		pid_t setName = fork();
-		if(setName == 0){
-			environ = reg.envp.data();
-			execvp("wine", reg.argv.data());
-			_exit(127);
+		if(setName){
+			pid_t namer = fork();
+			if(namer == 0){
+				environ = reg.envp.data();
+				execvp("wine", reg.argv.data());
+				_exit(127);
+			}
+			if(namer > 0)
+				waitpid(namer, nil, 0);
 		}
-		if(setName > 0)
-			waitpid(setName, nil, 0);
 		environ = play.envp.data();
 		execvp("wine", play.argv.data());
 		_exit(127);
@@ -1310,9 +1383,22 @@ TestServerPreferences(void)
 	changed |= ImGui::InputInt(_("Port"), &gTsSettings.port);
 	gTsSettings.port = clamp(gTsSettings.port, 1024, 65535);
 	changed |= ImGui::InputText(_("Nickname"), gTsSettings.nickname, sizeof(gTsSettings.nickname));
+	const char *clients[NUM_TS_CLIENTS] = { _("open.mp launcher (SA-MP if not found)"), _("open.mp launcher only"),
+		_("SA-MP (samp.exe)") };
+	changed |= ImGui::Combo(_("Launch game with"), &gTsSettings.client, clients, NUM_TS_CLIENTS);
+	ImGui::SetItemTooltip("%s", _("open.mp's launcher joins with the open.mp client, which some games need\n"
+		"(SA-MP's can crash where open.mp's doesn't)."));
+	if(gTsSettings.client != TS_CLIENT_SAMP){
+		std::string found = tsFindLauncher();
+		changed |= ImGui::InputTextWithHint(_("open.mp launcher"),
+			found.empty() ? _("omp-launcher.exe: not found") : found.c_str(),
+			gTsSettings.launcher, sizeof(gTsSettings.launcher));
+		ImGui::SetItemTooltip("%s", _("Empty: the game folder's, or where its installer puts it\n"
+			"(Program Files\\Open Multiplayer Launcher)."));
+	}
 #ifndef _WIN32
 	std::string prefix = tsWinePrefix();
-	changed |= ImGui::InputTextWithHint(_("Wine prefix"), prefix.empty() ? _("for samp.exe") : prefix.c_str(),
+	changed |= ImGui::InputTextWithHint(_("Wine prefix"), prefix.empty() ? _("for the game") : prefix.c_str(),
 		gTsSettings.winePrefix, sizeof(gTsSettings.winePrefix));
 #endif
 	if(changed)
