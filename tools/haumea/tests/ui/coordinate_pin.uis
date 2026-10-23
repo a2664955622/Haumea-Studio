@@ -29,7 +29,7 @@ assert pin.dy == 4
 assert pin.dz == 12
 click_item 'Tools' 'Copy coordinates'
 assert clipboard_contains '2010.000000, -3000.000000, 5.000000'
-click_item 'Tools' 'X##pin_align'
+click_item 'Tools' 'X'
 assert pin.x == 2013
 set_item 'Tools' 'Pin XYZ/#0' '2010'
 click_item 'Tools' 'Midpoint'

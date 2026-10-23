@@ -171,7 +171,6 @@ void similarPanel(void (*drawModels)(int *, int, int), int selectedModel)
 	std::vector<int> ids;
 	for(const Match &match : matches) ids.push_back(match.id);
 	ImGui::TextDisabled(_("%d similar models"), (int)ids.size());
-	if(selectedModel >= 0 && ImGui::Button(_("Find selected model's instances"))) BrowserFindInstances(selectedModel);
 	if(mode == SIMILAR) drawModels(ids.data(), (int)ids.size(), selectedModel);
 }
 }

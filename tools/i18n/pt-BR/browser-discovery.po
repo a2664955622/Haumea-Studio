@@ -58,9 +58,6 @@ msgstr "Informe IDs de modelos separados por vírgulas, espaços ou intervalos."
 msgid "Find instances"
 msgstr "Encontrar instâncias"
 
-msgid "Find selected model's instances"
-msgstr "Encontrar instâncias do modelo escolhido"
-
 msgid "GTA world"
 msgstr "Mundo do GTA"
 

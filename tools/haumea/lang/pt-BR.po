@@ -3245,9 +3245,6 @@ msgstr "Encontre-o em Navegador de objetos > Modelos personalizados e coloque-o 
 msgid "Find objects by model or TXD"
 msgstr "Achar objetos por modelo ou TXD"
 
-msgid "Find selected model's instances"
-msgstr "Encontrar instâncias do modelo escolhido"
-
 msgid "Fire"
 msgstr "Fogo"
 
