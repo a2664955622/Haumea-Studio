@@ -1,0 +1,54 @@
+# Shapes are changed in place: their handles resize them (Shift keeps the
+# proportions), the panel changes them, aligning moves one as a whole, and
+# a guide dragged from a ruler is saved with the file.
+open "$UI_FIXTURES/ui_map.pwn"
+click_item '*' 'Windows'
+wait 3
+click_item '*' 'TextDraws'
+wait 8
+click_item 'TextDraws' 'Shape'
+wait 3
+click_item '*' 'Add the shape'
+wait 5
+# A rounded box, 160 x 90 in the middle: a column, two strips, four corners.
+assert textdraws == 7
+assert textdraw.0.size_y > 89
+assert textdraw.0.size_y < 91
+# Its bottom right handle, from 400,269 to 440,309: 200 x 130.
+drag td:400 td:269 td:440 td:309 12
+wait 5
+assert textdraws == 7
+assert textdraw.0.size_y > 128
+assert textdraw.0.size_y < 132
+# Shift: 40 more across makes it 1.2 times as big both ways.
+hold Shift
+drag td:440 td:309 td:480 td:309 12
+release Shift
+wait 5
+assert textdraw.0.size_y > 153
+assert textdraw.0.size_y < 159
+# A border from the panel: the box twice, the border colour under the colour.
+scroll_until 'TextDraws' 'Border'
+set_item 'TextDraws' 'Border' 4
+wait 5
+assert textdraws == 14
+# One shape on its own aligns to the screen, as one.
+click_item 'TextDraws' '##align0'
+wait 5
+assert textdraws == 14
+# A copy is a shape of its own.
+move 900 400
+shortcut duplicate
+wait 5
+assert textdraws == 28
+# A guide from the top ruler.
+drag td:500 tdruler td:500 td:100 12
+wait 5
+move 900 400
+shortcut save_map_as
+wait 5
+click_item 'Save TextDraws As' 'Save'
+wait 5
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "shape \"rounded 0.00 179.00 "
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "// Haumea: guide y "
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "group \"Rounded box 2\""

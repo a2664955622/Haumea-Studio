@@ -559,6 +559,11 @@ coordinate(const std::string &s, bool vertical)
 	ImGuiIO &io = ImGui::GetIO();
 	if(!s.empty() && s.back() == '%')
 		return (int)(atof(s.c_str()) / 100.0f * (vertical ? io.DisplaySize.y : io.DisplaySize.x));
+	// td:320 is that far across (or down) TextDraw mode's canvas; tdruler, on its ruler.
+	if(s.compare(0, 3, "td:") == 0)
+		return (int)(TextDrawCanvasToScreen((float)atof(s.c_str() + 3), vertical, false) + 0.5f);
+	if(s == "tdruler")
+		return (int)TextDrawCanvasToScreen(0.0f, vertical, true);
 	return atoi(s.c_str());
 }
 

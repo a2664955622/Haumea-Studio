@@ -40,7 +40,7 @@ static const float gScreenAspects[NUM_TD_SCREENS] = { 0.0f, 4.0f / 3.0f, 16.0f /
 static const char *gScreenNames[NUM_TD_SCREENS] = { N_("Window"), "4:3", "16:10", "16:9", "21:9" };
 static int gScreen = TD_SCREEN_WINDOW;
 static float gZoom = 1.0f, gPanX, gPanY;	// the pan in pixels, from the centred canvas
-static bool gSnap = true, gGrid, gCompare;
+static bool gSnap = true, gGrid, gCompare, gRulers = true;
 static float gGridSize = 10.0f;
 static float gNudge = 1.0f;	// the arrow keys' step; Shift ten times it
 static bool gClickThroughLocked = true;
@@ -243,8 +243,9 @@ LoadTextDrawSetting(const char *key, const char *value)
 			at = end + 1;
 		}
 	}else if(strcmp(key, "textdraw_canvas") == 0){
-		int snap = 1, grid = 0, through = 1, compare = 0;
-		sscanf(value, "%d %d %d %f %f %d %d", &gScreen, &snap, &grid, &gGridSize, &gNudge, &through, &compare);
+		int snap = 1, grid = 0, through = 1, compare = 0, rulers = 1;
+		sscanf(value, "%d %d %d %f %f %d %d %d", &gScreen, &snap, &grid, &gGridSize, &gNudge, &through, &compare, &rulers);
+		gRulers = rulers != 0;
 		gScreen = std::max(0, std::min(gScreen, NUM_TD_SCREENS - 1));
 		gSnap = snap != 0;
 		gGrid = grid != 0;
@@ -308,8 +309,8 @@ SaveTextDrawSettings(FILE *f)
 	for(unsigned int c : gSavedColours)
 		fprintf(f, " %08X", c);
 	fputc('\n', f);
-	fprintf(f, "textdraw_canvas %d %d %d %g %g %d %d\n", gScreen, gSnap ? 1 : 0, gGrid ? 1 : 0, gGridSize, gNudge,
-		gClickThroughLocked ? 1 : 0, gCompare ? 1 : 0);
+	fprintf(f, "textdraw_canvas %d %d %d %g %g %d %d %d\n", gScreen, gSnap ? 1 : 0, gGrid ? 1 : 0, gGridSize, gNudge,
+		gClickThroughLocked ? 1 : 0, gCompare ? 1 : 0, gRulers ? 1 : 0);
 	fprintf(f, "textdraw_hud %d %x %d %d %d %d %d %d %d %d %d %d\n", gHud.show ? 1 : 0, (unsigned int)gHud.parts,
 		gHud.hour, gHud.minute, gHud.money, gHud.health, gHud.armour, gHud.breath,
 		gHud.wanted, gHud.weapon, gHud.ammo, gHud.clip);
@@ -786,6 +787,19 @@ getCanvas(void)
 	c.y = cy - 224.0f * c.sy + gPanY;
 	c.areaY = pos.y;
 	return c;
+}
+
+// For UI scripts: a canvas x (or y) on the screen; ruler, the middle of the ruler strip.
+float
+TextDrawCanvasToScreen(float at, bool vertical, bool ruler)
+{
+	Canvas c = getCanvas();
+	if(ruler){
+		ImVec2 pos, size;
+		canvasArea(&pos, &size);
+		return (vertical ? pos.y : pos.x) + ImGui::GetFontSize() * 0.65f;
+	}
+	return vertical ? c.y + at * c.sy : c.x + at * c.sx;
 }
 
 // ---- Model previews ----
@@ -1399,11 +1413,18 @@ boundsOf(const TextDraw &td, float *x0, float *y0, float *x1, float *y1)
 
 // Moved as a whole: a text's wrap or box edge (TextSize's x, a position on
 // the screen for left and right alignment) moves with it.
+struct ShapeSettings;
+static bool parseShapeSpec(const std::string &spec, ShapeSettings *sh);
+static std::string shapeSpec(const ShapeSettings &sh);
+static void moveShapeSpec(std::string &spec, float dx, float dy);
+
 static void
 moveBy(TextDraw &td, float dx, float dy)
 {
 	td.x += dx;
 	td.y += dy;
+	if(!td.shape.empty())
+		moveShapeSpec(td.shape, dx, dy);
 	bool isText = td.font < TD_FONT_SPRITE;
 	if(isText && (td.alignment == 1 || td.alignment == 3))
 		td.sizeX += dx;
@@ -1419,13 +1440,50 @@ deleteSelected(void)
 	TextDrawsChanged();
 }
 
+// A group name not in use: the name's words with the first free number
+// from `from` ("Rounded box 1" gives "Rounded box 2" when 1 is taken).
+static std::string
+uniqueGroupName(std::string base, int from = 1)
+{
+	size_t space = base.find_last_of(' ');
+	if(space != std::string::npos && base.find_first_not_of("0123456789", space + 1) == std::string::npos)
+		base.resize(space);
+	const std::vector<TextDraw> &tds = GetTextDraws();
+	for(int n = from; ; n++){
+		std::string name = base + " " + std::to_string(n);
+		bool used = false;
+		for(const TextDraw &td : tds)
+			used |= td.group == name;
+		if(!used)
+			return name;
+	}
+}
+
 // Copies after the last one, offset unless in place; the copies end up selected.
 static void
 appendCopies(const std::vector<TextDraw> &copies, float offset)
 {
 	std::vector<TextDraw> &tds = GetTextDraws();
 	gSel.clear();
+	// A copied group is a group of its own: "Rounded box 1" copies as "Rounded box 2".
+	std::map<std::string, std::string> renamed;
 	for(TextDraw td : copies){
+		if(!td.group.empty()){
+			if(renamed.find(td.group) == renamed.end()){
+				std::string name = uniqueGroupName(td.group);
+				// Not one an earlier copied group was given either.
+				for(int n = 2; ; n++){
+					bool taken = false;
+					for(const auto &r : renamed)
+						taken |= r.second == name;
+					if(!taken)
+						break;
+					name = uniqueGroupName(td.group, n);
+				}
+				renamed[td.group] = name;
+			}
+			td.group = renamed[td.group];
+		}
 		td.name[0] = '\0';
 		td.board = gBoard;
 		moveBy(td, offset, offset);
@@ -1545,68 +1603,374 @@ newGroupName(void)
 	}
 }
 
-// Align to the selection's edges, or to the screen's with one selected.
-enum { ALIGN_LEFT, ALIGN_HCENTRE, ALIGN_RIGHT, ALIGN_TOP, ALIGN_VCENTRE, ALIGN_BOTTOM };
-static void
-alignSelected(int how, bool toScreen)
+// ---- Shapes: what they are made of ----
+
+// Shapes made of several textdraws, as Textdraw Studio builds them: boxes
+// of LD_SPAC:white, circles of LD_BEAT:chit, a ring of LD_BEAT:cring and
+// arrows of LD_BEAT's. They are added as a group, and each part keeps the
+// shape's settings, so the shape can be changed and resized after.
+enum { SHAPE_ROUNDED_BOX, SHAPE_CIRCLE, SHAPE_BAR, SHAPE_RING, SHAPE_PILL, SHAPE_OUTLINE,
+	SHAPE_CIRCLE_OUTLINE, SHAPE_GRADIENT, SHAPE_TRIANGLE, SHAPE_ARROW, SHAPE_PLUS, NUM_SHAPES };
+static const char *gShapeKeys[NUM_SHAPES] = { "rounded", "circle", "bar", "ring", "pill", "outline",
+	"circleoutline", "gradient", "triangle", "arrow", "plus" };
+static const char *gShapeNames[NUM_SHAPES] = { N_("Rounded box"), N_("Circle"), N_("Progress bar"),
+	N_("Progress ring"), N_("Pill"), N_("Outline"), N_("Circle outline"), N_("Gradient"), N_("Triangle"),
+	N_("Arrow"), N_("Plus") };
+// The order the list offers them in.
+static const int gShapeOrder[NUM_SHAPES] = { SHAPE_ROUNDED_BOX, SHAPE_PILL, SHAPE_OUTLINE, SHAPE_CIRCLE,
+	SHAPE_CIRCLE_OUTLINE, SHAPE_TRIANGLE, SHAPE_ARROW, SHAPE_PLUS, SHAPE_GRADIENT, SHAPE_BAR, SHAPE_RING };
+enum { DIR_RIGHT, DIR_LEFT, DIR_UP, DIR_DOWN };
+
+struct ShapeSettings {
+	int kind;
+	float x, y, w, h;	// the box it fills
+	float radius;	// the rounded box's corners
+	float thickness;	// a border or line, the ring's dots, the gap between a bar's segments
+	int segments;	// the ring's dots, a bar's segments, a gradient's bands, a triangle's steps
+	int value;	// percent, for the bar and the ring
+	int dir;	// where a bar fills to, a gradient runs, a triangle or an arrow points
+	unsigned int colour;
+	unsigned int back;	// the empty part, the gradient's end, the border, an outline's inside
+	float shadow;	// a drop shadow this far down and right, 0 for none
+	unsigned int shadowColour;
+};
+static ShapeSettings gShape = { SHAPE_ROUNDED_BOX, 0.0f, 0.0f, 160.0f, 90.0f, 12.0f, 0.0f, 24, 65, DIR_RIGHT,
+	0x2B2F36FF, 0x000000AA, 0.0f, 0x00000080 };
+
+// Shapes whose sprites overlap: a see-through colour would show the
+// overlaps darker, so they are always opaque.
+static bool
+shapeOpaque(const ShapeSettings &sh)
 {
-	std::vector<TextDraw> &tds = GetTextDraws();
-	float X0 = 1e9f, Y0 = 1e9f, X1 = -1e9f, Y1 = -1e9f;
-	for(int i : gSel){
-		float x0, y0, x1, y1;
-		boundsOf(tds[i], &x0, &y0, &x1, &y1);
-		X0 = std::min(X0, x0); Y0 = std::min(Y0, y0);
-		X1 = std::max(X1, x1); Y1 = std::max(Y1, y1);
-	}
-	if(toScreen || gSel.size() == 1){
-		X0 = 0.0f; Y0 = 0.0f; X1 = 640.0f; Y1 = 448.0f;
-	}
-	for(int i : gSel){
-		TextDraw &td = tds[i];
-		if(td.locked)
-			continue;
-		float x0, y0, x1, y1;
-		boundsOf(td, &x0, &y0, &x1, &y1);
-		float dx = 0.0f, dy = 0.0f;
-		switch(how){
-		case ALIGN_LEFT: dx = X0 - x0; break;
-		case ALIGN_HCENTRE: dx = (X0 + X1) * 0.5f - (x0 + x1) * 0.5f; break;
-		case ALIGN_RIGHT: dx = X1 - x1; break;
-		case ALIGN_TOP: dy = Y0 - y0; break;
-		case ALIGN_VCENTRE: dy = (Y0 + Y1) * 0.5f - (y0 + y1) * 0.5f; break;
-		case ALIGN_BOTTOM: dy = Y1 - y1; break;
-		}
-		moveBy(td, dx, dy);
-	}
-	TextDrawsChanged();
+	return sh.kind == SHAPE_ROUNDED_BOX || sh.kind == SHAPE_PILL || (sh.kind == SHAPE_CIRCLE && sh.thickness > 0.0f);
 }
 
-// Equal gaps between three or more, the outer ones staying.
+// A new kind's own settings, keeping the place, the size and the colour.
 static void
-distributeSelected(bool across)
+shapeDefaults(ShapeSettings &sh, int kind)
+{
+	sh.kind = kind;
+	sh.dir = kind == SHAPE_GRADIENT ? DIR_DOWN : kind == SHAPE_TRIANGLE || kind == SHAPE_ARROW ? DIR_UP : DIR_RIGHT;
+	switch(kind){
+	case SHAPE_ROUNDED_BOX: case SHAPE_PILL: case SHAPE_CIRCLE:
+		sh.thickness = 0.0f; sh.back = 0xFFFFFFFF; break;
+	case SHAPE_OUTLINE: sh.thickness = 2.0f; sh.back = 0x00000000; break;
+	case SHAPE_PLUS: sh.thickness = std::max(1.0f, std::min(sh.w, sh.h) * 0.25f); break;
+	case SHAPE_RING: sh.thickness = 10.0f; sh.segments = 24; sh.back = 0x000000AA; break;
+	case SHAPE_BAR: sh.thickness = 2.0f; sh.segments = 1; sh.back = 0x000000AA; break;
+	case SHAPE_GRADIENT: sh.segments = 16; sh.back = 0x00000000; break;
+	case SHAPE_TRIANGLE: sh.segments = 12; break;
+	}
+}
+
+static std::string
+shapeSpec(const ShapeSettings &sh)
+{
+	char buf[256];
+	snprintf(buf, sizeof(buf), "%s %.2f %.2f %.2f %.2f %.2f %.2f %d %d %d %08X %08X %.2f %08X",
+		gShapeKeys[sh.kind], sh.x, sh.y, sh.w, sh.h, sh.radius, sh.thickness, sh.segments, sh.value, sh.dir,
+		sh.colour, sh.back, sh.shadow, sh.shadowColour);
+	return buf;
+}
+
+static bool
+parseShapeSpec(const std::string &spec, ShapeSettings *sh)
+{
+	char key[32];
+	ShapeSettings s = gShape;
+	if(sscanf(spec.c_str(), "%31s %f %f %f %f %f %f %d %d %d %x %x %f %x", key, &s.x, &s.y, &s.w, &s.h,
+	   &s.radius, &s.thickness, &s.segments, &s.value, &s.dir, &s.colour, &s.back, &s.shadow, &s.shadowColour) != 14)
+		return false;
+	for(int k = 0; k < NUM_SHAPES; k++)
+		if(strcmp(key, gShapeKeys[k]) == 0){
+			s.kind = k;
+			*sh = s;
+			return true;
+		}
+	return false;
+}
+
+// A shape's part moved: so is the place its settings give.
+static void
+moveShapeSpec(std::string &spec, float dx, float dy)
+{
+	ShapeSettings sh;
+	if(parseShapeSpec(spec, &sh)){
+		sh.x += dx;
+		sh.y += dy;
+		spec = shapeSpec(sh);
+	}
+}
+
+static TextDraw
+shapeSprite(const char *sprite, float x, float y, float w, float h, unsigned int colour)
+{
+	TextDraw td;
+	InitTextDraw(&td);
+	td.font = TD_FONT_SPRITE;
+	td.text = sprite;
+	td.x = x; td.y = y;
+	td.sizeX = w; td.sizeY = h;
+	td.colour = colour;
+	td.board = gBoard;
+	return td;
+}
+
+// LD_BEAT:chit's circle doesn't fill its texture: these are its margins.
+static const float CHIT_LEFT = 0.164f, CHIT_RIGHT = 0.164f, CHIT_TOP = 0.158f, CHIT_BOTTOM = 0.17f;
+// LD_BEAT:cring's ring, 10 of its 64 pixels in from each side.
+static const float CRING_MARGIN = 10.0f / 64.0f;
+
+static unsigned int
+mixColour(unsigned int a, unsigned int b, float t)
+{
+	unsigned int out = 0;
+	for(int s = 0; s < 32; s += 8){
+		float ca = (float)(a >> s & 0xFF), cb = (float)(b >> s & 0xFF);
+		out |= (unsigned int)(ca + (cb - ca) * t + 0.5f) << s;
+	}
+	return out;
+}
+
+// The shape's sprites, in drawing order.
+static void
+buildShape(const ShapeSettings &sh, std::vector<TextDraw> &parts)
+{
+	const char *white = "LD_SPAC:white";
+	if(shapeOpaque(sh) && ((sh.colour | sh.back | sh.shadowColour) & 0xFF) != 0xFF){
+		ShapeSettings solid = sh;
+		solid.colour |= 0xFF;
+		solid.back |= 0xFF;
+		solid.shadowColour |= 0xFF;
+		buildShape(solid, parts);
+		return;
+	}
+	float x = sh.x, y = sh.y, w = std::max(1.0f, sh.w), h = std::max(1.0f, sh.h);
+	float t = std::max(0.0f, std::min(sh.thickness, std::min(w, h) * 0.5f));
+	auto box = [&](float bx, float by, float bw, float bh, unsigned int c){
+		if(bw > 0.01f && bh > 0.01f)
+			parts.push_back(shapeSprite(white, bx, by, bw, bh, c));
+	};
+	// An ellipse filling the box: the chit, grown by its margins.
+	auto ellipse = [&](float bx, float by, float bw, float bh, unsigned int c){
+		if(bw <= 0.01f || bh <= 0.01f)
+			return;
+		float sw = bw / (1.0f - CHIT_LEFT - CHIT_RIGHT), sh2 = bh / (1.0f - CHIT_TOP - CHIT_BOTTOM);
+		parts.push_back(shapeSprite("LD_BEAT:chit", bx - sw * CHIT_LEFT, by - sh2 * CHIT_TOP, sw, sh2, c));
+	};
+	// A middle column and two side strips, so translucent colours only
+	// double up where the corners' circles are.
+	auto rounded = [&](float bx, float by, float bw, float bh, float r, unsigned int c){
+		r = std::max(0.0f, std::min(r, std::min(bw, bh) * 0.5f));
+		box(bx + r, by, bw - 2.0f * r, bh, c);
+		box(bx, by + r, r, bh - 2.0f * r, c);
+		box(bx + bw - r, by + r, r, bh - 2.0f * r, c);
+		if(r > 0.0f){
+			ellipse(bx, by, 2.0f * r, 2.0f * r, c);
+			ellipse(bx + bw - 2.0f * r, by, 2.0f * r, 2.0f * r, c);
+			ellipse(bx, by + bh - 2.0f * r, 2.0f * r, 2.0f * r, c);
+			ellipse(bx + bw - 2.0f * r, by + bh - 2.0f * r, 2.0f * r, 2.0f * r, c);
+		}
+	};
+	switch(sh.kind){
+	case SHAPE_ROUNDED_BOX:
+	case SHAPE_PILL: {
+		float r = sh.kind == SHAPE_PILL ? std::min(w, h) * 0.5f : sh.radius;
+		if(t > 0.0f){
+			rounded(x, y, w, h, r, sh.back);
+			rounded(x + t, y + t, w - 2.0f * t, h - 2.0f * t, std::max(0.0f, r - t), sh.colour);
+		}else
+			rounded(x, y, w, h, r, sh.colour);
+		break;
+	}
+	case SHAPE_CIRCLE:
+		if(t > 0.0f){
+			ellipse(x, y, w, h, sh.back);
+			ellipse(x + t, y + t, w - 2.0f * t, h - 2.0f * t, sh.colour);
+		}else
+			ellipse(x, y, w, h, sh.colour);
+		break;
+	case SHAPE_OUTLINE:
+		t = std::max(t, 0.5f);
+		if(sh.back & 0xFF)
+			box(x + t, y + t, w - 2.0f * t, h - 2.0f * t, sh.back);
+		box(x, y, w, t, sh.colour);
+		box(x, y + h - t, w, t, sh.colour);
+		box(x, y + t, t, h - 2.0f * t, sh.colour);
+		box(x + w - t, y + t, t, h - 2.0f * t, sh.colour);
+		break;
+	case SHAPE_CIRCLE_OUTLINE: {
+		float sw = w / (1.0f - 2.0f * CRING_MARGIN), sh2 = h / (1.0f - 2.0f * CRING_MARGIN);
+		parts.push_back(shapeSprite("LD_BEAT:cring", x - sw * CRING_MARGIN, y - sh2 * CRING_MARGIN, sw, sh2, sh.colour));
+		break;
+	}
+	case SHAPE_PLUS:
+		t = std::max(t, 0.5f);
+		box(x + (w - t) * 0.5f, y, t, h, sh.colour);
+		box(x, y + (h - t) * 0.5f, (w - t) * 0.5f, t, sh.colour);
+		box(x + (w + t) * 0.5f, y + (h - t) * 0.5f, (w - t) * 0.5f, t, sh.colour);
+		break;
+	case SHAPE_ARROW: {
+		static const char *arrows[] = { "LD_BEAT:right", "LD_BEAT:left", "LD_BEAT:up", "LD_BEAT:down" };
+		parts.push_back(shapeSprite(arrows[sh.dir & 3], x, y, w, h, sh.colour));
+		break;
+	}
+	case SHAPE_TRIANGLE: {
+		// Steps of boxes, widest at the base; the point is the way it points.
+		int n = std::max(1, std::min(sh.segments, 64));
+		bool across = sh.dir == DIR_LEFT || sh.dir == DIR_RIGHT;
+		float len = across ? w : h, wide = across ? h : w;
+		for(int k = 0; k < n; k++){
+			float a = len * k / n, b = len * (k + 1) / n;
+			float span = wide * (k + 1) / n;
+			// k counts from the point.
+			float from = sh.dir == DIR_UP || sh.dir == DIR_LEFT ? a : len - b;
+			if(across)
+				box(x + from, y + (h - span) * 0.5f, b - a, span, sh.colour);
+			else
+				box(x + (w - span) * 0.5f, y + from, span, b - a, sh.colour);
+		}
+		break;
+	}
+	case SHAPE_GRADIENT: {
+		// Bands from the colour to the end colour, the way it runs.
+		int n = std::max(2, std::min(sh.segments, 128));
+		bool across = sh.dir == DIR_LEFT || sh.dir == DIR_RIGHT;
+		bool reversed = sh.dir == DIR_LEFT || sh.dir == DIR_UP;
+		float len = across ? w : h;
+		for(int k = 0; k < n; k++){
+			float a = len * k / n, b = len * (k + 1) / n;
+			unsigned int c = mixColour(sh.colour, sh.back, (float)(reversed ? n - 1 - k : k) / (n - 1));
+			if(across) box(x + a, y, b - a, h, c);
+			else box(x, y + a, w, b - a, c);
+		}
+		break;
+	}
+	case SHAPE_BAR: {
+		// The empty part, then the filled one from where it fills from.
+		float v = std::max(0, std::min(sh.value, 100)) / 100.0f;
+		bool across = sh.dir == DIR_LEFT || sh.dir == DIR_RIGHT;
+		bool reversed = sh.dir == DIR_LEFT || sh.dir == DIR_UP;
+		float len = across ? w : h;
+		auto piece = [&](float a, float b, unsigned int c){	// along the bar, from where it fills from
+			if(reversed){ float f = len - b; b = len - a; a = f; }
+			if(across) box(x + a, y, b - a, h, c);
+			else box(x, y + a, w, b - a, c);
+		};
+		int n = std::max(1, std::min(sh.segments, 100));
+		if(n == 1){
+			piece(0.0f, len, sh.back);
+			piece(0.0f, len * v, sh.colour);
+		}else{
+			float gap = std::min(t, len / n * 0.9f), seg = (len - gap * (n - 1)) / n;
+			int lit = (int)(n * v + 0.5f);
+			for(int k = 0; k < n; k++)
+				piece(k * (seg + gap), k * (seg + gap) + seg, k < lit ? sh.colour : sh.back);
+		}
+		break;
+	}
+	case SHAPE_RING: {
+		// Dots round an ellipse from the top, clockwise; the first value% lit.
+		int n = std::max(3, std::min(sh.segments, 120));
+		float d = std::max(1.0f, sh.thickness);
+		float rx = (w - d) * 0.5f, ry = (h - d) * 0.5f;
+		int lit = (int)(n * std::max(0, std::min(sh.value, 100)) / 100.0f + 0.5f);
+		for(int k = 0; k < n; k++){
+			float a = (float)k / n * 2.0f * 3.14159265f;
+			float cx = x + w * 0.5f + sinf(a) * rx, cy = y + h * 0.5f - cosf(a) * ry;
+			ellipse(cx - d * 0.5f, cy - d * 0.5f, d, d, k < lit ? sh.colour : sh.back);
+		}
+		break;
+	}
+	}
+	if(sh.shadow != 0.0f && !parts.empty()){
+		// The same sprites again, under it, offset and in the shadow's colour.
+		size_t n = parts.size();
+		parts.insert(parts.begin(), parts.begin(), parts.begin() + n);
+		for(size_t k = 0; k < n; k++){
+			parts[k].x += sh.shadow;
+			parts[k].y += sh.shadow;
+			parts[k].colour = sh.shadowColour;
+		}
+	}
+}
+
+// The group's shape settings, at the place the group is now; false when it isn't one.
+static bool
+groupShape(const std::string &group, ShapeSettings *sh)
 {
 	std::vector<TextDraw> &tds = GetTextDraws();
-	if(gSel.size() < 3)
+	for(int i = 0; i < (int)tds.size(); i++)
+		if(onBoard(tds[i]) && tds[i].group == group){
+			if(tds[i].shape.empty() || !parseShapeSpec(tds[i].shape, sh))
+				return false;
+			std::vector<TextDraw> parts;
+			buildShape(*sh, parts);
+			if(!parts.empty()){
+				sh->x += tds[i].x - parts[0].x;
+				sh->y += tds[i].y - parts[0].y;
+			}
+			return true;
+		}
+	return false;
+}
+
+// The shape the selection is, when it is all of one shape's group.
+static bool
+selectedShape(ShapeSettings *sh, std::string *group)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	if(gSelected < 0 || gSelected >= (int)tds.size())
+		return false;
+	const TextDraw &key = tds[gSelected];
+	if(key.shape.empty() || key.group.empty())
+		return false;
+	int count = 0;
+	for(int i = 0; i < (int)tds.size(); i++)
+		if(onBoard(tds[i]) && tds[i].group == key.group){
+			if(!isSelected(i))
+				return false;
+			count++;
+		}
+	if(count != (int)gSel.size() || !groupShape(key.group, sh))
+		return false;
+	if(group)
+		*group = key.group;
+	return true;
+}
+
+// The group's sprites made again from the settings, where the group was in
+// the stack; they stay selected.
+static void
+replaceShape(const std::string &group, const ShapeSettings &sh)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	std::vector<TextDraw> parts;
+	buildShape(sh, parts);
+	int first = -1;
+	TextDraw like;
+	for(int i = (int)tds.size() - 1; i >= 0; i--)
+		if(onBoard(tds[i]) && tds[i].group == group){
+			first = i;
+			like = tds[i];
+			tds.erase(tds.begin() + i);
+		}
+	if(first < 0)
 		return;
-	struct Item { int i; float a, b; };
-	std::vector<Item> items;
-	float total = 0.0f;
-	for(int i : gSel){
-		float x0, y0, x1, y1;
-		boundsOf(tds[i], &x0, &y0, &x1, &y1);
-		Item it = { i, across ? x0 : y0, across ? x1 : y1 };
-		items.push_back(it);
-		total += it.b - it.a;
+	std::string spec = shapeSpec(sh);
+	gSel.clear();
+	for(size_t k = 0; k < parts.size(); k++){
+		TextDraw td = parts[k];
+		td.group = group;
+		td.board = like.board;
+		td.locked = like.locked;
+		td.hidden = like.hidden;
+		td.perPlayer = like.perPlayer;
+		td.shape = spec;
+		tds.insert(tds.begin() + first + k, td);
+		gSel.push_back(first + (int)k);
 	}
-	std::sort(items.begin(), items.end(), [](const Item &p, const Item &q){ return p.a < q.a; });
-	float span = items.back().b - items.front().a;
-	float gap = (span - total) / (float)(items.size() - 1);
-	float at = items.front().a;
-	for(const Item &it : items){
-		if(!tds[it.i].locked)
-			moveBy(tds[it.i], across ? at - it.a : 0.0f, across ? 0.0f : at - it.a);
-		at += it.b - it.a + gap;
-	}
+	gSelected = gSel.empty() ? -1 : gSel.front();
 	TextDrawsChanged();
 }
 
@@ -1702,7 +2066,6 @@ deleteBoard(const std::string &board)
 static bool gDragging, gDragMoved;
 static ImVec2 gDragStart;
 static std::vector<std::pair<int, TextDraw>> gDragFrom;
-static bool gResizing;
 // The box drawn on empty canvas to select what it touches.
 static bool gMarquee, gMarqueeAdd;
 static ImVec2 gMarqueeStart;
@@ -1756,6 +2119,629 @@ snapAxis(const float edges[3], const std::vector<float> &targets, float reach, f
 	return fix;
 }
 
+// ---- Resizing, rulers and guides ----
+
+static int gGuideDrag = -1;	// the guide being dragged, in GetTextDrawGuides()
+
+// Where moved and resized edges snap to: the screen's edges and centre,
+// the textdraws that aren't selected, the grid and the board's guides.
+static void
+snapTargets(std::vector<float> &xs, std::vector<float> &ys)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	xs = { 0.0f, 320.0f, 640.0f };
+	ys = { 0.0f, 224.0f, 448.0f };
+	for(int i = 0; i < (int)tds.size(); i++){
+		if(isSelected(i) || !shown(tds[i]))
+			continue;
+		float x0, y0, x1, y1;
+		boundsOf(tds[i], &x0, &y0, &x1, &y1);
+		xs.push_back(x0); xs.push_back((x0 + x1) * 0.5f); xs.push_back(x1);
+		ys.push_back(y0); ys.push_back((y0 + y1) * 0.5f); ys.push_back(y1);
+	}
+	if(gGrid)
+		for(float g = 0.0f; g <= 640.0f; g += gGridSize){
+			xs.push_back(g);
+			if(g <= 448.0f) ys.push_back(g);
+		}
+	if(gRulers)
+		for(const TextDrawGuide &g : GetTextDrawGuides())
+			if(g.board == gBoard)
+				(g.vertical ? xs : ys).push_back(g.at);
+}
+
+static void
+drawSnapGuides(ImDrawList *dl, const Canvas &cv, float gx, float gy)
+{
+	ImU32 guide = IM_COL32(255, 70, 200, 220);
+	if(gx > -1e8f)
+		dl->AddLine(cv.at(gx, 0.0f), cv.at(gx, 448.0f), guide);
+	if(gy > -1e8f)
+		dl->AddLine(cv.at(0.0f, gy), cv.at(640.0f, gy), guide);
+}
+
+// The textdraw as it was in box o, fitted to box n (x0 y0 x1 y1). Sprites
+// mirror when the box is turned inside out; text and models don't.
+static TextDraw
+scaledTextDraw(const TextDraw &from, const float o[4], const float n[4])
+{
+	TextDraw td = from;
+	float sx = (n[2] - n[0]) / std::max(0.01f, o[2] - o[0]);
+	float sy = (n[3] - n[1]) / std::max(0.01f, o[3] - o[1]);
+	if(td.font >= TD_FONT_SPRITE){
+		td.x = n[0] + (from.x - o[0]) * sx;
+		td.y = n[1] + (from.y - o[1]) * sy;
+		td.sizeX = from.sizeX * sx;
+		td.sizeY = from.sizeY * sy;
+		if(td.font != TD_FONT_SPRITE){
+			if(td.sizeX < 0.0f){ td.x += td.sizeX; td.sizeX = -td.sizeX; }
+			if(td.sizeY < 0.0f){ td.y += td.sizeY; td.sizeY = -td.sizeY; }
+		}
+		return td;
+	}
+	// Text keeps reading the right way, in the box made the right way round;
+	// a box turned upside down grows up from its place.
+	float ax = fabsf(sx), ay = fabsf(sy);
+	float nx0 = std::min(n[0], n[2]), ny0 = std::min(n[1], n[3]);
+	td.x = nx0 + (from.x - o[0]) * ax;
+	td.letterX = std::max(0.01f, from.letterX * ax);
+	if(td.alignment == 2)
+		td.sizeY = from.sizeY * ax;	// a centred one's width
+	else
+		td.sizeX = nx0 + (from.sizeX - o[0]) * ax;	// its box's other edge, or where it wraps
+	if(td.useBox){
+		td.y = n[1] + (from.y - o[1]) * sy;
+		td.letterY = from.letterY * sy;
+	}else{
+		td.y = ny0 + (from.y - o[1]) * ay;
+		td.letterY = from.letterY * ay;
+	}
+	return td;
+}
+
+// The selection as it was when a resize started.
+static float gBoxFrom[4];
+static bool gScaleShape;
+static ShapeSettings gShapeFrom;
+static std::string gShapeGroup;
+static std::vector<std::pair<int, TextDraw>> gScaleFrom;
+static int gHandle = -1;	// the handle being dragged: 0 top left, clockwise to 7 left
+static ImVec2 gHandleStart;
+
+// The box the handles go round: a shape's own, or what the unlocked
+// selected ones cover. False when nothing in it can be resized.
+static bool
+selectionScaleBox(float b[4])
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	ShapeSettings sh;
+	if(selectedShape(&sh, nil)){
+		if(tds[gSelected].locked)
+			return false;
+		b[0] = sh.x; b[1] = sh.y; b[2] = sh.x + sh.w; b[3] = sh.y + sh.h;
+		return true;
+	}
+	bool any = false;
+	b[0] = b[1] = 1e9f;
+	b[2] = b[3] = -1e9f;
+	for(int i : gSel){
+		if(tds[i].locked || !shown(tds[i]))
+			continue;
+		float x0, y0, x1, y1;
+		boundsOf(tds[i], &x0, &y0, &x1, &y1);
+		b[0] = std::min(b[0], x0); b[1] = std::min(b[1], y0);
+		b[2] = std::max(b[2], x1); b[3] = std::max(b[3], y1);
+		any = true;
+	}
+	return any;
+}
+
+// Takes the selection's box and what is in it, for a resize.
+static bool
+beginScale(void)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	if(!selectionScaleBox(gBoxFrom))
+		return false;
+	gScaleFrom.clear();
+	gScaleShape = selectedShape(&gShapeFrom, &gShapeGroup);
+	if(!gScaleShape)
+		for(int i : gSel)
+			if(!tds[i].locked && shown(tds[i]))
+				gScaleFrom.push_back(std::make_pair(i, tds[i]));
+	return true;
+}
+
+// Fits what beginScale took to box n.
+static void
+scaleSelection(const float n[4])
+{
+	if(gScaleShape){
+		ShapeSettings sh = gShapeFrom;
+		sh.x = std::min(n[0], n[2]);
+		sh.y = std::min(n[1], n[3]);
+		sh.w = std::max(1.0f, fabsf(n[2] - n[0]));
+		sh.h = std::max(1.0f, fabsf(n[3] - n[1]));
+		replaceShape(gShapeGroup, sh);
+		return;
+	}
+	std::vector<TextDraw> &tds = GetTextDraws();
+	for(const auto &f : gScaleFrom)
+		tds[f.first] = scaledTextDraw(f.second, gBoxFrom, n);
+	TextDrawsChanged();
+}
+
+static void
+handlePos(int h, const float b[4], float *x, float *y)
+{
+	static const float fx[8] = { 0.0f, 0.5f, 1.0f, 1.0f, 1.0f, 0.5f, 0.0f, 0.0f };
+	static const float fy[8] = { 0.0f, 0.0f, 0.0f, 0.5f, 1.0f, 1.0f, 1.0f, 0.5f };
+	*x = b[0] + (b[2] - b[0]) * fx[h];
+	*y = b[1] + (b[3] - b[1]) * fy[h];
+}
+
+static ImGuiMouseCursor
+handleCursor(int h)
+{
+	static const ImGuiMouseCursor cursors[8] = { ImGuiMouseCursor_ResizeNWSE, ImGuiMouseCursor_ResizeNS,
+		ImGuiMouseCursor_ResizeNESW, ImGuiMouseCursor_ResizeEW, ImGuiMouseCursor_ResizeNWSE,
+		ImGuiMouseCursor_ResizeNS, ImGuiMouseCursor_ResizeNESW, ImGuiMouseCursor_ResizeEW };
+	return cursors[h & 7];
+}
+
+// Dragging a handle: its edges follow the mouse and snap; Shift keeps the
+// proportions, Alt sizes from the centre, Ctrl doesn't snap.
+static void
+resizeSelection(const Canvas &cv, ImDrawList *dl)
+{
+	ImGuiIO &io = ImGui::GetIO();
+	const float *o = gBoxFrom;
+	float dx = (io.MousePos.x - gHandleStart.x) / cv.sx, dy = (io.MousePos.y - gHandleStart.y) / cv.sy;
+	int h = gHandle;
+	bool left = h == 0 || h == 6 || h == 7, right = h >= 2 && h <= 4;
+	bool top = h <= 2, bottom = h >= 4 && h <= 6;
+	float n[4] = { o[0], o[1], o[2], o[3] };
+	if(left) n[0] += dx;
+	if(right) n[2] += dx;
+	if(top) n[1] += dy;
+	if(bottom) n[3] += dy;
+	if(gSnap && !io.KeyCtrl){
+		std::vector<float> xs, ys;
+		snapTargets(xs, ys);
+		float gx = -1e9f, gy = -1e9f;
+		int ex = left ? 0 : right ? 2 : -1, ey = top ? 1 : bottom ? 3 : -1;
+		if(ex >= 0){
+			float e[3] = { n[ex], n[ex], n[ex] };
+			n[ex] += snapAxis(e, xs, 6.0f / cv.sx, &gx);
+		}
+		if(ey >= 0){
+			float e[3] = { n[ey], n[ey], n[ey] };
+			n[ey] += snapAxis(e, ys, 6.0f / cv.sy, &gy);
+		}
+		drawSnapGuides(dl, cv, gx, gy);
+	}
+	if(io.KeyAlt){
+		if(left) n[2] = o[2] - (n[0] - o[0]);
+		if(right) n[0] = o[0] - (n[2] - o[2]);
+		if(top) n[3] = o[3] - (n[1] - o[1]);
+		if(bottom) n[1] = o[1] - (n[3] - o[3]);
+	}
+	if(io.KeyShift){
+		float sx = (n[2] - n[0]) / std::max(0.01f, o[2] - o[0]);
+		float sy = (n[3] - n[1]) / std::max(0.01f, o[3] - o[1]);
+		bool across = left || right, down = top || bottom;
+		float s = across && down ? std::max(fabsf(sx), fabsf(sy)) : across ? fabsf(sx) : fabsf(sy);
+		float gxs = across && sx < 0.0f ? -1.0f : 1.0f, gys = down && sy < 0.0f ? -1.0f : 1.0f;
+		// From the opposite edge, or the centre (with Alt, and across a side handle).
+		float cx = (o[0] + o[2]) * 0.5f, cy = (o[1] + o[3]) * 0.5f;
+		float ax = io.KeyAlt || !across ? cx : left ? o[2] : o[0];
+		float ay = io.KeyAlt || !down ? cy : top ? o[3] : o[1];
+		n[0] = ax + (o[0] - ax) * s * gxs; n[2] = ax + (o[2] - ax) * s * gxs;
+		n[1] = ay + (o[1] - ay) * s * gys; n[3] = ay + (o[3] - ay) * s * gys;
+	}
+	scaleSelection(n);
+	ImGui::SetTooltip("%.1f x %.1f", fabsf(n[2] - n[0]), fabsf(n[3] - n[1]));
+}
+
+static float
+rulerSize(void)
+{
+	return gRulers ? ImGui::GetFontSize() * 1.3f : 0.0f;
+}
+
+// The rulers along the top and the left, in canvas units: the selection's
+// extent and the mouse are marked on them, and so are the guides.
+static void
+drawRulers(ImDrawList *dl, const Canvas &cv, ImVec2 a, ImVec2 b, const float *sel)
+{
+	float rs = rulerSize();
+	ImU32 bg = IM_COL32(30, 32, 38, 245), tick = IM_COL32(150, 155, 165, 255);
+	ImU32 text = IM_COL32(205, 210, 220, 255), accent = IM_COL32(255, 220, 60, 160);
+	ImU32 guide = IM_COL32(0, 200, 255, 255);
+	dl->AddRectFilled(a, ImVec2(b.x, a.y + rs), bg);
+	dl->AddRectFilled(ImVec2(a.x, a.y + rs), ImVec2(a.x + rs, b.y), bg);
+	dl->AddLine(ImVec2(a.x + rs, a.y + rs), ImVec2(b.x, a.y + rs), tick);
+	dl->AddLine(ImVec2(a.x + rs, a.y + rs), ImVec2(a.x + rs, b.y), tick);
+	// Numbers at least 50 pixels apart, four small ticks between.
+	static const float steps[] = { 1.0f, 2.0f, 5.0f, 10.0f, 20.0f, 25.0f, 50.0f, 100.0f, 200.0f };
+	float step = 500.0f;
+	for(float s : steps)
+		if(s * cv.sx >= 50.0f){
+			step = s;
+			break;
+		}
+	float minor = step / 5.0f, fs = ImGui::GetFontSize() * 0.72f;
+	char num[16];
+	if(sel){
+		dl->AddRectFilled(ImVec2(cv.at(sel[0], 0).x, a.y + rs - 4), ImVec2(cv.at(sel[2], 0).x, a.y + rs), accent);
+		dl->AddRectFilled(ImVec2(a.x + rs - 4, cv.at(0, sel[1]).y), ImVec2(a.x + rs, cv.at(0, sel[3]).y), accent);
+	}
+	dl->PushClipRect(ImVec2(a.x + rs, a.y), ImVec2(b.x, a.y + rs), true);
+	for(int k = (int)ceilf((a.x + rs - cv.x) / cv.sx / minor); ; k++){
+		float u = k * minor, px = cv.x + u * cv.sx;
+		if(px > b.x)
+			break;
+		bool major = k % 5 == 0;
+		dl->AddLine(ImVec2(px, a.y + rs * (major ? 0.25f : 0.65f)), ImVec2(px, a.y + rs), tick);
+		if(major){
+			snprintf(num, sizeof(num), "%g", u);
+			dl->AddText(ImGui::GetFont(), fs, ImVec2(px + 2.0f, a.y), text, num);
+		}
+	}
+	dl->PopClipRect();
+	dl->PushClipRect(ImVec2(a.x, a.y + rs), ImVec2(a.x + rs, b.y), true);
+	for(int k = (int)ceilf((a.y + rs - cv.y) / cv.sy / minor); ; k++){
+		float u = k * minor, py = cv.y + u * cv.sy;
+		if(py > b.y)
+			break;
+		bool major = k % 5 == 0;
+		dl->AddLine(ImVec2(a.x + rs * (major ? 0.25f : 0.65f), py), ImVec2(a.x + rs, py), tick);
+		if(major){
+			snprintf(num, sizeof(num), "%g", u);
+			dl->AddText(ImGui::GetFont(), fs, ImVec2(a.x + 1.0f, py + 1.0f), text, num);
+		}
+	}
+	dl->PopClipRect();
+	for(const TextDrawGuide &g : GetTextDrawGuides()){
+		if(g.board != gBoard)
+			continue;
+		if(g.vertical){
+			float px = cv.at(g.at, 0).x;
+			if(px > a.x + rs)
+				dl->AddTriangleFilled(ImVec2(px - 4, a.y + rs - 6), ImVec2(px + 4, a.y + rs - 6), ImVec2(px, a.y + rs), guide);
+		}else{
+			float py = cv.at(0, g.at).y;
+			if(py > a.y + rs)
+				dl->AddTriangleFilled(ImVec2(a.x + rs - 6, py - 4), ImVec2(a.x + rs - 6, py + 4), ImVec2(a.x + rs, py), guide);
+		}
+	}
+	ImVec2 m = ImGui::GetIO().MousePos;
+	if(m.x > a.x + rs && m.x < b.x && m.y > a.y && m.y < b.y){
+		dl->AddLine(ImVec2(m.x, a.y), ImVec2(m.x, a.y + rs), IM_COL32(255, 255, 255, 200));
+		dl->AddLine(ImVec2(a.x, m.y), ImVec2(a.x + rs, m.y), IM_COL32(255, 255, 255, 200));
+	}
+	dl->AddRectFilled(a, ImVec2(a.x + rs, a.y + rs), bg);
+}
+
+// Alt held: how far the selection is from what the mouse is over, or from
+// the screen's edges.
+static void
+drawDistances(ImDrawList *dl, const Canvas &cv, const float A[4], const float B[4])
+{
+	ImU32 c = IM_COL32(255, 80, 80, 255);
+	auto label = [&](ImVec2 p, float v){
+		char t[16];
+		snprintf(t, sizeof(t), "%.1f", v);
+		ImVec2 ts = ImGui::CalcTextSize(t);
+		ImVec2 q(p.x - ts.x * 0.5f, p.y - ts.y * 0.5f);
+		dl->AddRectFilled(ImVec2(q.x - 3, q.y - 1), ImVec2(q.x + ts.x + 3, q.y + ts.y + 1), c, 3.0f);
+		dl->AddText(q, IM_COL32(255, 255, 255, 255), t);
+	};
+	auto across = [&](float x0, float x1, float y){
+		if(x1 - x0 < 0.05f)
+			return;
+		ImVec2 p = cv.at(x0, y), q = cv.at(x1, y);
+		dl->AddLine(p, q, c, 1.5f);
+		dl->AddLine(ImVec2(p.x, p.y - 4), ImVec2(p.x, p.y + 4), c);
+		dl->AddLine(ImVec2(q.x, q.y - 4), ImVec2(q.x, q.y + 4), c);
+		label(ImVec2((p.x + q.x) * 0.5f, p.y), x1 - x0);
+	};
+	auto down = [&](float y0, float y1, float x){
+		if(y1 - y0 < 0.05f)
+			return;
+		ImVec2 p = cv.at(x, y0), q = cv.at(x, y1);
+		dl->AddLine(p, q, c, 1.5f);
+		dl->AddLine(ImVec2(p.x - 4, p.y), ImVec2(p.x + 4, p.y), c);
+		dl->AddLine(ImVec2(q.x - 4, q.y), ImVec2(q.x + 4, q.y), c);
+		label(ImVec2(p.x, (p.y + q.y) * 0.5f), y1 - y0);
+	};
+	dl->AddRect(cv.at(B[0], B[1]), cv.at(B[2], B[3]), c);
+	auto inside = [](const float *p, const float *q){	// p inside q
+		return p[0] >= q[0] && p[1] >= q[1] && p[2] <= q[2] && p[3] <= q[3];
+	};
+	const float *in = inside(A, B) ? A : inside(B, A) ? B : nil;
+	if(in){
+		const float *out = in == A ? B : A;
+		float mx = (in[0] + in[2]) * 0.5f, my = (in[1] + in[3]) * 0.5f;
+		across(out[0], in[0], my);
+		across(in[2], out[2], my);
+		down(out[1], in[1], mx);
+		down(in[3], out[3], mx);
+		return;
+	}
+	float my = std::max(A[1], B[1]) < std::min(A[3], B[3]) ? (std::max(A[1], B[1]) + std::min(A[3], B[3])) * 0.5f :
+		(A[1] + A[3]) * 0.5f;
+	float mx = std::max(A[0], B[0]) < std::min(A[2], B[2]) ? (std::max(A[0], B[0]) + std::min(A[2], B[2])) * 0.5f :
+		(A[0] + A[2]) * 0.5f;
+	if(B[0] >= A[2]) across(A[2], B[0], my);
+	else if(A[0] >= B[2]) across(B[2], A[0], my);
+	if(B[1] >= A[3]) down(A[3], B[1], mx);
+	else if(A[1] >= B[3]) down(B[3], A[1], mx);
+}
+
+// ---- Arranging ----
+
+// What align, spacing, sizes and flips work on: a selected group as one
+// (a shape by its own box), or a textdraw on its own.
+struct ArrangeUnit {
+	std::string group;
+	std::vector<int> members;
+	float box[4];
+	bool shape;
+	ShapeSettings sh;
+};
+
+static void
+selectionUnits(std::vector<ArrangeUnit> &out)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	out.clear();
+	for(int i : gSel){
+		if(!shown(tds[i]))
+			continue;
+		ArrangeUnit *u = nil;
+		if(!tds[i].group.empty())
+			for(ArrangeUnit &v : out)
+				if(v.group == tds[i].group)
+					u = &v;
+		if(u == nil){
+			out.push_back(ArrangeUnit());
+			u = &out.back();
+			u->group = tds[i].group;
+			u->box[0] = u->box[1] = 1e9f;
+			u->box[2] = u->box[3] = -1e9f;
+			u->shape = false;
+		}
+		u->members.push_back(i);
+		float x0, y0, x1, y1;
+		boundsOf(tds[i], &x0, &y0, &x1, &y1);
+		u->box[0] = std::min(u->box[0], x0); u->box[1] = std::min(u->box[1], y0);
+		u->box[2] = std::max(u->box[2], x1); u->box[3] = std::max(u->box[3], y1);
+	}
+	for(ArrangeUnit &u : out){
+		if(u.group.empty() || !groupShape(u.group, &u.sh))
+			continue;
+		int count = 0;
+		for(const TextDraw &td : tds)
+			count += onBoard(td) && td.group == u.group;
+		if(count != (int)u.members.size())
+			continue;	// only part of the shape is selected
+		u.shape = true;
+		u.box[0] = u.sh.x; u.box[1] = u.sh.y;
+		u.box[2] = u.sh.x + u.sh.w; u.box[3] = u.sh.y + u.sh.h;
+	}
+}
+
+static int
+keyUnit(const std::vector<ArrangeUnit> &units)
+{
+	for(size_t k = 0; k < units.size(); k++)
+		for(int i : units[k].members)
+			if(i == gSelected)
+				return (int)k;
+	return -1;
+}
+
+static void
+moveUnit(const ArrangeUnit &u, float dx, float dy)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	for(int i : u.members)
+		if(!tds[i].locked)
+			moveBy(tds[i], dx, dy);
+}
+
+static bool
+unitLocked(const ArrangeUnit &u)
+{
+	for(int i : u.members)
+		if(GetTextDraws()[i].locked)
+			return true;
+	return false;
+}
+
+// Puts the unit in box n: a shape is made again, the rest are scaled.
+// Shapes can change how many sprites they have, so this goes from the
+// last unit to the first and the selection is made again after.
+static void
+fitUnit(const ArrangeUnit &u, const float n[4], int flip)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	if(u.shape){
+		ShapeSettings sh = u.sh;
+		sh.x = std::min(n[0], n[2]); sh.y = std::min(n[1], n[3]);
+		sh.w = std::max(1.0f, fabsf(n[2] - n[0])); sh.h = std::max(1.0f, fabsf(n[3] - n[1]));
+		if(flip == 1 && (sh.dir == DIR_LEFT || sh.dir == DIR_RIGHT)) sh.dir ^= 1;
+		if(flip == 2 && (sh.dir == DIR_UP || sh.dir == DIR_DOWN)) sh.dir ^= 1;
+		replaceShape(u.group, sh);
+		return;
+	}
+	for(int i : u.members)
+		if(!tds[i].locked)
+			tds[i] = scaledTextDraw(tds[i], u.box, n);
+}
+
+static void
+reselectUnits(const std::vector<ArrangeUnit> &units, const std::vector<int> &plain, int key)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	selectOnly(-1);
+	for(int i : plain)
+		if(i >= 0 && i < (int)tds.size())
+			addToSelection(i);
+	for(const ArrangeUnit &u : units)
+		if(!u.group.empty())
+			for(int i = 0; i < (int)tds.size(); i++)
+				if(onBoard(tds[i]) && tds[i].group == u.group)
+					addToSelection(i);
+	if(key >= 0 && key < (int)tds.size() && isSelected(key))
+		gSelected = key;
+}
+
+// Each unit to its new box, last first; what was selected stays so.
+static void
+fitUnits(std::vector<ArrangeUnit> &units, const std::vector<std::vector<float>> &boxes, int flip)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	std::vector<size_t> order(units.size());
+	for(size_t k = 0; k < order.size(); k++)
+		order[k] = k;
+	std::sort(order.begin(), order.end(), [&](size_t a, size_t b){ return units[a].members[0] > units[b].members[0]; });
+	std::vector<int> plain;
+	for(const ArrangeUnit &u : units)
+		if(u.group.empty())
+			plain.push_back(u.members[0]);
+	int key = gSelected;
+	for(size_t k : order){
+		ArrangeUnit &u = units[k];
+		if(boxes[k].empty() || unitLocked(u))
+			continue;
+		size_t before = tds.size();
+		fitUnit(u, boxes[k].data(), flip);
+		int grew = (int)tds.size() - (int)before;
+		if(grew != 0){
+			for(int &i : plain)
+				if(i > u.members[0]) i += grew;
+			if(key > u.members[0]) key += grew;
+		}
+	}
+	reselectUnits(units, plain, key);
+	TextDrawsChanged();
+}
+
+enum { ALIGN_LEFT, ALIGN_HCENTRE, ALIGN_RIGHT, ALIGN_TOP, ALIGN_VCENTRE, ALIGN_BOTTOM };
+enum { ALIGN_TO_SELECTION, ALIGN_TO_KEY, ALIGN_TO_SCREEN };
+static int gAlignTo = ALIGN_TO_SELECTION;
+
+// To the selection's box, to the key one (the one last clicked, which
+// stays) or to the screen. One alone goes to the screen.
+static void
+alignSelected(int how)
+{
+	std::vector<ArrangeUnit> units;
+	selectionUnits(units);
+	if(units.empty())
+		return;
+	int key = gAlignTo == ALIGN_TO_KEY ? keyUnit(units) : -1;
+	float T[4] = { 1e9f, 1e9f, -1e9f, -1e9f };
+	if(gAlignTo == ALIGN_TO_SCREEN || units.size() == 1){
+		T[0] = 0.0f; T[1] = 0.0f; T[2] = 640.0f; T[3] = 448.0f;
+	}else if(key >= 0)
+		memcpy(T, units[key].box, sizeof(T));
+	else
+		for(const ArrangeUnit &u : units){
+			T[0] = std::min(T[0], u.box[0]); T[1] = std::min(T[1], u.box[1]);
+			T[2] = std::max(T[2], u.box[2]); T[3] = std::max(T[3], u.box[3]);
+		}
+	for(int k = 0; k < (int)units.size(); k++){
+		if(k == key && units.size() > 1)
+			continue;
+		const float *b = units[k].box;
+		float dx = 0.0f, dy = 0.0f;
+		switch(how){
+		case ALIGN_LEFT: dx = T[0] - b[0]; break;
+		case ALIGN_HCENTRE: dx = (T[0] + T[2]) * 0.5f - (b[0] + b[2]) * 0.5f; break;
+		case ALIGN_RIGHT: dx = T[2] - b[2]; break;
+		case ALIGN_TOP: dy = T[1] - b[1]; break;
+		case ALIGN_VCENTRE: dy = (T[1] + T[3]) * 0.5f - (b[1] + b[3]) * 0.5f; break;
+		case ALIGN_BOTTOM: dy = T[3] - b[3]; break;
+		}
+		moveUnit(units[k], dx, dy);
+	}
+	TextDrawsChanged();
+}
+
+// Three or more with equal gaps, the outer ones staying; or, with a gap
+// given, two or more that far apart from the first.
+static void
+distributeSelected(bool across, float gap)
+{
+	std::vector<ArrangeUnit> units;
+	selectionUnits(units);
+	if(units.size() < (gap >= 0.0f ? 2u : 3u))
+		return;
+	int a = across ? 0 : 1, b = across ? 2 : 3;
+	std::sort(units.begin(), units.end(), [&](const ArrangeUnit &p, const ArrangeUnit &q){ return p.box[a] < q.box[a]; });
+	if(gap < 0.0f){
+		float total = 0.0f;
+		for(const ArrangeUnit &u : units)
+			total += u.box[b] - u.box[a];
+		gap = (units.back().box[b] - units.front().box[a] - total) / (float)(units.size() - 1);
+	}
+	float at = units.front().box[a];
+	for(const ArrangeUnit &u : units){
+		float d = at - u.box[a];
+		moveUnit(u, across ? d : 0.0f, across ? 0.0f : d);
+		at += u.box[b] - u.box[a] + gap;
+	}
+	TextDrawsChanged();
+}
+
+// The key one's width or height for all, from their left or top edge.
+static void
+matchSize(bool width)
+{
+	std::vector<ArrangeUnit> units;
+	selectionUnits(units);
+	int key = keyUnit(units);
+	if(key < 0 || units.size() < 2)
+		return;
+	const float *K = units[key].box;
+	std::vector<std::vector<float>> boxes(units.size());
+	for(size_t k = 0; k < units.size(); k++){
+		if((int)k == key)
+			continue;
+		const float *b = units[k].box;
+		boxes[k] = { b[0], b[1], width ? b[0] + K[2] - K[0] : b[2], width ? b[3] : b[1] + K[3] - K[1] };
+	}
+	fitUnits(units, boxes, 0);
+}
+
+// Mirrored across the selection's middle: places swap, sprites mirror,
+// shapes point the other way; text still reads the right way.
+static void
+flipSelected(bool across)
+{
+	std::vector<ArrangeUnit> units;
+	selectionUnits(units);
+	if(units.empty())
+		return;
+	float S[4] = { 1e9f, 1e9f, -1e9f, -1e9f };
+	for(const ArrangeUnit &u : units){
+		S[0] = std::min(S[0], u.box[0]); S[1] = std::min(S[1], u.box[1]);
+		S[2] = std::max(S[2], u.box[2]); S[3] = std::max(S[3], u.box[3]);
+	}
+	std::vector<std::vector<float>> boxes(units.size());
+	for(size_t k = 0; k < units.size(); k++){
+		const float *b = units[k].box;
+		if(across)
+			boxes[k] = { S[0] + S[2] - b[0], b[1], S[0] + S[2] - b[2], b[3] };
+		else
+			boxes[k] = { b[0], S[1] + S[3] - b[1], b[2], S[1] + S[3] - b[3] };
+	}
+	fitUnits(units, boxes, across ? 1 : 2);
+}
+
 static void
 dragSelection(const Canvas &cv, ImDrawList *dl)
 {
@@ -1765,6 +2751,11 @@ dragSelection(const Canvas &cv, ImDrawList *dl)
 	if(!gDragMoved && d.x * d.x + d.y * d.y < 9.0f)
 		return;
 	gDragMoved = true;
+	// Shift keeps it to the way it has moved most.
+	if(io.KeyShift){
+		if(fabsf(d.x) > fabsf(d.y)) d.y = 0.0f;
+		else d.x = 0.0f;
+	}
 	float dx = d.x / cv.sx, dy = d.y / cv.sy;
 	if(gSnap && !io.KeyCtrl && !gDragFrom.empty()){
 		float X0 = 1e9f, Y0 = 1e9f, X1 = -1e9f, Y1 = -1e9f;
@@ -1774,30 +2765,14 @@ dragSelection(const Canvas &cv, ImDrawList *dl)
 			X0 = std::min(X0, x0); Y0 = std::min(Y0, y0);
 			X1 = std::max(X1, x1); Y1 = std::max(Y1, y1);
 		}
-		std::vector<float> xs = { 0.0f, 320.0f, 640.0f }, ys = { 0.0f, 224.0f, 448.0f };
-		for(int i = 0; i < (int)tds.size(); i++){
-			if(isSelected(i) || !shown(tds[i]))
-				continue;
-			float x0, y0, x1, y1;
-			boundsOf(tds[i], &x0, &y0, &x1, &y1);
-			xs.push_back(x0); xs.push_back((x0 + x1) * 0.5f); xs.push_back(x1);
-			ys.push_back(y0); ys.push_back((y0 + y1) * 0.5f); ys.push_back(y1);
-		}
-		if(gGrid)
-			for(float g = 0.0f; g <= 640.0f; g += gGridSize){
-				xs.push_back(g);
-				if(g <= 448.0f) ys.push_back(g);
-			}
+		std::vector<float> xs, ys;
+		snapTargets(xs, ys);
 		float ex[3] = { X0 + dx, (X0 + X1) * 0.5f + dx, X1 + dx };
 		float ey[3] = { Y0 + dy, (Y0 + Y1) * 0.5f + dy, Y1 + dy };
-		float gx = -1.0f, gy = -1.0f;
-		dx += snapAxis(ex, xs, 6.0f / cv.sx, &gx);
-		dy += snapAxis(ey, ys, 6.0f / cv.sy, &gy);
-		ImU32 guide = IM_COL32(255, 70, 200, 220);
-		if(gx >= 0.0f)
-			dl->AddLine(cv.at(gx, 0.0f), cv.at(gx, 448.0f), guide);
-		if(gy >= 0.0f)
-			dl->AddLine(cv.at(0.0f, gy), cv.at(640.0f, gy), guide);
+		float gx = -1e9f, gy = -1e9f;
+		if(!io.KeyShift || d.x != 0.0f) dx += snapAxis(ex, xs, 6.0f / cv.sx, &gx);
+		if(!io.KeyShift || d.y != 0.0f) dy += snapAxis(ey, ys, 6.0f / cv.sy, &gy);
+		drawSnapGuides(dl, cv, gx, gy);
 	}
 	for(const auto &f : gDragFrom){
 		TextDraw td = f.second;
@@ -1893,6 +2868,12 @@ DrawTextDrawsOverlay(void)
 		dl->AddRect(cv.at(x0, y0), cv.at(x1, y1), IM_COL32(160, 160, 170, 120));
 	}
 	drawGrid(dl, cv);
+	if(gRulers)
+		for(const TextDrawGuide &gd : GetTextDrawGuides())
+			if(gd.board == gBoard){
+				if(gd.vertical) dl->AddLine(ImVec2(cv.at(gd.at, 0).x, areaPos.y), ImVec2(cv.at(gd.at, 0).x, areaEnd.y), IM_COL32(0, 200, 255, 170));
+				else dl->AddLine(ImVec2(areaPos.x, cv.at(0, gd.at).y), ImVec2(areaEnd.x, cv.at(0, gd.at).y), IM_COL32(0, 200, 255, 170));
+			}
 	// The screen's edge, so textdraws can be placed against it.
 	dl->AddRect(cv.at(0, 0), cv.at(640, 448), IM_COL32(255, 255, 255, 60));
 
@@ -1937,6 +2918,69 @@ DrawTextDrawsOverlay(void)
 		if(ImGui::IsKeyPressed(ImGuiKey_Escape))
 			gPicking = false;
 	}
+	// Before the textdraws take the click: a resize handle, a guide or a ruler.
+	ImGuiContext *ctx = ImGui::GetCurrentContext();
+	ImVec2 m0 = io.MousePos;
+	float rs = rulerSize();
+	bool overCanvas = !gPicking && m0.x >= areaPos.x && m0.y >= areaPos.y && m0.x < areaEnd.x && m0.y < areaEnd.y &&
+		(ctx->HoveredWindow == nil || strncmp(ctx->HoveredWindow->Name, "##td", 4) == 0);
+	bool onRuler = gRulers && overCanvas && (m0.x < areaPos.x + rs || m0.y < areaPos.y + rs);
+	bool grabbed = gHandle >= 0 || gGuideDrag >= 0;
+	float box[4];
+	bool hasBox = !gSel.empty() && !gDragging && selectionScaleBox(box);
+	bool smallBox = hasBox && (fabsf(box[2] - box[0]) * cv.sx < 24.0f || fabsf(box[3] - box[1]) * cv.sy < 24.0f);
+	int hoverHandle = -1;
+	if(hasBox && !grabbed && overCanvas && !onRuler)
+		for(int h = 0; h < 8; h++){
+			if(smallBox && (h & 1))
+				continue;
+			float hx, hy;
+			handlePos(h, box, &hx, &hy);
+			ImVec2 p = cv.at(hx, hy);
+			if(fabsf(m0.x - p.x) <= 6.0f && fabsf(m0.y - p.y) <= 6.0f)
+				hoverHandle = h;
+		}
+	if(hoverHandle >= 0){
+		ImGui::SetMouseCursor(handleCursor(hoverHandle));
+		if(ImGui::IsMouseClicked(0) && beginScale()){
+			gHandle = hoverHandle;
+			gHandleStart = m0;
+			grabbed = true;
+		}
+	}
+	std::vector<TextDrawGuide> &guides = GetTextDrawGuides();
+	if(gRulers && !grabbed && hoverHandle < 0 && overCanvas && !onRuler){
+		int hoverGuide = -1;
+		for(int k = 0; k < (int)guides.size(); k++)
+			if(guides[k].board == gBoard &&
+			   (guides[k].vertical ? fabsf(cv.at(guides[k].at, 0).x - m0.x) : fabsf(cv.at(0, guides[k].at).y - m0.y)) <= 3.0f)
+				hoverGuide = k;
+		if(hoverGuide >= 0){
+			ImGui::SetMouseCursor(guides[hoverGuide].vertical ? ImGuiMouseCursor_ResizeEW : ImGuiMouseCursor_ResizeNS);
+			ImGui::SetTooltip("%s", _("Drag it onto a ruler to remove it"));
+			if(ImGui::IsMouseClicked(0)){
+				gGuideDrag = hoverGuide;
+				grabbed = true;
+			}
+		}
+	}
+	if(onRuler && !grabbed && ImGui::IsMouseClicked(0)){
+		// A guide's marker takes that guide; anywhere else on a ruler makes
+		// one: across from the top ruler, down from the left one.
+		grabbed = true;
+		bool top = m0.y < areaPos.y + rs, side = m0.x < areaPos.x + rs;
+		for(int k = 0; k < (int)guides.size(); k++){
+			const TextDrawGuide &gd = guides[k];
+			if(gd.board == gBoard && ((top && !side && gd.vertical && fabsf(cv.at(gd.at, 0).x - m0.x) <= 5.0f) ||
+			   (side && !top && !gd.vertical && fabsf(cv.at(0, gd.at).y - m0.y) <= 5.0f)))
+				gGuideDrag = k;
+		}
+		if(gGuideDrag < 0 && top != side){
+			TextDrawGuide gd = { gBoard, side, side ? (m0.x - cv.x) / cv.sx : (m0.y - cv.y) / cv.sy };
+			guides.push_back(gd);
+			gGuideDrag = (int)guides.size() - 1;
+		}
+	}
 	for(int i = (int)tds.size() - 1; i >= 0 && !gPicking; i--){
 		TextDraw &td = tds[i];
 		if(!shown(td) || (td.locked && gClickThroughLocked))
@@ -1947,7 +2991,7 @@ DrawTextDrawsOverlay(void)
 		if(p1.x - p0.x < 6.0f) p1.x = p0.x + 6.0f;
 		if(p1.y - p0.y < 6.0f) p1.y = p0.y + 6.0f;
 		// Only the part inside the area, so it never covers the panels.
-		p0.x = std::max(p0.x, areaPos.x); p0.y = std::max(p0.y, areaPos.y);
+		p0.x = std::max(p0.x, areaPos.x + rs); p0.y = std::max(p0.y, areaPos.y + rs);
 		p1.x = std::min(p1.x, areaEnd.x); p1.y = std::min(p1.y, areaEnd.y);
 		if(p1.x - p0.x < 1.0f || p1.y - p0.y < 1.0f)
 			continue;
@@ -1959,8 +3003,7 @@ DrawTextDrawsOverlay(void)
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(1, 1));
 		ImGui::Begin(id, nil, flags);
 		ImGui::InvisibleButton("hit", ImVec2(p1.x - p0.x, p1.y - p0.y));
-		if(ImGui::IsItemActivated()){
-			gResizing = false;
+		if(ImGui::IsItemActivated() && !grabbed){
 			if(io.KeyAlt){
 				// Alt+click: the next one down under the cursor, for stacks.
 				std::vector<int> under;
@@ -2010,62 +3053,76 @@ DrawTextDrawsOverlay(void)
 		dl->AddRect(cv.at(x0, y0), cv.at(x1, y1), c, 0.0f, 0, i == gSelected ? 1.5f : 1.0f);
 	}
 
-	// A handle at the one selected's corner resizes it: letters for text,
-	// the box's edge for a box, the size for sprites and models. Dragged
-	// past the opposite edge, a sprite's size goes negative and it mirrors.
-	if(gSel.size() == 1 && gSelected >= 0 && shown(tds[gSelected]) && !tds[gSelected].locked){
-		TextDraw &td = tds[gSelected];
-		float x0, y0, x1, y1;
-		textDrawBounds(td, &x0, &y0, &x1, &y1);
-		ImVec2 corner = cv.at(x1, y1);
-		float hs = 7.0f;
-		ImGui::SetNextWindowPos(ImVec2(corner.x - hs, corner.y - hs));
-		ImGui::SetNextWindowSize(ImVec2(hs * 2, hs * 2));
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(1, 1));
-		ImGui::Begin("##tdresize", nil, flags & ~ImGuiWindowFlags_NoBringToFrontOnFocus);
-		ImGui::InvisibleButton("resize", ImVec2(hs * 2, hs * 2));
-		if(ImGui::IsItemActivated()){
-			gResizing = true;
-			gDragging = false;
-		}
-		if(ImGui::IsItemHovered() || ImGui::IsItemActive())
-			ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNWSE);
-		if(gResizing && ImGui::IsItemActive()){
-			ImVec2 d = io.MouseDelta;
-			float dx = d.x / cv.sx, dy = d.y / cv.sy;
-			if(dx != 0.0f || dy != 0.0f){
-				if(td.font >= TD_FONT_SPRITE){
-					td.sizeX += dx;
-					td.sizeY += dy;
-				}else if(td.useBox){
-					if(td.alignment == 2) td.sizeY = std::max(1.0f, td.sizeY + dx * 2.0f);
-					else td.sizeX += dx;
-					// A box can go negative: it then grows up from its place.
-					int lines = std::max(1, (int)(fabsf(y1 - y0) / std::max(0.01f, fabsf(lineHeight(td)))));
-					td.letterY += dy / (TD_LINE_HEIGHT * lines);
-				}else{
-					float width = std::max(1.0f, x1 - x0);
-					td.letterX = std::max(0.05f, td.letterX * (width + dx) / width);
-					td.letterY = std::max(0.05f, td.letterY + dy / TD_GLYPH_HEIGHT);
-				}
-				TextDrawsChanged();
-			}
-		}
-		ImGui::End();
-		ImGui::PopStyleVar(2);
-		dl->AddRectFilled(ImVec2(corner.x - 4, corner.y - 4), ImVec2(corner.x + 4, corner.y + 4),
-			IM_COL32(255, 220, 60, 255));
+	// Resizing: by the handles round the selection's box.
+	if(gHandle >= 0){
+		if(ImGui::IsMouseDown(0)){
+			ImGui::SetMouseCursor(handleCursor(gHandle));
+			resizeSelection(cv, dl);
+		}else
+			gHandle = -1;
 	}
-	if(!ImGui::IsMouseDown(0))
-		gResizing = false;
+	if(!gSel.empty() && !gDragging && selectionScaleBox(box)){
+		ImVec2 p0 = cv.at(box[0], box[1]), p1 = cv.at(box[2], box[3]);
+		if(gSel.size() > 1)
+			dl->AddRect(p0, p1, IM_COL32(255, 220, 60, 110));
+		smallBox = fabsf(p1.x - p0.x) < 24.0f || fabsf(p1.y - p0.y) < 24.0f;
+		for(int h = 0; h < 8; h++){
+			if(smallBox && (h & 1))
+				continue;
+			float hx, hy;
+			handlePos(h, box, &hx, &hy);
+			ImVec2 p = cv.at(hx, hy);
+			dl->AddRectFilled(ImVec2(p.x - 4, p.y - 4), ImVec2(p.x + 4, p.y + 4), IM_COL32(255, 220, 60, 255));
+			dl->AddRect(ImVec2(p.x - 4, p.y - 4), ImVec2(p.x + 4, p.y + 4), IM_COL32(20, 20, 20, 255));
+		}
+	}
+
+	// Guides: dragged, or dropped on a ruler (or off the canvas) to go.
+	if(gGuideDrag >= 0 && gGuideDrag < (int)guides.size()){
+		TextDrawGuide &gd = guides[gGuideDrag];
+		ImGui::SetMouseCursor(gd.vertical ? ImGuiMouseCursor_ResizeEW : ImGuiMouseCursor_ResizeNS);
+		if(ImGui::IsMouseDown(0)){
+			float at = gd.vertical ? (m0.x - cv.x) / cv.sx : (m0.y - cv.y) / cv.sy;
+			at = roundf(at * 2.0f) * 0.5f;
+			if(gSnap && !io.KeyCtrl){
+				gd.at = -1e9f;	// not to itself
+				std::vector<float> xs, ys;
+				snapTargets(xs, ys);
+				float e[3] = { at, at, at }, unused;
+				at += snapAxis(e, gd.vertical ? xs : ys, 6.0f / (gd.vertical ? cv.sx : cv.sy), &unused);
+			}
+			gd.at = at;
+			ImGui::SetTooltip("%s %.1f", gd.vertical ? "x" : "y", at);
+		}else{
+			bool off = m0.x < areaPos.x + rs || m0.y < areaPos.y + rs || m0.x >= areaEnd.x || m0.y >= areaEnd.y;
+			if(off)
+				guides.erase(guides.begin() + gGuideDrag);
+			gGuideDrag = -1;
+			TextDrawGuidesChanged();
+		}
+	}else
+		gGuideDrag = -1;
+
+	// Alt: how far the selection is from what the mouse is over, or the screen's edges.
+	if(io.KeyAlt && !gSel.empty() && gHandle < 0 && !gDragging){
+		float A[4] = { 1e9f, 1e9f, -1e9f, -1e9f }, B[4] = { 0.0f, 0.0f, 640.0f, 448.0f };
+		for(int i : gSel){
+			float x0, y0, x1, y1;
+			boundsOf(tds[i], &x0, &y0, &x1, &y1);
+			A[0] = std::min(A[0], x0); A[1] = std::min(A[1], y0);
+			A[2] = std::max(A[2], x1); A[3] = std::max(A[3], y1);
+		}
+		if(hovered >= 0 && !isSelected(hovered))
+			boundsOf(tds[hovered], &B[0], &B[1], &B[2], &B[3]);
+		drawDistances(dl, cv, A, B);
+	}
 
 	// On empty canvas: drag a box to select, click to clear; the wheel zooms
 	// round the cursor, the middle button pans.
 	ImVec2 m = io.MousePos;
 	bool inArea = m.x >= areaPos.x && m.y >= areaPos.y && m.x < areaEnd.x && m.y < areaEnd.y;
 	if(inArea && !io.WantCaptureMouse){
-		if(ImGui::IsMouseClicked(0) && !gPicking){
+		if(ImGui::IsMouseClicked(0) && !gPicking && !grabbed){
 			gMarquee = true;
 			gMarqueeAdd = io.KeyShift || io.KeyCtrl;
 			gMarqueeStart = m;
@@ -2125,7 +3182,14 @@ DrawTextDrawsOverlay(void)
 		if(ImGui::IsKeyPressed(ImGuiKey_RightArrow)) dx += step;
 		if(ImGui::IsKeyPressed(ImGuiKey_UpArrow)) dy -= step;
 		if(ImGui::IsKeyPressed(ImGuiKey_DownArrow)) dy += step;
-		if(dx != 0.0f || dy != 0.0f){
+		if((dx != 0.0f || dy != 0.0f) && io.KeyAlt){
+			// Alt: wider or taller instead, by the right and bottom edges.
+			if(beginScale()){
+				float n[4] = { gBoxFrom[0], gBoxFrom[1], gBoxFrom[2] + dx, gBoxFrom[3] + dy };
+				if(n[2] - n[0] >= 1.0f && n[3] - n[1] >= 1.0f)
+					scaleSelection(n);
+			}
+		}else if(dx != 0.0f || dy != 0.0f){
 			for(int i : gSel)
 				if(!tds[i].locked)
 					moveBy(tds[i], dx, dy);
@@ -2137,6 +3201,18 @@ DrawTextDrawsOverlay(void)
 		for(int i = 0; i < (int)tds.size(); i++)
 			if(shown(tds[i]))
 				addToSelection(i);
+	}
+	if(gRulers){
+		float ext[4];
+		bool any = false;
+		for(int i : gSel){
+			float x0, y0, x1, y1;
+			boundsOf(tds[i], &x0, &y0, &x1, &y1);
+			if(!any){ ext[0] = x0; ext[1] = y0; ext[2] = x1; ext[3] = y1; any = true; }
+			ext[0] = std::min(ext[0], x0); ext[1] = std::min(ext[1], y0);
+			ext[2] = std::max(ext[2], x1); ext[3] = std::max(ext[3], y1);
+		}
+		drawRulers(dl, cv, areaPos, areaEnd, any ? ext : nil);
 	}
 	dl->PopClipRect();
 	if(gCompare)
@@ -2925,105 +4001,128 @@ drawPopups(void)
 
 // ---- Shapes ----
 
-// Shapes made of several textdraws, as Textdraw Studio builds them: a
-// rounded box (LD_SPAC:white bars and LD_BEAT:chit corners), a circle, a
-// progress bar and a ring of dots. They are added as a group.
-enum { SHAPE_ROUNDED_BOX, SHAPE_CIRCLE, SHAPE_BAR, SHAPE_RING, NUM_SHAPES };
-struct ShapeSettings {
-	int kind;
-	float w, h;	// a circle and a ring use w across
-	float radius;	// the rounded box's corners
-	float thickness;	// the ring's dots
-	int segments;	// the ring's dots
-	int value;	// percent, for the bar and the ring
-	unsigned int colour, back;
-};
-static ShapeSettings gShape = { SHAPE_ROUNDED_BOX, 160.0f, 90.0f, 12.0f, 10.0f, 24, 65, 0x2B2F36F0, 0x000000AA };
-
-// LD_BEAT:chit's circle doesn't fill its texture: these are its margins.
-static const float CHIT_LEFT = 0.164f, CHIT_RIGHT = 0.164f, CHIT_TOP = 0.158f, CHIT_BOTTOM = 0.17f;
-
-static TextDraw
-shapeSprite(const char *sprite, float x, float y, float w, float h, unsigned int colour)
+// The shape's settings, for a new one or the selected one. Returns true
+// when one changed.
+static bool
+shapeFields(ShapeSettings &sh, bool placed)
 {
-	TextDraw td;
-	InitTextDraw(&td);
-	td.font = TD_FONT_SPRITE;
-	td.text = sprite;
-	td.x = x; td.y = y;
-	td.sizeX = w; td.sizeY = h;
-	td.colour = colour;
-	td.board = gBoard;
-	return td;
-}
-
-// A circle of diameter d with its top-left at x, y: the chit, grown by its margins.
-static TextDraw
-chit(float x, float y, float d, unsigned int colour)
-{
-	float w = d / (1.0f - CHIT_LEFT - CHIT_RIGHT), h = d / (1.0f - CHIT_TOP - CHIT_BOTTOM);
-	return shapeSprite("LD_BEAT:chit", x - w * CHIT_LEFT, y - h * CHIT_TOP, w, h, colour);
+	bool changed = false;
+	const char *names[NUM_SHAPES];
+	int at = 0;
+	for(int k = 0; k < NUM_SHAPES; k++){
+		names[k] = _(gShapeNames[gShapeOrder[k]]);
+		if(gShapeOrder[k] == sh.kind)
+			at = k;
+	}
+	ImGui::PushItemWidth(ImGui::GetFontSize() * 10.0f);
+	if(ImGui::Combo(L("Shape"), &at, names, NUM_SHAPES)){
+		shapeDefaults(sh, gShapeOrder[at]);
+		changed = true;
+	}
+	if(placed){
+		float pos[2] = { sh.x, sh.y };
+		if(ImGui::DragFloat2(L("Position"), pos, 0.5f, -640.0f, 1280.0f, "%.1f")){
+			sh.x = pos[0]; sh.y = pos[1];
+			changed = true;
+		}
+	}
+	float size[2] = { sh.w, sh.h };
+	if(ImGui::DragFloat2(L("Size"), size, 0.5f, 1.0f, 640.0f, "%.1f")){
+		sh.w = std::max(1.0f, size[0]);
+		sh.h = std::max(1.0f, size[1]);
+		changed = true;
+	}
+	ImGui::SetItemTooltip("%s", _("Or drag its handles on the canvas: Shift keeps the shape's proportions,\n"
+		"Alt sizes it from the centre, Ctrl stops snapping."));
+	int k = sh.kind;
+	if(k == SHAPE_ROUNDED_BOX)
+		changed |= ImGui::DragFloat(L("Corner radius"), &sh.radius, 0.25f, 0.0f, 200.0f, "%.1f");
+	if(k == SHAPE_ROUNDED_BOX || k == SHAPE_PILL || k == SHAPE_CIRCLE)
+		changed |= ImGui::DragFloat(L("Border"), &sh.thickness, 0.1f, 0.0f, 100.0f, "%.1f");
+	if(k == SHAPE_OUTLINE)
+		changed |= ImGui::DragFloat(L("Line width"), &sh.thickness, 0.1f, 0.5f, 100.0f, "%.1f");
+	if(k == SHAPE_PLUS)
+		changed |= ImGui::DragFloat(L("Arm width"), &sh.thickness, 0.1f, 0.5f, 200.0f, "%.1f");
+	if(k == SHAPE_RING){
+		changed |= ImGui::DragFloat(L("Dot size"), &sh.thickness, 0.25f, 1.0f, 60.0f, "%.1f");
+		changed |= ImGui::SliderInt(L("Dots"), &sh.segments, 3, 120);
+		ImGui::SetItemTooltip("%s", _("Each dot is a textdraw: SA-MP allows 2048 global and 256 per player."));
+	}
+	if(k == SHAPE_BAR){
+		changed |= ImGui::SliderInt(L("Segments"), &sh.segments, 1, 40);
+		ImGui::SetItemTooltip("%s", _("1 for a solid bar. Each segment is a textdraw."));
+		if(sh.segments > 1)
+			changed |= ImGui::DragFloat(L("Gap"), &sh.thickness, 0.1f, 0.0f, 50.0f, "%.1f");
+	}
+	if(k == SHAPE_GRADIENT){
+		changed |= ImGui::SliderInt(L("Bands"), &sh.segments, 2, 128);
+		ImGui::SetItemTooltip("%s", _("More bands blend more smoothly. Each band is a textdraw."));
+	}
+	if(k == SHAPE_TRIANGLE){
+		changed |= ImGui::SliderInt(L("Steps"), &sh.segments, 1, 64);
+		ImGui::SetItemTooltip("%s", _("Textdraws can't be turned, so a triangle is boxes in steps.\n"
+			"More steps make a smoother edge. Each step is a textdraw."));
+	}
+	if(k == SHAPE_BAR || k == SHAPE_GRADIENT || k == SHAPE_TRIANGLE || k == SHAPE_ARROW){
+		const char *dirs[4];
+		if(k == SHAPE_BAR){
+			dirs[0] = _("Fills to the right"); dirs[1] = _("Fills to the left");
+			dirs[2] = _("Fills up"); dirs[3] = _("Fills down");
+		}else if(k == SHAPE_GRADIENT){
+			dirs[0] = _("Left to right"); dirs[1] = _("Right to left");
+			dirs[2] = _("Bottom to top"); dirs[3] = _("Top to bottom");
+		}else{
+			dirs[0] = _("Points right"); dirs[1] = _("Points left");
+			dirs[2] = _("Points up"); dirs[3] = _("Points down");
+		}
+		changed |= ImGui::Combo(L("Direction"), &sh.dir, dirs, 4);
+	}
+	if(k == SHAPE_BAR || k == SHAPE_RING)
+		changed |= ImGui::SliderInt(L("Value"), &sh.value, 0, 100, "%d%%");
+	ImGui::PopItemWidth();
+	changed |= colourEdit(k == SHAPE_GRADIENT ? L("From") : L("Colour"), &sh.colour);
+	if(shapeOpaque(sh))
+		ImGui::SetItemTooltip("%s", _("Always opaque: its sprites overlap, and see-through colours would\n"
+			"show the overlaps darker."));
+	if(k == SHAPE_BAR || k == SHAPE_RING)
+		changed |= colourEdit(L("Empty part"), &sh.back);
+	if(k == SHAPE_GRADIENT)
+		changed |= colourEdit(L("To"), &sh.back);
+	if(k == SHAPE_OUTLINE){
+		changed |= colourEdit(L("Inside"), &sh.back);
+		ImGui::SetItemTooltip("%s", _("Fully transparent leaves it out."));
+	}
+	if((k == SHAPE_ROUNDED_BOX || k == SHAPE_PILL || k == SHAPE_CIRCLE) && sh.thickness > 0.0f)
+		changed |= colourEdit(L("Border colour"), &sh.back);
+	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10.0f);
+	changed |= ImGui::DragFloat(L("Shadow"), &sh.shadow, 0.1f, -20.0f, 20.0f, "%.1f");
+	ImGui::SetItemTooltip("%s", _("A copy of the shape under it, this far down and right. 0 for none."));
+	if(sh.shadow != 0.0f)
+		changed |= colourEdit(L("Shadow colour"), &sh.shadowColour);
+	return changed;
 }
 
 static void
 addShape(void)
 {
-	const ShapeSettings &sh = gShape;
+	ShapeSettings sh = gShape;
+	sh.x = 320.0f - sh.w * 0.5f;
+	sh.y = 224.0f - sh.h * 0.5f;
 	std::vector<TextDraw> parts;
-	float x = 320.0f - sh.w * 0.5f, y = 224.0f - sh.h * 0.5f;
-	const char *name = "Shape";
-	switch(sh.kind){
-	case SHAPE_ROUNDED_BOX: {
-		name = N_("Rounded box");
-		float r = std::max(0.0f, std::min(sh.radius, std::min(sh.w, sh.h) * 0.5f));
-		parts.push_back(shapeSprite("LD_SPAC:white", x + r, y, sh.w - 2.0f * r, sh.h, sh.colour));
-		parts.push_back(shapeSprite("LD_SPAC:white", x, y + r, sh.w, sh.h - 2.0f * r, sh.colour));
-		if(r > 0.0f){
-			parts.push_back(chit(x, y, 2.0f * r, sh.colour));
-			parts.push_back(chit(x + sh.w - 2.0f * r, y, 2.0f * r, sh.colour));
-			parts.push_back(chit(x, y + sh.h - 2.0f * r, 2.0f * r, sh.colour));
-			parts.push_back(chit(x + sh.w - 2.0f * r, y + sh.h - 2.0f * r, 2.0f * r, sh.colour));
-		}
-		break;
-	}
-	case SHAPE_CIRCLE:
-		name = N_("Circle");
-		parts.push_back(chit(320.0f - sh.w * 0.5f, 224.0f - sh.w * 0.5f, sh.w, sh.colour));
-		break;
-	case SHAPE_BAR: {
-		name = N_("Progress bar");
-		parts.push_back(shapeSprite("LD_SPAC:white", x, y, sh.w, sh.h, sh.back));
-		float fill = sh.w * std::max(0, std::min(sh.value, 100)) / 100.0f;
-		if(fill > 0.0f)
-			parts.push_back(shapeSprite("LD_SPAC:white", x, y, fill, sh.h, sh.colour));
-		break;
-	}
-	case SHAPE_RING: {
-		// Dots round a circle from the top, clockwise; the first value% lit.
-		name = N_("Progress ring");
-		int n = std::max(3, std::min(sh.segments, 120));
-		float r = (sh.w - sh.thickness) * 0.5f;
-		int lit = (int)(n * std::max(0, std::min(sh.value, 100)) / 100.0f + 0.5f);
-		for(int k = 0; k < n; k++){
-			float a = (float)k / n * 2.0f * 3.14159265f;
-			float cx = 320.0f + sinf(a) * r, cy = 224.0f - cosf(a) * r;
-			parts.push_back(chit(cx - sh.thickness * 0.5f, cy - sh.thickness * 0.5f, sh.thickness,
-				k < lit ? sh.colour : sh.back));
-		}
-		break;
-	}
-	}
+	buildShape(sh, parts);
 	if(parts.empty())
 		return;
-	std::string group = newGroupName();
-	group = std::string(_(name)) + group.substr(group.find_last_of(' '));
+	std::string group = uniqueGroupName(_(gShapeNames[sh.kind]));
+	std::string spec = shapeSpec(sh);
 	std::vector<TextDraw> &tds = GetTextDraws();
 	selectOnly(-1);
 	for(TextDraw &td : parts){
 		td.group = group;
+		td.shape = spec;
 		tds.push_back(td);
 		addToSelection((int)tds.size() - 1);
 	}
+	gSelected = gSel.front();
 	TextDrawsChanged();
 }
 
@@ -3032,44 +4131,38 @@ shapeButton(void)
 {
 	if(ImGui::Button(LI(ICON_FA_PLUS, "Shape##add")))
 		ImGui::OpenPopup("##shape");
-	ImGui::SetItemTooltip("%s", _("A rounded box, a circle, a progress bar or a ring, made of several\n"
-		"sprite textdraws and added as a group."));
+	ImGui::SetItemTooltip("%s", _("Boxes, circles, outlines, triangles, arrows, gradients, bars and rings, made\n"
+		"of sprite textdraws and added as a group. Select it later to change it."));
 	if(ImGui::BeginPopup("##shape")){
-		static const char *kinds[] = { N_("Rounded box"), N_("Circle"), N_("Progress bar"), N_("Progress ring") };
-		const char *names[NUM_SHAPES];
-		for(int i = 0; i < NUM_SHAPES; i++)
-			names[i] = _(kinds[i]);
-		ImGui::PushItemWidth(ImGui::GetFontSize() * 10.0f);
-		ImGui::Combo(L("Shape"), &gShape.kind, names, NUM_SHAPES);
-		bool round = gShape.kind == SHAPE_CIRCLE || gShape.kind == SHAPE_RING;
-		if(round)
-			ImGui::DragFloat(L("Diameter"), &gShape.w, 0.5f, 4.0f, 448.0f, "%.1f");
-		else{
-			float size[2] = { gShape.w, gShape.h };
-			if(ImGui::DragFloat2(L("Size"), size, 0.5f, 2.0f, 640.0f, "%.1f")){
-				gShape.w = size[0];
-				gShape.h = size[1];
-			}
-		}
-		if(gShape.kind == SHAPE_ROUNDED_BOX)
-			ImGui::DragFloat(L("Corner radius"), &gShape.radius, 0.25f, 0.0f, 100.0f, "%.1f");
-		if(gShape.kind == SHAPE_RING){
-			ImGui::DragFloat(L("Dot size"), &gShape.thickness, 0.25f, 1.0f, 60.0f, "%.1f");
-			ImGui::SliderInt(L("Dots"), &gShape.segments, 3, 120);
-			ImGui::SetItemTooltip("%s", _("Each dot is a textdraw: SA-MP allows 2048 global and 256 per player."));
-		}
-		if(gShape.kind == SHAPE_BAR || gShape.kind == SHAPE_RING)
-			ImGui::SliderInt(L("Value"), &gShape.value, 0, 100, "%d%%");
-		ImGui::PopItemWidth();
-		colourEdit(L("Colour"), &gShape.colour);
-		if(gShape.kind == SHAPE_BAR || gShape.kind == SHAPE_RING)
-			colourEdit(L("Empty part"), &gShape.back);
+		shapeFields(gShape, false);
 		if(ImGui::Button(LI(ICON_FA_PLUS, "Add the shape"))){
 			addShape();
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::EndPopup();
 	}
+}
+
+// With a whole shape selected: its settings, changed in place.
+static bool
+shapePanel(void)
+{
+	ShapeSettings sh;
+	std::string group;
+	if(!selectedShape(&sh, &group))
+		return false;
+	ImGui::SeparatorText(_(gShapeNames[sh.kind]));
+	if(shapeFields(sh, true))
+		replaceShape(group, sh);
+	if(ImGui::SmallButton(L("Edit the parts on their own"))){
+		std::vector<TextDraw> &tds = GetTextDraws();
+		for(int i : gSel)
+			tds[i].shape.clear();
+		TextDrawsChanged();
+	}
+	ImGui::SetItemTooltip("%s", _("Makes it plain sprites, to fine-tune one by one. It is no longer\n"
+		"changed as a shape, so changes here would undo that tuning."));
+	return true;
 }
 
 // ---- Mode ----
@@ -3322,8 +4415,28 @@ drawToolbar(void)
 	ImGui::SameLine();
 	if(ImGui::Checkbox(L("Snap"), &gSnap))
 		SaveEditorSettings();
-	ImGui::SetItemTooltip("%s", _("Dragged textdraws snap to the screen's edges and centre, to the others\n"
-		"and to the grid. Hold Ctrl while dragging to place freely."));
+	ImGui::SetItemTooltip("%s", _("Dragged textdraws snap to the screen's edges and centre, to the others,\n"
+		"to the grid and to guides. Hold Ctrl while dragging to place freely."));
+	ImGui::SameLine();
+	if(ImGui::Checkbox(L("Rulers"), &gRulers))
+		SaveEditorSettings();
+	ImGui::SetItemTooltip("%s", _("Rulers along the canvas, in canvas units. Drag from one to make a guide,\n"
+		"and drag a guide back onto a ruler to remove it. Guides are saved with the file."));
+	{
+		std::vector<TextDrawGuide> &guides = GetTextDrawGuides();
+		bool any = false;
+		for(const TextDrawGuide &g : guides)
+			any |= g.board == gBoard;
+		if(gRulers && any){
+			ImGui::SameLine();
+			if(ImGui::SmallButton(L("Clear guides"))){
+				for(int k = (int)guides.size() - 1; k >= 0; k--)
+					if(guides[k].board == gBoard)
+						guides.erase(guides.begin() + k);
+				TextDrawGuidesChanged();
+			}
+		}
+	}
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 3.0f);
 	if(ImGui::DragFloat("##nudge", &gNudge, 0.05f, 0.01f, 100.0f, ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT " %.2f"))
@@ -3691,7 +4804,60 @@ layers(void)
 		moveSelectionTo(dropAt);
 }
 
-// What to do with the selection: copies, order, lock, groups, alignment.
+// Pictures for the arrange buttons; the first six are the ALIGN_ ones.
+enum { GLYPH_SPACE_ACROSS = 6, GLYPH_SPACE_DOWN, GLYPH_SAME_WIDTH, GLYPH_SAME_HEIGHT, GLYPH_FLIP_ACROSS, GLYPH_FLIP_DOWN };
+static bool
+arrangeButton(const char *id, int glyph, const char *tooltip)
+{
+	float s = ImGui::GetFrameHeight();
+	bool pressed = ImGui::InvisibleButton(id, ImVec2(s, s));
+	ImDrawList *dl = ImGui::GetWindowDrawList();
+	ImVec2 p = ImGui::GetItemRectMin();
+	bool off = ImGui::GetItemFlags() & ImGuiItemFlags_Disabled;
+	ImU32 bg = ImGui::GetColorU32(ImGui::IsItemActive() ? ImGuiCol_ButtonActive :
+		ImGui::IsItemHovered() ? ImGuiCol_ButtonHovered : ImGuiCol_Button);
+	dl->AddRectFilled(p, ImVec2(p.x + s, p.y + s), bg, ImGui::GetStyle().FrameRounding);
+	ImU32 fg = ImGui::GetColorU32(off ? ImGuiCol_TextDisabled : ImGuiCol_Text);
+	ImU32 edge = off ? fg : IM_COL32(255, 200, 60, 255);
+	float u = s / 16.0f;
+	auto P = [&](float x, float y){ return ImVec2(p.x + x * u, p.y + y * u); };
+	auto R = [&](float x0, float y0, float x1, float y1){ dl->AddRectFilled(P(x0, y0), P(x1, y1), fg); };
+	auto Ln = [&](float x0, float y0, float x1, float y1){ dl->AddLine(P(x0, y0), P(x1, y1), edge, std::max(1.0f, u)); };
+	switch(glyph){
+	case ALIGN_LEFT: Ln(3, 2, 3, 14); R(4, 4, 13, 7); R(4, 9, 10, 12); break;
+	case ALIGN_HCENTRE: R(3, 4, 13, 7); R(5, 9, 11, 12); Ln(8, 2, 8, 14); break;
+	case ALIGN_RIGHT: Ln(13, 2, 13, 14); R(3, 4, 12, 7); R(6, 9, 12, 12); break;
+	case ALIGN_TOP: Ln(2, 3, 14, 3); R(4, 4, 7, 13); R(9, 4, 12, 10); break;
+	case ALIGN_VCENTRE: R(4, 3, 7, 13); R(9, 5, 12, 11); Ln(2, 8, 14, 8); break;
+	case ALIGN_BOTTOM: Ln(2, 13, 14, 13); R(4, 3, 7, 12); R(9, 6, 12, 12); break;
+	case GLYPH_SPACE_ACROSS: R(2, 4, 4, 12); R(7, 4, 9, 12); R(12, 4, 14, 12); break;
+	case GLYPH_SPACE_DOWN: R(4, 2, 12, 4); R(4, 7, 12, 9); R(4, 12, 12, 14); break;
+	case GLYPH_SAME_WIDTH:
+		Ln(2, 3, 2, 13); Ln(14, 3, 14, 13); Ln(4, 8, 12, 8);
+		dl->AddTriangleFilled(P(3, 8), P(6, 5), P(6, 11), fg);
+		dl->AddTriangleFilled(P(13, 8), P(10, 11), P(10, 5), fg);
+		break;
+	case GLYPH_SAME_HEIGHT:
+		Ln(3, 2, 13, 2); Ln(3, 14, 13, 14); Ln(8, 4, 8, 12);
+		dl->AddTriangleFilled(P(8, 3), P(11, 6), P(5, 6), fg);
+		dl->AddTriangleFilled(P(8, 13), P(5, 10), P(11, 10), fg);
+		break;
+	case GLYPH_FLIP_ACROSS:
+		dl->AddTriangleFilled(P(7, 3), P(7, 13), P(2, 13), fg);
+		dl->AddTriangle(P(9, 3), P(14, 13), P(9, 13), fg);
+		Ln(8, 1, 8, 15);
+		break;
+	case GLYPH_FLIP_DOWN:
+		dl->AddTriangleFilled(P(3, 7), P(13, 7), P(13, 2), fg);
+		dl->AddTriangle(P(3, 9), P(13, 14), P(13, 9), fg);
+		Ln(1, 8, 15, 8);
+		break;
+	}
+	ImGui::SetItemTooltip("%s", tooltip);
+	return pressed;
+}
+
+// What to do with the selection: copies, order, lock, groups, arranging.
 static void
 selectionActions(void)
 {
@@ -3727,28 +4893,60 @@ selectionActions(void)
 		groupSelected(newGroupName().c_str());
 	ImGui::SetItemTooltip("%s", _("Gives them one group name and keeps them together in the list.\n"
 		"A group hides, locks and is selected as one."));
-	ImGui::SameLine();
-	if(ImGui::Button(LI(ICON_FA_TABLE_COLUMNS, "Align")))
-		ImGui::OpenPopup("##align");
-	ImGui::SetItemTooltip("%s", _("To each other, or to the screen when one is selected"));
-	if(ImGui::BeginPopup("##align")){
-		static bool toScreen;
-		ImGui::Checkbox(L("To the screen"), &toScreen);
-		ImGui::Separator();
-		static const char *names[] = { N_("Left edges"), N_("Centres across"), N_("Right edges"),
-			N_("Top edges"), N_("Middles"), N_("Bottom edges") };
-		for(int k = 0; k < IM_ARRAYSIZE(names); k++)
-			if(ImGui::MenuItem(_(names[k])))
-				alignSelected(k, toScreen);
-		ImGui::Separator();
-		ImGui::BeginDisabled(gSel.size() < 3);
-		if(ImGui::MenuItem(L("Space evenly across")))
-			distributeSelected(true);
-		if(ImGui::MenuItem(L("Space evenly down")))
-			distributeSelected(false);
-		ImGui::EndDisabled();
-		ImGui::EndPopup();
+
+	// Arranging, always at hand: pictures, with what they do in their tooltips.
+	std::vector<ArrangeUnit> units;
+	selectionUnits(units);
+	static const char *alignTips[6] = { N_("Left edges"), N_("Centres across"), N_("Right edges"),
+		N_("Top edges"), N_("Middles"), N_("Bottom edges") };
+	float sp = ImGui::GetStyle().ItemSpacing.x;
+	for(int k = 0; k < 6; k++){
+		if(k)
+			ImGui::SameLine(0.0f, k == 3 ? sp * 3.0f : sp * 0.5f);
+		char id[16];
+		snprintf(id, sizeof(id), "##align%d", k);
+		if(arrangeButton(id, k, _(alignTips[k])))
+			alignSelected(k);
 	}
+	ImGui::SameLine(0.0f, sp * 3.0f);
+	const char *tos[] = { _("To the selection"), _("To the key one"), _("To the screen") };
+	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 8.0f);
+	ImGui::Combo("##alignto", &gAlignTo, tos, IM_ARRAYSIZE(tos));
+	ImGui::SetItemTooltip("%s", _("What aligning lines them up with. The key one is the one clicked last\n"
+		"(outlined thicker), and it stays put. One on its own aligns to the screen.\n"
+		"A group moves as one, and a shape aligns by its own edges."));
+	static bool fixedGap;
+	static float gap = 8.0f;
+	ImGui::BeginDisabled(units.size() < (fixedGap ? 2u : 3u));
+	if(arrangeButton("##spaceacross", GLYPH_SPACE_ACROSS, _("Space evenly across")))
+		distributeSelected(true, fixedGap ? gap : -1.0f);
+	ImGui::SameLine(0.0f, sp * 0.5f);
+	if(arrangeButton("##spacedown", GLYPH_SPACE_DOWN, _("Space evenly down")))
+		distributeSelected(false, fixedGap ? gap : -1.0f);
+	ImGui::EndDisabled();
+	ImGui::SameLine();
+	ImGui::Checkbox(L("Gap"), &fixedGap);
+	ImGui::SetItemTooltip("%s", _("Off: the outer ones stay and the gaps between come out equal.\n"
+		"On: each is this far from the one before, from the first."));
+	if(fixedGap){
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(ImGui::GetFontSize() * 3.5f);
+		ImGui::DragFloat("##gap", &gap, 0.25f, 0.0f, 640.0f, "%.1f");
+	}
+	ImGui::SameLine(0.0f, sp * 3.0f);
+	ImGui::BeginDisabled(units.size() < 2);
+	if(arrangeButton("##samewidth", GLYPH_SAME_WIDTH, _("Same width as the key one")))
+		matchSize(true);
+	ImGui::SameLine(0.0f, sp * 0.5f);
+	if(arrangeButton("##sameheight", GLYPH_SAME_HEIGHT, _("Same height as the key one")))
+		matchSize(false);
+	ImGui::EndDisabled();
+	ImGui::SameLine(0.0f, sp * 3.0f);
+	if(arrangeButton("##flipacross", GLYPH_FLIP_ACROSS, _("Flip across: sprites mirror, shapes point the other way")))
+		flipSelected(true);
+	ImGui::SameLine(0.0f, sp * 0.5f);
+	if(arrangeButton("##flipdown", GLYPH_FLIP_DOWN, _("Flip upside down")))
+		flipSelected(false);
 }
 
 void
@@ -3818,7 +5016,9 @@ DrawTextDrawsWindow(void)
 
 	if(gSelected >= 0){
 		ImGui::Separator();
-		properties();
+		// A whole shape: its settings, with the sprites it is made of folded away.
+		if(!shapePanel() || ImGui::CollapsingHeader(L("The sprites it is made of")))
+			properties();
 	}else
 		ImGui::TextDisabled("%s", _("Click a textdraw, or drag a box round several. Alt+click picks the one under it."));
 	ImGui::End();

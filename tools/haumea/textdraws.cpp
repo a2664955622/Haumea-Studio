@@ -24,6 +24,7 @@ static unsigned int gChangeSeq, gSavedSeq;
 static bool gEditPending;	// changed since the last undo step was recorded
 static std::vector<std::vector<TextDraw>> gUndo, gRedo;
 static std::vector<TextDraw> gUndoBase;	// the list as of the last step
+static std::vector<TextDrawGuide> gGuides;
 
 void
 InitTextDraw(TextDraw *td)
@@ -61,6 +62,18 @@ void
 TextDrawsChanged(void)
 {
 	gEditPending = true;
+	gChangeSeq++;
+}
+
+std::vector<TextDrawGuide>&
+GetTextDrawGuides(void)
+{
+	return gGuides;
+}
+
+void
+TextDrawGuidesChanged(void)
+{
 	gChangeSeq++;
 }
 
@@ -104,6 +117,7 @@ void
 NewTextDrawFile(void)
 {
 	gTextDraws.clear();
+	gGuides.clear();
 	gFilePath.clear();
 	gFileEncoding = PAWN_TEXT_CP1252;
 	gSavedSeq = ++gChangeSeq;
@@ -136,8 +150,10 @@ OpenTextDrawFile(const char *path, std::string *error)
 	PawnTextEncoding encoding;
 	std::string source = DecodePawnFileText(raw, &encoding);
 	std::vector<TextDraw> read;
-	ImportTextDrawsFromSource(source, read);
+	std::vector<TextDrawGuide> guides;
+	ImportTextDrawsFromSource(source, read, &guides);
 	gTextDraws = read;
+	gGuides = guides;
 	gFilePath = path;
 	gFileEncoding = encoding;
 	gSavedSeq = ++gChangeSeq;
@@ -533,7 +549,7 @@ writeTextDraw(FILE *f, const TextDraw &td, const std::string &name, const char *
 		fprintf(f, "%s%s = TextDrawCreate(%.3f, %.3f, ", ind, n, td.x, td.y);
 	writeString(f, td.text.empty() ? std::string("_") : td.text);
 	fputs(");", f);
-	if(td.locked || td.hidden || !td.group.empty() || !td.board.empty()){
+	if(td.locked || td.hidden || !td.group.empty() || !td.board.empty() || !td.shape.empty()){
 		fputs(" // Haumea:", f);
 		writeNote(f, td);
 	}
@@ -588,6 +604,10 @@ writeNote(FILE *f, const TextDraw &td)
 		fputs(" board ", f);
 		writeString(f, td.board);
 	}
+	if(!td.shape.empty()){
+		fputs(" shape ", f);
+		writeString(f, td.shape);
+	}
 }
 
 // A reference image: a comment only the editor reads, where it is in the stack.
@@ -607,6 +627,15 @@ writeFunctions(FILE *f, const std::vector<TextDraw> &tds, const char *prefix)
 	std::vector<std::string> names;
 	buildNames(tds, prefix, names);
 	fprintf(f, "stock %s_CreateTextDraws()\n{\n", prefix);
+	if(&tds == &gTextDraws)
+		for(const TextDrawGuide &g : gGuides){
+			fprintf(f, "\t// Haumea: guide %s %.3f", g.vertical ? "x" : "y", g.at);
+			if(!g.board.empty()){
+				fputs(" board ", f);
+				writeString(f, g.board);
+			}
+			fputc('\n', f);
+		}
 	for(size_t i = 0; i < tds.size(); i++)
 		if(tds[i].font == TD_FONT_REFERENCE)
 			writeReference(f, tds[i]);
@@ -739,9 +768,10 @@ scanCalls(const std::string &src, std::vector<TdCall> &calls)
 			while(i < n && src[i] != '\n') i++;
 			// A reference image the editor keeps in the file.
 			static const char mark[] = "// Haumea: reference";
-			if(src.compare(start, sizeof(mark) - 1, mark) == 0){
+			static const char guide[] = "// Haumea: guide";
+			if(src.compare(start, sizeof(mark) - 1, mark) == 0 || src.compare(start, sizeof(guide) - 1, guide) == 0){
 				TdCall call;
-				call.name = "#reference";
+				call.name = src[start + 11] == 'r' ? "#reference" : "#guide";
 				call.note = src.substr(start + 10, i - start - 10);
 				calls.push_back(call);
 			}
@@ -916,7 +946,7 @@ parseNote(const std::string &note, TextDraw &td)
 		std::string word = note.substr(at, end - at);
 		if(word == "locked") td.locked = true;
 		else if(word == "hidden") td.hidden = true;
-		else if(word == "group" || word == "board"){
+		else if(word == "group" || word == "board" || word == "shape"){
 			size_t q = note.find('"', end), q2 = q;
 			while(q2 != std::string::npos){	// past escaped quotes
 				q2 = note.find('"', q2 + 1);
@@ -924,7 +954,7 @@ parseNote(const std::string &note, TextDraw &td)
 					break;
 			}
 			if(q != std::string::npos && q2 != std::string::npos){
-				parseString(note.substr(q, q2 - q + 1), word == "group" ? &td.group : &td.board);
+				parseString(note.substr(q, q2 - q + 1), word == "group" ? &td.group : word == "board" ? &td.board : &td.shape);
 				end = q2 + 1;
 			}
 		}
@@ -933,7 +963,7 @@ parseNote(const std::string &note, TextDraw &td)
 }
 
 int
-ImportTextDrawsFromSource(const std::string &source, std::vector<TextDraw> &out)
+ImportTextDrawsFromSource(const std::string &source, std::vector<TextDraw> &out, std::vector<TextDrawGuide> *guides)
 {
 	std::vector<TdCall> calls;
 	scanCalls(source, calls);
@@ -941,6 +971,19 @@ ImportTextDrawsFromSource(const std::string &source, std::vector<TextDraw> &out)
 	int added = 0;
 	for(size_t i = 0; i < calls.size(); i++){
 		TdCall &c = calls[i];
+		if(c.name == "#guide"){
+			// guide x|y position, then the board.
+			char axis = 0;
+			float at = 0.0f;
+			if(guides && sscanf(c.note.c_str(), " guide %c %f", &axis, &at) == 2){
+				TextDraw where;
+				InitTextDraw(&where);
+				parseNote(c.note.substr(c.note.find_first_of("0123456789-.", 7)), where);
+				TextDrawGuide g = { where.board, axis == 'x', at };
+				guides->push_back(g);
+			}
+			continue;
+		}
 		if(c.name == "#reference"){
 			// reference "file" x y w h 0xRRGGBBAA, then the editor's words.
 			TextDraw td;

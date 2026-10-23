@@ -44,7 +44,20 @@ struct TextDraw
 	bool hidden;	// not drawn in the editor (it is still in the file)
 	std::string group;	// a name shared by textdraws edited together
 	std::string board;	// its artboard, a screen of its own ("" is the first, Main)
+	// A shape's settings, on each of the sprites it is made of, so it can be
+	// changed after it is added: "rounded x y w h ..." (textdraws_ui.cpp).
+	std::string shape;
 };
+
+// A ruler guide on a board: a line at x (vertical) or y, saved with the file.
+struct TextDrawGuide
+{
+	std::string board;
+	bool vertical;
+	float at;
+};
+std::vector<TextDrawGuide> &GetTextDrawGuides(void);
+void TextDrawGuidesChanged(void);	// marks the file unsaved, without an undo step
 
 // The file's artboards in order, "" (Main) first when it has textdraws.
 void TextDrawBoards(const std::vector<TextDraw> &tds, std::vector<std::string> &out);
@@ -89,7 +102,8 @@ void WriteTextDrawsPawnGlobals(FILE *f, const char *prefix);
 void WriteTextDrawsPawnFunctions(FILE *f, const char *prefix);
 // Reads TextDrawCreate / CreatePlayerTextDraw and their setters into out.
 // Returns how many textdraws were added.
-int ImportTextDrawsFromSource(const std::string &source, std::vector<TextDraw> &out);
+int ImportTextDrawsFromSource(const std::string &source, std::vector<TextDraw> &out,
+	std::vector<TextDrawGuide> *guides = nil);
 
 // textdraws_ui.cpp: TextDraw mode, where the textdraw file is edited on a
 // canvas instead of the world and map editing is off.
@@ -97,7 +111,8 @@ bool InTextDrawMode(void);
 bool TextDrawModeHidesWorld(void);	// false for the frame the still frame is taken in
 void EnterTextDrawMode(void);
 void ExitTextDrawMode(void);
-void DrawTextDrawsWindow(void);	// the mode's panel, banner and popups
+void DrawTextDrawsWindow(void);
+float TextDrawCanvasToScreen(float at, bool vertical, bool ruler);	// for UI scripts	// the mode's panel, banner and popups
 void DrawTextDrawsOverlay(void);	// the canvas
 // Each line's text colours as RRGGBBAA, after the ~colour~, ~h~ and ~n~
 // tokens (tests: --textdraw-colours).
