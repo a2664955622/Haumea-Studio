@@ -5347,6 +5347,12 @@ GetUndoPosition(void)
 	return undoStepsRecorded;
 }
 
+bool
+MapHasUndoHistory(void)
+{
+	return undoCount > 0;
+}
+
 static void
 pushUndo(UndoAction *a)
 {

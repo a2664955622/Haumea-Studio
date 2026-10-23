@@ -133,9 +133,14 @@ beyondDrawDistance(ObjectInst *inst, ObjectDef *obj, float camdist)
 	float model = obj->GetLargestDrawDist()*TheCamera.m_LODmult;
 	if(gPlayerView)
 		return camdist >= model;
-	if(!IsUserMapObject(inst))
+	// The game's buildings with a LOD keep its distances, so the LOD takes
+	// over. The rest (an interior's papers and pens, small street props) the
+	// game shows only a few metres away: the editor shows them as it does the
+	// map's own objects, so they can be seen and box-selected from a step back.
+	bool lodLinked = inst->m_lod != nil || inst->m_numChildren > 0;
+	if(!IsUserMapObject(inst) && lodLinked)
 		return camdist >= model || camdist >= gWorldDrawDistance;
-	if(camdist >= GetMapDrawDistance())
+	if(camdist >= (IsUserMapObject(inst) ? GetMapDrawDistance() : gWorldDrawDistance))
 		return true;
 	if(camdist < model || obj->m_colModel == nil)
 		return false;

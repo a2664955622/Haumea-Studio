@@ -12419,8 +12419,9 @@ uiStartGuide(void)
 {
 	int objects, removed;
 	countMapContents(&objects, &removed);
+	// Only for a map that is still new: undoing back to an empty map isn't a fresh start.
 	if(!gShowStartGuide || objects > 0 || removed > 0 || gPlaceMode || gBrushMode || StartScreenOpen() ||
-	   gPrefabPlaceMode || !isSA())
+	   gPrefabPlaceMode || !isSA() || MapHasUndoHistory())
 		return;
 	ImGuiIO &io = ImGui::GetIO();
 	KeepNextEditorOverlayOnMainWindow();

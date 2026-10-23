@@ -779,6 +779,7 @@ void UndoRecordMaterial(ObjectInst *inst, int slot, const ObjectMaterialOverride
 void UndoRecordProperties(ObjectInst *inst, const ObjectPawnProperties &oldProperties);
 void UndoRecordVehicle(ObjectInst *inst, const VehicleState &before);	// after is the vehicle now
 int GetUndoPosition(void);	// undo steps recorded so far, for tests
+bool MapHasUndoHistory(void);	// any step to undo or redo since the map was opened
 void UndoRecordNodes(const std::vector<int> &areas, const std::vector<std::shared_ptr<void>> &before,
 	const std::vector<std::shared_ptr<void>> &after);
 void UndoRecordRadarArt(const std::shared_ptr<void> &before, const std::shared_ptr<void> &after);
