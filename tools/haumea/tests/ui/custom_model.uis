@@ -22,8 +22,6 @@ assert file_contains "$SERVER/models/artconfig.txt" "AddSimpleModel(-1, 19379, -
 # Its TXD gives 0.3.DL textdraw sprites, as mdl-1000:<texture>.
 key Escape
 wait 3
-click_item '*' 'Windows'
-wait 3
 click_item '*' 'TextDraws'
 wait 8
 click_item 'TextDraws' 'Sprite'

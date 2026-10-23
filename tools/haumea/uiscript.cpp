@@ -41,6 +41,8 @@
 // test-engine hooks. Exits with 0 when every assert passed, else 1.
 //
 // One command per line ('#' starts a comment; quote arguments with spaces):
+//   assert work_area_top < 30    viewport height reserved above the workspace
+//   assert item_count "Code" == 1 visible controls with this label
 //   wait N                      frames
 //   wait_until <assert>         up to 600 frames
 //   key Ctrl+Shift+H            press and release a chord
@@ -932,6 +934,20 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		why = buf;
 		return compare(count, arg(1), atof(arg(2).c_str()));
 	}
+	if(what == "work_area_top"){
+		ImGuiViewport *vp = ImGui::GetMainViewport();
+		double top = vp->WorkPos.y - vp->Pos.y;
+		why = "work area starts at " + std::to_string(top);
+		return compare(top, arg(1), atof(arg(2).c_str()));
+	}
+	if(what == "item_count"){
+		int count = 0;
+		for(const UiItem &it : gPrevItems)
+			if(nameMatches(it.rawLabel, arg(1), false) || (it.label.empty() && idIs(it, arg(1)))) count++;
+		why = "item count is " + std::to_string(count);
+		return compare(count, arg(2), atof(arg(3).c_str()));
+	}
+
 	if(what == "window" || what == "no_window"){
 		bool open = windowOpen(arg(1));
 		why = open ? "open" : "not open";

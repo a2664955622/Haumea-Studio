@@ -214,6 +214,7 @@ static bool splitSettingLine(const char *line, char *key, size_t keySize, const 
 static bool parseIntSetting(const char *value, int *out);
 static bool savePawnMap(void);
 static void uiRunShortcut(int action);
+static void uiWorkspaceNavigation(void);
 static int uiSelectionCount(void);
 // --profile: frame times are measured for a while after the map opens.
 static FILE *gProfileReport;
@@ -3024,17 +3025,11 @@ uiMainmenu(void)
 			if(isSA() && ImGui::MenuItem(TI(ICON_FA_MAP_PIN, "Interiors"), nil, showInteriorsWindow)) { showInteriorsWindow ^= 1; }
 			if(ImGui::MenuItem(TI(ICON_FA_BOLT, "Namaka"), nil, showNamakaWindow)) { showNamakaWindow ^= 1; }
 			ImGui::SetItemTooltip(_("Namaka lets an AI assistant (Claude, Codex…) work in Haumea: install it and connect one."));
-			if(isSA() && ImGui::MenuItem(TI(ICON_FA_FONT, "TextDraws"), nil, InTextDrawMode())){
-				if(InTextDrawMode()) ExitTextDrawMode();
-				else EnterTextDrawMode();
-			}
-			ImGui::SetItemTooltip(_("TextDraw mode: edit the textdraw file on a canvas instead of the world."));
 			ImGui::Separator();
 			if(ImGui::MenuItem(TI(ICON_FA_CLOUD_SUN, "Time & Weather"), ShortcutLabel(SC_WINDOW_TIME_WEATHER), showTimeWeatherWindow)) { showTimeWeatherWindow ^= 1; }
 			if(ImGui::MenuItem(TI(ICON_FA_EYE, "View"), ShortcutLabel(SC_WINDOW_VIEW), showViewWindow)) { showViewWindow ^= 1; }
 			if(ImGui::MenuItem(TI(ICON_FA_VIDEO, "Camera"), ShortcutLabel(SC_WINDOW_CAMERA), showEditorWindow)) { showEditorWindow ^= 1; }
 			ImGui::Separator();
-			if(ImGui::MenuItem(TI(ICON_FA_FILE, "Code"), ShortcutLabel(SC_WINDOW_PAWN_CODE), showPawnCodeWindow)) { ExitTextDrawMode(); showPawnCodeWindow ^= 1; }
 			if(ImGui::MenuItem(TI(ICON_FA_CODE_COMPARE, "Changes"), ShortcutLabel(SC_WINDOW_CHANGES), showDiffWindow)) { showDiffWindow ^= 1; }
 			if(ImGui::MenuItem(TI(ICON_FA_LIST, "Map Check"), ShortcutLabel(SC_WINDOW_MAP_CHECK), showMapCheckWindow)) { showMapCheckWindow ^= 1; }
 			if(ImGui::MenuItem(TI(ICON_FA_LIST, "Log"), ShortcutLabel(SC_WINDOW_LOG), showLogWindow)) { showLogWindow ^= 1; }
@@ -3081,6 +3076,10 @@ uiMainmenu(void)
 			UpdaterHelpMenuItems();
 			ImGui::EndMenu();
 		}
+
+		ImGui::Separator();
+		uiWorkspaceNavigation();
+		ImGui::Separator();
 
 		// The map's tools are only shown in the Map workspace.
 		if(!InTextDrawMode() && !InPawnIdeMode()){
@@ -12211,29 +12210,23 @@ InPawnIdeMode(void)
  return showPawnCodeWindow && !InTextDrawMode();
 }
 
+// Workspace navigation shares the menu bar; panel tabs keep their own docks.
 static void
-uiWorkspaceTabs(void)
+uiWorkspaceNavigation(void)
 {
- if(InTextDrawMode()) showPawnCodeWindow = false;
- int mode = InTextDrawMode() ? 1 : (InPawnIdeMode() ? 2 : 0);
- static int lastMode = -1;
- const bool sync = mode != lastMode;
- ImGui::BeginViewportSideBar("##WorkspaceTabs", ImGui::GetMainViewport(), ImGuiDir_Up,
-  ImGui::GetFrameHeight() + ImGui::GetStyle().WindowPadding.y * 2,
-  ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings);
- if(ImGui::BeginTabBar("##Editors")){
-  const char *labels[] = { L("Map"), L("TextDraws"), L("Code") };
-  for(int i = 0; i < 3; i++){
-   if(ImGui::BeginTabItem(labels[i], nullptr, sync && mode == i ? ImGuiTabItemFlags_SetSelected : 0)){
-    if(i == 1){ showPawnCodeWindow = false; EnterTextDrawMode(); }
-    else { ExitTextDrawMode(); showPawnCodeWindow = i == 2; }
-    ImGui::EndTabItem();
-   }
-  }
-  ImGui::EndTabBar();
- }
- ImGui::End();
- lastMode = InTextDrawMode() ? 1 : (InPawnIdeMode() ? 2 : 0);
+	if(InTextDrawMode()) showPawnCodeWindow = false;
+	const char *labels[] = { L("Map"), L("TextDraws"), L("Code") };
+	for(int i = 0; i < 3; i++){
+		int mode = InTextDrawMode() ? 1 : (InPawnIdeMode() ? 2 : 0);
+		if(ImGui::MenuItem(labels[i], nil, mode == i)){
+			if(i == 1){ showPawnCodeWindow = false; EnterTextDrawMode(); }
+			else { ExitTextDrawMode(); showPawnCodeWindow = i == 2; }
+		}
+		if(i == 1)
+			ImGui::SetItemTooltip(_("TextDraw mode: edit the textdraw file on a canvas instead of the world."));
+		else if(i == 2)
+			ImGui::SetItemTooltip("%s", ShortcutLabel(SC_WINDOW_PAWN_CODE));
+	}
 }
 
 
@@ -12876,7 +12869,6 @@ gui(void)
 	updateMapWindowTitle();
 	uiSnapPanels();
 	uiMainmenu();
-	uiWorkspaceTabs();
 	uiWorkspaceWindow();
 	uiStatusBar();
 #ifdef IMGUI_HAS_DOCK

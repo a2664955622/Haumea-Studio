@@ -4858,16 +4858,10 @@ drawToolbar(void)
 	ImGui::SameLine();
 	ImGui::Text("%s%s", GetTextDrawFileName(), TextDrawFileHasUnsavedChanges() ? " *" : "");
 	ImGui::SameLine();
-	float exitWidth = ImGui::CalcTextSize(LI(ICON_FA_XMARK, "Exit")).x + ImGui::GetStyle().FramePadding.x * 2.0f;
-	float tabsWidth = ImGui::GetContentRegionAvail().x - exitWidth - ImGui::GetStyle().ItemSpacing.x * 2.0f;
-	ImGui::BeginChild("##boards_area", ImVec2(std::max(60.0f, tabsWidth), ImGui::GetFrameHeight()), ImGuiChildFlags_None,
+	ImGui::BeginChild("##boards_area", ImVec2(std::max(60.0f, ImGui::GetContentRegionAvail().x), ImGui::GetFrameHeight()), ImGuiChildFlags_None,
 		ImGuiWindowFlags_NoScrollbar);
 	boardTabs();
 	ImGui::EndChild();
-	ImGui::SameLine();
-	if(ImGui::Button(LI(ICON_FA_XMARK, "Exit")))
-		ExitTextDrawMode();
-	ImGui::SetItemTooltip(_("Back to the map (%s)"), ShortcutLabel(SC_CANCEL));
 
 	// Second row: the screen, the background, the HUD, then the grid and the zoom.
 	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 5.5f);
@@ -5492,14 +5486,11 @@ DrawTextDrawsWindow(void)
 		ImGui::SetNextWindowPos(ImVec2(pos.x + ImGui::GetFontSize() * 0.5f, pos.y + ImGui::GetFontSize() * 0.5f),
 			ImGuiCond_FirstUseEver);
 	}
-	bool open = true;
 	// ###textdraws, not LI(): the ID the window has always had, so saved layouts stay.
 	char title[64];
 	snprintf(title, sizeof(title), ICON_FA_FONT " %s###textdraws", _("TextDraws"));
-	if(!ImGui::Begin(title, &open)){
+	if(!ImGui::Begin(title, nil)){
 		ImGui::End();
-		if(!open)
-			ExitTextDrawMode();
 		return;
 	}
 	fileBar();
@@ -5544,6 +5535,4 @@ DrawTextDrawsWindow(void)
 	}else
 		ImGui::TextDisabled("%s", _("Click a textdraw, or drag a box round several. Alt+click picks the one under it."));
 	ImGui::End();
-	if(!open)
-		ExitTextDrawMode();
 }

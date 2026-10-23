@@ -1495,10 +1495,6 @@ msgstr "De volta ao Haumea Studio %s"
 msgid "Back to the default: %s%s%s"
 msgstr "Voltar ao padrão: %s%s%s"
 
-#, c-format
-msgid "Back to the map (%s)"
-msgstr "Voltar ao mapa (%s)"
-
 msgid "Backface culling"
 msgstr "Culling de faces traseiras"
 

@@ -1,11 +1,9 @@
 # TextDraw mode: textdraws in a file of their own, on a canvas instead of the world.
 open "$UI_FIXTURES/ui_map.pwn"
-click_item '*' 'Windows'
-wait 3
 click_item '*' 'TextDraws'
 wait 5
 assert window "TextDraws"
-assert item '*' 'Exit'
+assert item '*' 'Map'
 click_item 'TextDraws' 'Text'
 wait 5
 assert textdraws == 1

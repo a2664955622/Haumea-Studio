@@ -8,8 +8,6 @@ assert window "Texture Browser"
 shortcut window_textures
 wait 3
 assert no_window "Texture Browser"
-click_item '*' 'Windows'
-wait 3
 click_item '*' 'TextDraws'
 wait 3
 assert window "TextDraws"

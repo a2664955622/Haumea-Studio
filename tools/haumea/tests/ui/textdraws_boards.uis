@@ -1,8 +1,6 @@
 # Artboards: screens of their own in one file, each with Show/Hide functions;
 # image layers are kept as comments only the editor reads.
 open "$UI_FIXTURES/ui_map.pwn"
-click_item '*' 'Windows'
-wait 3
 click_item '*' 'TextDraws'
 wait 5
 click_item 'TextDraws' 'Text'

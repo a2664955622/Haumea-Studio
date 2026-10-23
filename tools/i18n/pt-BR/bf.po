@@ -270,11 +270,6 @@ msgstr "Automático"
 msgid "Auto-compute direction vector pointing from this navi toward its attached node."
 msgstr "Calcula a direção apontando deste navi para o nó ligado a ele."
 
-#: tools/haumea/textdraws_ui.cpp:1248
-#, c-format
-msgid "Back to the map (%s)"
-msgstr "Voltar ao mapa (%s)"
-
 #: tools/haumea/textdraws_ui.cpp:998 tools/haumea/textdraws_ui.cpp:1373
 msgid "Background"
 msgstr "Fundo"

@@ -2,8 +2,6 @@
 # proportions), the panel changes them, aligning moves one as a whole, and
 # a guide dragged from a ruler is saved with the file.
 open "$UI_FIXTURES/ui_map.pwn"
-click_item '*' 'Windows'
-wait 3
 click_item '*' 'TextDraws'
 wait 8
 click_item 'TextDraws' 'Shape'

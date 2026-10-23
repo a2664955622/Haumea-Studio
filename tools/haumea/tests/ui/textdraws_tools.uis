@@ -2,8 +2,6 @@
 # box is a column, two strips and four corners), models
 # can be browsed, and the still frame can be taken at a preset place.
 open "$UI_FIXTURES/ui_map.pwn"
-click_item '*' 'Windows'
-wait 3
 click_item '*' 'TextDraws'
 wait 8
 click_item 'TextDraws' 'Shape'
