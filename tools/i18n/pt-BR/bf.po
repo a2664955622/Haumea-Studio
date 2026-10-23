@@ -2330,8 +2330,12 @@ msgid "full path to a PNG, BMP or TGA"
 msgstr "caminho completo de um PNG, BMP ou TGA"
 
 #: tools/haumea/textdraws_ui.cpp
-msgid "Enter loads it. Only the editor shows it: the Pawn has it as a comment."
-msgstr "Enter a carrega. Só o editor a mostra: no Pawn ela fica como comentário."
+msgid ""
+"Enter loads it. Only the editor shows it: the Pawn has it as a comment.\n"
+"Or drop a picture on the window to add it as a new image layer."
+msgstr ""
+"Enter a carrega. Só o editor a mostra: no Pawn ela fica como comentário.\n"
+"Ou solte uma imagem na janela para adicioná-la como nova camada de imagem."
 
 #: tools/haumea/textdraws_ui.cpp
 msgid "%d x %d pixels"
@@ -3083,3 +3087,11 @@ msgstr "Topo, base"
 #: tools/haumea/textdraws_ui.cpp
 msgid "Vertical"
 msgstr "Vertical"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Choose an image"
+msgstr "Escolha uma imagem"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Images"
+msgstr "Imagens"

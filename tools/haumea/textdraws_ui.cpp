@@ -3482,6 +3482,37 @@ addTextDraw(int font)
 	TextDrawsChanged();
 }
 
+// An image layer's file: read again, and fitted in its box keeping the
+// picture's shape, centred where the box was.
+static void
+setImageFile(TextDraw &td, const char *path)
+{
+	td.text = path;
+	gRefImages.erase(td.text);
+	const RefImage *ref = refImage(td.text);
+	if(ref == nil || ref->image->width <= 0 || ref->image->height <= 0)
+		return;
+	float aspect = (float)ref->image->width / ref->image->height;
+	float cx = td.x + td.sizeX * 0.5f, cy = td.y + td.sizeY * 0.5f;
+	float w = fabsf(td.sizeX), h = fabsf(td.sizeY);
+	if(w / h > aspect) w = h * aspect;
+	else h = w / aspect;
+	td.sizeX = w; td.sizeY = h;
+	td.x = cx - w * 0.5f; td.y = cy - h * 0.5f;
+}
+
+// A picture dropped on the window in TextDraw mode: a new image layer.
+bool
+AddTextDrawImageLayer(const char *path)
+{
+	if(!gMode || path == nil)
+		return false;
+	addTextDraw(TD_FONT_REFERENCE);
+	setImageFile(GetTextDraws()[gSelected], path);
+	TextDrawsChanged();
+	return true;
+}
+
 // A grid's width with room for its scrollbar whether it shows or not, so
 // the scrollbar coming and going doesn't change the columns every frame.
 static float
@@ -3692,11 +3723,16 @@ properties(void)
 		snprintf(path, sizeof(path), "%s", td.text.c_str());
 		if(ImGui::InputTextWithHint(L("Image file"), _("full path to a PNG, BMP or TGA"), path, sizeof(path),
 			ImGuiInputTextFlags_EnterReturnsTrue)){
-			td.text = path;
-			gRefImages.erase(td.text);	// read it again
+			setImageFile(td, path);
 			changed = true;
 		}
-		ImGui::SetItemTooltip("%s", _("Enter loads it. Only the editor shows it: the Pawn has it as a comment."));
+		ImGui::SetItemTooltip("%s", _("Enter loads it. Only the editor shows it: the Pawn has it as a comment.\n"
+			"Or drop a picture on the window to add it as a new image layer."));
+		if(ImGui::Button(LI(ICON_FA_FOLDER_OPEN, "Browse...##image")) &&
+		   PickFileDialog(path, sizeof(path), _("Choose an image"), _("Images"), "png bmp tga")){
+			setImageFile(td, path);
+			changed = true;
+		}
 		if(const RefImage *ref = refImage(td.text)){
 			ImGui::TextDisabled(_("%d x %d pixels"), ref->image->width, ref->image->height);
 			ImGui::SameLine();

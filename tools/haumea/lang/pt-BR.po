@@ -1895,6 +1895,9 @@ msgstr "Escolher TXD..."
 msgid "Choose a TXD, preview its textures, then click one to assign it to this material slot."
 msgstr "Escolha um TXD, veja as texturas dele e clique em uma para atribuí-la a este slot de material."
 
+msgid "Choose an image"
+msgstr "Escolha uma imagem"
+
 msgid "Choose the GTA San Andreas folder"
 msgstr "Escolha a pasta do GTA San Andreas"
 
@@ -2875,8 +2878,12 @@ msgstr "Ativar notificações"
 msgid "Enemy attack"
 msgstr "Ataque inimigo"
 
-msgid "Enter loads it. Only the editor shows it: the Pawn has it as a comment."
-msgstr "Enter a carrega. Só o editor a mostra: no Pawn ela fica como comentário."
+msgid ""
+"Enter loads it. Only the editor shows it: the Pawn has it as a comment.\n"
+"Or drop a picture on the window to add it as a new image layer."
+msgstr ""
+"Enter a carrega. Só o editor a mostra: no Pawn ela fica como comentário.\n"
+"Ou solte uma imagem na janela para adicioná-la como nova camada de imagem."
 
 msgid "Errors"
 msgstr "Erros"
@@ -3895,6 +3902,9 @@ msgstr "Imagem"
 
 msgid "Image file"
 msgstr "Arquivo de imagem"
+
+msgid "Images"
+msgstr "Imagens"
 
 msgid "Import"
 msgstr "Importar"

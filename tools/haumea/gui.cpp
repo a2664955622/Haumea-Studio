@@ -2672,6 +2672,11 @@ HandleCustomImportDrop(const char *path)
 		return;
 	// The old import wrote into the game's modloader/ folder, which SA-MP
 	// players don't have.
+	if(InTextDrawMode() && (pathHasExtensionCi(path, ".png") || pathHasExtensionCi(path, ".bmp") ||
+	   pathHasExtensionCi(path, ".tga"))){
+		AddTextDrawImageLayer(path);
+		return;
+	}
 	if(pathHasExtensionCi(path, ".dff") ||
 	   pathHasExtensionCi(path, ".txd") ||
 	   pathHasExtensionCi(path, ".col"))

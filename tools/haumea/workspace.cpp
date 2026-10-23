@@ -14,6 +14,7 @@
 #ifdef _WIN32
 #include <direct.h>
 #include <shlobj.h>
+#include <commdlg.h>
 #else
 #include <dirent.h>
 #include <strings.h>
@@ -791,6 +792,79 @@ PickFolderDialog(char *dst, size_t size, const char *title, const char *startDir
 		return false;
 	size_t n = strlen(dst);
 	while(n > 0 && (dst[n-1] == '\n' || dst[n-1] == '\r' || (n > 1 && dst[n-1] == '/')))
+		dst[--n] = '\0';
+	return dst[0] != '\0';
+#endif
+}
+
+bool
+PickFileDialog(char *dst, size_t size, const char *title, const char *kind, const char *extensions)
+{
+	if(dst == nil || size == 0)
+		return false;
+	std::vector<std::string> exts;
+	for(const char *p = extensions ? extensions : ""; *p; ){
+		while(*p == ' ') p++;
+		const char *e = p;
+		while(*e && *e != ' ') e++;
+		if(e > p)
+			exts.push_back(std::string(p, e - p));
+		p = e;
+	}
+#ifdef _WIN32
+	// "Images (*.png;*.bmp)\0*.png;*.bmp\0All files\0*.*\0\0"
+	std::string patterns;
+	for(const std::string &e : exts)
+		patterns += (patterns.empty() ? "*." : ";*.") + e;
+	std::string filter = std::string(kind ? kind : "") + " (" + patterns + ")" + '\0' + patterns + '\0' +
+		"*.*" + '\0' + "*.*" + '\0' + '\0';
+	char filename[MAX_PATH] = "";
+	OPENFILENAMEA ofn = {};
+	ofn.lStructSize = sizeof(ofn);
+	ofn.lpstrFilter = filter.c_str();
+	ofn.lpstrFile = filename;
+	ofn.nMaxFile = sizeof(filename);
+	ofn.lpstrTitle = title;
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+	if(!GetOpenFileNameA(&ofn))
+		return false;
+	snprintf(dst, size, "%s", filename);
+	return true;
+#else
+	auto quote = [](const std::string &text){
+		std::string quoted = "'";
+		for(char c : text)
+			quoted += c == '\'' ? std::string("'\\''") : std::string(1, c);
+		return quoted + "'";
+	};
+	std::string patterns;
+	for(const std::string &e : exts)
+		patterns += (patterns.empty() ? "*." : " *.") + e;
+#ifdef __APPLE__
+	std::string types;
+	for(const std::string &e : exts)
+		types += (types.empty() ? "\"" : ", \"") + e + "\"";
+	std::string script = std::string("POSIX path of (choose file with prompt \"") + (title ? title : "") + "\"" +
+		(types.empty() ? "" : " of type {" + types + "}") + ")";
+	std::string command = "osascript -e " + quote(script);
+#else
+	if(!FileDialogAvailable())
+		return false;
+	std::string filter = std::string(kind ? kind : "") + " (" + patterns + ")";
+	std::string script = "if command -v zenity >/dev/null 2>&1; then zenity --file-selection --title=" +
+		quote(title ? title : "") + " --file-filter=" + quote(std::string(kind ? kind : "") + " | " + patterns) +
+		"; elif command -v kdialog >/dev/null 2>&1; then kdialog --getopenfilename . " + quote(filter) + "; fi";
+	std::string command = "sh -c " + quote(script);
+#endif
+	FILE *pipe = popen(command.c_str(), "r");
+	if(pipe == nil)
+		return false;
+	bool ok = fgets(dst, (int)size, pipe) != nil;
+	pclose(pipe);
+	if(!ok)
+		return false;
+	size_t n = strlen(dst);
+	while(n > 0 && (dst[n-1] == '\n' || dst[n-1] == '\r'))
 		dst[--n] = '\0';
 	return dst[0] != '\0';
 #endif

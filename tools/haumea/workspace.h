@@ -64,6 +64,9 @@ bool IsAutomatedRun(void);
 bool FileDialogAvailable(void);
 // Native folder picker; false when cancelled.
 bool PickFolderDialog(char *dst, size_t size, const char *title, const char *startDir);
+// Native file picker for files of the extensions given ("png bmp tga"), under
+// a filter called kind ("Images"); false when cancelled.
+bool PickFileDialog(char *dst, size_t size, const char *title, const char *kind, const char *extensions);
 
 // First-run setup: true while no valid game folder is known. The start
 // screen (startscreen.cpp) asks for one and calls FinishWorkspaceSetup.

@@ -113,7 +113,8 @@ void EnterTextDrawMode(void);
 void ExitTextDrawMode(void);
 void DrawTextDrawsWindow(void);
 float TextDrawCanvasToScreen(float at, bool vertical, bool ruler);	// for UI scripts
-float TextDrawCanvasZoom(void);	// 1 when it fits	// the mode's panel, banner and popups
+float TextDrawCanvasZoom(void);	// 1 when it fits
+bool AddTextDrawImageLayer(const char *path);	// a dropped picture, in TextDraw mode	// the mode's panel, banner and popups
 void DrawTextDrawsOverlay(void);	// the canvas
 // Each line's text colours as RRGGBBAA, after the ~colour~, ~h~ and ~n~
 // tokens (tests: --textdraw-colours).
