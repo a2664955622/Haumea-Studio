@@ -88,6 +88,16 @@ construções do jogo. A visão do jogador (`P`) sempre usa as distâncias do jo
 Ela só move a vista, então não há nada a desfazer. **Editar → Copiar posição da câmera** copia onde
 a câmera está como `x, y, z`.
 
+Clique com o botão direito num objeto no mundo ou no navegador e escolha **Encontrar instâncias**.
+O Navegador de objetos lista as contagens por modelo e as posições. Informe vários IDs ou intervalos
+e escolha **Ambos**, **Meu mapa** ou **Mundo do GTA**. **Ir para**, **Anterior** e **Próxima** movem a
+câmera, inclusive entre interiores. Os resultados ficam amarelos e não alteram sua seleção de edição.
+Fechar o navegador ou voltar aos modelos remove o destaque da busca.
+
+**Semelhantes** compara dimensões ou proporções dos limites de colisão, com tolerância ajustável.
+Proporções ignora o tamanho total; girar a base em 90 graus também permite encontrar correspondências.
+Use as prévias para comparar o formato real. Modelos sem limites de colisão não entram na comparação.
+
 A barra de ferramentas liga e desliga o encaixe por passos (o ímã), o encaixe em objetos (`N`) e o
 seguir o chão. **Ferramentas** guarda as configurações deles, além do pincel para espalhar objetos.
 
@@ -234,6 +244,19 @@ de você clicar. **Como grupo** coloca os objetos dele num grupo com o nome do p
 **Espelhar**, **Alinhar e distribuir**, **Pôr no chão e copiar como Pawn** (pôr no chão, copiar
 como anexos ou deslocamentos) e **Ao longo de uma linha** (distribuir objetos por um caminho que
 você clica). Movimentos e giros exatos ficam no modo Delta das Informações do objeto.
+
+**Pin de coordenadas** posiciona uma referência sem adicionar um objeto ao mapa. Clique em
+**Posicionar pin** e depois numa superfície, ou use **Pin no centro da seleção**. Arraste do marcador
+até um objeto para medir a distância total e as diferenças em X/Y/Z, com sinal. **Escolher destino**
+também funciona sem arrastar. O encaixe inclui objetos selecionados; no espaço vazio é usado um plano
+horizontal na altura do pin.
+
+Edite **XYZ do pin**, copie as coordenadas, alinhe cada eixo com o destino ou mova por uma **Distância
+da superfície** exata, na direção perpendicular à última superfície escolhida (negativo usa o outro
+lado). Para centralizar numa porta que faz parte de um prédio, escolha uma borda, escolha a outra como
+destino e use **Ponto médio**. O centro de um objeto selecionado vem dos limites de colisão. O pin e a
+régua são referências temporárias: ficam ocultos ao fechar a seção, Ferramentas ou o espaço Mapa e não
+são exportados.
 
 **Radar art a partir de objetos** (em Ferramentas) desenha os seus objetos no radar com gang zones.
 Ela usa todos os objetos, a seleção ou um grupo, vistos de cima, e coloca as zonas no grupo

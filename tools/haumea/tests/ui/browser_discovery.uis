@@ -1,0 +1,44 @@
+# Multi-ID counts and separate yellow highlights inside the Object Browser.
+open "$UI_FIXTURES/ui_map.pwn"
+click_object model=1271 right
+click_item '*' 'Find instances'
+wait 5
+assert window 'Object Browser'
+assert discovery_count 1271 == 2
+assert selected == 1
+assert discovery_highlights == 2
+set_item 'Object Browser' '##instance_ids' '1271, 19353, 3555'
+wait 5
+assert discovery_count 1271 == 2
+assert discovery_count 19353 == 1
+assert discovery_count 3555 > 0
+click_item 'Object Browser' 'Scope'
+click_item '*' 'My map'
+wait 5
+assert discovery_count 3555 == 0
+assert discovery_highlights == 3
+assert selected == 1
+click_item 'Object Browser' 'Next'
+wait 5
+assert camera_target.x > 2009
+assert camera_target.x < 2021
+click_item 'Object Browser' 'Scope'
+click_item '*' 'GTA world'
+wait 5
+assert discovery_count 1271 == 0
+assert discovery_count 3555 > 0
+assert pawn_count 'CreateObject(' == 4
+click_item 'Object Browser' 'Back to models'
+wait 3
+assert discovery_highlights == 0
+click_object model=1271 right
+click_item '*' 'Similar models'
+wait 5
+assert item 'Object Browser' 'Reference ID'
+assert item 'Object Browser' 'Match'
+assert item 'Object Browser' 'Tolerance'
+click_item 'Object Browser' 'Match'
+click_item '*' 'Proportions'
+wait 3
+assert objects == 4
+assert selected == 1

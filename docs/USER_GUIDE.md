@@ -86,6 +86,16 @@ game's distances.
 moves the view, so there's nothing to undo. **Edit → Copy Camera Position** copies where the
 camera is as `x, y, z`.
 
+Right-click an object in the world or browser and choose **Find instances**. The Object Browser
+lists counts by model and locations; enter several IDs or ranges and choose **Both**, **My map**
+or **GTA world**. **Jump to**, **Previous** and **Next** move the camera, including across interiors.
+Search results are yellow and leave your editing selection unchanged. Closing the browser or
+returning to models removes the search highlights.
+
+**Similar models** uses collision-box dimensions or proportions with an adjustable tolerance.
+Proportions ignore overall size; rotating a footprint by 90 degrees still matches. Use the existing
+model previews to compare actual shapes. Models without collision bounds cannot be compared.
+
 The toolbar switches step snapping (the magnet), object snap (`N`) and ground following on
 and off. **Tools** holds their settings, plus the brush for scattering objects.
 
@@ -229,6 +239,17 @@ puts its objects in a group named after the prefab.
 **Align & distribute**, **Drop & copy as Pawn** (drop to the ground, copy as attachments or
 offsets), and **Along a line** (lay objects along a path you click). Exact moves and turns
 are in Object Info's Delta mode.
+
+**Coordinate pin** places a reference pin without adding a map object. Click **Place pin**, then a
+surface, or use **Pin at selected centre**. Drag from the pin marker to an object to measure the total
+distance and signed X/Y/Z differences. **Pick endpoint** also works without dragging. Surface snapping
+includes selected objects; empty space uses a horizontal plane at the pin's height.
+
+Edit **Pin XYZ**, copy the coordinates, align individual axes with the endpoint, or move by an exact
+**Surface offset** along the last picked surface normal (negative values use the other side). To
+centre a doorway embedded in a building, pick one edge, pick the other as the endpoint and use
+**Midpoint**. A selected object's centre comes from its collision box. The pin and ruler are temporary
+editor references; they are hidden when the section, Tools or Map workspace closes and are not exported.
 
 **Radar art from objects** (in Tools) draws your objects on the radar with gang zones. It uses
 every object, the selection or one group, seen from above, and puts the zones in the group

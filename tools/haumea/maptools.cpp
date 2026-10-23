@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "coordinatepin.h"
 #include "i18n.h"
 #include "maptools.h"
 #include "shortcuts.h"
@@ -1007,6 +1008,10 @@ MapToolsPanel(void)
 	gPanelFrame = ImGui::GetFrameCount();
 	std::vector<ObjectInst*> objs = selectedObjects();
 	bool lineOpen = false;
+	if(ImGui::CollapsingHeader(L("Coordinate pin"))){
+		CoordinatePinPanel();
+		if(CoordinatePinOwnsMouse()) gPicking = false;
+	}
 	if(ImGui::CollapsingHeader(L("Array")))
 		arraySection(objs);
 	if(ImGui::CollapsingHeader(L("Mirror")))

@@ -60,12 +60,20 @@ msgid "%-3s %-20s  material override(s)"
 msgstr "%-3s %-20s  substituição(ões) de material"
 
 #, c-format
+msgid "%.3f units | dX %.3f  dY %.3f  dZ %.3f"
+msgstr "%.3f unidades | dX %.3f  dY %.3f  dZ %.3f"
+
+#, c-format
 msgid ""
 "%d  %s\n"
 "Double-click to place"
 msgstr ""
 "%d  %s\n"
 "Clique duas vezes para colocar"
+
+#, c-format
+msgid "%d  %s  |  %d instances"
+msgstr "%d  %s  |  %d instâncias"
 
 #, c-format
 msgid "%d %s, over the server's limit of %d; the extra ones are not created."
@@ -216,6 +224,10 @@ msgid "%d material, attachment or interior line(s) referred to objects that were
 msgstr "%d linha(s) de material, anexo ou interior se referiam a objetos que foram ignorados."
 
 #, c-format
+msgid "%d models | %d instances"
+msgstr "%d modelos | %d instâncias"
+
+#, c-format
 msgid "%d object(s) use models the editor does not have (%s). Models from other mods are not available."
 msgstr "%d objeto(s) usam modelos que o editor não tem (%s). Modelos de outros mods não estão disponíveis."
 
@@ -298,6 +310,10 @@ msgstr "%d mostrados"
 #, c-format
 msgid "%d shown, GTA buildings removed: %d"
 msgstr "%d mostrados, construções do GTA removidas: %d"
+
+#, c-format
+msgid "%d similar models"
+msgstr "%d modelos semelhantes"
 
 #, c-format
 msgid "%d text(s) with accents or symbols are saved as UTF-8, but SA-MP and open.mp clients draw Windows-1252, so they show garbled (\"Ã§\" for \"ç\"). Save As > Windows-1252 fixes it."
@@ -1183,6 +1199,9 @@ msgstr "Alinhar"
 msgid "Align & distribute"
 msgstr "Alinhar e distribuir"
 
+msgid "Align pin:"
+msgstr "Alinhar pin:"
+
 msgid "Align to surface"
 msgstr "Alinhar à superfície"
 
@@ -1344,6 +1363,9 @@ msgstr "Aplica-se a %d selecionado(s) (cada slot aos que o têm)."
 msgid "Apply"
 msgstr "Aplicar"
 
+msgid "Apply offset"
+msgstr "Aplicar deslocamento"
+
 msgid "Arc rotate around camera target"
 msgstr "Girar em arco em volta do alvo da câmera"
 
@@ -1491,6 +1513,9 @@ msgstr "Traseiro direito"
 msgid "Back to Haumea Studio %s"
 msgstr "De volta ao Haumea Studio %s"
 
+msgid "Back to models"
+msgstr "Voltar aos modelos"
+
 #, c-format
 msgid "Back to the default: %s%s%s"
 msgstr "Voltar ao padrão: %s%s%s"
@@ -1590,6 +1615,9 @@ msgstr "Borda"
 
 msgid "Border colour"
 msgstr "Cor da borda"
+
+msgid "Both"
+msgstr "Ambos"
 
 msgid "Bottom"
 msgstr "Embaixo"
@@ -1948,11 +1976,17 @@ msgstr "Limpar lista"
 msgid "Clear log"
 msgstr "Limpar registro"
 
+msgid "Clear pin"
+msgstr "Limpar pin"
+
 msgid "Click a key to change it, then press the new key with any Ctrl, Shift or Alt. Right-click a key to clear it. Shortcuts never fire while you type in a field."
 msgstr "Clique numa tecla para mudá-la e pressione a nova tecla com Ctrl, Shift ou Alt, se quiser. Clique com o botão direito para limpá-la. Atalhos nunca disparam enquanto você digita num campo."
 
 msgid "Click a node to link it"
 msgstr "Clique num nó para ligá-lo"
+
+msgid "Click a surface to place the pin. Drag from the pin to measure to an object."
+msgstr "Clique numa superfície para posicionar o pin. Arraste a partir dele para medir até um objeto."
 
 msgid "Click a textdraw, or drag a box round several. Alt+click picks the one under it."
 msgstr "Clique num textdraw, ou arraste uma caixa em volta de vários. Alt+clique pega o de baixo."
@@ -2041,11 +2075,17 @@ msgstr "Clique no chão para adicionar nós de pedestre. Clique direito ou Esc p
 msgid "Click the ground to add vehicle nodes. Right-click or Esc stops."
 msgstr "Clique no chão para adicionar nós de veículo. Clique direito ou Esc para parar."
 
+msgid "Click the measurement endpoint. Esc cancels."
+msgstr "Clique no ponto final da medição. Esc cancela."
+
 msgid "Click the node to link to."
 msgstr "Clique no nó a ligar."
 
 msgid "Click through locked"
 msgstr "Clicar através dos travados"
+
+msgid "Click to place the pin. Esc cancels."
+msgstr "Clique para posicionar o pin. Esc cancela."
 
 msgid "Click to place. Q/E or the wheel turn it, Esc stops."
 msgstr "Clique para colocar. Q/E ou a roda giram, Esc para."
@@ -2156,6 +2196,9 @@ msgstr "Zumbido contínuo"
 msgid "Controls:"
 msgstr "Controles:"
 
+msgid "Coordinate pin"
+msgstr "Pin de coordenadas"
+
 #, c-format
 msgid "Copied %d instance(s) | %s: paste at camera | %s: paste in place"
 msgstr "%d instância(s) copiada(s) | %s: colar na câmera | %s: colar no lugar"
@@ -2244,6 +2287,9 @@ msgstr "Copiar como anexos"
 
 msgid "Copy as offsets"
 msgstr "Copiar como deslocamentos"
+
+msgid "Copy coordinates"
+msgstr "Copiar coordenadas"
 
 msgid "Copy for Claude Code"
 msgstr "Copiar para o Claude Code"
@@ -2580,6 +2626,12 @@ msgstr "Diamante (entrada)"
 msgid "Dildo"
 msgstr "Dildo"
 
+msgid "Dimensions"
+msgstr "Dimensões"
+
+msgid "Dimensions compare metres. Proportions compare shape ratios regardless of overall size."
+msgstr "Dimensões compara medidas. Proporções compara as relações entre as medidas, independentemente do tamanho total."
+
 msgid "Dims the game's buildings so your map's objects stand out."
 msgstr "Escurece os prédios do jogo para que os objetos do seu mapa se destaquem."
 
@@ -2624,6 +2676,10 @@ msgstr "Dispensar"
 
 msgid "Distance"
 msgstr "Distância"
+
+#, c-format
+msgid "Distance: %.3f units"
+msgstr "Distância: %.3f unidades"
 
 msgid "Distribute"
 msgstr "Distribuir"
@@ -2908,6 +2964,9 @@ msgstr ""
 msgid "Enable Notifications"
 msgstr "Ativar notificações"
 
+msgid "Endpoint XYZ"
+msgstr "XYZ do destino"
+
 msgid "Enemy attack"
 msgstr "Ataque inimigo"
 
@@ -2917,6 +2976,9 @@ msgid ""
 msgstr ""
 "Enter a carrega. Só o editor a mostra: no Pawn ela fica como comentário.\n"
 "Ou solte uma imagem na janela para adicioná-la como nova camada de imagem."
+
+msgid "Enter model IDs separated by commas, spaces or ranges."
+msgstr "Informe IDs de modelos separados por vírgulas, espaços ou intervalos."
 
 msgid "Errors"
 msgstr "Erros"
@@ -3174,11 +3236,17 @@ msgstr "Localizar / Substituir"
 msgid "Find all"
 msgstr "Localizar todos"
 
+msgid "Find instances"
+msgstr "Encontrar instâncias"
+
 msgid "Find it in Object Browser > Custom models and place it like any object."
 msgstr "Encontre-o em Navegador de objetos > Modelos personalizados e coloque-o como qualquer objeto."
 
 msgid "Find objects by model or TXD"
 msgstr "Achar objetos por modelo ou TXD"
+
+msgid "Find selected model's instances"
+msgstr "Encontrar instâncias do modelo escolhido"
 
 msgid "Fire"
 msgstr "Fogo"
@@ -3393,6 +3461,9 @@ msgstr "Pasta do GTA San Andreas (somente leitura)"
 
 msgid "GTA San Andreas found."
 msgstr "GTA San Andreas encontrado."
+
+msgid "GTA world"
+msgstr "Mundo do GTA"
 
 msgid "GTA world object"
 msgstr "Objeto do mundo do GTA"
@@ -4071,6 +4142,9 @@ msgstr "Instala de novo a partir do pacote; a instalação antiga fica até a no
 msgid "Installs offline from the bundle."
 msgstr "Instala offline a partir do pacote."
 
+msgid "Instances"
+msgstr "Instâncias"
+
 msgid "Interface"
 msgstr "Interface"
 
@@ -4135,6 +4209,12 @@ msgstr "O nome de jogador dele, mostrado sobre a cabeça e na lista de jogadores
 
 msgid "Jog"
 msgstr "Trotar"
+
+msgid "Jump the camera between this model's instances, including other interiors."
+msgstr "Leva a câmera entre as instâncias deste modelo, incluindo outros interiores."
+
+msgid "Jump to"
+msgstr "Ir para"
 
 msgid "Katana"
 msgstr "Katana"
@@ -4600,6 +4680,9 @@ msgstr ""
 "Existe nos dados de caminhos originais, mas nenhum efeito confirmado\n"
 "no jogo foi encontrado no código do SA revertido."
 
+msgid "Match"
+msgstr "Comparar"
+
 msgid "Material"
 msgstr "Material"
 
@@ -4648,6 +4731,9 @@ msgstr "Micro SMG / Uzi"
 
 msgid "Middles"
 msgstr "Meios"
+
+msgid "Midpoint"
+msgstr "Ponto médio"
 
 msgid "Min"
 msgstr "Mín"
@@ -4738,6 +4824,9 @@ msgstr "Modelo 0: o \"blanktex\" branco liso do SA-MP; os nomes de TXD e de text
 msgid "Model ID"
 msgstr "ID do modelo"
 
+msgid "Model IDs: 1337, 19353-19355"
+msgstr "IDs de modelos: 1337, 19353-19355"
+
 msgid "Model details"
 msgstr "Detalhes do modelo"
 
@@ -4818,6 +4907,9 @@ msgstr "Mover textdraws"
 msgid "Move textdraws to a separate file"
 msgstr "Mover os textdraws para um arquivo separado"
 
+msgid "Move the pin this many units along the last picked surface normal. Negative values move to the other side."
+msgstr "Move o pin por esta distância na direção perpendicular à última superfície escolhida. Valores negativos movem para o outro lado."
+
 msgid ""
 "Move the route so it starts at the element, like NPC_StartPlayback\n"
 "with a start position. Off plays it where it was recorded."
@@ -4848,6 +4940,9 @@ msgstr "Move-se ao ser atingido"
 
 msgid "Moving this object updates the offset; moving the parent carries it along."
 msgstr "Mover este objeto atualiza o deslocamento; mover o pai o leva junto."
+
+msgid "My map"
+msgstr "Meu mapa"
 
 msgid "Mystery"
 msgstr "Mistério"
@@ -5086,6 +5181,9 @@ msgstr ""
 "Versões novas desenham o contorno do texto como um anel suave que cresce com a\n"
 "tela (ReplaceTextShadowWithOutline). Desligado: a borda nítida do próprio jogo, de poucos\n"
 "pixels, como versões antigas e o jogo original desenham. Vale para textdraws também."
+
+msgid "Next"
+msgstr "Próxima"
 
 msgid "Nickname"
 msgstr "Apelido"
@@ -5897,6 +5995,9 @@ msgstr "Escolha um caminho, ou digite um nome novo e coloque os pontos dele."
 msgid "Pick a workspace to see its maps."
 msgstr "Escolha um workspace para ver os mapas dele."
 
+msgid "Pick endpoint"
+msgstr "Escolher destino"
+
 msgid "Pick from an image"
 msgstr "Pegar de uma imagem"
 
@@ -5932,6 +6033,12 @@ msgstr "Pickups"
 msgid "Pill"
 msgstr "Pílula"
 
+msgid "Pin XYZ"
+msgstr "XYZ do pin"
+
+msgid "Pin at selected centre"
+msgstr "Pin no centro da seleção"
+
 msgid "Pin: keep it at the top of the list"
 msgstr "Fixar: manter no topo da lista"
 
@@ -5953,8 +6060,14 @@ msgstr "Colocar o objeto e continuar no modo de colocação"
 msgid "Place objects, pickups, actors..."
 msgstr "Coloco objetos, pickups, atores..."
 
+msgid "Place pin"
+msgstr "Posicionar pin"
+
 msgid "Place selected object"
 msgstr "Colocar o objeto selecionado"
+
+msgid "Place the pin halfway between the two picked points, for example the edges of a doorway."
+msgstr "Posiciona o pin no meio dos dois pontos escolhidos, por exemplo as bordas de uma porta."
 
 msgid "Place, then click in the world. Esc stops."
 msgstr "Clique em Colocar e depois no mundo. Esc para."
@@ -6190,6 +6303,9 @@ msgstr "Prévia do movimento"
 msgid "Preview movement walks it in the viewport; the map saves NPC_MoveByPath."
 msgstr "Pré-visualizar movimento o faz andar na viewport; o mapa salva NPC_MoveByPath."
 
+msgid "Previous"
+msgstr "Anterior"
+
 msgid "Privacy"
 msgstr "Privacidade"
 
@@ -6224,6 +6340,9 @@ msgstr "Proporcional"
 
 msgid "ProportionalWeaponIcon"
 msgstr "ProportionalWeaponIcon"
+
+msgid "Proportions"
+msgstr "Proporções"
 
 msgid "Punch A"
 msgstr "Soco A"
@@ -6464,8 +6583,15 @@ msgstr "Refazer"
 msgid "Redo (%s)"
 msgstr "Refazer (%s)"
 
+msgid "Reference ID"
+msgstr "ID de referência"
+
 msgid "Reference object — only the opened IPL is editable."
 msgstr "Objeto de referência — só o IPL aberto pode ser editado."
+
+#, c-format
+msgid "Reference: %.2f x %.2f x %.2f units"
+msgstr "Referência: %.2f x %.2f x %.2f unidades"
 
 msgid "Refresh from map"
 msgstr "Atualizar a partir do mapa"
@@ -7033,6 +7159,9 @@ msgstr "Escopeta de cano serrado"
 msgid "School"
 msgstr "Escola"
 
+msgid "Scope"
+msgstr "Buscar em"
+
 msgid "Script file"
 msgstr "Arquivo de script"
 
@@ -7065,6 +7194,9 @@ msgstr "Buscar nome, modelo, ID, tipo, variável"
 
 msgid "Search names, tags and folders"
 msgstr "Buscar nomes, tags e pastas"
+
+msgid "Search several IDs or ranges. Custom models use their negative Pawn IDs."
+msgstr "Busque vários IDs ou intervalos. Modelos personalizados usam os IDs negativos do Pawn."
 
 msgid "Search sprites in it"
 msgstr "Procurar sprites nele"
@@ -7409,6 +7541,9 @@ msgstr "Pistola com silenciador"
 msgid "Silver vibrator"
 msgstr "Vibrador prateado"
 
+msgid "Similar models"
+msgstr "Semelhantes"
+
 msgid "Siren"
 msgstr "Sirene"
 
@@ -7420,6 +7555,9 @@ msgstr "Tamanho (X, Y)"
 
 msgid "Size (X, Y, Z)"
 msgstr "Tamanho (X, Y, Z)"
+
+msgid "Sizes come from collision bounds. Use the previews to compare the actual model shapes."
+msgstr "As medidas vêm dos limites de colisão. Use as prévias para comparar o formato real dos modelos."
 
 msgid "Skin"
 msgstr "Skin"
@@ -7499,6 +7637,9 @@ msgstr "Encaixar rotações"
 #, c-format
 msgid "Snap skipped some linked instances at the %d object cap"
 msgstr "O encaixe pulou algumas instâncias vinculadas no limite de %d objetos"
+
+msgid "Snap to surfaces"
+msgstr "Encaixar nas superfícies"
 
 #, c-format
 msgid "Snapped %d instance(s) to ground"
@@ -7764,6 +7905,9 @@ msgstr "Estilo"
 
 msgid "Suggest Free ID"
 msgstr "Sugerir ID livre"
+
+msgid "Surface offset"
+msgstr "Distância da superfície"
 
 msgid "Sweet"
 msgstr "Sweet"
@@ -8277,6 +8421,9 @@ msgstr "Este mapa está vazio. Os mapas são salvos como arquivos Pawn (.pwn)."
 msgid "This model has %d materials; SA-MP can only change the first %d."
 msgstr "Este modelo tem %d materiais; o SA-MP só pode mudar os primeiros %d."
 
+msgid "This model has no collision dimensions available to compare."
+msgstr "Este modelo não tem dimensões de colisão disponíveis para comparar."
+
 msgid ""
 "This node is at a dead end.\n"
 "Vehicles will turn around here rather than continuing."
@@ -8369,6 +8516,9 @@ msgstr "À seleção"
 
 msgid "Toggle object selection"
 msgstr "Alternar a seleção do objeto"
+
+msgid "Tolerance"
+msgstr "Tolerância"
 
 msgid "Tools"
 msgstr "Ferramentas"
@@ -8541,6 +8691,9 @@ msgstr "Desinstalar"
 msgid "Unknown"
 msgstr "Desconhecido"
 
+msgid "Unknown model"
+msgstr "Modelo desconhecido"
+
 msgid "Unlink"
 msgstr "Desligar"
 
@@ -8643,6 +8796,9 @@ msgstr "Usar este workspace"
 
 msgid "User guide"
 msgstr "Guia do usuário"
+
+msgid "Uses the object's collision-box centre. For a doorway inside a building, pick its two edges and use Midpoint."
+msgstr "Usa o centro dos limites de colisão do objeto. Para uma porta dentro de um prédio, escolha suas duas bordas e use Ponto médio."
 
 #, c-format
 msgid "Using provided COL: %s"
@@ -9047,6 +9203,9 @@ msgstr ""
 "Faixa de rotação yaw em graus.\n"
 "Iguais = ângulo fixo (0/0 = sem rotação).\n"
 "Diferentes = aleatório uniforme entre eles (ex.: 0/360 para totalmente aleatório)."
+
+msgid "Yellow marks the search results. Your editing selection stays independent."
+msgstr "Amarelo indica os resultados da busca. A seleção para edição é independente."
 
 msgid "Yes, send it"
 msgstr "Sim, enviar"

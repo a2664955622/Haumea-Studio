@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "coordinatepin.h"
+#include "browserdiscovery.h"
 #include "crashreports.h"
 #include "editoricons.h"
 #include "trains.h"
@@ -562,6 +564,14 @@ coordinate(const std::string &s, bool vertical)
 	ImGuiIO &io = ImGui::GetIO();
 	if(!s.empty() && s.back() == '%')
 		return (int)(atof(s.c_str()) / 100.0f * (vertical ? io.DisplaySize.y : io.DisplaySize.x));
+	if(s == "pin"){
+		ImVec2 point;
+		if(CoordinatePinScreen(&point)){
+			ImVec2 origin = ImGui::GetMainViewport()->Pos;
+			return (int)(vertical ? point.y - origin.y : point.x - origin.x);
+		}
+		return -1000;
+	}
 	// td:320 is that far across (or down) TextDraw mode's canvas; tdruler, on its ruler.
 	if(s.compare(0, 3, "td:") == 0)
 		return (int)(TextDrawCanvasToScreen((float)atof(s.c_str() + 3), vertical, false) + 0.5f);
@@ -873,6 +883,33 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		snprintf(buf, sizeof(buf), "%s is %g", what.c_str(), v);
 		why = buf;
 		return compare(v, arg(1), atof(arg(2).c_str()));
+	}
+	if(what == "discovery_count"){
+		int count = BrowserDiscoveryCount(atoi(arg(1).c_str()));
+		why = "instance count is " + std::to_string(count);
+		return compare(count, arg(2), atof(arg(3).c_str()));
+	}
+	if(what == "discovery_highlights"){
+		int count = 0;
+		for(CPtrNode *p = instances.first; p; p = p->next)
+			if(((ObjectInst*)p->item)->m_highlight == HIGHLIGHT_MATCH) count++;
+		why = "yellow highlight count is " + std::to_string(count);
+		return compare(count, arg(1), atof(arg(2).c_str()));
+	}
+	if(what.compare(0, 4, "pin.") == 0){
+		rw::V3d pin, end;
+		bool placed = CoordinatePinPosition(&pin), measured = CoordinatePinPosition(&pin, &end);
+		rw::V3d d = rw::sub(end, pin);
+		double value = what == "pin.placed" ? placed : what == "pin.measured" ? measured :
+			what == "pin.x" ? pin.x : what == "pin.y" ? pin.y : what == "pin.z" ? pin.z :
+			what == "pin.dx" ? d.x : what == "pin.dy" ? d.y : what == "pin.dz" ? d.z : rw::length(d);
+		why = what + " is " + std::to_string(value);
+		return compare(value, arg(1), atof(arg(2).c_str()));
+	}
+	if(what == "clipboard_contains"){
+		const char *text = ImGui::GetClipboardText();
+		why = text ? text : "";
+		return why.find(arg(1)) != std::string::npos;
 	}
 	if(what == "selected.texture"){
 		if(sel == nil){ why = "nothing selected"; return false; }

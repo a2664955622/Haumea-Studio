@@ -1,0 +1,153 @@
+msgid "%.3f units | dX %.3f  dY %.3f  dZ %.3f"
+msgstr "%.3f unidades | dX %.3f  dY %.3f  dZ %.3f"
+
+msgid "%d  %s  |  %d instances"
+msgstr "%d  %s  |  %d instâncias"
+
+msgid "%d models | %d instances"
+msgstr "%d modelos | %d instâncias"
+
+msgid "%d similar models"
+msgstr "%d modelos semelhantes"
+
+msgid "Align pin:"
+msgstr "Alinhar pin:"
+
+msgid "Apply offset"
+msgstr "Aplicar deslocamento"
+
+msgid "Back to models"
+msgstr "Voltar aos modelos"
+
+msgid "Both"
+msgstr "Ambos"
+
+msgid "Clear pin"
+msgstr "Limpar pin"
+
+msgid "Click a surface to place the pin. Drag from the pin to measure to an object."
+msgstr "Clique numa superfície para posicionar o pin. Arraste a partir dele para medir até um objeto."
+
+msgid "Click the measurement endpoint. Esc cancels."
+msgstr "Clique no ponto final da medição. Esc cancela."
+
+msgid "Click to place the pin. Esc cancels."
+msgstr "Clique para posicionar o pin. Esc cancela."
+
+msgid "Coordinate pin"
+msgstr "Pin de coordenadas"
+
+msgid "Copy coordinates"
+msgstr "Copiar coordenadas"
+
+msgid "Dimensions"
+msgstr "Dimensões"
+
+msgid "Dimensions compare metres. Proportions compare shape ratios regardless of overall size."
+msgstr "Dimensões compara medidas. Proporções compara as relações entre as medidas, independentemente do tamanho total."
+
+msgid "Distance: %.3f units"
+msgstr "Distância: %.3f unidades"
+
+msgid "Endpoint XYZ"
+msgstr "XYZ do destino"
+
+msgid "Enter model IDs separated by commas, spaces or ranges."
+msgstr "Informe IDs de modelos separados por vírgulas, espaços ou intervalos."
+
+msgid "Find instances"
+msgstr "Encontrar instâncias"
+
+msgid "Find selected model's instances"
+msgstr "Encontrar instâncias do modelo escolhido"
+
+msgid "GTA world"
+msgstr "Mundo do GTA"
+
+msgid "Instances"
+msgstr "Instâncias"
+
+msgid "Jump the camera between this model's instances, including other interiors."
+msgstr "Leva a câmera entre as instâncias deste modelo, incluindo outros interiores."
+
+msgid "Jump to"
+msgstr "Ir para"
+
+msgid "Match"
+msgstr "Comparar"
+
+msgid "Midpoint"
+msgstr "Ponto médio"
+
+msgid "Model IDs: 1337, 19353-19355"
+msgstr "IDs de modelos: 1337, 19353-19355"
+
+msgid "Move the pin this many units along the last picked surface normal. Negative values move to the other side."
+msgstr "Move o pin por esta distância na direção perpendicular à última superfície escolhida. Valores negativos movem para o outro lado."
+
+msgid "My map"
+msgstr "Meu mapa"
+
+msgid "Next"
+msgstr "Próxima"
+
+msgid "Pick endpoint"
+msgstr "Escolher destino"
+
+msgid "Pin XYZ"
+msgstr "XYZ do pin"
+
+msgid "Pin at selected centre"
+msgstr "Pin no centro da seleção"
+
+msgid "Place pin"
+msgstr "Posicionar pin"
+
+msgid "Place the pin halfway between the two picked points, for example the edges of a doorway."
+msgstr "Posiciona o pin no meio dos dois pontos escolhidos, por exemplo as bordas de uma porta."
+
+msgid "Previous"
+msgstr "Anterior"
+
+msgid "Proportions"
+msgstr "Proporções"
+
+msgid "Reference ID"
+msgstr "ID de referência"
+
+msgid "Reference: %.2f x %.2f x %.2f units"
+msgstr "Referência: %.2f x %.2f x %.2f unidades"
+
+msgid "Scope"
+msgstr "Buscar em"
+
+msgid "Search several IDs or ranges. Custom models use their negative Pawn IDs."
+msgstr "Busque vários IDs ou intervalos. Modelos personalizados usam os IDs negativos do Pawn."
+
+msgid "Similar models"
+msgstr "Semelhantes"
+
+msgid "Sizes come from collision bounds. Use the previews to compare the actual model shapes."
+msgstr "As medidas vêm dos limites de colisão. Use as prévias para comparar o formato real dos modelos."
+
+msgid "Snap to surfaces"
+msgstr "Encaixar nas superfícies"
+
+msgid "Surface offset"
+msgstr "Distância da superfície"
+
+msgid "This model has no collision dimensions available to compare."
+msgstr "Este modelo não tem dimensões de colisão disponíveis para comparar."
+
+msgid "Tolerance"
+msgstr "Tolerância"
+
+msgid "Unknown model"
+msgstr "Modelo desconhecido"
+
+msgid "Uses the object's collision-box centre. For a doorway inside a building, pick its two edges and use Midpoint."
+msgstr "Usa o centro dos limites de colisão do objeto. Para uma porta dentro de um prédio, escolha suas duas bordas e use Ponto médio."
+
+msgid "Yellow marks the search results. Your editing selection stays independent."
+msgstr "Amarelo indica os resultados da busca. A seleção para edição é independente."
+

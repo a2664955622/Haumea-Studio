@@ -1747,6 +1747,7 @@ enum HighlightStyle
 	HIGHLIGHT_FILTER,
 	HIGHLIGHT_SELECTION,
 	HIGHLIGHT_HOVER,
+	HIGHLIGHT_MATCH,
 };
 
 struct SceneGlobals {
@@ -1788,6 +1789,7 @@ void BuildRenderList(void);
 void RenderOpaque(void);
 void RenderTransparent(void);
 void RenderEverything(void);
+bool IntersectRayColModelDetailed(const Ray &ray, ObjectInst *inst, rw::V3d *hitPos, rw::V3d *hitNormal);
 ObjectInst *GetVisibleInstUnderRay(const Ray &ray, rw::V3d *hitPos = nil, float *hitT = nil);
 void ForEachVisibleInst(void (*fn)(ObjectInst *inst, void *data), void *data);
 

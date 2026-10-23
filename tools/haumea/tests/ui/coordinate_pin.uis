@@ -1,0 +1,61 @@
+# Reference pin must measure without changing objects or the editing selection.
+open "$UI_FIXTURES/ui_map.pwn"
+click_object model=1271
+wait 5
+click_item 'Tools' 'Coordinate pin'
+click_item 'Tools' 'Pin at selected centre'
+wait 3
+assert pin.placed == 1
+assert pin.measured == 0
+assert selected == 1
+# Real drag from its visible marker to a surface.
+drag pin pin 50% 45% 16
+wait 3
+assert pin.measured == 1
+assert pin.distance > 0
+assert selected == 1
+assert objects == 4
+# Exact XYZ editing, distance, midpoint and alignment.
+set_item 'Tools' 'Pin XYZ/#0' '2010'
+set_item 'Tools' 'Pin XYZ/#1' '-3000'
+set_item 'Tools' 'Pin XYZ/#2' '5'
+set_item 'Tools' 'Endpoint XYZ/#0' '2013'
+set_item 'Tools' 'Endpoint XYZ/#1' '-2996'
+set_item 'Tools' 'Endpoint XYZ/#2' '17'
+wait 3
+assert pin.distance == 13
+assert pin.dx == 3
+assert pin.dy == 4
+assert pin.dz == 12
+click_item 'Tools' 'Copy coordinates'
+assert clipboard_contains '2010.000000, -3000.000000, 5.000000'
+click_item 'Tools' 'X##pin_align'
+assert pin.x == 2013
+set_item 'Tools' 'Pin XYZ/#0' '2010'
+click_item 'Tools' 'Midpoint'
+wait 3
+assert pin.x == 2011.5
+assert pin.y == -2998
+assert pin.z == 11
+assert pin.measured == 0
+set_item 'Tools' 'Surface offset' '2.25'
+click_item 'Tools' 'Apply offset'
+assert pin.y == -2995.75
+# Cancel an armed placement; the pin and selection survive.
+click_item 'Tools' 'Place pin'
+move 50% 45%
+key Esc
+click_item 'Tools' 'Copy coordinates'
+assert clipboard_contains '2011.500000, -2995.750000, 11.000000'
+assert objects == 4
+assert selected == 1
+assert pawn_count 'CreateObject(' == 4
+click_item 'Tools' 'Clear pin'
+assert pin.placed == 0
+# Actual surface placement includes selected objects and leaves map contents intact.
+click_item 'Tools' 'Place pin'
+click_object model=1271
+wait 3
+assert pin.placed == 1
+assert selected == 1
+assert objects == 4

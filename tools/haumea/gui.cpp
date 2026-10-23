@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "coordinatepin.h"
 #include "crashreports.h"
 #include "telemetry.h"
 #include "editoricons.h"
@@ -14,6 +15,8 @@
 #include "icons.h"
 #include "modelmeta.h"
 #include "objfilters.h"
+#include "browserdiscovery.h"
+#include "modelquery.h"
 #include "rec.h"
 #include "anim.h"
 #include "npcpreview.h"
@@ -217,6 +220,8 @@ static bool splitSettingLine(const char *line, char *key, size_t keySize, const 
 static bool parseIntSetting(const char *value, int *out);
 static bool savePawnMap(void);
 static void uiRunShortcut(int action);
+static void uiOpenObjectDiscovery(int model, bool similar, const char *ids = nil);
+static bool gBrowserDiscoveryFocusPending;
 static void uiWorkspaceNavigation(void);
 static void uiWorkspaceNewHints(void);
 static int uiSelectionCount(void);
@@ -9847,6 +9852,9 @@ uiObjectFavouritePopup(int objectId)
 			if(ImGui::MenuItem(_("Add to Favourites")))
 				ToggleFavourite(objectId);
 		}
+		ImGui::Separator();
+		if(ImGui::MenuItem(_("Find instances"))) uiOpenObjectDiscovery(objectId, false);
+		if(ImGui::MenuItem(_("Similar models"))) uiOpenObjectDiscovery(objectId, true);
 		ImGui::EndPopup();
 	}
 }
@@ -10383,6 +10391,17 @@ uiBrowserPrefabsTab(void)
 }
 
 static void
+uiOpenObjectDiscovery(int model, bool similar, const char *ids)
+{
+	showBrowserWindow = true;
+	gBrowserDiscoveryFocusPending = true;
+	selectBrowserObject(model);
+	if(similar) BrowserFindSimilar(model);
+	else if(ids) BrowserFindInstanceQuery(ids);
+	else BrowserFindInstances(model);
+}
+
+static void
 uiBrowserSelectedObject(int selId)
 {
 	if(selId < 0)
@@ -10453,6 +10472,13 @@ uiBrowserSelectedObject(int selId)
 	if(favourite)
 		ImGui::PopStyleColor();
 	ImGui::SetItemTooltip("%s", favourite ? _("Remove from Favourites") : _("Add to Favourites"));
+	if(ImGui::Button(_("Instances"))){
+		const char *ids = !BrowserDiscoveryActive() && gBrowserActiveTab == BROWSER_TAB_CATEGORIES &&
+			ParseModelIdQuery(gBrowserCategoryFilter.InputBuf, nil) ? gBrowserCategoryFilter.InputBuf : nil;
+		uiOpenObjectDiscovery(selId, false, ids);
+	}
+	ImGui::SameLine();
+	if(ImGui::Button(_("Similar models"))) uiOpenObjectDiscovery(selId, true);
 	ImGui::EndGroup();
 	ImGui::Separator();
 }
@@ -10504,45 +10530,10 @@ uiBrowserSearchBox(ImGuiTextFilter &filter, const char *id, const char *hint)
 		filter.Build();
 }
 
-// A search made only of model IDs: "1337", "1337 19353", "1337, 19353" or
-// ranges such as "19000-19100". Fills ranges as {first, last} pairs.
-static bool
-uiParseIdQuery(const char *text, std::vector<std::pair<int,int>> *ranges)
-{
-	const char *p = text;
-	bool any = false;
-	while(*p){
-		while(*p == ' ' || *p == ',' || *p == ';' || *p == '\t') p++;
-		if(*p == '\0')
-			break;
-		// Custom models have negative IDs (-1000 to -30000).
-		bool negative = *p == '-' && isdigit((unsigned char)p[1]);
-		if(!isdigit((unsigned char)*p) && !negative)
-			return false;
-		int first = (int)strtol(p, (char**)&p, 10);
-		int last = first;
-		while(*p == ' ') p++;
-		if(*p == '-'){
-			p++;
-			while(*p == ' ') p++;
-			if(!isdigit((unsigned char)*p) && !(*p == '-' && isdigit((unsigned char)p[1])))
-				return false;
-			last = (int)strtol(p, (char**)&p, 10);
-			if(last < first){ int t = first; first = last; last = t; }
-		}
-		if(*p && *p != ' ' && *p != ',' && *p != ';' && *p != '\t')
-			return false;
-		if(ranges)
-			ranges->push_back(std::make_pair(first, last));
-		any = true;
-	}
-	return any;
-}
-
 static bool
 uiBrowserIsIdQuery(ImGuiTextFilter &filter)
 {
-	return uiParseIdQuery(filter.InputBuf, nil);
+	return ParseModelIdQuery(filter.InputBuf, nil);
 }
 
 // Name search; numbers, lists and ranges of numbers find models by ID.
@@ -10555,7 +10546,7 @@ uiBrowserMatches(ImGuiTextFilter &filter, ObjectDef *obj)
 	if(lastQuery != filter.InputBuf){
 		lastQuery = filter.InputBuf;
 		ranges.clear();
-		isIdQuery = uiParseIdQuery(filter.InputBuf, &ranges);
+		isIdQuery = ParseModelIdQuery(filter.InputBuf, &ranges);
 	}
 	if(isIdQuery){
 		for(size_t i = 0; i < ranges.size(); i++)
@@ -10691,10 +10682,18 @@ uiBrowserSampTab(void)
 }
 
 static void
+uiDiscoveryModelResults(int *ids, int count, int selected)
+{
+	uiBrowserSelectedObject(selected);
+	uiObjectResults(ids, count, selected);
+}
+
+static void
 uiBrowserWindow(void)
 {
 	uiDefaultPanelLayout(PANEL_RIGHT_TOP);
 	uiNextPanelSizeConstraints(ImVec2(360, 360));
+	if(gBrowserDiscoveryFocusPending){ ImGui::SetNextWindowFocus(); gBrowserDiscoveryFocusPending = false; }
 	ImGui::Begin(LI(ICON_FA_MAGNIFYING_GLASS, "Object Browser"), &showBrowserWindow);
 	uiFitItemsToPanel();
 
@@ -10702,15 +10701,22 @@ uiBrowserWindow(void)
 	static int filtered[NUMOBJECTDEFS];
 	int numFiltered = 0;
 
-	if(ImGui::RadioButton(_("List"), !gBrowserThumbnailView))
-		gBrowserThumbnailView = false;
-	ImGui::SameLine();
-	if(ImGui::RadioButton(_("Tiles"), gBrowserThumbnailView))
-		gBrowserThumbnailView = true;
-	if(gBrowserThumbnailView){
+	if(!BrowserDiscoveryActive() || BrowserDiscoveryShowsModels()){
+		if(ImGui::RadioButton(_("List"), !gBrowserThumbnailView))
+			gBrowserThumbnailView = false;
 		ImGui::SameLine();
-		ImGui::SetNextItemWidth(ImGui::GetFontSize() * 8.0f);
-		ImGui::SliderFloat("##tile_size", &gBrowserTileSize, 4.0f, 14.0f, _("Tile size"));
+		if(ImGui::RadioButton(_("Tiles"), gBrowserThumbnailView))
+			gBrowserThumbnailView = true;
+		if(gBrowserThumbnailView){
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 8.0f);
+			ImGui::SliderFloat("##tile_size", &gBrowserTileSize, 4.0f, 14.0f, _("Tile size"));
+		}
+	}
+	if(BrowserDiscoveryActive()){
+		BrowserDiscoveryDraw(uiDiscoveryModelResults, selId);
+		ImGui::End();
+		return;
 	}
 
 	// The first tab reports itself active on the first frame, so remember
@@ -11479,7 +11485,7 @@ uiOutlinerRebuild(void)
 	gOutliner.rows.clear();
 	gOutliner.removedWorld = 0;
 	std::vector<std::pair<int,int>> idRanges;
-	bool idQuery = gOutliner.search[0] && uiParseIdQuery(gOutliner.search, &idRanges);
+	bool idQuery = gOutliner.search[0] && ParseModelIdQuery(gOutliner.search, &idRanges);
 	// Map check problems (errors and warnings) by instance, from the last check.
 	std::unordered_map<int32, const char*> problems;
 	if(gMapCheckDone)
@@ -11682,6 +11688,14 @@ uiSelectedOrThis(ObjectInst *inst, std::vector<ObjectInst*> &out)
 static void
 uiOutlinerObjectMenu(ObjectInst *inst)
 {
+	if(ImGui::MenuItem(_("Find instances"))) uiOpenObjectDiscovery(inst->m_objectId, false);
+	if(ImGui::MenuItem(_("Similar models"))) uiOpenObjectDiscovery(inst->m_objectId, true);
+	ImGui::Separator();
+	if(!IsInstInIplMapDocument(inst)){
+		if(ImGui::MenuItem(_("Focus"))) inst->JumpTo();
+		return;
+	}
+
 	if(!inst->m_selected){
 		gOutliner.selectionFromHere = true;
 		ClearSelection();
@@ -11705,9 +11719,9 @@ static bool gOpenViewportMenu;
 bool
 OpenViewportObjectMenu(ObjectInst *inst)
 {
-	if(inst == nil || inst->m_isDeleted || !PawnObjectNeedsExport(inst))
+	if(inst == nil || inst->m_isDeleted)
 		return false;
-	if(!inst->m_selected){
+	if(!inst->m_selected && IsInstInIplMapDocument(inst)){
 		ClearSelection();
 		inst->Select();
 	}
@@ -13054,6 +13068,8 @@ gui(void)
 		uiTextureBrowserWindow();
 		SAPaths::DrawNodesWindow(&showNodesWindow);
 	}
+	BrowserDiscoveryHighlight(mapPanels && showBrowserWindow);
+	CoordinatePinOverlay(mapPanels);
 	SAPaths::UpdateNodesUndo();
 	DrawTextDrawsWindow();
 	DrawTextDrawsOverlay();

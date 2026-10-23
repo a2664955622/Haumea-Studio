@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "coordinatepin.h"
 #include "i18n.h"
 #include "crashreports.h"
 #include "imgui/imgui_internal.h"
@@ -663,7 +664,7 @@ IntersectRayTriangle(const Ray &ray, rw::V3d a, rw::V3d b, rw::V3d c, float *t)
 	return true;
 }
 
-static bool
+bool
 IntersectRayColModelDetailed(const Ray &worldRay, ObjectInst *inst, rw::V3d *hitPos, rw::V3d *hitNormal)
 {
 	ObjectDef *obj = GetObjectDef(inst->m_objectId);
@@ -1965,6 +1966,7 @@ handleRectSelect(void)
 void
 handleTool(void)
 {
+	if(CoordinatePinHandleViewport()) return;
 	// Don't process viewport clicks when ImGui wants the mouse
 	ImGuiIO &io = ImGui::GetIO();
 	if(io.WantCaptureMouse || gGizmoHovered || gGizmoUsing || gRectSelectActive)
@@ -2099,7 +2101,7 @@ handleTool(void)
 	}else if(CPad::IsMButtonClicked(3)){
 		// A right-click (not a camera drag) on what Map Objects lists opens
 		// its menu; anywhere else it clears the selection.
-		if(!IsIplMapDocumentOpen()){
+		{
 			int32 code = pick();
 			if(code >= 0 && OpenViewportObjectMenu(GetInstanceByID(code)))
 				return;
@@ -3015,6 +3017,7 @@ dogizmo(void)
 {
 	gGizmoHovered = false;
 	gGizmoUsing = false;
+	if(CoordinatePinOwnsMouse()) return;
 
 	if(!gGizmoEnabled)
 		return;

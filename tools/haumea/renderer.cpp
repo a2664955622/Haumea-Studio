@@ -114,7 +114,7 @@ static void
 AddToLodRenderList(ObjectInst *inst, float dist)
 {
 	// Highlighted objects are always visible
-	if(!inst->m_selected && inst->m_highlight == 0){
+	if(!inst->m_selected && (inst->m_highlight == HIGHLIGHT_NONE || inst->m_highlight == HIGHLIGHT_MATCH)){
 		InstDist e;
 		e.inst = inst;
 		e.dist = dist;
@@ -163,7 +163,7 @@ SetupVisibilitySimple(ObjectInst *inst, float *distout)
 	if(obj == nil) return VIS_INVISIBLE;
 
 	// Highlighted objects are always visible
-	if(!inst->m_selected && inst->m_highlight == 0){
+	if(!inst->m_selected && (inst->m_highlight == HIGHLIGHT_NONE || inst->m_highlight == HIGHLIGHT_MATCH)){
 		if(!gNoAreaCull && inst->m_area != currentArea && inst->m_area != 13)
 			return VIS_INVISIBLE;
 
@@ -217,7 +217,7 @@ SetupVisibilityIII(ObjectInst *inst, float *distout)
 	if(obj == nil) return VIS_INVISIBLE;
 
 	// Highlighted objects are always visible
-	if(!inst->m_selected && inst->m_highlight == 0){
+	if(!inst->m_selected && (inst->m_highlight == HIGHLIGHT_NONE || inst->m_highlight == HIGHLIGHT_MATCH)){
 		if(!gNoAreaCull && inst->m_area != currentArea && inst->m_area != 13)
 			return VIS_INVISIBLE;
 
@@ -276,7 +276,7 @@ SetupVisibilitySA(ObjectInst *inst, float camdist)
 
 	// Highlighted objects are always visible, and the player view decides
 	// itself for the map's elements.
-	if(!inst->m_selected && inst->m_highlight == 0 && !PlayerViewShows(inst)){
+	if(!inst->m_selected && (inst->m_highlight == HIGHLIGHT_NONE || inst->m_highlight == HIGHLIGHT_MATCH) && !PlayerViewShows(inst)){
 		if(!gNoAreaCull && inst->m_area != currentArea && inst->m_area != 13)
 			return VIS_INVISIBLE;
 
@@ -616,7 +616,8 @@ RenderInst(ObjectInst *inst)
 	static rw::RGBA red = { 255, 0, 0, 255 };
 	static rw::RGBA green = { 0, 255, 0, 255 };
 	static rw::RGBA blue = { 0, 0, 255, 255 };
-	static rw::RGBA highlightCols[] = { black, green, red, blue };
+	static rw::RGBA yellow = { 255, 220, 60, 255 };
+	static rw::RGBA highlightCols[] = { black, green, red, blue, yellow };
 	ObjectDef *obj;
 
 //	if(!inst->m_isUnimportant && !inst->m_isUnderWater && !inst->m_isTunnel && !inst->m_isTunnelTransition)
@@ -1135,11 +1136,12 @@ AddInstOutline(ObjectInst *inst, std::vector<rw::V3d> &out)
 void
 RenderObjectOutlines(void)
 {
-	enum { OUTLINE_MAP, OUTLINE_HOVER, OUTLINE_SELECTED, NUM_OUTLINES };
+	enum { OUTLINE_MAP, OUTLINE_HOVER, OUTLINE_SELECTED, OUTLINE_MATCH, NUM_OUTLINES };
 	static const rw::RGBA colours[NUM_OUTLINES] = {
 		{ 90, 200, 255, 170 },	// map objects
 		{ 255, 255, 255, 255 },	// hovered
 		{ 255, 190, 40, 255 },	// selected
+		{ 255, 220, 60, 255 },	// search matches
 	};
 	static std::vector<rw::V3d> points[NUM_OUTLINES];
 	const size_t maxMapPoints = 400000;
@@ -1152,7 +1154,9 @@ RenderObjectOutlines(void)
 		if(inst->m_isDeleted || inst->m_editorHidden || PlayerViewHides(inst) || inst->m_rwObject == nil ||
 		   InstUsesEditorIcon(inst))
 			continue;
-		if(inst->m_selected && gOutlineSelection)
+		if(inst->m_highlight == HIGHLIGHT_MATCH && points[OUTLINE_MATCH].size() < maxMapPoints)
+			AddInstOutline(inst, points[OUTLINE_MATCH]);
+		else if(inst->m_selected && gOutlineSelection)
 			AddInstOutline(inst, points[OUTLINE_SELECTED]);
 		else if(inst->m_highlight == HIGHLIGHT_HOVER && gOutlineSelection)
 			AddInstOutline(inst, points[OUTLINE_HOVER]);
@@ -1161,7 +1165,7 @@ RenderObjectOutlines(void)
 		        length(sub(inst->m_translation, TheCamera.m_position)) < maxMapDistance)
 			AddInstOutline(inst, points[OUTLINE_MAP]);
 	}
-	if(points[OUTLINE_MAP].empty() && points[OUTLINE_HOVER].empty() && points[OUTLINE_SELECTED].empty())
+	if(points[OUTLINE_MAP].empty() && points[OUTLINE_HOVER].empty() && points[OUTLINE_SELECTED].empty() && points[OUTLINE_MATCH].empty())
 		return;
 
 	rw::SetRenderState(rw::VERTEXALPHA, 1);

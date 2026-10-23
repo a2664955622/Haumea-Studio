@@ -31,6 +31,12 @@ NONE = ('docs/', 'README', 'CHANGELOG', '.github/', 'tools/release/', 'tools/age
 # Source files and the real-game tests they need: UI scripts (without .uis),
 # 'roundtrip', 'showcase'. Files not listed here (and not in NONE) select all.
 SOURCES = {
+	'coordinatepin.cpp': ['coordinate_pin'],
+	'coordinatepin.h': ['coordinate_pin'],
+	'browserdiscovery.cpp': ['browser_discovery'],
+	'browserdiscovery.h': ['browser_discovery'],
+	'modelquery.cpp': ['browser_discovery'],
+	'modelquery.h': ['browser_discovery'],
 	'pawneditor.cpp': ['pawn_ide'],
 	'pawneditor.h': ['pawn_ide'],
 	'pawnsyntax.cpp': ['pawn_ide'],
@@ -60,7 +66,7 @@ SOURCES = {
 	'namaka.h': ['namaka'],
 	'checkpoints.cpp': ['checkpoint_types', 'el_checkpoint'],
 	'checkpoints.h': ['checkpoint_types', 'el_checkpoint'],
-	'maptools.cpp': ['map_tools'],
+	'maptools.cpp': ['map_tools', 'coordinate_pin'],
 	'radarart.cpp': ['radar_art', 'roundtrip'],
 	'trains.cpp': ['trains', 'roundtrip'],
 	'mapcheck.cpp': ['map_check', 'material_font'],
