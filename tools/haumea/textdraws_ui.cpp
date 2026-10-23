@@ -1025,12 +1025,14 @@ drawTextDraw(ImDrawList *dl, const Canvas &cv, const TextDraw &td)
 	if(td.font == TD_FONT_PREVIEW){
 		// Rendered with its own background, rotation and zoom, then drawn in
 		// TextDrawColor like any textdraw texture (DrawTextDrawRuntimeTexture).
+		// A negative size mirrors it, as it does a sprite: the rendered
+		// picture is upside down, so v runs from 1 unless mirrored.
 		rw::Texture *tex = previewTexture(td);
+		ImVec2 uv0(x1 < x0 ? 1.0f : 0.0f, y1 < y0 ? 0.0f : 1.0f), uv1(1.0f - uv0.x, 1.0f - uv0.y);
 		if(x1 < x0) std::swap(x0, x1);
 		if(y1 < y0) std::swap(y0, y1);
 		if(tex)
-			dl->AddImage((ImTextureID)tex, cv.at(x0, y0), cv.at(x1, y1), ImVec2(0, 1), ImVec2(1, 0),
-				rgbaToImU32(td.colour));
+			dl->AddImage((ImTextureID)tex, cv.at(x0, y0), cv.at(x1, y1), uv0, uv1, rgbaToImU32(td.colour));
 		else
 			dl->AddRectFilled(cv.at(x0, y0), cv.at(x1, y1), rgbaToImU32(td.backgroundColour));
 		return;
@@ -2246,7 +2248,7 @@ drawSnapGuides(ImDrawList *dl, const Canvas &cv, float gx, float gy)
 }
 
 // The textdraw as it was in box o, fitted to box n (x0 y0 x1 y1). Sprites
-// mirror when the box is turned inside out; text and models don't.
+// and models mirror when the box is turned inside out; text and images don't.
 static TextDraw
 scaledTextDraw(const TextDraw &from, const float o[4], const float n[4])
 {
@@ -2258,7 +2260,7 @@ scaledTextDraw(const TextDraw &from, const float o[4], const float n[4])
 		td.y = n[1] + (from.y - o[1]) * sy;
 		td.sizeX = from.sizeX * sx;
 		td.sizeY = from.sizeY * sy;
-		if(td.font != TD_FONT_SPRITE){
+		if(td.font == TD_FONT_REFERENCE){
 			if(td.sizeX < 0.0f){ td.x += td.sizeX; td.sizeX = -td.sizeX; }
 			if(td.sizeY < 0.0f){ td.y += td.sizeY; td.sizeY = -td.sizeY; }
 		}
