@@ -15,6 +15,7 @@
 #include "samp_loader.h"
 #include "materialtext.h"
 #include "radarart.h"
+#include <errno.h>
 #include <sys/stat.h>
 #include <cctype>
 #include <climits>
@@ -8167,7 +8168,7 @@ ExportPawnCode(const char *path, PawnCodeFormat format, bool selectedOnly, int *
 		return -1;
 	}
 	if(!EnsureParentDirectoriesForPath(path)){
-		log("ExportPawnCode: failed to create parent directories for %s\n", path);
+		log("ExportPawnCode: failed to create parent directories for %s: %s\n", path, strerror(errno));
 		return -1;
 	}
 	// The recording player moves elements without marking them; put them back first.
@@ -8186,14 +8187,15 @@ ExportPawnCode(const char *path, PawnCodeFormat format, bool selectedOnly, int *
 	// Binary: the same LF file on every platform, as BuildPawnCode makes it.
 	FILE *f = fopen(temp.c_str(), "wb");
 	if(f == nil){
-		log("ExportPawnCode: failed to open %s for writing\n", temp.c_str());
+		log("ExportPawnCode: failed to open %s for writing: %s\n", temp.c_str(), strerror(errno));
 		return -1;
 	}
 	bool written = fwrite(code.data(), 1, code.size(), f) == code.size();
 	written = fflush(f) == 0 && !ferror(f) && written;
 	written = fclose(f) == 0 && written;
+	int writeErrno = written ? 0 : errno;
 	if(!written || !replaceFile(temp.c_str(), path)){
-		log("ExportPawnCode: failed to write %s\n", path);
+		log("ExportPawnCode: failed to write %s: %s\n", path, strerror(written ? errno : writeErrno));
 		remove(temp.c_str());
 		return -1;
 	}

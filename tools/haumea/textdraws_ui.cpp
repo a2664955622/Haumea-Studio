@@ -2,6 +2,7 @@
 #include "haumea.h"
 #include "workspace.h"
 #include "textdraws.h"
+#include "radar.h"
 #include "icons.h"
 #include "shortcuts.h"
 #include "i18n.h"
@@ -30,6 +31,74 @@ static bool gStillPending;	// take the still frame after this frame's world
 static rw::Texture *gStillFrame;
 static std::vector<std::string> gRecent;
 static const int MAX_RECENT_TEXTDRAW_FILES = 8;
+
+// CHud's layout on the 640x448 screen, under the textdraws as in game:
+// gta-reversed's Hud.cpp, and gta_sa.exe 1.0 US for what it doesn't have
+// (DrawPlayerInfo 0x58EAF0, DrawWanted 0x58D9A0). As SA-MP shows it: max
+// health 100, so GetYPosBasedOnHealth moves the bars, money and stars up.
+enum {
+	HUD_RADAR = 1 << 0, HUD_CLOCK = 1 << 1, HUD_MONEY = 1 << 2, HUD_WEAPON = 1 << 3, HUD_AMMO = 1 << 4,
+	HUD_HEALTH = 1 << 5, HUD_ARMOUR = 1 << 6, HUD_BREATH = 1 << 7, HUD_WANTED = 1 << 8,
+	HUD_ZONE = 1 << 9, HUD_VEHICLE = 1 << 10,
+	// SA-MP's defaults: no clock (TogglePlayerClock), zone names or breath bar.
+	HUD_DEFAULT = HUD_RADAR | HUD_MONEY | HUD_WEAPON | HUD_AMMO | HUD_HEALTH | HUD_ARMOUR | HUD_WANTED,
+};
+struct HudSettings {
+	bool show;
+	int parts;
+	int hour, minute;
+	int money;
+	int health, armour, breath;	// percent
+	int wanted;
+	int weapon;	// in gHudWeapons
+	int ammo, clip;	// the total, and what is in the clip
+	char zone[64], vehicle[64];
+	// SA-MP's chat, which is sized in the player's pixels, not the 640x448 screen.
+	bool chat;
+	int resolution;	// in gHudResolutions
+	int fontSize;	// /fontsize, -3 to 5
+	int pageSize;	// /pagesize, 10 to 20 lines
+	bool timestamps;	// /timestamp
+	char messages[2048];	// one per line, {RRGGBB} colours
+};
+static const struct { int w, h; } gHudResolutions[] = {
+	{ 800, 600 }, { 1024, 768 }, { 1280, 720 }, { 1366, 768 }, { 1600, 900 }, { 1920, 1080 }, { 2560, 1440 },
+};
+static const int NUM_HUD_RESOLUTIONS = IM_ARRAYSIZE(gHudResolutions);
+static const HudSettings HUD_DEFAULTS = { false, HUD_DEFAULT, 12, 0, 1500, 100, 50, 100, 0, 1, 120, 17, "Ganton", "Infernus",
+	true, 5, 0, 10, false,
+	"{A9C4E4}SA-MP 0.3.7-R5 Started\n{A9C4E4}Connecting to 127.0.0.1:7777...\n"
+	"{A9C4E4}Connected. Joining the game...\n{A9C4E4}Connected to {B9C9BF}Haumea Server\n"
+	"{FFFFFF}Welcome to the server!\n{FFFF00}Player_Name: {FFFFFF}hello everyone" };
+static HudSettings gHud = HUD_DEFAULTS;
+
+// The weapon's model, its icon is <model>icon in <model>.txd; its clip as
+// CWeaponInfo has it at poor skill (1 and below or 1000 and above: the total only).
+static const struct { const char *name, *model; int clip; bool ammo; } gHudWeapons[] = {
+	{ N_("Fist"), nil, 0, false },
+	{ N_("Baseball bat"), "bat", 0, false },
+	{ N_("Knife"), "knifecur", 0, false },
+	{ N_("Colt 45"), "colt45", 17, true },
+	{ N_("Silenced pistol"), "silenced", 17, true },
+	{ N_("Desert Eagle"), "desert_eagle", 7, true },
+	{ N_("Shotgun"), "chromegun", 1, true },
+	{ N_("Sawn-off shotgun"), "sawnoff", 2, true },
+	{ N_("Combat shotgun"), "shotgspa", 7, true },
+	{ N_("Micro SMG"), "micro_uzi", 50, true },
+	{ N_("MP5"), "mp5lng", 30, true },
+	{ N_("Tec-9"), "tec9", 50, true },
+	{ N_("AK-47"), "ak47", 30, true },
+	{ N_("M4"), "m4", 50, true },
+	{ N_("Country rifle"), "cuntgun", 1, true },
+	{ N_("Sniper rifle"), "sniper", 1, true },
+	{ N_("Rocket launcher"), "rocketla", 1, true },
+	{ N_("Minigun"), "minigun", 500, true },
+	{ N_("Grenade"), "grenade", 1, true },
+	{ N_("Spraycan"), "spraycan", 500, true },
+	{ N_("Camera"), "camera", 36, true },
+	{ N_("Parachute"), "gun_para", 0, false },
+};
+static const int NUM_HUD_WEAPONS = IM_ARRAYSIZE(gHudWeapons);
 
 static void
 releaseStillFrame(void)
@@ -124,7 +193,38 @@ LoadTextDrawSetting(const char *key, const char *value)
 		gBackground = atoi(value) == TD_BACKGROUND_PLAIN ? TD_BACKGROUND_PLAIN : TD_BACKGROUND_STILL;
 	else if(strcmp(key, "textdraw_canvas_colour") == 0)
 		gCanvasColour = (unsigned int)strtoul(value, nil, 16);
-	else
+	else if(strcmp(key, "textdraw_hud") == 0){
+		int show = 0;
+		sscanf(value, "%d %x %d %d %d %d %d %d %d %d %d %d", &show, (unsigned int*)&gHud.parts,
+			&gHud.hour, &gHud.minute, &gHud.money, &gHud.health, &gHud.armour, &gHud.breath,
+			&gHud.wanted, &gHud.weapon, &gHud.ammo, &gHud.clip);
+		gHud.show = show != 0;
+		if(gHud.weapon < 0 || gHud.weapon >= NUM_HUD_WEAPONS)
+			gHud.weapon = 0;
+	}else if(strcmp(key, "textdraw_hud_zone") == 0)
+		snprintf(gHud.zone, sizeof(gHud.zone), "%s", value);
+	else if(strcmp(key, "textdraw_hud_vehicle") == 0)
+		snprintf(gHud.vehicle, sizeof(gHud.vehicle), "%s", value);
+	else if(strcmp(key, "textdraw_hud_chat") == 0){
+		int chat = 1, timestamps = 0;
+		sscanf(value, "%d %d %d %d %d", &chat, &gHud.resolution, &gHud.fontSize, &gHud.pageSize, &timestamps);
+		gHud.chat = chat != 0;
+		gHud.timestamps = timestamps != 0;
+		gHud.resolution = std::max(0, std::min(gHud.resolution, NUM_HUD_RESOLUTIONS - 1));
+		gHud.fontSize = std::max(-3, std::min(gHud.fontSize, 5));
+		gHud.pageSize = std::max(10, std::min(gHud.pageSize, 20));
+	}else if(strcmp(key, "textdraw_hud_messages") == 0){
+		// \n between messages, \\ for a backslash.
+		size_t n = 0;
+		for(const char *p = value; *p && n + 1 < sizeof(gHud.messages); p++){
+			if(*p == '\\' && (p[1] == 'n' || p[1] == '\\')){
+				gHud.messages[n++] = p[1] == 'n' ? '\n' : '\\';
+				p++;
+			}else if(*p != '\r' && *p != '\n')
+				gHud.messages[n++] = *p;
+		}
+		gHud.messages[n] = '\0';
+	}else
 		return false;
 	return true;
 }
@@ -134,6 +234,19 @@ SaveTextDrawSettings(FILE *f)
 {
 	fprintf(f, "textdraw_background %d\n", gBackground);
 	fprintf(f, "textdraw_canvas_colour %08X\n", gCanvasColour);
+	fprintf(f, "textdraw_hud %d %x %d %d %d %d %d %d %d %d %d %d\n", gHud.show ? 1 : 0, (unsigned int)gHud.parts,
+		gHud.hour, gHud.minute, gHud.money, gHud.health, gHud.armour, gHud.breath,
+		gHud.wanted, gHud.weapon, gHud.ammo, gHud.clip);
+	fprintf(f, "textdraw_hud_zone %s\n", gHud.zone);
+	fprintf(f, "textdraw_hud_vehicle %s\n", gHud.vehicle);
+	fprintf(f, "textdraw_hud_chat %d %d %d %d %d\n", gHud.chat ? 1 : 0, gHud.resolution, gHud.fontSize,
+		gHud.pageSize, gHud.timestamps ? 1 : 0);
+	fputs("textdraw_hud_messages ", f);
+	for(const char *p = gHud.messages; *p; p++)
+		if(*p == '\n') fputs("\\n", f);
+		else if(*p == '\\') fputs("\\\\", f);
+		else fputc(*p, f);
+	fputc('\n', f);
 }
 
 // ---- Game fonts ----
@@ -195,7 +308,15 @@ glyphIndex(int font, unsigned char c)
 	if(i < 0 || i >= 208)
 		return 0;
 	if(font == TD_FONT_BANK_GOTHIC || font == TD_FONT_PRICEDOWN){
-		// These fonts sit in the lower rows and only have digits and capitals.
+		// These fonts sit in the lower rows and only have digits and capitals
+		// (CFont::FindSubFontCharacter, 0x7192C0), Pricedown a few signs too.
+		if(font == TD_FONT_PRICEDOWN){
+			if(i == 1) return 208;	// !
+			if(i == 4) return 93;	// $
+			if(i == 7) return 206;	// '
+			if(i == 8 || i == 9) return i + 86;	// ( )
+			if(i == 14) return 207;	// .
+		}
 		if(i >= 16 && i <= 25) return i + 128;	// 0-9
 		if(i == 26) return 154;	// :
 		if(i >= 33 && i <= 58) return i + 122;	// A-Z
@@ -691,6 +812,279 @@ drawTextDraw(ImDrawList *dl, const Canvas &cv, const TextDraw &td)
 	drawGlyphs(dl, cv, td, glyphs, 0.0f, 0.0f, 0, false);
 }
 
+// ---- The game's HUD ----
+
+// CHudColours.
+static const unsigned int HUD_RED = 0xB4191DFF, HUD_GREEN = 0x36682CFF, HUD_LIGHT_BLUE = 0xACCBF1FF,
+	HUD_LIGHT_GRAY = 0xE1E1E1FF, HUD_GOLD = 0x906210FF, HUD_BLACK = 0x000000FF;
+
+static rw::Texture*
+hudWeaponIcon(int weapon)
+{
+	static rw::Texture *icons[NUM_HUD_WEAPONS];
+	static bool looked[NUM_HUD_WEAPONS];
+	if(weapon < 0 || weapon >= NUM_HUD_WEAPONS)
+		return nil;
+	if(gHudWeapons[weapon].model == nil)
+		return spriteTexture("hud:fist");
+	if(!looked[weapon]){
+		looked[weapon] = true;
+		int slot = FindTxdSlot(gHudWeapons[weapon].model);
+		if(slot >= 0){
+			if(!IsTxdLoaded(slot))
+				LoadTxd(slot);
+			icons[weapon] = FindTextureInTxd(slot, (std::string(gHudWeapons[weapon].model) + "icon").c_str());
+		}
+	}
+	return icons[weapon];
+}
+
+// CFont text as a textdraw draws it: the same fonts and edges. The HUD sets
+// CFont's scale itself, a textdraw's letter height is halved first.
+// fromBottom: y is where the line ends (CFont::PrintStringFromBottom).
+static void
+hudText(ImDrawList *dl, const Canvas &cv, const char *text, float x, float y, int font, float sx, float sy,
+	int alignment, bool proportional, int edge, unsigned int colour, bool fromBottom = false)
+{
+	TextDraw td;
+	InitTextDraw(&td);
+	td.text = text;
+	td.font = font;
+	td.letterX = sx; td.letterY = sy * 2.0f;
+	td.x = x; td.y = fromBottom ? y - lineHeight(td) : y;
+	td.alignment = alignment;
+	td.sizeY = 640.0f;	// CFont::SetCentreSize, for centred text
+	td.proportional = proportional;
+	td.shadow = 0;
+	td.outline = edge;
+	td.colour = colour;
+	td.backgroundColour = HUD_BLACK;
+	drawTextDraw(dl, cv, td);
+}
+
+// CSprite2d::DrawBarChart with its black border.
+static void
+hudBar(ImDrawList *dl, const Canvas &cv, float x, float y, float w, float h, int percent, unsigned int colour)
+{
+	float fill = x + w * std::min(100, std::max(0, percent)) / 100.0f;
+	unsigned int dark = ((colour >> 25 & 0x7F) << 24) | ((colour >> 17 & 0x7F) << 16) | ((colour >> 9 & 0x7F) << 8) | 0xFF;
+	dl->AddRectFilled(cv.at(x, y), cv.at(fill, y + h), rgbaToImU32(colour));
+	dl->AddRectFilled(cv.at(fill, y), cv.at(x + w, y + h), rgbaToImU32(dark));
+	ImU32 black = IM_COL32(0, 0, 0, 255);
+	dl->AddRectFilled(cv.at(x, y), cv.at(x + w, y + 2.0f), black);
+	dl->AddRectFilled(cv.at(x, y + h - 2.0f), cv.at(x + w, y + h), black);
+	dl->AddRectFilled(cv.at(x, y), cv.at(x + 2.0f, y + h), black);
+	dl->AddRectFilled(cv.at(x + w - 2.0f, y), cv.at(x + w, y + h), black);
+}
+
+// CChatWindow: Arial bold at GetFontSize's size for the screen width
+// (14 under 1024, 16 under 1400, 18, 20 from 1600, two per /fontsize step),
+// outlined in black, from 45, 10 in the player's pixels. White unless a
+// {RRGGBB} changes it.
+static void
+drawChat(ImDrawList *dl, const Canvas &cv)
+{
+	int r = std::max(0, std::min(gHud.resolution, NUM_HUD_RESOLUTIONS - 1));
+	int w = gHudResolutions[r].w;
+	float size = (float)(w < 1024 ? 14 : w < 1400 ? 16 : w < 1600 ? 18 : 20) + 2.0f * gHud.fontSize;
+	float px = cv.sy * 448.0f / gHudResolutions[r].h;	// screen pixels per player pixel
+	ImFont *font = ImGui::GetFont();
+	float fontSize = size * px;
+	float x0 = cv.x + 45.0f * px, y = cv.y + 10.0f * px;
+	std::vector<std::string> lines;
+	for(const char *p = gHud.messages; *p; ){
+		const char *e = strchr(p, '\n');
+		lines.push_back(std::string(p, e ? e - p : strlen(p)));
+		p = e ? e + 1 : p + strlen(p);
+	}
+	// The last pageSize lines, at the bottom of the page as new ones arrive.
+	size_t first = lines.size() > (size_t)gHud.pageSize ? lines.size() - gHud.pageSize : 0;
+	y += (gHud.pageSize - (int)(lines.size() - first)) * fontSize;
+	for(size_t i = first; i < lines.size(); i++, y += fontSize){
+		float x = x0;
+		ImU32 colour = IM_COL32_WHITE;
+		std::string text = gHud.timestamps ? "[12:00:00] " + lines[i] : lines[i];
+		size_t at = 0;
+		while(at < text.size()){
+			size_t open = text.find('{', at);
+			size_t end = open;
+			// A run of text up to the next {RRGGBB}.
+			while(open != std::string::npos){
+				bool hex = open + 7 < text.size() && text[open + 7] == '}';
+				for(int k = 1; hex && k <= 6; k++)
+					hex = isxdigit((unsigned char)text[open + k]) != 0;
+				if(hex)
+					break;
+				open = text.find('{', open + 1);
+			}
+			end = open == std::string::npos ? text.size() : open;
+			if(end > at){
+				const char *b = text.c_str() + at, *e = text.c_str() + end;
+				for(int oy = -1; oy <= 1; oy++)
+					for(int ox = -1; ox <= 1; ox++)
+						if(ox || oy)
+							dl->AddText(font, fontSize, ImVec2(x + ox * px, y + oy * px), IM_COL32(0, 0, 0, 255), b, e);
+				dl->AddText(font, fontSize, ImVec2(x, y), colour, b, e);
+				dl->AddText(font, fontSize, ImVec2(x + 0.5f * px, y), colour, b, e);	// Arial bold
+				x += font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, b, e).x + 0.5f * px;
+			}
+			if(open == std::string::npos)
+				break;
+			unsigned int rgb = (unsigned int)strtoul(text.substr(open + 1, 6).c_str(), nil, 16);
+			colour = IM_COL32(rgb >> 16 & 0xFF, rgb >> 8 & 0xFF, rgb & 0xFF, 255);
+			at = open + 8;
+		}
+	}
+}
+
+static void
+drawHud(ImDrawList *dl, const Canvas &cv)
+{
+	const int p = gHud.parts;
+	char buf[64];
+	if(p & HUD_RADAR){
+		// CHud::DrawRadar: 40 from the left, centre 66 above the bottom, 38 across.
+		float radius = 38.0f * cv.sy;
+		ImVec2 left = cv.at(40.0f, 448.0f - 66.0f);
+		DrawRadarOnCanvas(dl, ImVec2(left.x + radius, left.y), radius, cv.sy);
+	}
+	if(p & HUD_WEAPON){
+		// 32 from the right and 111 (0.1734 of the width) for the icon, 47 x 58.
+		rw::Texture *icon = hudWeaponIcon(gHud.weapon);
+		if(icon)
+			dl->AddImage((ImTextureID)icon, cv.at(497.0f, 20.0f), cv.at(544.0f, 78.0f));
+	}
+	if((p & HUD_AMMO) && gHud.weapon >= 0 && gHud.weapon < NUM_HUD_WEAPONS && gHudWeapons[gHud.weapon].ammo){
+		// CHud::DrawAmmo: "total-clip", or the total for one-shot clips.
+		int clip = gHudWeapons[gHud.weapon].clip;
+		int inClip = std::min(gHud.clip, gHud.ammo);
+		if(clip <= 1 || clip >= 1000)
+			snprintf(buf, sizeof(buf), "%d", gHud.ammo);
+		else
+			snprintf(buf, sizeof(buf), "%d-%d", std::min(gHud.ammo - inClip, 9999), inClip);
+		hudText(dl, cv, buf, 520.5f, 63.0f, TD_FONT_AHARONI, 0.3f, 0.7f, 2, true, 1, HUD_LIGHT_BLUE);
+	}
+	if(p & HUD_CLOCK){
+		snprintf(buf, sizeof(buf), "%02d:%02d", gHud.hour, gHud.minute);
+		hudText(dl, cv, buf, 608.0f, 22.0f, TD_FONT_PRICEDOWN, 0.55f, 1.1f, 3, false, 2, HUD_LIGHT_GRAY);
+	}
+	if(p & HUD_HEALTH)	// 141 from the right, 77 - 10 down, 109 wide at max health 100 / 176
+		hudBar(dl, cv, 499.0f + 109.0f - 109.0f * 100.0f / 176.0f, 67.0f, 109.0f * 100.0f / 176.0f, 9.0f,
+			gHud.health, HUD_RED);
+	if((p & HUD_ARMOUR) && gHud.armour > 1)	// 94 from the right, 48 - 3 down
+		hudBar(dl, cv, 546.0f, 45.0f, 62.0f, 9.0f, gHud.armour, HUD_LIGHT_GRAY);
+	if(p & HUD_BREATH)	// under water: 62 - 6 down
+		hudBar(dl, cv, 546.0f, 56.0f, 62.0f, 9.0f, gHud.breath, HUD_LIGHT_BLUE);
+	if(p & HUD_MONEY){
+		if(gHud.money < 0)
+			snprintf(buf, sizeof(buf), "-$%07d", -gHud.money);
+		else
+			snprintf(buf, sizeof(buf), "$%08d", gHud.money);
+		hudText(dl, cv, buf, 608.0f, 77.0f, TD_FONT_PRICEDOWN, 0.55f, 1.1f, 3, false, 2,
+			gHud.money < 0 ? HUD_RED : HUD_GREEN);
+	}
+	if((p & HUD_WANTED) && gHud.wanted > 0)	// six stars (']'), the first on the right, 18 apart
+		for(int i = 0; i < 6; i++)
+			hudText(dl, cv, "]", 611.0f - 18.0f * i, 102.0f, TD_FONT_BECKETT, 0.605f, 1.21f, 3, true, 1,
+				i < gHud.wanted ? HUD_GOLD : HUD_BLACK);
+	if((p & HUD_VEHICLE) && gHud.vehicle[0])
+		hudText(dl, cv, gHud.vehicle, 608.0f, 344.0f, TD_FONT_BANK_GOTHIC, 1.0f, 1.5f, 3, true, 2, HUD_GREEN);
+	if((p & HUD_ZONE) && gHud.zone[0]){
+		// The line ends 104 - 76 above the bottom.
+		hudText(dl, cv, gHud.zone, 608.0f, 420.0f, TD_FONT_BECKETT, 1.2f, 1.9f, 3, true, 2, HUD_LIGHT_BLUE, true);
+	}
+	if(gHud.chat)
+		drawChat(dl, cv);
+}
+
+static void
+hudSettings(void)
+{
+	bool changed = ImGui::Checkbox(L("Game HUD"), &gHud.show);
+	ImGui::SetItemTooltip("%s", _("The game's HUD under the textdraws, where SA-MP shows it, to check they don't cover it."));
+	ImGui::SameLine();
+	if(ImGui::SmallButton(ICON_FA_GEAR "##hud_settings"))
+		ImGui::OpenPopup("##hud_popup");
+	ImGui::SetItemTooltip("%s", _("What the HUD shows"));
+	if(ImGui::BeginPopup("##hud_popup")){
+		static const struct { int bit; const char *label; } parts[] = {
+			{ HUD_RADAR, N_("Radar") }, { HUD_WEAPON, N_("Weapon") }, { HUD_AMMO, N_("Ammo") },
+			{ HUD_HEALTH, N_("Health") }, { HUD_ARMOUR, N_("Armour") }, { HUD_BREATH, N_("Breath") },
+			{ HUD_MONEY, N_("Money") }, { HUD_CLOCK, N_("Clock") }, { HUD_WANTED, N_("Wanted level") },
+			{ HUD_VEHICLE, N_("Vehicle name") }, { HUD_ZONE, N_("Zone name") },
+		};
+		ImGui::SeparatorText(_("Show"));
+		for(int i = 0; i < IM_ARRAYSIZE(parts); i++){
+			if(i % 3)
+				ImGui::SameLine(ImGui::GetFontSize() * 8.0f * (i % 3));
+			changed |= ImGui::CheckboxFlags(_(parts[i].label), &gHud.parts, parts[i].bit);
+		}
+		ImGui::SetItemTooltip("%s", _("SA-MP shows zone names with EnableZoneNames, the clock with TogglePlayerClock."));
+		ImGui::SeparatorText(_("Values"));
+		float w = ImGui::GetFontSize() * 10.0f;
+		ImGui::PushItemWidth(w);
+		changed |= ImGui::SliderInt(L("Health"), &gHud.health, 0, 100, "%d%%");
+		changed |= ImGui::SliderInt(L("Armour"), &gHud.armour, 0, 100, "%d%%");
+		changed |= ImGui::SliderInt(L("Breath"), &gHud.breath, 0, 100, "%d%%");
+		changed |= ImGui::InputInt(L("Money"), &gHud.money, 100, 10000);
+		gHud.money = std::max(-9999999, std::min(gHud.money, 99999999));
+		int time[2] = { gHud.hour, gHud.minute };
+		if(ImGui::DragInt2(L("Time"), time, 0.2f, 0, 59, "%02d")){
+			gHud.hour = std::max(0, std::min(time[0], 23));
+			gHud.minute = std::max(0, std::min(time[1], 59));
+			changed = true;
+		}
+		changed |= ImGui::SliderInt(L("Wanted level"), &gHud.wanted, 0, 6);
+		const char *weapons[NUM_HUD_WEAPONS];
+		for(int i = 0; i < NUM_HUD_WEAPONS; i++)
+			weapons[i] = _(gHudWeapons[i].name);
+		changed |= ImGui::Combo(L("Weapon"), &gHud.weapon, weapons, NUM_HUD_WEAPONS);
+		int ammo[2] = { gHud.ammo, gHud.clip };
+		if(ImGui::InputInt2(L("Ammo, in clip"), ammo)){
+			gHud.ammo = std::max(0, ammo[0]);
+			gHud.clip = std::max(0, ammo[1]);
+			changed = true;
+		}
+		ImGui::InputText(L("Vehicle name"), gHud.vehicle, sizeof(gHud.vehicle));
+		changed |= ImGui::IsItemDeactivatedAfterEdit();
+		ImGui::InputText(L("Zone name"), gHud.zone, sizeof(gHud.zone));
+		changed |= ImGui::IsItemDeactivatedAfterEdit();
+		ImGui::PopItemWidth();
+
+		ImGui::SeparatorText(_("SA-MP chat"));
+		changed |= ImGui::Checkbox(L("Chat"), &gHud.chat);
+		ImGui::SameLine();
+		changed |= ImGui::Checkbox(L("Timestamps"), &gHud.timestamps);
+		ImGui::PushItemWidth(w);
+		char res[NUM_HUD_RESOLUTIONS][24];
+		const char *resNames[NUM_HUD_RESOLUTIONS];
+		for(int i = 0; i < NUM_HUD_RESOLUTIONS; i++){
+			snprintf(res[i], sizeof(res[i]), "%d x %d", gHudResolutions[i].w, gHudResolutions[i].h);
+			resNames[i] = res[i];
+		}
+		changed |= ImGui::Combo(L("Player's screen"), &gHud.resolution, resNames, NUM_HUD_RESOLUTIONS);
+		ImGui::SetItemTooltip("%s", _("The chat is sized in the player's pixels: it takes less of a bigger screen."));
+		changed |= ImGui::SliderInt(L("/fontsize"), &gHud.fontSize, -3, 5);
+		changed |= ImGui::SliderInt(L("/pagesize"), &gHud.pageSize, 10, 20);
+		ImGui::PopItemWidth();
+		ImGui::InputTextMultiline(L("Messages"), gHud.messages, sizeof(gHud.messages),
+			ImVec2(ImGui::GetFontSize() * 22.0f, ImGui::GetFontSize() * 6.0f));
+		changed |= ImGui::IsItemDeactivatedAfterEdit();
+		ImGui::SetItemTooltip("%s", _("One message per line; {RRGGBB} changes the colour."));
+
+		if(ImGui::Button(L("Reset"))){
+			bool show = gHud.show;
+			gHud = HUD_DEFAULTS;
+			gHud.show = show;
+			changed = true;
+		}
+		ImGui::SetItemTooltip("%s", _("SA-MP's defaults"));
+		ImGui::EndPopup();
+	}
+	if(changed)
+		SaveEditorSettings();
+}
+
 // ---- On-screen editing ----
 
 static void
@@ -716,6 +1110,8 @@ DrawTextDrawsOverlay(void)
 		dl->AddImage((ImTextureID)gStillFrame, cv.at(0, 0), cv.at(640, 448));
 	else
 		dl->AddRectFilled(cv.at(0, 0), cv.at(640, 448), rgbaToImU32(gCanvasColour));
+	if(gHud.show)
+		drawHud(dl, cv);
 	const std::vector<TextDraw> &mapTds = GetMapTextDraws();
 	for(size_t i = 0; i < mapTds.size(); i++){
 		drawTextDraw(dl, cv, mapTds[i]);
@@ -971,8 +1367,6 @@ properties(TextDraw &td)
 	changed |= colourEdit(td.font == TD_FONT_SPRITE ? L("Tint") : L("Colour"), &td.colour);
 
 	ImGui::SeparatorText(_("Position"));
-	changed |= ImGui::Checkbox(LI(ICON_FA_LOCK, "Locked"), &td.locked);
-	ImGui::SetItemTooltip("%s", _("Can't be dragged or resized on the canvas. The fields here still change it."));
 	float pos[2] = { td.x, td.y };
 	if(ImGui::DragFloat2(L("Position"), pos, 0.5f, -100.0f, 740.0f, "%.2f")){
 		td.x = pos[0]; td.y = pos[1];
@@ -1399,6 +1793,7 @@ DrawTextDrawsWindow(void)
 		if(colourEdit("##canvas", &gCanvasColour))
 			SaveEditorSettings();
 	}
+	hudSettings();
 
 	const std::vector<TextDraw> &mapTds = GetMapTextDraws();
 	if(!mapTds.empty()){
@@ -1467,6 +1862,12 @@ DrawTextDrawsWindow(void)
 			tds.erase(tds.begin() + gSelected);
 			gSelected = -1;
 			TextDrawsChanged();
+		}
+		if(gSelected >= 0){
+			ImGui::SameLine();
+			if(ImGui::Checkbox(LI(ICON_FA_LOCK, "Locked"), &tds[gSelected].locked))
+				TextDrawsChanged();
+			ImGui::SetItemTooltip("%s", _("Can't be dragged or resized on the canvas. The fields here still change it."));
 		}
 		if(gSelected >= 0){
 			ImGui::Separator();

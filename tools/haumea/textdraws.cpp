@@ -3,6 +3,7 @@
 #include "textdraws.h"
 #include "encoding.h"
 
+#include <errno.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
@@ -201,7 +202,7 @@ SaveTextDrawFile(const char *path, std::string *error)
 		return false;
 	}
 	if(!EnsureParentDirectoriesForPath(target.c_str())){
-		*error = "could not create the folder for " + target;
+		*error = "could not create the folder for " + target + ": " + strerror(errno);
 		return false;
 	}
 	std::string code = EncodePawnFileText(BuildTextDrawFileCode(target.c_str()), gFileEncoding);
@@ -211,14 +212,16 @@ SaveTextDrawFile(const char *path, std::string *error)
 	bool written = f && fwrite(code.data(), 1, code.size(), f) == code.size();
 	if(f)
 		written = fclose(f) == 0 && written;
+	int writeErrno = errno;
 #ifdef _WIN32
 	written = written && MoveFileExA(temp.c_str(), target.c_str(), MOVEFILE_REPLACE_EXISTING) != 0;
 #else
 	written = written && rename(temp.c_str(), target.c_str()) == 0;
 #endif
 	if(!written){
+		*error = "could not write " + target + ": " + strerror(written ? errno : writeErrno);
 		remove(temp.c_str());
-		*error = "could not write " + target;
+		log("TextDraws: %s\n", error->c_str());
 		return false;
 	}
 	gFilePath = target;

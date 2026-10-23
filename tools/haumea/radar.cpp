@@ -237,6 +237,8 @@ viewRect(ImVec2 *pos, ImVec2 *size)
 #endif
 }
 
+void drawRadarDisc(ImDrawList *dl, const std::vector<Zone> &zones, ImVec2 centre, float radius, float k);
+
 // CHud::DrawRadar's place on a 640 x 448 screen: 40 from the left, the
 // circle's centre 66 above the bottom, 38 across (the height's half).
 void
@@ -289,6 +291,17 @@ drawRadar(const std::vector<Zone> &zones)
 		ImGui::EndPopup();
 	}
 
+	drawRadarDisc(ImGui::GetWindowDrawList(), zones, centre, radius, k);
+	ImGui::End();
+}
+
+// The radar itself: the map around the camera in a circle of the radius,
+// the disc around it, the player's arrow and the N. k: pixels per unit of
+// the 448-high screen.
+void
+drawRadarDisc(ImDrawList *dl, const std::vector<Zone> &zones, ImVec2 centre, float radius, float k)
+{
+	float ring = 4.0f * k;
 	RadarFrameSpace f;
 	f.origin = { TheCamera.m_position.x, TheCamera.m_position.y };
 	f.range = gRange;
@@ -298,7 +311,6 @@ drawRadar(const std::vector<Zone> &zones)
 	f.centre = centre;
 	f.radius = radius;
 
-	ImDrawList *dl = ImGui::GetWindowDrawList();
 	ImDrawListFlags oldFlags = dl->Flags;
 	dl->Flags &= ~ImDrawListFlags_AntiAliasedFill;	// no seams between tiles and zones
 	// DrawRadarMap: the sea, the tiles around the player, then the gang zones.
@@ -342,7 +354,6 @@ drawRadar(const std::vector<Zone> &zones)
 		drawSprite(dl, n, north, 8.0f * k, 0.0f);
 	else
 		dl->AddText(ImVec2(north.x - 4.0f, north.y - 7.0f), IM_COL32_WHITE, "N");
-	ImGui::End();
 }
 
 // ---- the full map ---------------------------------------------------------------
@@ -454,6 +465,14 @@ RadarFrame(void)
 		drawRadar(zones);
 	if(gShowMap)
 		drawMap(zones);
+}
+
+void
+DrawRadarOnCanvas(ImDrawList *dl, ImVec2 centre, float radius, float k)
+{
+	static std::vector<Zone> zones;
+	collectZones(zones);
+	drawRadarDisc(dl, zones, centre, radius, k);
 }
 
 bool

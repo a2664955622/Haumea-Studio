@@ -2129,3 +2129,147 @@ msgstr "Travado"
 #: tools/haumea/textdraws_ui.cpp
 msgid "Can't be dragged or resized on the canvas. The fields here still change it."
 msgstr "Não pode ser arrastado nem redimensionado na tela. Os campos aqui ainda o alteram."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "%d errors"
+msgstr "%d erros"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "/fontsize"
+msgstr "/fontsize"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "/pagesize"
+msgstr "/pagesize"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Ammo"
+msgstr "Munição"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Ammo, in clip"
+msgstr "Munição, no pente"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Breath"
+msgstr "Fôlego"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Chat"
+msgstr "Chat"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Clock"
+msgstr "Relógio"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Copied %d log lines"
+msgstr "%d linhas do log copiadas"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Copies the lines shown, to paste in a bug report"
+msgstr "Copia as linhas mostradas, para colar num relato de bug"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Errors"
+msgstr "Erros"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Warnings"
+msgstr "Avisos"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Filter: words to find, -word to leave out"
+msgstr "Filtro: palavras a procurar, -palavra para deixar de fora"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Follow"
+msgstr "Acompanhar"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Game HUD"
+msgstr "HUD do jogo"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Keep the newest line in view"
+msgstr "Mantém a linha mais nova à vista"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Messages"
+msgstr "Mensagens"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Micro SMG"
+msgstr "Micro SMG"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "One message per line; {RRGGBB} changes the colour."
+msgstr "Uma mensagem por linha; {RRGGBB} muda a cor."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Player's screen"
+msgstr "Tela do jogador"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Radar"
+msgstr "Radar"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Rocket launcher"
+msgstr "Lança-foguetes"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "SA-MP chat"
+msgstr "Chat do SA-MP"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "SA-MP shows zone names with EnableZoneNames, the clock with TogglePlayerClock."
+msgstr "O SA-MP mostra nomes de zona com EnableZoneNames, e o relógio com TogglePlayerClock."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "SA-MP's defaults"
+msgstr "Os padrões do SA-MP"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Sawn-off shotgun"
+msgstr "Escopeta de cano serrado"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Something went wrong: click for the Log"
+msgstr "Algo deu errado: clique para ver o Log"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "The chat is sized in the player's pixels: it takes less of a bigger screen."
+msgstr "O chat é medido em pixels do jogador: ocupa menos de uma tela maior."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "The game's HUD under the textdraws, where SA-MP shows it, to check they don't cover it."
+msgstr "O HUD do jogo sob os textdraws, onde o SA-MP o mostra, para conferir que não o cobrem."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "This run's log. The one before is haumea.previous.log."
+msgstr "O log desta execução. O anterior é haumea.previous.log."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Timestamps"
+msgstr "Horários"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Values"
+msgstr "Valores"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Vehicle name"
+msgstr "Nome do veículo"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Wanted level"
+msgstr "Nível de procurado"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "What the HUD shows"
+msgstr "O que o HUD mostra"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Zone name"
+msgstr "Nome da zona"

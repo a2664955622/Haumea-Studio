@@ -33,6 +33,9 @@
 #include "keycast.h"
 #include "radar.h"
 #include <chrono>
+#include <deque>
+#include <mutex>
+#include <time.h>
 #ifdef LIBRW_GLFW
 #include <GLFW/glfw3.h>
 #endif
@@ -1149,6 +1152,9 @@ static const char *toastCategoryNames[TOAST_NUM_CATEGORIES] = {
 static void
 addToast(ToastCategory cat, float duration, const char *fmt, va_list args)
 {
+	char text[sizeof(toasts[0].text)];
+	vsnprintf(text, sizeof(text), fmt, args);
+	log("%s\n", text);	// what the user is told stays in the Log, shown or not
 	if(!toastEnabled || !toastCategoryEnabled[cat])
 		return;
 
@@ -1159,7 +1165,7 @@ addToast(ToastCategory cat, float duration, const char *fmt, va_list args)
 	}
 
 	ToastEntry *t = &toasts[numToasts++];
-	vsnprintf(t->text, sizeof(t->text), fmt, args);
+	memcpy(t->text, text, sizeof(t->text));
 	UiScriptNoteToast(t->text);
 	t->totalTime = duration + TOAST_FADE_IN + TOAST_FADE_OUT;
 	t->timer = t->totalTime;
@@ -1277,67 +1283,211 @@ uiNotificationSettings(void)
 }
 
 // From the demo, slightly changed
-struct ExampleAppLog
-{
-	ImGuiTextBuffer     Buf;
-	ImGuiTextFilter     Filter;
-	ImVector<int>       LineOffsets;        // Index to lines offset
-	bool                ScrollToBottom;
-
-	void Clear() { Buf.clear(); LineOffsets.clear(); }
-
-	void
-	AddLog(const char *fmt, va_list args)
-	{
-		int old_size = Buf.size();
-		Buf.appendfv(fmt, args);
-		for(int new_size = Buf.size(); old_size < new_size; old_size++)
-			if(Buf[old_size] == '\n')
-				LineOffsets.push_back(old_size);
-		ScrollToBottom = true;
-	}
-
-	void
-	AddLog(const char *fmt, ...) IM_FMTARGS(2)
-	{
-		va_list args;
-		va_start(args, fmt);
-		AddLog(fmt, args);
-		va_end(args);
-	}
-
-	void
-	Draw(const char *title, bool *p_open = nil)
-	{
-		ImGui::Begin(title, p_open);
-		if(ImGui::Button(_("Clear"))) Clear();
-		ImGui::SameLine();
-		bool copy = ImGui::Button(_("Copy"));
-		ImGui::SameLine();
-		Filter.Draw(_("Filter"), -100.0f);
-		ImGui::Separator();
-		ImGui::BeginChild("scrolling", ImVec2(0,0), false, ImGuiWindowFlags_HorizontalScrollbar);
-		if(copy) ImGui::LogToClipboard();
-
-		if(Filter.IsActive()){
-			const char *buf_begin = Buf.begin();
-			const char *line = buf_begin;
-			for(int line_no = 0; line != nil; line_no++){
-				const char* line_end = (line_no < LineOffsets.Size) ? buf_begin + LineOffsets[line_no] : nil;
-				if(Filter.PassFilter(line, line_end))
-					ImGui::TextUnformatted(line, line_end);
-				line = line_end && line_end[1] ? line_end + 1 : nil;
-			}
-		}else
-			ImGui::TextUnformatted(Buf.begin());
-
-		if(ScrollToBottom)
-			ImGui::SetScrollHereY(1.0f);
-		ScrollToBottom = false;
-		ImGui::EndChild();
-		ImGui::End();
-	}
+// The Log window: everything log() prints, from any thread, with when it
+// happened. Lines that read as errors or warnings stand out and are counted
+// in the status bar. The same lines go to haumea.log in the config folder
+// (the last run's to haumea.previous.log), so a user can send it.
+struct LogLine {
+	char time[12];
+	int level;
+	std::string text;
 };
+enum { LOG_INFO, LOG_WARNING, LOG_ERROR };
+static std::mutex gLogMutex;
+static std::deque<LogLine> gLogLines;
+static const size_t MAX_LOG_LINES = 20000;
+static int gLogErrors, gLogWarnings;	// since the last Clear
+static int gLogSeenErrors;	// errors when the Log window was last open
+static FILE *gLogFile;
+static bool gLogFileTried;
+static std::string gLogFilePath;
+
+static int
+logLevel(const std::string &text)
+{
+	std::string low = text;
+	for(char &c : low)
+		c = (char)tolower((unsigned char)c);
+	static const char *errors[] = { "error", "failed", "fail to", "could not", "couldn't", "can't", "cannot",
+		"unable to", "permission denied", "not found",
+		// The pt-BR interface's toasts.
+		"erro", "falh", "não foi possível", "não pôde", "não é possível", "não dá" };
+	for(const char *e : errors)
+		if(low.find(e) != std::string::npos)
+			return LOG_ERROR;
+	if(low.find("warning") != std::string::npos || low.find("missing") != std::string::npos)
+		return LOG_WARNING;
+	return LOG_INFO;
+}
+
+// "error: " or "warning: " for the file and Copy, unless the line says so itself.
+static const char*
+logTag(const LogLine &l)
+{
+	if(l.level == LOG_INFO)
+		return "";
+	const char *tag = l.level == LOG_ERROR ? "error" : "warning";
+	for(size_t i = 0; tag[i]; i++)
+		if(tolower((unsigned char)l.text[i]) != tag[i])	// text ends in '\0', which stops it
+			return l.level == LOG_ERROR ? "error: " : "warning: ";
+	return "";
+}
+
+static void
+writeLogLine(const LogLine &l)
+{
+	if(gLogFile){
+		fprintf(gLogFile, "%s %s%s\n", l.time, logTag(l), l.text.c_str());
+		fflush(gLogFile);
+	}
+}
+
+void
+addToLogWindow(const char *fmt, va_list args)
+{
+	char buf[4096];
+	vsnprintf(buf, sizeof(buf), fmt, args);
+	time_t now = time(nil);
+	struct tm local;
+#ifdef _WIN32
+	localtime_s(&local, &now);
+#else
+	localtime_r(&now, &local);
+#endif
+	std::lock_guard<std::mutex> lock(gLogMutex);
+	for(const char *p = buf; *p; ){
+		const char *eol = strchr(p, '\n');
+		size_t len = eol ? (size_t)(eol - p) : strlen(p);
+		if(len > 0){
+			LogLine l;
+			strftime(l.time, sizeof(l.time), "%H:%M:%S", &local);
+			l.text.assign(p, len);
+			l.level = logLevel(l.text);
+			if(l.level == LOG_ERROR) gLogErrors++;
+			if(l.level == LOG_WARNING) gLogWarnings++;
+			writeLogLine(l);
+			gLogLines.push_back(l);
+			if(gLogLines.size() > MAX_LOG_LINES)
+				gLogLines.pop_front();
+		}
+		p += len + (eol ? 1 : 0);
+	}
+}
+
+// The log file opens once the editor is up (the settings folder is known by
+// then); what was logged before goes in first. Command-line runs keep none.
+static void
+openLogFile(void)
+{
+	if(gLogFileTried)
+		return;
+	gLogFileTried = true;
+	if(SettingsAreReadOnly())
+		return;
+	char path[1024], previous[1024];
+	if(!BuildPath(path, sizeof(path), GetConfigDir(), "haumea.log") ||
+	   !BuildPath(previous, sizeof(previous), GetConfigDir(), "haumea.previous.log"))
+		return;
+	remove(previous);
+	rename(path, previous);
+	std::lock_guard<std::mutex> lock(gLogMutex);
+	gLogFile = fopen(path, "w");
+	if(gLogFile == nil)
+		return;
+	gLogFilePath = path;
+	for(const LogLine &l : gLogLines)
+		writeLogLine(l);
+}
+
+static void
+drawLogWindow(bool *open)
+{
+	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 40.0f, ImGui::GetFontSize() * 20.0f), ImGuiCond_FirstUseEver);
+	// ###Log: the ID the window always had, so saved layouts stay.
+	char title[64];
+	snprintf(title, sizeof(title), ICON_FA_LIST " %s###Log", _("Log"));
+	if(!ImGui::Begin(title, open)){
+		ImGui::End();
+		return;
+	}
+	static bool showInfo = true, showWarnings = true, showErrors = true, follow = true;
+	static ImGuiTextFilter filter;
+	int errors, warnings;
+	{
+		std::lock_guard<std::mutex> lock(gLogMutex);
+		errors = gLogErrors;
+		warnings = gLogWarnings;
+		gLogSeenErrors = errors;
+	}
+	char label[64];
+	ImGui::Checkbox(L("Info"), &showInfo);
+	ImGui::SameLine();
+	snprintf(label, sizeof(label), "%s (%d)###warnings", _("Warnings"), warnings);
+	ImGui::Checkbox(label, &showWarnings);
+	ImGui::SameLine();
+	snprintf(label, sizeof(label), "%s (%d)###errors", _("Errors"), errors);
+	ImGui::Checkbox(label, &showErrors);
+	ImGui::SameLine();
+	filter.Draw("##filter", ImGui::GetFontSize() * 10.0f);
+	ImGui::SetItemTooltip("%s", _("Filter: words to find, -word to leave out"));
+	ImGui::SameLine();
+	bool copy = ImGui::Button(LI(ICON_FA_COPY, "Copy"));
+	ImGui::SetItemTooltip("%s", _("Copies the lines shown, to paste in a bug report"));
+	ImGui::SameLine();
+	if(ImGui::Button(LI(ICON_FA_TRASH, "Clear"))){
+		std::lock_guard<std::mutex> lock(gLogMutex);
+		gLogLines.clear();
+		gLogErrors = gLogWarnings = gLogSeenErrors = 0;
+	}
+	ImGui::SameLine();
+	ImGui::Checkbox(L("Follow"), &follow);
+	ImGui::SetItemTooltip("%s", _("Keep the newest line in view"));
+	if(!gLogFilePath.empty()){
+		ImGui::TextDisabled("%s", gLogFilePath.c_str());
+		ImGui::SetItemTooltip("%s", _("This run's log. The one before is haumea.previous.log."));
+	}
+	ImGui::Separator();
+
+	// The lines to show, copied out of the lock.
+	std::vector<LogLine> shown;
+	{
+		std::lock_guard<std::mutex> lock(gLogMutex);
+		for(const LogLine &l : gLogLines){
+			if((l.level == LOG_INFO && !showInfo) || (l.level == LOG_WARNING && !showWarnings) ||
+			   (l.level == LOG_ERROR && !showErrors))
+				continue;
+			if(filter.IsActive() && !filter.PassFilter(l.text.c_str()))
+				continue;
+			shown.push_back(l);
+		}
+	}
+	if(copy){
+		std::string text;
+		for(const LogLine &l : shown)
+			text += std::string(l.time) + " " + logTag(l) + l.text + "\n";
+		ImGui::SetClipboardText(text.c_str());
+		Toast(TOAST_COPY_PASTE, _("Copied %d log lines"), (int)shown.size());
+	}
+	ImGui::BeginChild("lines", ImVec2(0, 0), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
+	ImGuiListClipper clipper;
+	clipper.Begin((int)shown.size());
+	while(clipper.Step())
+		for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++){
+			const LogLine &l = shown[i];
+			ImGui::TextDisabled("%s", l.time);
+			ImGui::SameLine();
+			if(l.level == LOG_ERROR)
+				ImGui::TextColored(ImVec4(1.0f, 0.42f, 0.38f, 1.0f), "%s", l.text.c_str());
+			else if(l.level == LOG_WARNING)
+				ImGui::TextColored(ImVec4(1.0f, 0.78f, 0.25f, 1.0f), "%s", l.text.c_str());
+			else
+				ImGui::TextUnformatted(l.text.c_str());
+		}
+	if(follow && ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - ImGui::GetFontSize() * 4.0f)
+		ImGui::SetScrollHereY(1.0f);
+	ImGui::EndChild();
+	ImGui::End();
+}
 
 static ImVec4 mkColor(rw::RGBA &c) { return ImVec4(c.red/255.0f, c.green/255.0f, c.blue/255.0f, c.alpha/255.0f); }
 
@@ -12048,10 +12198,6 @@ uiPawnCodeWindow(void)
 	ImGui::End();
 }
 
-static ExampleAppLog logwindow;
-// TODO: this crashes for me on linux. should figure out how to fix
-//void addToLogWindow(const char *fmt, va_list args) { logwindow.AddLog(fmt, args); }
-void addToLogWindow(const char *fmt, va_list args) { }
 
 // Objects and removed buildings in the map, recounted when the scene changes.
 static void
@@ -12156,8 +12302,27 @@ uiStatusBar(void)
 		hiddenWidth = ImGui::CalcTextSize(hiddenText).x + ImGui::CalcTextSize(_("Show all")).x +
 			ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetStyle().ItemSpacing.x + ImGui::GetFontSize();
 
+	// Errors the user hasn't seen in the Log yet.
+	int newErrors;
+	{
+		std::lock_guard<std::mutex> lock(gLogMutex);
+		newErrors = showLogWindow ? 0 : gLogErrors - gLogSeenErrors;
+	}
+	char errorsText[48];
+	snprintf(errorsText, sizeof(errorsText), TI(ICON_FA_TRIANGLE_EXCLAMATION, "%d errors"), newErrors);
+	float errorsWidth = newErrors > 0 ? ImGui::CalcTextSize(errorsText).x + ImGui::GetFontSize() : 0.0f;
+
 	ImGui::SameLine(max(ImGui::GetCursorPosX() + ImGui::GetFontSize(),
-		ImGui::GetWindowContentRegionMax().x - rightWidth - hiddenWidth));
+		ImGui::GetWindowContentRegionMax().x - rightWidth - hiddenWidth - errorsWidth));
+	if(newErrors > 0){
+		ImGui::TextColored(ImVec4(1.0f, 0.42f, 0.38f, 1.0f), "%s", errorsText);
+		if(ImGui::IsItemHovered())
+			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+		ImGui::SetItemTooltip("%s", _("Something went wrong: click for the Log"));
+		if(ImGui::IsItemClicked())
+			showLogWindow = true;
+		ImGui::SameLine(0.0f, ImGui::GetFontSize());
+	}
 	if(hidden > 0){
 		ImGui::TextColored(ImVec4(1.0f, 0.78f, 0.25f, 1.0f), "%s", hiddenText);
 		ImGui::SameLine();
@@ -12759,7 +12924,8 @@ gui(void)
 
 		if(showHelpWindow) uiHelpWindow();
 		if(showShortcutsWindow) uiKeyboardShortcutsWindow();
-	if(showLogWindow) logwindow.Draw("Log", &showLogWindow);
+	openLogFile();
+	if(showLogWindow) drawLogWindow(&showLogWindow);
 
 	// Place mode overlay
 	if(gPlaceMode && GetSpawnObjectId() >= 0){

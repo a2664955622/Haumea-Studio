@@ -12,6 +12,12 @@
 // Once per frame, while the editor UI is built: the radar and the map window.
 void RadarFrame(void);
 
+// The radar alone, for TextDraw mode's game HUD: centre and radius in pixels,
+// k pixels per unit of the 448-high screen.
+struct ImDrawList;
+struct ImVec2;
+void DrawRadarOnCanvas(ImDrawList *dl, ImVec2 centre, float radius, float k);
+
 bool RadarEnabled(void);	// Show Radar
 void RadarSetEnabled(bool on);
 bool RadarMapOpen(void);
