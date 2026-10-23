@@ -970,7 +970,8 @@ jobs:
             echo
             echo 'The Windows `.tar.gz` is used by the built-in updater. The symbols ZIP is for crash reports, and SHA256SUMS verifies downloads. These are not extra installs.'
             echo
-            python3 haumea/tools/release/changelog_section.py "${version%.*}" haumea/CHANGELOG.md || true
+            python3 haumea/tools/release/changelog_section.py Unreleased haumea/CHANGELOG.md || \
+              python3 haumea/tools/release/changelog_section.py "${version%.*}" haumea/CHANGELOG.md || true
             echo
             echo "Haumea Studio is free software under the GNU General Public License, version 2 or later."
             echo "Source code: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/tree/${{ steps.plan.outputs.tag }}"

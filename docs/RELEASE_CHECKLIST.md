@@ -42,7 +42,9 @@ newer jobs. Nothing here is automatic: pushing and releasing are your call.
 1. `tools/haumea/version.h`: the version is right for this release (bump
    MINOR or PATCH as the changes deserve). Keep `tools/agent/_version.py`'s
    `1.0.0.0` in step (test_version checks it).
-2. `CHANGELOG.md` has a section for this version.
+2. `CHANGELOG.md` has an **Unreleased** section covering changes since the previous published
+   release. The workflow uses it for the release notes, falling back to the version section
+   for older changelogs. Archive or reset Unreleased after publishing.
 3. The local test matrix is green (see "Local checks" below), and so is CI
    on `main`.
 

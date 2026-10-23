@@ -1,5 +1,60 @@
 # Changelog
 
+## Unreleased: Changes since 1.0.0.242 beta
+
+### Installation and workspaces
+
+- Install Haumea with the Windows or Linux installer, or the unsigned Apple Silicon DMG.
+  Each platform also has one portable download, with Namaka included.
+- Switch between **Map**, **TextDraws** and **Code** in a single top bar. Yellow **New!**
+  hints introduce TextDraws and Code and stay dismissed after use.
+- Edit Pawn in the native **Code** workspace with syntax colours, line numbers, undo/redo,
+  find/replace and recoverable drafts. Manual changes save to a separate script.
+
+### TextDraw editing and previews
+
+- Artboards, layers, multiselection, locking, editable shapes, eight resize handles,
+  arrangement tools, rulers and guides with exact positions, margins and layout presets.
+- Zoom up to 1600% and pan over the canvas and textdraws. Browse or drop images, and use
+  custom-model TXD sprites (`mdl-<id>:<texture>`, 0.3.DL).
+- Preview GTA's HUD and SA-MP chat, including Widescreen Fix layout and `/hudscalefix`.
+  A pixel-exact canvas renders at the player's resolution before scaling for editing.
+- Model previews now match the game's placement, orientation and mirroring more closely,
+  including planes, skins and negative preview sizes.
+
+### Finding objects and measuring
+
+- **Find instances** in the Object Browser accepts multiple model IDs and ranges, shows
+  per-model counts, and filters your map, GTA's world or both. Results are yellow and
+  camera jumps take you between locations and interiors without changing the selection.
+- **Similar models** compares collision-box dimensions or proportions with adjustable
+  tolerance; the existing previews let you compare the models' actual shapes.
+- **Coordinate pin** in Tools copies XYZ and measures from the pin to an object by dragging.
+  It shows total distance and signed X/Y/Z differences, with surface snapping, exact
+  coordinates, midpoint, axis alignment and offsets from a surface.
+
+### Updating from an older beta
+
+Older Linux builds may reopen the previous executable after installing an update. If the version
+stays unchanged, close Haumea completely and launch it again from its original installation or
+shortcut. The new build fixes subsequent restarts.
+
+### Fixes and polish
+
+- Linux self-updates launch the newly installed executable rather than the old rollback copy.
+- Missing essential GTA files return to the folder chooser with the missing names listed.
+- macOS requests the required OpenGL Core profile; a failed graphics initialization stops
+  startup instead of continuing into a crash. Windows installer verification waits for the
+  installed executable to finish and checks its actual exit code.
+- Fix the Windows prefab-placement stack overflow, browser flickering and a missing world
+  frame after clicks or Namaka commands.
+- Keep the first selected object as the transform pivot and preserve selection highlights
+  across LODs. Small world props remain visible farther away.
+- Apply the swap interval only when it changes and limit rendering while unfocused, addressing
+  the reported background memory-growth path. NVIDIA and native Windows still need confirmation.
+- Prefer open.mp's launcher when available, improve camera flight controls and initial window
+  placement, and update English and Brazilian Portuguese documentation and labels.
+
 ## 1.0.0: Haumea Studio
 
 The first release of **Haumea Studio, the all-in-one editor for open.mp and
