@@ -12260,30 +12260,38 @@ uiTextDrawsHint(void)
 	KeepNextEditorOverlayOnMainWindow();
 	ImGui::SetNextWindowPos(ImVec2(gTextDrawsHintAnchor.x, gTextDrawsHintAnchor.y + 12.0f - jump),
 		ImGuiCond_Always, ImVec2(0.5f, 0.0f));
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 4.0f));
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6.0f);
-	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.12f, 0.17f, 0.24f, 1.0f));
-	ImGui::PushStyleColor(ImGuiCol_Border, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 6.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+	const ImU32 yellow = IM_COL32(255, 213, 79, 255);
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, yellow);
 	ImGui::Begin("###TextDrawsNew", nil, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
 		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav |
 		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking);
-	ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_CheckMark), "%s", _("New!"));
-	ImGui::SameLine();
+	ImGui::TextColored(ImVec4(0.20f, 0.14f, 0.02f, 1.0f), "%s", _("New!"));
+	ImGui::SameLine(0.0f, 6.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.20f, 0.14f, 0.02f, 0.60f));
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.20f, 0.14f, 0.02f, 0.10f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.20f, 0.14f, 0.02f, 0.18f));
 	if(ImGui::SmallButton(ICON_FA_XMARK "###DismissTextDrawsHint")){
 		gShowTextDrawsHint = false;
 		saveSaveSettings();
 	}
+	ImGui::PopStyleColor(4);
+	ImGui::PopStyleVar();
 	ImGui::SetItemTooltip("%s", _("Dismiss"));
-	ImVec2 pos = ImGui::GetWindowPos();
-	ImDrawList *dl = ImGui::GetForegroundDrawList();
+	ImVec2 pos = ImGui::GetWindowPos(), size = ImGui::GetWindowSize();
+	ImDrawList *shadow = ImGui::GetBackgroundDrawList();
+	shadow->AddRectFilled(ImVec2(pos.x + 1, pos.y + 2), ImVec2(pos.x + size.x + 1, pos.y + size.y + 2),
+		IM_COL32(0, 0, 0, 45), 12.0f);
 	ImVec2 tip(gTextDrawsHintAnchor.x, gTextDrawsHintAnchor.y + 2.0f);
-	ImVec2 left(tip.x - 5.0f, pos.y + 1.0f), right(tip.x + 5.0f, pos.y + 1.0f);
-	dl->AddTriangleFilled(tip, right, left, IM_COL32(31, 43, 61, 255));
-	dl->AddLine(left, tip, ImGui::GetColorU32(ImGuiCol_CheckMark));
-	dl->AddLine(tip, right, ImGui::GetColorU32(ImGuiCol_CheckMark));
+	ImVec2 left(tip.x - 5.0f, pos.y + 3.0f), right(tip.x + 5.0f, pos.y + 3.0f);
+	ImGui::GetForegroundDrawList()->AddTriangleFilled(tip, right, left, yellow);
 	ImGui::End();
-	ImGui::PopStyleColor(2);
-	ImGui::PopStyleVar(2);
+	ImGui::PopStyleColor();
+	ImGui::PopStyleVar(3);
 }
 
 
