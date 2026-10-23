@@ -5,6 +5,13 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Language-Name: Português (Brasil)\n"
 
+msgid ""
+"\n"
+"Right-click to keep it in Favourites"
+msgstr ""
+"\n"
+"Clique direito para guardá-lo nos Favoritos"
+
 msgid "  (in the map, read-only)"
 msgstr "  (no mapa, somente leitura)"
 
@@ -987,6 +994,13 @@ msgstr "Um jogador vê no máximo 1024 gang zones. Use células maiores ou menos
 msgid "A polygon needs at least 3 corners."
 msgstr "Um polígono precisa de pelo menos 3 cantos."
 
+msgid ""
+"A rounded box, a circle, a progress bar or a ring, made of several\n"
+"sprite textdraws and added as a group."
+msgstr ""
+"Uma caixa arredondada, um círculo, uma barra de progresso ou um anel, feitos de vários\n"
+"textdraws de sprite e adicionados como um grupo."
+
 msgid "A server folder with gamemodes, filterscripts and scriptfiles."
 msgstr "Uma pasta de servidor com gamemodes, filterscripts e scriptfiles."
 
@@ -1060,7 +1074,13 @@ msgstr "Adicionar ou remover favorito"
 msgid "Add points"
 msgstr "Adicionar pontos"
 
+msgid "Add the shape"
+msgstr "Adicionar a forma"
+
 msgid "Add to Favourites"
+msgstr "Adicionar aos favoritos"
+
+msgid "Add to favourites"
 msgstr "Adicionar aos favoritos"
 
 msgid "Add to server"
@@ -1124,6 +1144,9 @@ msgstr "Buzina a ar"
 
 msgid "Air horn (long)"
 msgstr "Buzina a ar (longa)"
+
+msgid "Airport"
+msgstr "Aeroporto"
 
 msgid "Airyard"
 msgstr "Airyard"
@@ -1470,6 +1493,9 @@ msgstr "Skin base"
 msgid "Baseball bat"
 msgstr "Taco de beisebol"
 
+msgid "Beach"
+msgstr "Praia"
+
 msgid "Behaviour Type"
 msgstr "Tipo de comportamento"
 
@@ -1584,6 +1610,9 @@ msgstr "Brown Streak (538)"
 
 msgid "Browse"
 msgstr "Procurar"
+
+msgid "Browse models..."
+msgstr "Procurar modelos..."
 
 msgid "Browse needs zenity or kdialog: type or paste the folder's path."
 msgstr "Procurar precisa do zenity ou do kdialog: digite ou cole o caminho da pasta."
@@ -2183,6 +2212,9 @@ msgstr "Copiar transformação"
 msgid "Copy: %s"
 msgstr "Copiar: %s"
 
+msgid "Corner radius"
+msgstr "Raio dos cantos"
+
 #, c-format
 msgid "Could not create %s"
 msgstr "Não foi possível criar %s"
@@ -2458,6 +2490,9 @@ msgstr "Desanexar"
 msgid "Detonator"
 msgstr "Detonador"
 
+msgid "Diameter"
+msgstr "Diâmetro"
+
 msgid "Diamond (entrance)"
 msgstr "Diamante (entrada)"
 
@@ -2541,6 +2576,12 @@ msgstr "Porta"
 
 msgid "Door buzzer"
 msgstr "Campainha da porta"
+
+msgid "Dot size"
+msgstr "Tamanho dos pontos"
+
+msgid "Dots"
+msgstr "Pontos"
 
 msgid "Double-click to place again."
 msgstr "Clique duas vezes para colocar de novo."
@@ -2714,6 +2755,9 @@ msgstr "Áreas dinâmicas"
 msgid "Each 750x750 square is one NODES<id>.DAT file."
 msgstr "Cada quadrado de 750x750 é um arquivo NODES<id>.DAT."
 
+msgid "Each dot is a textdraw: SA-MP allows 2048 global and 256 per player."
+msgstr "Cada ponto é um textdraw: o SA-MP permite 2048 globais e 256 por jogador."
+
 msgid "Edit"
 msgstr "Editar"
 
@@ -2748,6 +2792,9 @@ msgstr "Elementos"
 
 msgid "Emmet"
 msgstr "Emmet"
+
+msgid "Empty part"
+msgstr "Parte vazia"
 
 msgid "Enable Notifications"
 msgstr "Ativar notificações"
@@ -3397,6 +3444,9 @@ msgstr "Grupos"
 msgid "Groups sort Map Objects and get a heading comment in the .pwn."
 msgstr "Grupos organizam os Objetos do mapa e ganham um comentário de título no .pwn."
 
+msgid "Grove Street"
+msgstr "Grove Street"
+
 msgid "Gym"
 msgstr "Academia"
 
@@ -3502,6 +3552,9 @@ msgstr "Ajudar a contar os usuários do Haumea Studio? Uma vez por dia ele envia
 
 msgid "Help, bug reports and editor updates."
 msgstr "Ajuda, relatos de bugs e novidades do editor."
+
+msgid "Here, at this hour"
+msgstr "Aqui, nesta hora"
 
 #, c-format
 msgid "Hid %d instance(s) | %s: show all"
@@ -4682,6 +4735,9 @@ msgstr "Nome"
 msgid "Name a race to place race checkpoints that point at each other."
 msgstr "Dê nome a uma corrida para colocar race checkpoints que apontam uns para os outros."
 
+msgid "Name or ID"
+msgstr "Nome ou ID"
+
 msgid "Name, e.g. my-server"
 msgstr "Nome, por exemplo meu-servidor"
 
@@ -4858,6 +4914,9 @@ msgstr "Sem versão distante"
 msgid "No favourites yet. Pick an object and click %s to keep it here."
 msgstr "Nenhum favorito ainda. Escolha um objeto e clique em %s para guardá-lo aqui."
 
+msgid "No favourites yet: right-click a sprite to add it."
+msgstr "Nenhum favorito ainda: clique direito num sprite para adicioná-lo."
+
 msgid "No font files found."
 msgstr "Nenhum arquivo de fonte encontrado."
 
@@ -4873,6 +4932,9 @@ msgstr "Nenhum slot de material carregado para este objeto ainda."
 #, c-format
 msgid "No model loads TXD %s, so SA-MP can't use this texture"
 msgstr "Nenhum modelo carrega a TXD %s, então o SA-MP não pode usar esta textura"
+
+msgid "No models match."
+msgstr "Nenhum modelo corresponde."
 
 msgid "No node selected. Click one in the viewport."
 msgstr "Nenhum nó selecionado. Clique num nó na viewport."
@@ -4911,15 +4973,14 @@ msgstr "Sem sombras"
 msgid "No shortcuts match the current filter."
 msgstr "Nenhum atalho corresponde ao filtro atual."
 
+msgid "No sprites match."
+msgstr "Nenhum sprite corresponde."
+
 msgid "No textdraws on this board yet."
 msgstr "Nenhum textdraw nesta prancheta ainda."
 
 msgid "No textures found in this TXD or its parents."
 msgstr "Nenhuma textura encontrada neste TXD ou nos pais dele."
-
-#, c-format
-msgid "No textures in %s."
-msgstr "Nenhuma textura em %s."
 
 msgid "No thanks"
 msgstr "Não, obrigado"
@@ -5368,6 +5429,10 @@ msgstr "COLOCAR"
 msgid "PREFAB"
 msgstr "PREFAB"
 
+#, c-format
+msgid "Page %d of %d (%d models)"
+msgstr "Página %d de %d (%d modelos)"
+
 msgid "Paint continuously using spacing/delay settings"
 msgstr "Pintar continuamente usando as configurações de espaçamento/atraso"
 
@@ -5618,6 +5683,9 @@ msgstr "Clique em Colocar e depois no mundo. Esc para."
 msgid "Placed %s"
 msgstr "%s colocado"
 
+msgid "Places"
+msgstr "Lugares"
+
 msgid "Places the objects of a prefab file (.haumea) in this map."
 msgstr "Coloca neste mapa os objetos de um arquivo de prefab (.haumea)."
 
@@ -5843,6 +5911,12 @@ msgstr "Problemas: %d, avisos: %d"
 
 msgid "Production"
 msgstr "Produção"
+
+msgid "Progress bar"
+msgstr "Barra de progresso"
+
+msgid "Progress ring"
+msgstr "Anel de progresso"
 
 msgid "Property (free)"
 msgstr "Propriedade (livre)"
@@ -6124,6 +6198,9 @@ msgstr "Remover"
 msgid "Remove from Favourites"
 msgstr "Remover dos favoritos"
 
+msgid "Remove from favourites"
+msgstr "Remover dos favoritos"
+
 msgid "Remove from the list (the folder stays)"
 msgstr "Remover da lista (a pasta fica)"
 
@@ -6271,6 +6348,9 @@ msgstr "Sino tocando (contínuo)"
 msgid "Riot (0.3.7-R2)"
 msgstr "Tumulto (0.3.7-R2)"
 
+msgid "Road"
+msgstr "Estrada"
+
 msgid "Road Block"
 msgstr "Bloqueio de via"
 
@@ -6308,6 +6388,9 @@ msgstr "Voltar para a versão anterior"
 msgid "Rolled back to %s: restart Haumea to use it"
 msgstr "Voltou para %s: reinicie o Haumea para usá-la"
 
+msgid "Rooftop"
+msgstr "Terraço"
+
 msgid "Rotate"
 msgstr "Girar"
 
@@ -6343,6 +6426,9 @@ msgstr "Rotação"
 
 msgid "Rotation copied"
 msgstr "Rotação copiada"
+
+msgid "Rounded box"
+msgstr "Caixa arredondada"
 
 msgid "Rounds every rotation angle to this step."
 msgstr "Arredonda cada ângulo de rotação para este passo."
@@ -6424,6 +6510,9 @@ msgstr "Faixas no mesmo sentido"
 
 msgid "Same Lanes"
 msgstr "Mesmas faixas"
+
+msgid "Santa Maria Pier"
+msgstr "Píer de Santa Maria"
 
 msgid "Satchel charge"
 msgstr "Carga explosiva"
@@ -6599,6 +6688,9 @@ msgstr "Gaivotas"
 msgid "Search"
 msgstr "Buscar"
 
+msgid "Search TXDs"
+msgstr "Procurar TXDs"
+
 msgid "Search favourites   (Ctrl+F)"
 msgstr "Buscar favoritos   (Ctrl+F)"
 
@@ -6610,6 +6702,9 @@ msgstr "Buscar nome, modelo, ID, tipo, variável"
 
 msgid "Search names, tags and folders"
 msgstr "Buscar nomes, tags e pastas"
+
+msgid "Search sprites in it"
+msgstr "Procurar sprites nele"
 
 msgid "Search texture names"
 msgstr "Buscar nomes de textura"
@@ -6962,6 +7057,9 @@ msgstr "Skin (AddCharModel)"
 
 msgid "Skin IDs go from 20001 to 30000."
 msgstr "Os IDs de skin vão de 20001 a 30000."
+
+msgid "Skins"
+msgstr "Skins"
 
 msgid "Skip"
 msgstr "Pular"
@@ -7332,6 +7430,16 @@ msgstr "Tags"
 #, c-format
 msgid "Tags: %s"
 msgstr "Tags: %s"
+
+msgid ""
+"Take the still frame somewhere else or at another hour.\n"
+"The map's own camera moves there too."
+msgstr ""
+"Tirar a imagem parada em outro lugar ou em outra hora.\n"
+"A câmera do mapa também vai para lá."
+
+msgid "Taking it..."
+msgstr "Tirando..."
 
 msgid "Target"
 msgstr "Alvo"
@@ -8095,6 +8203,9 @@ msgstr "Guia do usuário"
 #, c-format
 msgid "Using provided COL: %s"
 msgstr "Usando o COL fornecido: %s"
+
+msgid "Value"
+msgstr "Valor"
 
 msgid "Values"
 msgstr "Valores"

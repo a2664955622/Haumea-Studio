@@ -1,0 +1,26 @@
+# TextDraw mode's helpers: a shape is several textdraws in a group, models
+# can be browsed, and the still frame can be taken at a preset place.
+open "$UI_FIXTURES/ui_map.pwn"
+click_item '*' 'Windows'
+wait 3
+click_item '*' 'TextDraws'
+wait 8
+click_item 'TextDraws' 'Shape'
+wait 3
+click_item '*' 'Add the shape'
+wait 5
+assert textdraws == 6
+click_item 'TextDraws' 'Model'
+wait 5
+assert textdraws == 7
+scroll_until 'TextDraws' 'Browse models...'
+click_item 'TextDraws' 'Browse models...'
+wait 10
+assert item '*' 'Name or ID'
+close_popup
+wait 3
+click_item '*' 'Place'
+wait 3
+click_item '*' 'Grove Street'
+wait 120
+assert textdraws == 7

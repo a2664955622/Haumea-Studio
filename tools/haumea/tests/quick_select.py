@@ -48,7 +48,7 @@ SOURCES = {
 	'sapaths.cpp': ['nodes', 'el_npc'],
 	'nodes_ui.cpp': ['nodes'],
 	'textdraws.cpp': ['textdraws', 'textdraws_move', 'textdraws_lock', 'textdraws_boards', 'roundtrip'],
-	'textdraws_ui.cpp': ['textdraws', 'textdraws_move', 'textdraws_lock', 'textdraws_boards'],
+	'textdraws_ui.cpp': ['textdraws', 'textdraws_move', 'textdraws_lock', 'textdraws_boards', 'textdraws_tools'],
 	'testserver.cpp': ['test_in_game', 'test_server'],
 	'childprocess.cpp': ['test_in_game', 'namaka'],
 	'namaka.cpp': ['namaka'],

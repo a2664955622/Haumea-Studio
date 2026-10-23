@@ -29,6 +29,7 @@ enum { TD_BACKGROUND_PLAIN, TD_BACKGROUND_STILL };
 static int gBackground = TD_BACKGROUND_STILL;
 static unsigned int gCanvasColour = 0x3C4450FF;
 static bool gStillPending;	// take the still frame after this frame's world
+static int gStillWait;	// frames the world streams in before it is taken, after a move
 static rw::Texture *gStillFrame;
 static std::vector<std::string> gRecent;
 static const int MAX_RECENT_TEXTDRAW_FILES = 8;
@@ -50,6 +51,7 @@ static std::string gBoard;
 static std::vector<std::string> gEmptyBoards;
 // Colours the user saved, shared by every colour field (and kept in the settings).
 static std::vector<unsigned int> gSavedColours;
+static std::vector<std::string> gFavSprites;	// "txd:texture", starred in the sprite picker
 // The eyedropper: a colour field asks, the next click on the canvas answers
 // with the reference image's colour there.
 static ImGuiID gPickFor;
@@ -148,7 +150,7 @@ InTextDrawMode(void)
 bool
 TextDrawModeHidesWorld(void)
 {
-	return gMode && !gStillPending;
+	return gMode && !gStillPending && gStillWait <= 0;
 }
 
 void
@@ -173,6 +175,10 @@ ExitTextDrawMode(void)
 void
 TextDrawsAfterWorldRender(void)
 {
+	// After a camera preset: the world is drawn (under the canvas) for a
+	// while so its models stream in, then the still frame is taken.
+	if(gStillWait > 0 && --gStillWait == 0)
+		gStillPending = true;
 	if(!gStillPending)
 		return;
 	gStillPending = false;
@@ -225,6 +231,16 @@ LoadTextDrawSetting(const char *key, const char *value)
 				break;
 			gSavedColours.push_back((unsigned int)c);
 			p = end;
+		}
+	}else if(strcmp(key, "textdraw_favourite_sprites") == 0){
+		gFavSprites.clear();
+		std::string v = value;
+		for(size_t at = 0; at < v.size(); ){
+			size_t end = v.find(' ', at);
+			if(end == std::string::npos) end = v.size();
+			if(end > at)
+				gFavSprites.push_back(v.substr(at, end - at));
+			at = end + 1;
 		}
 	}else if(strcmp(key, "textdraw_canvas") == 0){
 		int snap = 1, grid = 0, through = 1, compare = 0;
@@ -284,6 +300,10 @@ SaveTextDrawSettings(FILE *f)
 {
 	fprintf(f, "textdraw_background %d\n", gBackground);
 	fprintf(f, "textdraw_canvas_colour %08X\n", gCanvasColour);
+	fputs("textdraw_favourite_sprites", f);
+	for(const std::string &fav : gFavSprites)
+		fprintf(f, " %s", fav.c_str());
+	fputc('\n', f);
 	fputs("textdraw_saved_colours", f);
 	for(unsigned int c : gSavedColours)
 		fprintf(f, " %08X", c);
@@ -2311,44 +2331,180 @@ addTextDraw(int font)
 	TextDrawsChanged();
 }
 
+static bool
+isFavSprite(const std::string &sprite)
+{
+	for(const std::string &f : gFavSprites)
+		if(lowered(f) == lowered(sprite))
+			return true;
+	return false;
+}
+
+static void
+toggleFavSprite(const std::string &sprite)
+{
+	for(size_t i = 0; i < gFavSprites.size(); i++)
+		if(lowered(gFavSprites[i]) == lowered(sprite)){
+			gFavSprites.erase(gFavSprites.begin() + i);
+			SaveEditorSettings();
+			return;
+		}
+	gFavSprites.push_back(sprite);
+	SaveEditorSettings();
+}
+
+// The TXDs SA-MP can draw from, searched by name; a texture filter; and
+// favourites (right-click a sprite) gathered in their own list at the top.
 static void
 spritePicker(TextDraw &td)
 {
 	static std::string txdName;
+	static const std::string FAVOURITES = "\x01" "favourites";
 	if(txdName.empty()){
 		size_t colon = td.text.find(':');
 		txdName = colon == std::string::npos ? "LD_BEAT" : td.text.substr(0, colon);
 	}
 	std::vector<std::string> txds;
 	listSpriteTxds(txds);
-	if(ImGui::BeginCombo(L("Sprite TXD"), txdName.c_str(), ImGuiComboFlags_HeightLarge)){
+	std::string shown = txdName == FAVOURITES ? std::string(ICON_FA_STAR " ") + _("Favourites") : txdName;
+	if(ImGui::BeginCombo(L("Sprite TXD"), shown.c_str(), ImGuiComboFlags_HeightLarge)){
+		static char txdFilter[64];
+		if(ImGui::IsWindowAppearing()){
+			txdFilter[0] = '\0';
+			ImGui::SetKeyboardFocusHere();
+		}
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		ImGui::InputTextWithHint("##txd_filter", _("Search TXDs"), txdFilter, sizeof(txdFilter));
+		if(ImGui::Selectable((std::string(ICON_FA_STAR " ") + _("Favourites")).c_str(), txdName == FAVOURITES))
+			txdName = FAVOURITES;
+		std::string want = lowered(txdFilter);
 		for(size_t i = 0; i < txds.size(); i++)
-			if(ImGui::Selectable(txds[i].c_str(), rw::strcmp_ci(txds[i].c_str(), txdName.c_str()) == 0))
-				txdName = txds[i];
+			if(want.empty() || lowered(txds[i]).find(want) != std::string::npos)
+				if(ImGui::Selectable(txds[i].c_str(), rw::strcmp_ci(txds[i].c_str(), txdName.c_str()) == 0))
+					txdName = txds[i];
 		ImGui::EndCombo();
 	}
-	int slot = spriteTxdSlot(txdName);
-	int count = slot >= 0 ? GetTxdTextureCount(slot) : 0;
-	ImGui::BeginChild("sprites", ImVec2(0, ImGui::GetFontSize() * 9.0f), ImGuiChildFlags_Borders);
+	static char filter[64];
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	ImGui::InputTextWithHint("##sprite_filter", _("Search sprites in it"), filter, sizeof(filter));
+	std::string want = lowered(filter);
+	// The sprites to show: the TXD's, or the favourites.
+	std::vector<std::pair<std::string, rw::Texture*>> sprites;
+	if(txdName == FAVOURITES){
+		for(const std::string &f : gFavSprites)
+			sprites.push_back(std::make_pair(f, spriteTexture(f)));
+	}else{
+		int slot = spriteTxdSlot(txdName);
+		int count = slot >= 0 ? GetTxdTextureCount(slot) : 0;
+		for(int i = 0; i < count; i++)
+			if(rw::Texture *tex = GetTxdTexture(slot, i))
+				sprites.push_back(std::make_pair(txdName + ":" + tex->name, tex));
+	}
+	ImGui::BeginChild("sprites", ImVec2(0, ImGui::GetFontSize() * 9.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY);
 	float cell = ImGui::GetFontSize() * 3.0f;
-	int perRow = std::max(1, (int)(ImGui::GetContentRegionAvail().x / (cell + 4.0f)));
-	for(int i = 0; i < count; i++){
-		rw::Texture *tex = GetTxdTexture(slot, i);
-		if(tex == nil)
+	int perRow = std::max(1, (int)(ImGui::GetContentRegionAvail().x / (cell + 4.0f))), shownCount = 0;
+	for(size_t i = 0; i < sprites.size(); i++){
+		const std::string &name = sprites[i].first;
+		if(!want.empty() && lowered(name).find(want) == std::string::npos)
 			continue;
-		if(i % perRow)
+		if(shownCount++ % perRow)
 			ImGui::SameLine();
-		ImGui::PushID(i);
-		if(ImGui::ImageButton("##s", (ImTextureID)tex, ImVec2(cell, cell))){
-			td.text = txdName + ":" + tex->name;
+		ImGui::PushID((int)i);
+		bool fav = isFavSprite(name);
+		ImVec2 at = ImGui::GetCursorScreenPos();
+		bool picked = sprites[i].second ? ImGui::ImageButton("##s", (ImTextureID)sprites[i].second, ImVec2(cell, cell)) :
+			ImGui::Button("?##s", ImVec2(cell + ImGui::GetStyle().FramePadding.x * 2.0f, cell + ImGui::GetStyle().FramePadding.y * 2.0f));
+		if(picked){
+			td.text = name;
 			TextDrawsChanged();
 		}
-		ImGui::SetItemTooltip("%s:%s", txdName.c_str(), tex->name);
+		if(fav)
+			ImGui::GetWindowDrawList()->AddText(ImVec2(at.x + 2.0f, at.y + 1.0f), IM_COL32(255, 210, 60, 255), ICON_FA_STAR);
+		if(ImGui::BeginPopupContextItem()){
+			if(ImGui::MenuItem(fav ? L("Remove from favourites") : L("Add to favourites")))
+				toggleFavSprite(name);
+			ImGui::EndPopup();
+		}
+		ImGui::SetItemTooltip("%s%s", name.c_str(), fav ? "" : _("\nRight-click to keep it in Favourites"));
 		ImGui::PopID();
 	}
-	if(count == 0)
-		ImGui::TextDisabled(_("No textures in %s."), txdName.c_str());
+	if(shownCount == 0)
+		ImGui::TextDisabled("%s", txdName == FAVOURITES ? _("No favourites yet: right-click a sprite to add it.") :
+			_("No sprites match."));
 	ImGui::EndChild();
+}
+
+// Models for a model preview: objects, vehicles or skins by name or ID,
+// with thumbnails as the object browser draws them.
+static bool
+modelBrowser(int *model)
+{
+	bool picked = false;
+	if(ImGui::Button(LI(ICON_FA_MAGNIFYING_GLASS, "Browse models...")))
+		ImGui::OpenPopup("##models");
+	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 26.0f, ImGui::GetFontSize() * 24.0f), ImGuiCond_Appearing);
+	if(ImGui::BeginPopup("##models")){
+		static char search[64];
+		static int kind;	// all, vehicles, skins, objects
+		static int page;
+		const char *kinds[] = { _("All"), _("Vehicles"), _("Skins"), _("Objects") };
+		ImGui::SetNextItemWidth(ImGui::GetFontSize() * 7.0f);
+		if(ImGui::Combo("##kind", &kind, kinds, IM_ARRAYSIZE(kinds)))
+			page = 0;
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		if(ImGui::IsWindowAppearing())
+			ImGui::SetKeyboardFocusHere();
+		if(ImGui::InputTextWithHint("##search", _("Name or ID"), search, sizeof(search)))
+			page = 0;
+		std::string want = lowered(search);
+		std::vector<int> ids;
+		for(int id = 0; id < NUMOBJECTDEFS && ids.size() < 4000; id++){
+			bool vehicle = id >= 400 && id <= 611, skin = id <= 311;
+			if((kind == 1 && !vehicle) || (kind == 2 && !skin) || (kind == 3 && (vehicle || skin)))
+				continue;
+			ObjectDef *obj = GetObjectDef(id);
+			if(obj == nil)
+				continue;
+			if(!want.empty() && lowered(obj->m_name).find(want) == std::string::npos &&
+			   std::to_string(id).find(want) != 0)
+				continue;
+			ids.push_back(id);
+		}
+		const int perPage = 60;
+		int pages = std::max(1, ((int)ids.size() + perPage - 1) / perPage);
+		page = std::max(0, std::min(page, pages - 1));
+		ImGui::BeginChild("##grid", ImVec2(0, ImGui::GetFontSize() * 18.0f), ImGuiChildFlags_Borders);
+		float cell = ImGui::GetFontSize() * 4.0f;
+		int perRow = std::max(1, (int)(ImGui::GetContentRegionAvail().x / (cell + 8.0f)));
+		for(int k = page * perPage, n = 0; k < (int)ids.size() && k < (page + 1) * perPage; k++, n++){
+			int id = ids[k];
+			if(n % perRow)
+				ImGui::SameLine();
+			ImGui::PushID(id);
+			rw::Texture *thumb = GetObjectThumbnailTexture(id);
+			bool clicked = thumb ? ImGui::ImageButton("##m", (ImTextureID)thumb, ImVec2(cell, cell)) :
+				ImGui::Button(std::to_string(id).c_str(), ImVec2(cell + ImGui::GetStyle().FramePadding.x * 2.0f,
+					cell + ImGui::GetStyle().FramePadding.y * 2.0f));
+			if(clicked){
+				*model = id;
+				picked = true;
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::SetItemTooltip("%d  %s", id, GetObjectDef(id)->m_name);
+			ImGui::PopID();
+		}
+		if(ids.empty())
+			ImGui::TextDisabled("%s", _("No models match."));
+		ImGui::EndChild();
+		if(ImGui::SmallButton("<##page") && page > 0) page--;
+		ImGui::SameLine();
+		ImGui::Text(_("Page %d of %d (%d models)"), page + 1, pages, (int)ids.size());
+		ImGui::SameLine();
+		if(ImGui::SmallButton(">##page") && page + 1 < pages) page++;
+		ImGui::EndPopup();
+	}
+	return picked;
 }
 
 // The panel's settings for what is selected. With several, a change goes to
@@ -2451,6 +2607,8 @@ properties(void)
 			}else if(td.font == TD_FONT_PREVIEW){
 				int model = td.previewModel;
 				if(ImGui::InputInt(L("Model"), &model))
+					all([&](TextDraw &t){ t.previewModel = model; });
+				if(modelBrowser(&model))
 					all([&](TextDraw &t){ t.previewModel = model; });
 				float rot[3] = { td.previewRotX, td.previewRotY, td.previewRotZ };
 				if(ImGui::DragFloat3(L("Rotation"), rot, 1.0f, -360.0f, 360.0f, "%.1f"))
@@ -2751,6 +2909,156 @@ drawPopups(void)
 	}
 }
 
+
+// ---- Shapes ----
+
+// Shapes made of several textdraws, as Textdraw Studio builds them: a
+// rounded box (LD_SPAC:white bars and LD_BEAT:chit corners), a circle, a
+// progress bar and a ring of dots. They are added as a group.
+enum { SHAPE_ROUNDED_BOX, SHAPE_CIRCLE, SHAPE_BAR, SHAPE_RING, NUM_SHAPES };
+struct ShapeSettings {
+	int kind;
+	float w, h;	// a circle and a ring use w across
+	float radius;	// the rounded box's corners
+	float thickness;	// the ring's dots
+	int segments;	// the ring's dots
+	int value;	// percent, for the bar and the ring
+	unsigned int colour, back;
+};
+static ShapeSettings gShape = { SHAPE_ROUNDED_BOX, 160.0f, 90.0f, 12.0f, 10.0f, 24, 65, 0x2B2F36F0, 0x000000AA };
+
+// LD_BEAT:chit's circle doesn't fill its texture: these are its margins.
+static const float CHIT_LEFT = 0.164f, CHIT_RIGHT = 0.164f, CHIT_TOP = 0.158f, CHIT_BOTTOM = 0.17f;
+
+static TextDraw
+shapeSprite(const char *sprite, float x, float y, float w, float h, unsigned int colour)
+{
+	TextDraw td;
+	InitTextDraw(&td);
+	td.font = TD_FONT_SPRITE;
+	td.text = sprite;
+	td.x = x; td.y = y;
+	td.sizeX = w; td.sizeY = h;
+	td.colour = colour;
+	td.board = gBoard;
+	return td;
+}
+
+// A circle of diameter d with its top-left at x, y: the chit, grown by its margins.
+static TextDraw
+chit(float x, float y, float d, unsigned int colour)
+{
+	float w = d / (1.0f - CHIT_LEFT - CHIT_RIGHT), h = d / (1.0f - CHIT_TOP - CHIT_BOTTOM);
+	return shapeSprite("LD_BEAT:chit", x - w * CHIT_LEFT, y - h * CHIT_TOP, w, h, colour);
+}
+
+static void
+addShape(void)
+{
+	const ShapeSettings &sh = gShape;
+	std::vector<TextDraw> parts;
+	float x = 320.0f - sh.w * 0.5f, y = 224.0f - sh.h * 0.5f;
+	const char *name = "Shape";
+	switch(sh.kind){
+	case SHAPE_ROUNDED_BOX: {
+		name = N_("Rounded box");
+		float r = std::max(0.0f, std::min(sh.radius, std::min(sh.w, sh.h) * 0.5f));
+		parts.push_back(shapeSprite("LD_SPAC:white", x + r, y, sh.w - 2.0f * r, sh.h, sh.colour));
+		parts.push_back(shapeSprite("LD_SPAC:white", x, y + r, sh.w, sh.h - 2.0f * r, sh.colour));
+		if(r > 0.0f){
+			parts.push_back(chit(x, y, 2.0f * r, sh.colour));
+			parts.push_back(chit(x + sh.w - 2.0f * r, y, 2.0f * r, sh.colour));
+			parts.push_back(chit(x, y + sh.h - 2.0f * r, 2.0f * r, sh.colour));
+			parts.push_back(chit(x + sh.w - 2.0f * r, y + sh.h - 2.0f * r, 2.0f * r, sh.colour));
+		}
+		break;
+	}
+	case SHAPE_CIRCLE:
+		name = N_("Circle");
+		parts.push_back(chit(320.0f - sh.w * 0.5f, 224.0f - sh.w * 0.5f, sh.w, sh.colour));
+		break;
+	case SHAPE_BAR: {
+		name = N_("Progress bar");
+		parts.push_back(shapeSprite("LD_SPAC:white", x, y, sh.w, sh.h, sh.back));
+		float fill = sh.w * std::max(0, std::min(sh.value, 100)) / 100.0f;
+		if(fill > 0.0f)
+			parts.push_back(shapeSprite("LD_SPAC:white", x, y, fill, sh.h, sh.colour));
+		break;
+	}
+	case SHAPE_RING: {
+		// Dots round a circle from the top, clockwise; the first value% lit.
+		name = N_("Progress ring");
+		int n = std::max(3, std::min(sh.segments, 120));
+		float r = (sh.w - sh.thickness) * 0.5f;
+		int lit = (int)(n * std::max(0, std::min(sh.value, 100)) / 100.0f + 0.5f);
+		for(int k = 0; k < n; k++){
+			float a = (float)k / n * 2.0f * 3.14159265f;
+			float cx = 320.0f + sinf(a) * r, cy = 224.0f - cosf(a) * r;
+			parts.push_back(chit(cx - sh.thickness * 0.5f, cy - sh.thickness * 0.5f, sh.thickness,
+				k < lit ? sh.colour : sh.back));
+		}
+		break;
+	}
+	}
+	if(parts.empty())
+		return;
+	std::string group = newGroupName();
+	group = std::string(_(name)) + group.substr(group.find_last_of(' '));
+	std::vector<TextDraw> &tds = GetTextDraws();
+	selectOnly(-1);
+	for(TextDraw &td : parts){
+		td.group = group;
+		tds.push_back(td);
+		addToSelection((int)tds.size() - 1);
+	}
+	TextDrawsChanged();
+}
+
+static void
+shapeButton(void)
+{
+	if(ImGui::Button(LI(ICON_FA_PLUS, "Shape##add")))
+		ImGui::OpenPopup("##shape");
+	ImGui::SetItemTooltip("%s", _("A rounded box, a circle, a progress bar or a ring, made of several\n"
+		"sprite textdraws and added as a group."));
+	if(ImGui::BeginPopup("##shape")){
+		static const char *kinds[] = { N_("Rounded box"), N_("Circle"), N_("Progress bar"), N_("Progress ring") };
+		const char *names[NUM_SHAPES];
+		for(int i = 0; i < NUM_SHAPES; i++)
+			names[i] = _(kinds[i]);
+		ImGui::PushItemWidth(ImGui::GetFontSize() * 10.0f);
+		ImGui::Combo(L("Shape"), &gShape.kind, names, NUM_SHAPES);
+		bool round = gShape.kind == SHAPE_CIRCLE || gShape.kind == SHAPE_RING;
+		if(round)
+			ImGui::DragFloat(L("Diameter"), &gShape.w, 0.5f, 4.0f, 448.0f, "%.1f");
+		else{
+			float size[2] = { gShape.w, gShape.h };
+			if(ImGui::DragFloat2(L("Size"), size, 0.5f, 2.0f, 640.0f, "%.1f")){
+				gShape.w = size[0];
+				gShape.h = size[1];
+			}
+		}
+		if(gShape.kind == SHAPE_ROUNDED_BOX)
+			ImGui::DragFloat(L("Corner radius"), &gShape.radius, 0.25f, 0.0f, 100.0f, "%.1f");
+		if(gShape.kind == SHAPE_RING){
+			ImGui::DragFloat(L("Dot size"), &gShape.thickness, 0.25f, 1.0f, 60.0f, "%.1f");
+			ImGui::SliderInt(L("Dots"), &gShape.segments, 3, 120);
+			ImGui::SetItemTooltip("%s", _("Each dot is a textdraw: SA-MP allows 2048 global and 256 per player."));
+		}
+		if(gShape.kind == SHAPE_BAR || gShape.kind == SHAPE_RING)
+			ImGui::SliderInt(L("Value"), &gShape.value, 0, 100, "%d%%");
+		ImGui::PopItemWidth();
+		colourEdit(L("Colour"), &gShape.colour);
+		if(gShape.kind == SHAPE_BAR || gShape.kind == SHAPE_RING)
+			colourEdit(L("Empty part"), &gShape.back);
+		if(ImGui::Button(LI(ICON_FA_PLUS, "Add the shape"))){
+			addShape();
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+}
+
 // ---- Mode ----
 
 // An icon button with a tooltip; label is "ICON###English id".
@@ -2832,6 +3140,68 @@ boardTabs(void)
 	}
 }
 
+
+// Places to take the still frame at, Textdraw Studio's: a player's spot and
+// facing angle; the camera stands behind and above them.
+static const struct { const char *name; float x, y, z, angle; } gStillPlaces[] = {
+	{ N_("Airport"), 1923.5066f, -2547.8245f, 14.0469f, 90.0f },
+	{ N_("Road"), 1714.6931f, -1340.4772f, 13.3828f, 180.1136f },
+	{ N_("Grove Street"), 2450.7434f, -1658.5571f, 13.3047f, 258.7504f },
+	{ N_("Santa Maria Pier"), 370.1010f, -2032.7593f, 7.6719f, 0.7464f },
+	{ N_("Rooftop"), 1547.9363f, -1352.2819f, 329.4693f, 15.2985f },
+	{ N_("Beach"), 482.6832f, -1857.9556f, 3.6218f, 248.6140f },
+};
+
+static void
+takeStillAt(int place, int hour)
+{
+	if(place >= 0){
+		const auto &p = gStillPlaces[place];
+		float a = p.angle * 3.14159265f / 180.0f;
+		rw::V3d forward = { -sinf(a), cosf(a), 0.0f };	// SA-MP's facing angle, 0 is north
+		// Set as Namaka's camera poses are (setTarget would pan the position too).
+		rw::V3d up = { 0.0f, 0.0f, 1.0f };
+		TheCamera.m_position = { p.x - forward.x * 4.0f, p.y - forward.y * 4.0f, p.z + 1.4f };
+		TheCamera.m_target = { p.x + forward.x * 6.0f, p.y + forward.y * 6.0f, p.z + 0.6f };
+		TheCamera.m_at = rw::normalize(rw::sub(TheCamera.m_target, TheCamera.m_position));
+		TheCamera.m_up = up;
+		TheCamera.m_localup = up;
+	}
+	if(hour >= 0){
+		currentHour = hour;
+		currentMinute = 0;
+	}
+	gBackground = TD_BACKGROUND_STILL;
+	releaseStillFrame();
+	gStillWait = 90;	// a second and a half of streaming
+}
+
+static void
+stillFramePlaces(void)
+{
+	if(ImGui::Button(LI(ICON_FA_LOCATION_DOT, "Place")))
+		ImGui::OpenPopup("##still_places");
+	ImGui::SetItemTooltip("%s", _("Take the still frame somewhere else or at another hour.\n"
+		"The map's own camera moves there too."));
+	if(ImGui::BeginPopup("##still_places")){
+		static int hour = 12;
+		ImGui::SetNextItemWidth(ImGui::GetFontSize() * 8.0f);
+		ImGui::SliderInt(L("Hour"), &hour, 0, 23, "%02d:00");
+		ImGui::SeparatorText(_("Places"));
+		for(int i = 0; i < IM_ARRAYSIZE(gStillPlaces); i++)
+			if(ImGui::MenuItem(_(gStillPlaces[i].name)))
+				takeStillAt(i, hour);
+		ImGui::Separator();
+		if(ImGui::MenuItem(L("Here, at this hour")))
+			takeStillAt(-1, hour);
+		ImGui::EndPopup();
+	}
+	if(gStillWait > 0){
+		ImGui::SameLine();
+		ImGui::TextDisabled("%s", _("Taking it..."));
+	}
+}
+
 // Above the canvas: the mode and file, the artboards, then how the canvas shows.
 static void
 drawToolbar(void)
@@ -2901,6 +3271,10 @@ drawToolbar(void)
 		SaveEditorSettings();
 	}
 	ImGui::SetItemTooltip("%s", _("Still frame: the world as the camera saw it when TextDraw mode started."));
+	if(gBackground == TD_BACKGROUND_STILL){
+		ImGui::SameLine();
+		stillFramePlaces();
+	}
 	if(gBackground == TD_BACKGROUND_PLAIN){
 		ImGui::SameLine();
 		float c[4] = { (gCanvasColour >> 24 & 0xFF) / 255.0f, (gCanvasColour >> 16 & 0xFF) / 255.0f,
@@ -3369,6 +3743,17 @@ DrawTextDrawsWindow(void)
 	validateSelection();
 	drawToolbar();
 	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 24.0f, ImGui::GetFontSize() * 38.0f), ImGuiCond_FirstUseEver);
+	{
+		// Under the canvas toolbar the first time, not over it (its two rows,
+		// before it has been measured).
+		ImVec2 pos, size;
+		canvasArea(&pos, &size);
+		float rows = ImGui::GetFrameHeightWithSpacing() * 2.0f + ImGui::GetStyle().WindowPadding.y * 2.0f;
+		if(gToolbarHeight < rows)
+			pos.y += rows - gToolbarHeight;
+		ImGui::SetNextWindowPos(ImVec2(pos.x + ImGui::GetFontSize() * 0.5f, pos.y + ImGui::GetFontSize() * 0.5f),
+			ImGuiCond_FirstUseEver);
+	}
 	bool open = true;
 	// ###textdraws, not LI(): the ID the window has always had, so saved layouts stay.
 	char title[64];
@@ -3401,10 +3786,11 @@ DrawTextDrawsWindow(void)
 	if(ImGui::Button(LI(ICON_FA_PLUS, "Sprite##add"))) addTextDraw(TD_FONT_SPRITE);
 	ImGui::SameLine();
 	if(ImGui::Button(LI(ICON_FA_PLUS, "Model##add"))) addTextDraw(TD_FONT_PREVIEW);
-	ImGui::SameLine();
 	if(ImGui::Button(LI(ICON_FA_PLUS, "Image##add"))) addTextDraw(TD_FONT_REFERENCE);
 	ImGui::SetItemTooltip("%s", _("A picture to build on: a mock-up or a screenshot (PNG, BMP or TGA).\n"
 		"It is a layer like the others, only the editor shows it; the eyedropper picks its colours."));
+	ImGui::SameLine();
+	shapeButton();
 
 	char layersTitle[96];
 	snprintf(layersTitle, sizeof(layersTitle), _("Layers - %s"), boardLabel(gBoard));

@@ -1000,11 +1000,6 @@ msgstr "Ainda não há predefinições: dê um nome aos filtros à direita e sal
 msgid "No reciprocal link found (one-way connection)."
 msgstr "Nenhuma ligação recíproca encontrada (conexão de mão única)."
 
-#: tools/haumea/textdraws_ui.cpp:903
-#, c-format
-msgid "No textures in %s."
-msgstr "Nenhuma textura em %s."
-
 #: tools/haumea/nodes_ui.cpp:314
 msgid "No unsaved changes"
 msgstr "Nenhuma alteração não salva"
@@ -2541,3 +2536,139 @@ msgstr "Camadas - %s"
 #: tools/haumea/textdraws_ui.cpp
 msgid "Click a textdraw, or drag a box round several. Alt+click picks the one under it."
 msgstr "Clique num textdraw, ou arraste uma caixa em volta de vários. Alt+clique pega o de baixo."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "\nRight-click to keep it in Favourites"
+msgstr "\nClique direito para guardá-lo nos Favoritos"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "A rounded box, a circle, a progress bar or a ring, made of several\nsprite textdraws and added as a group."
+msgstr "Uma caixa arredondada, um círculo, uma barra de progresso ou um anel, feitos de vários\ntextdraws de sprite e adicionados como um grupo."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Add the shape"
+msgstr "Adicionar a forma"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Add to favourites"
+msgstr "Adicionar aos favoritos"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Airport"
+msgstr "Aeroporto"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Beach"
+msgstr "Praia"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Browse models..."
+msgstr "Procurar modelos..."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Corner radius"
+msgstr "Raio dos cantos"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Diameter"
+msgstr "Diâmetro"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Dot size"
+msgstr "Tamanho dos pontos"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Dots"
+msgstr "Pontos"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Each dot is a textdraw: SA-MP allows 2048 global and 256 per player."
+msgstr "Cada ponto é um textdraw: o SA-MP permite 2048 globais e 256 por jogador."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Empty part"
+msgstr "Parte vazia"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Grove Street"
+msgstr "Grove Street"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Here, at this hour"
+msgstr "Aqui, nesta hora"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Name or ID"
+msgstr "Nome ou ID"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "No favourites yet: right-click a sprite to add it."
+msgstr "Nenhum favorito ainda: clique direito num sprite para adicioná-lo."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "No models match."
+msgstr "Nenhum modelo corresponde."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "No sprites match."
+msgstr "Nenhum sprite corresponde."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Page %d of %d (%d models)"
+msgstr "Página %d de %d (%d modelos)"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Places"
+msgstr "Lugares"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Progress bar"
+msgstr "Barra de progresso"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Progress ring"
+msgstr "Anel de progresso"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Remove from favourites"
+msgstr "Remover dos favoritos"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Road"
+msgstr "Estrada"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Rooftop"
+msgstr "Terraço"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Rounded box"
+msgstr "Caixa arredondada"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Santa Maria Pier"
+msgstr "Píer de Santa Maria"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Search TXDs"
+msgstr "Procurar TXDs"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Search sprites in it"
+msgstr "Procurar sprites nele"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Skins"
+msgstr "Skins"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Take the still frame somewhere else or at another hour.\nThe map's own camera moves there too."
+msgstr "Tirar a imagem parada em outro lugar ou em outra hora.\nA câmera do mapa também vai para lá."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Taking it..."
+msgstr "Tirando..."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Value"
+msgstr "Valor"
