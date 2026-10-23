@@ -2218,10 +2218,6 @@ msgid "Something went wrong: click for the Log"
 msgstr "Algo deu errado: clique para ver o Log"
 
 #: tools/haumea/textdraws_ui.cpp
-msgid "The chat is sized in the player's pixels: it takes less of a bigger screen."
-msgstr "O chat é medido em pixels do jogador: ocupa menos de uma tela maior."
-
-#: tools/haumea/textdraws_ui.cpp
 msgid "The game's HUD under the textdraws, where SA-MP shows it, to check they don't cover it."
 msgstr "O HUD do jogo sob os textdraws, onde o SA-MP o mostra, para conferir que não o cobrem."
 
@@ -2402,10 +2398,6 @@ msgid "Snap"
 msgstr "Encaixar"
 
 #: tools/haumea/textdraws_ui.cpp
-msgid "Dragged textdraws snap to the screen's edges and centre, to the others\nand to the grid. Hold Ctrl while dragging to place freely."
-msgstr "Textdraws arrastados encaixam nas bordas e no centro da tela, nos outros\ne na grade. Segure Ctrl ao arrastar para posicionar livremente."
-
-#: tools/haumea/textdraws_ui.cpp
 msgid "How far the arrow keys move the selection; Shift moves ten times as far."
 msgstr "Quanto as setas movem a seleção; Shift move dez vezes mais."
 
@@ -2478,10 +2470,6 @@ msgid "Gives them one group name and keeps them together in the list.\nA group h
 msgstr "Dá a eles um nome de grupo e os mantém juntos na lista.\nUm grupo se esconde, trava e é selecionado como um só."
 
 #: tools/haumea/textdraws_ui.cpp
-msgid "To each other, or to the screen when one is selected"
-msgstr "Entre si, ou à tela quando só um está selecionado"
-
-#: tools/haumea/textdraws_ui.cpp
 msgid "To the screen"
 msgstr "À tela"
 
@@ -2542,10 +2530,6 @@ msgid "\nRight-click to keep it in Favourites"
 msgstr "\nClique direito para guardá-lo nos Favoritos"
 
 #: tools/haumea/textdraws_ui.cpp
-msgid "A rounded box, a circle, a progress bar or a ring, made of several\nsprite textdraws and added as a group."
-msgstr "Uma caixa arredondada, um círculo, uma barra de progresso ou um anel, feitos de vários\ntextdraws de sprite e adicionados como um grupo."
-
-#: tools/haumea/textdraws_ui.cpp
 msgid "Add the shape"
 msgstr "Adicionar a forma"
 
@@ -2568,10 +2552,6 @@ msgstr "Procurar modelos..."
 #: tools/haumea/textdraws_ui.cpp
 msgid "Corner radius"
 msgstr "Raio dos cantos"
-
-#: tools/haumea/textdraws_ui.cpp
-msgid "Diameter"
-msgstr "Diâmetro"
 
 #: tools/haumea/textdraws_ui.cpp
 msgid "Dot size"
@@ -2680,3 +2660,301 @@ msgstr "Mostrar índices dos materiais"
 #: tools/haumea/gui.cpp
 msgid "Paints each material slot of the selected objects with its number, white on green,\nas Texture Studio does, to see which part is which index. Only shown here; nothing is saved."
 msgstr "Pinta cada slot de material dos objetos selecionados com o número dele, branco no verde,\ncomo o Texture Studio faz, para ver qual parte é qual índice. Só aparece aqui; nada é salvo."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "/hudscalefix"
+msgstr "/hudscalefix"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "1 for a solid bar. Each segment is a textdraw."
+msgstr "1 para uma barra sólida. Cada segmento é um textdraw."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "A copy of the shape under it, this far down and right. 0 for none."
+msgstr "Uma cópia da forma por baixo, deslocada isto para baixo e para a direita. 0 para nenhuma."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid ""
+"Always opaque: its sprites overlap, and see-through colours would\n"
+"show the overlaps darker."
+msgstr ""
+"Sempre opaca: os sprites se sobrepõem, e cores transparentes\n"
+"deixariam as sobreposições mais escuras."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Arm width"
+msgstr "Largura dos braços"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Bands"
+msgstr "Faixas"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Border"
+msgstr "Borda"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Border colour"
+msgstr "Cor da borda"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Bottom to top"
+msgstr "De baixo para cima"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid ""
+"Boxes, circles, outlines, triangles, arrows, gradients, bars and rings, made\n"
+"of sprite textdraws and added as a group. Select it later to change it."
+msgstr ""
+"Caixas, círculos, contornos, triângulos, setas, degradês, barras e anéis, feitos\n"
+"de textdraws de sprite e adicionados como um grupo. Selecione depois para alterar."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Circle outline"
+msgstr "Contorno de círculo"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Clear guides"
+msgstr "Limpar guias"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Direction"
+msgstr "Direção"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Drag it onto a ruler to remove it"
+msgstr "Arraste até uma régua para remover"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid ""
+"Dragged textdraws snap to the screen's edges and centre, to the others,\n"
+"to the grid and to guides. Hold Ctrl while dragging to place freely."
+msgstr ""
+"Textdraws arrastados se encaixam nas bordas e no centro da tela, nos outros,\n"
+"na grade e nas guias. Segure Ctrl ao arrastar para posicionar livremente."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Edit the parts on their own"
+msgstr "Editar as partes separadamente"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Fills down"
+msgstr "Enche para baixo"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Fills to the left"
+msgstr "Enche para a esquerda"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Fills to the right"
+msgstr "Enche para a direita"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Fills up"
+msgstr "Enche para cima"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Flip across: sprites mirror, shapes point the other way"
+msgstr "Espelhar na horizontal: sprites espelham, formas apontam para o outro lado"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Flip upside down"
+msgstr "Virar de cabeça para baixo"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "From"
+msgstr "De"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Fully transparent leaves it out."
+msgstr "Totalmente transparente deixa de fora."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Gap"
+msgstr "Espaço"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Gradient"
+msgstr "Degradê"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Inside"
+msgstr "Interior"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Left to right"
+msgstr "Da esquerda para a direita"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Line width"
+msgstr "Espessura da linha"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid ""
+"Makes it plain sprites, to fine-tune one by one. It is no longer\n"
+"changed as a shape, so changes here would undo that tuning."
+msgstr ""
+"Transforma em sprites comuns, para ajustar um a um. Deixa de ser\n"
+"alterado como forma, já que mudanças aqui desfariam esses ajustes."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "More bands blend more smoothly. Each band is a textdraw."
+msgstr "Mais faixas misturam mais suavemente. Cada faixa é um textdraw."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid ""
+"Newer builds draw text outlines as a soft ring that grows with the\n"
+"screen (ReplaceTextShadowWithOutline). Off: the game's own sharp edge, a few\n"
+"pixels wide, as older builds and the plain game draw it. Textdraws too."
+msgstr ""
+"Versões novas desenham o contorno do texto como um anel suave que cresce com a\n"
+"tela (ReplaceTextShadowWithOutline). Desligado: a borda nítida do próprio jogo, de poucos\n"
+"pixels, como versões antigas e o jogo original desenham. Vale para textdraws também."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid ""
+"Off: the outer ones stay and the gaps between come out equal.\n"
+"On: each is this far from the one before, from the first."
+msgstr ""
+"Desligado: os das pontas ficam e os espaços entre eles ficam iguais.\n"
+"Ligado: cada um fica a esta distância do anterior, a partir do primeiro."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid ""
+"Or drag its handles on the canvas: Shift keeps the shape's proportions,\n"
+"Alt sizes it from the centre, Ctrl stops snapping."
+msgstr ""
+"Ou arraste as alças na tela: Shift mantém as proporções da forma,\n"
+"Alt redimensiona a partir do centro, Ctrl desliga o encaixe."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Pill"
+msgstr "Pílula"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Plus"
+msgstr "Mais"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Points down"
+msgstr "Aponta para baixo"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Points left"
+msgstr "Aponta para a esquerda"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Points right"
+msgstr "Aponta para a direita"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Points up"
+msgstr "Aponta para cima"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "ProportionalWeaponIcon"
+msgstr "ProportionalWeaponIcon"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Right to left"
+msgstr "Da direita para a esquerda"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Round text outlines"
+msgstr "Contornos de texto arredondados"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Rulers"
+msgstr "Réguas"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid ""
+"Rulers along the canvas, in canvas units. Drag from one to make a guide,\n"
+"and drag a guide back onto a ruler to remove it. Guides are saved with the file."
+msgstr ""
+"Réguas ao longo da tela, em unidades da tela. Arraste de uma para criar uma guia,\n"
+"e arraste a guia de volta para a régua para removê-la. As guias são salvas no arquivo."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid ""
+"SA-MP 0.3.7-R3 and newer: on 16:10 and wider screens the radar is made round\n"
+"(96 x 82, sized by the screen's height). On unless the player turned it off\n"
+"(nohudscalefix=1 in sa-mp.cfg). Not with the Widescreen Fix, which sizes the radar itself."
+msgstr ""
+"SA-MP 0.3.7-R3 e mais novos: em telas 16:10 e mais largas o radar fica redondo\n"
+"(96 x 82, dimensionado pela altura da tela). Ligado, a menos que o jogador desligue\n"
+"(nohudscalefix=1 no sa-mp.cfg). Não com o Widescreen Fix, que dimensiona o radar por conta própria."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Same height as the key one"
+msgstr "Mesma altura do principal"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Same width as the key one"
+msgstr "Mesma largura do principal"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Segments"
+msgstr "Segmentos"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Shadow colour"
+msgstr "Cor da sombra"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid ""
+"Textdraws can't be turned, so a triangle is boxes in steps.\n"
+"More steps make a smoother edge. Each step is a textdraw."
+msgstr ""
+"Textdraws não podem girar, então um triângulo é feito de caixas em degraus.\n"
+"Mais degraus deixam a borda mais suave. Cada degrau é um textdraw."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid ""
+"The chat and text outlines are sized in the player's pixels: on a bigger\n"
+"screen the chat takes less of it and outlines are thinner. Textdraws too."
+msgstr ""
+"O chat e os contornos de texto são medidos em pixels do jogador: numa tela\n"
+"maior o chat ocupa menos dela e os contornos ficam mais finos. Vale para textdraws também."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "The sprites it is made of"
+msgstr "Os sprites que a compõem"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid ""
+"The weapon icon keeps its shape (1 in the ini it ships with). Older builds\n"
+"and 0 squeeze it to the HUD's width."
+msgstr ""
+"O ícone da arma mantém o formato (1 no ini que vem com ele). Versões antigas\n"
+"e 0 o espremem na largura do HUD."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "To"
+msgstr "Para"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "To the key one"
+msgstr "Ao principal"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "To the selection"
+msgstr "À seleção"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Top to bottom"
+msgstr "De cima para baixo"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Triangle"
+msgstr "Triângulo"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid ""
+"What aligning lines them up with. The key one is the one clicked last\n"
+"(outlined thicker), and it stays put. One on its own aligns to the screen.\n"
+"A group moves as one, and a shape aligns by its own edges."
+msgstr ""
+"Com o que o alinhamento os alinha. O principal é o último clicado\n"
+"(contorno mais grosso), e ele fica parado. Um sozinho se alinha à tela.\n"
+"Um grupo se move como um só, e uma forma se alinha pelas próprias bordas."

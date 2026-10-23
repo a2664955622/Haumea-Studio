@@ -3126,6 +3126,16 @@ DrawTextDrawsOverlay(void)
 			dl->AddRectFilled(ImVec2(p.x - 4, p.y - 4), ImVec2(p.x + 4, p.y + 4), IM_COL32(255, 220, 60, 255));
 			dl->AddRect(ImVec2(p.x - 4, p.y - 4), ImVec2(p.x + 4, p.y + 4), IM_COL32(20, 20, 20, 255));
 		}
+		// The bottom right one is also an item, for UI scripts to find (the
+		// click itself is taken above, by where the mouse is).
+		ImGui::SetNextWindowPos(ImVec2(p1.x - 6, p1.y - 6));
+		ImGui::SetNextWindowSize(ImVec2(12, 12));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(1, 1));
+		ImGui::Begin("##tdresize", nil, flags);
+		ImGui::InvisibleButton("resize", ImVec2(12, 12));
+		ImGui::End();
+		ImGui::PopStyleVar(2);
 	}
 
 	// Guides: dragged, or dropped on a ruler (or off the canvas) to go.

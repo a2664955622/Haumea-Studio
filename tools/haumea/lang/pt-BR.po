@@ -741,6 +741,9 @@ msgstr ". IDs personalizados fora do artconfig.txt e do AddSimpleModel: "
 msgid "/fontsize"
 msgstr "/fontsize"
 
+msgid "/hudscalefix"
+msgstr "/hudscalefix"
+
 msgid "/pagesize"
 msgstr "/pagesize"
 
@@ -776,6 +779,9 @@ msgstr "1 - Bloqueio"
 
 msgid "1 Aharoni"
 msgstr "1 Aharoni"
+
+msgid "1 for a solid bar. Each segment is a textdraw."
+msgstr "1 para uma barra sólida. Cada segmento é um textdraw."
 
 msgid "1.  Set your server folder: File > Workspace."
 msgstr "1.  Defina a pasta do servidor: Arquivo > Workspace."
@@ -960,6 +966,9 @@ msgstr "<nenhum>"
 msgid "A .pwn or .inc file with only textdraws; your gamemode includes it."
 msgstr "Um arquivo .pwn ou .inc só com textdraws; o seu gamemode o inclui."
 
+msgid "A copy of the shape under it, this far down and right. 0 for none."
+msgstr "Uma cópia da forma por baixo, deslocada isto para baixo e para a direita. 0 para nenhuma."
+
 msgid "A driver recording: the NPC must be in a vehicle"
 msgstr "Uma gravação de motorista: o NPC precisa estar em um veículo"
 
@@ -993,13 +1002,6 @@ msgstr "Um jogador vê no máximo 1024 gang zones. Use células maiores ou menos
 
 msgid "A polygon needs at least 3 corners."
 msgstr "Um polígono precisa de pelo menos 3 cantos."
-
-msgid ""
-"A rounded box, a circle, a progress bar or a ring, made of several\n"
-"sprite textdraws and added as a group."
-msgstr ""
-"Uma caixa arredondada, um círculo, uma barra de progresso ou um anel, feitos de vários\n"
-"textdraws de sprite e adicionados como um grupo."
 
 msgid "A server folder with gamemodes, filterscripts and scriptfiles."
 msgstr "Uma pasta de servidor com gamemodes, filterscripts e scriptfiles."
@@ -1214,6 +1216,13 @@ msgstr "Alt+Shift+LMB + arrastar"
 msgid "Alt+click object"
 msgstr "Alt+clique no objeto"
 
+msgid ""
+"Always opaque: its sprites overlap, and see-through colours would\n"
+"show the overlaps darker."
+msgstr ""
+"Sempre opaca: os sprites se sobrepõem, e cores transparentes\n"
+"deixariam as sobreposições mais escuras."
+
 msgid "Always send"
 msgstr "Sempre enviar"
 
@@ -1330,6 +1339,9 @@ msgstr "Grade"
 
 msgid "Area has unsaved edits"
 msgstr "A área tem edições não salvas"
+
+msgid "Arm width"
+msgstr "Largura dos braços"
 
 msgid "Armour"
 msgstr "Colete"
@@ -1475,6 +1487,9 @@ msgstr "Música de fundo"
 msgid "Bandit wheel start"
 msgstr "Início da roleta"
 
+msgid "Bands"
+msgstr "Faixas"
+
 msgid "Bar (0.3.7-R2)"
 msgstr "Bar (0.3.7-R2)"
 
@@ -1550,6 +1565,12 @@ msgstr "Negrito"
 msgid "Bomb"
 msgstr "Bomba"
 
+msgid "Border"
+msgstr "Borda"
+
+msgid "Border colour"
+msgstr "Cor da borda"
+
 msgid "Bottom"
 msgstr "Embaixo"
 
@@ -1562,6 +1583,9 @@ msgstr "Embaixo à esquerda"
 msgid "Bottom right"
 msgstr "Embaixo à direita"
 
+msgid "Bottom to top"
+msgstr "De baixo para cima"
+
 msgid "Box"
 msgstr "Caixa"
 
@@ -1570,6 +1594,13 @@ msgstr "Cor da caixa"
 
 msgid "Boxes and crates"
 msgstr "Caixas e engradados"
+
+msgid ""
+"Boxes, circles, outlines, triangles, arrows, gradients, bars and rings, made\n"
+"of sprite textdraws and added as a group. Select it later to change it."
+msgstr ""
+"Caixas, círculos, contornos, triângulos, setas, degradês, barras e anéis, feitos\n"
+"de textdraws de sprite e adicionados como um grupo. Selecione depois para alterar."
 
 msgid "Brass knuckles"
 msgstr "Soco-inglês"
@@ -1859,6 +1890,9 @@ msgstr ""
 "Círculo e retângulo cobrem qualquer altura. Os outros sobem de onde a\n"
 "área está (uma esfera fica em volta dela)."
 
+msgid "Circle outline"
+msgstr "Contorno de círculo"
+
 #, c-format
 msgid "Class %d  skin %d"
 msgstr "Classe %d  skin %d"
@@ -1872,6 +1906,9 @@ msgstr "Limpar"
 
 msgid "Clear all"
 msgstr "Limpar tudo"
+
+msgid "Clear guides"
+msgstr "Limpar guias"
 
 msgid "Clear list"
 msgstr "Limpar lista"
@@ -2490,9 +2527,6 @@ msgstr "Desanexar"
 msgid "Detonator"
 msgstr "Detonador"
 
-msgid "Diameter"
-msgstr "Diâmetro"
-
 msgid "Diamond (entrance)"
 msgstr "Diamante (entrada)"
 
@@ -2507,6 +2541,9 @@ msgstr "Lanchonete"
 
 msgid "Diner music (0.3.7-R2)"
 msgstr "Música da lanchonete (0.3.7-R2)"
+
+msgid "Direction"
+msgstr "Direção"
 
 msgid ""
 "Direction vector of traffic flow (X, Y).\n"
@@ -2619,6 +2656,9 @@ msgstr ""
 msgid "Drag a panel's title bar to dock it beside the 3D view."
 msgstr "Arraste a barra de título de um painel para encaixá-lo ao lado da vista 3D."
 
+msgid "Drag it onto a ruler to remove it"
+msgstr "Arraste até uma régua para remover"
+
 msgid "Drag to adjust. Double-click to enter an exact value."
 msgstr "Arraste para ajustar. Clique duas vezes para digitar um valor exato."
 
@@ -2633,11 +2673,11 @@ msgstr ""
 "Segure Alt ao arrastar para posicionar um painel livremente."
 
 msgid ""
-"Dragged textdraws snap to the screen's edges and centre, to the others\n"
-"and to the grid. Hold Ctrl while dragging to place freely."
+"Dragged textdraws snap to the screen's edges and centre, to the others,\n"
+"to the grid and to guides. Hold Ctrl while dragging to place freely."
 msgstr ""
-"Textdraws arrastados encaixam nas bordas e no centro da tela, nos outros\n"
-"e na grade. Segure Ctrl ao arrastar para posicionar livremente."
+"Textdraws arrastados se encaixam nas bordas e no centro da tela, nos outros,\n"
+"na grade e nas guias. Segure Ctrl ao arrastar para posicionar livremente."
 
 msgid "Dragging"
 msgstr "Arrastar"
@@ -2766,6 +2806,9 @@ msgstr "Editar todos os selecionados"
 
 msgid "Edit the NODES*.DAT files already in that folder."
 msgstr "Edita os arquivos NODES*.DAT que já estão nessa pasta."
+
+msgid "Edit the parts on their own"
+msgstr "Editar as partes separadamente"
 
 #, c-format
 msgid "Editing %s: drag a textdraw to move it, its corner to resize it. %s saves the textdraws, %s goes back to the map."
@@ -3022,6 +3065,18 @@ msgstr "Os arquivos que faltam nessa pasta vieram do jogo."
 msgid "Fill the screen"
 msgstr "Preencher a tela"
 
+msgid "Fills down"
+msgstr "Enche para baixo"
+
+msgid "Fills to the left"
+msgstr "Enche para a esquerda"
+
+msgid "Fills to the right"
+msgstr "Enche para a direita"
+
+msgid "Fills up"
+msgstr "Enche para cima"
+
 msgid "Filter"
 msgstr "Filtro"
 
@@ -3079,6 +3134,12 @@ msgstr "Lança-chamas"
 
 msgid "Flight school results music"
 msgstr "Música do resultado da escola de voo"
+
+msgid "Flip across: sprites mirror, shapes point the other way"
+msgstr "Espelhar na horizontal: sprites espelham, formas apontam para o outro lado"
+
+msgid "Flip upside down"
+msgstr "Virar de cabeça para baixo"
 
 msgid "Flowers"
 msgstr "Flores"
@@ -3196,6 +3257,9 @@ msgstr "Congelar"
 msgid "Freight (537)"
 msgstr "Freight (537)"
 
+msgid "From"
+msgstr "De"
+
 msgid ""
 "From a map made before textdraws had their own file. They are saved\n"
 "back with the map as they are; move them here to edit them."
@@ -3223,6 +3287,9 @@ msgstr "Detalhe completo"
 
 msgid "Full detail only"
 msgstr "Só detalhe completo"
+
+msgid "Fully transparent leaves it out."
+msgstr "Totalmente transparente deixa de fora."
 
 msgid "Furniture"
 msgstr "Móveis"
@@ -3301,6 +3368,9 @@ msgstr "Gang zones"
 
 msgid "GangZoneCreate: a coloured square on the radar"
 msgstr "GangZoneCreate: um quadrado colorido no radar"
+
+msgid "Gap"
+msgstr "Espaço"
 
 msgid "Garage Door"
 msgstr "Porta de garagem"
@@ -3394,6 +3464,9 @@ msgstr "Ir para o nó"
 
 msgid "Golf club"
 msgstr "Taco de golfe"
+
+msgid "Gradient"
+msgstr "Degradê"
 
 msgid "Graphics"
 msgstr "Gráficos"
@@ -3844,6 +3917,9 @@ msgstr "Indexando texturas... %d de %d TXDs"
 msgid "Info"
 msgstr "Info"
 
+msgid "Inside"
+msgstr "Interior"
+
 msgid "Install"
 msgstr "Instalar"
 
@@ -4069,6 +4145,9 @@ msgstr "Bordas esquerdas"
 msgid "Left out because SA-MP has no equivalent:"
 msgstr "Deixado de fora porque o SA-MP não tem equivalente:"
 
+msgid "Left to right"
+msgstr "Da esquerda para a direita"
+
 msgid "Left-click a node in the viewport to select it"
 msgstr "Clique com o botão esquerdo num nó na viewport para selecioná-lo"
 
@@ -4120,6 +4199,9 @@ msgstr "Limites"
 
 msgid "Line"
 msgstr "Linha"
+
+msgid "Line width"
+msgstr "Espessura da linha"
 
 msgid "Linear"
 msgstr "Linear"
@@ -4303,6 +4385,13 @@ msgstr "Faço um NPC andar por uma rota"
 
 msgid "Make upright"
 msgstr "Endireitar"
+
+msgid ""
+"Makes it plain sprites, to fine-tune one by one. It is no longer\n"
+"changed as a shape, so changes here would undo that tuning."
+msgstr ""
+"Transforma em sprites comuns, para ajustar um a um. Deixa de ser\n"
+"alterado como forma, já que mudanças aqui desfariam esses ajustes."
 
 msgid "Makes the zones, as one undo step."
 msgstr "Cria as zonas, num único passo de desfazer."
@@ -4554,6 +4643,9 @@ msgstr "Saco de dinheiro"
 
 msgid "More"
 msgstr "Mais"
+
+msgid "More bands blend more smoothly. Each band is a textdraw."
+msgstr "Mais faixas misturam mais suavemente. Cada faixa é um textdraw."
 
 msgid "Motor, stopping"
 msgstr "Motor parando"
@@ -4843,6 +4935,15 @@ msgstr "Novos textdraws"
 
 msgid "New workspace..."
 msgstr "Novo workspace..."
+
+msgid ""
+"Newer builds draw text outlines as a soft ring that grows with the\n"
+"screen (ReplaceTextShadowWithOutline). Off: the game's own sharp edge, a few\n"
+"pixels wide, as older builds and the plain game draw it. Textdraws too."
+msgstr ""
+"Versões novas desenham o contorno do texto como um anel suave que cresce com a\n"
+"tela (ReplaceTextShadowWithOutline). Desligado: a borda nítida do próprio jogo, de poucos\n"
+"pixels, como versões antigas e o jogo original desenham. Vale para textdraws também."
 
 msgid "Nickname"
 msgstr "Apelido"
@@ -5212,6 +5313,13 @@ msgstr ""
 "Desligado toca onde foi gravado. Ligado move a rota inteira para que ela\n"
 "comece onde o NPC está (a posição inicial do NPC_StartPlayback)."
 
+msgid ""
+"Off: the outer ones stay and the gaps between come out equal.\n"
+"On: each is this far from the one before, from the first."
+msgstr ""
+"Desligado: os das pontas ficam e os espaços entre eles ficam iguais.\n"
+"Ligado: cada um fica a esta distância do anterior, a partir do primeiro."
+
 msgid "Offer it again"
 msgstr "Oferecer de novo"
 
@@ -5366,6 +5474,13 @@ msgstr "Faixas no sentido oposto"
 
 msgid "Optional"
 msgstr "Opcional"
+
+msgid ""
+"Or drag its handles on the canvas: Shift keeps the shape's proportions,\n"
+"Alt sizes it from the centre, Ctrl stops snapping."
+msgstr ""
+"Ou arraste as alças na tela: Shift mantém as proporções da forma,\n"
+"Alt redimensiona a partir do centro, Ctrl desliga o encaixe."
 
 msgid "Or path"
 msgstr "Ou caminho"
@@ -5662,6 +5777,9 @@ msgstr "Pickup  tipo %d"
 msgid "Pickups"
 msgstr "Pickups"
 
+msgid "Pill"
+msgstr "Pílula"
+
 msgid "Pin: keep it at the top of the list"
 msgstr "Fixar: manter no topo da lista"
 
@@ -5768,6 +5886,9 @@ msgstr "Toca o som 0, que para o som que estiver tocando. Use para músicas e lo
 msgid "Please choose a %s file."
 msgstr "Escolha um arquivo %s."
 
+msgid "Plus"
+msgstr "Mais"
+
 msgid "Point"
 msgstr "Ponto"
 
@@ -5777,6 +5898,18 @@ msgstr "Ponto %d de %d. Os pontos são percorridos da menor ordem para cima."
 
 msgid "Point Dir To Node"
 msgstr "Apontar para o nó"
+
+msgid "Points down"
+msgstr "Aponta para baixo"
+
+msgid "Points left"
+msgstr "Aponta para a esquerda"
+
+msgid "Points right"
+msgstr "Aponta para a direita"
+
+msgid "Points up"
+msgstr "Aponta para cima"
 
 msgid "Points you click in the world, or an NPC path's points in order."
 msgstr "Pontos que você clica no mundo, ou os pontos de um caminho de NPC em ordem."
@@ -5933,6 +6066,9 @@ msgstr "Propriedade (ocupada)"
 
 msgid "Proportional"
 msgstr "Proporcional"
+
+msgid "ProportionalWeaponIcon"
+msgstr "ProportionalWeaponIcon"
 
 msgid "Punch A"
 msgstr "Soco A"
@@ -6346,6 +6482,9 @@ msgstr "Direita (topo)"
 msgid "Right edges"
 msgstr "Bordas direitas"
 
+msgid "Right to left"
+msgstr "Da direita para a esquerda"
+
 msgid "Right-click object row"
 msgstr "Clique direito na linha do objeto"
 
@@ -6434,6 +6573,9 @@ msgstr "Rotação"
 msgid "Rotation copied"
 msgstr "Rotação copiada"
 
+msgid "Round text outlines"
+msgstr "Contornos de texto arredondados"
+
 msgid "Rounded box"
 msgstr "Caixa arredondada"
 
@@ -6442,6 +6584,16 @@ msgstr "Arredonda cada ângulo de rotação para este passo."
 
 msgid "Route"
 msgstr "Rota"
+
+msgid "Rulers"
+msgstr "Réguas"
+
+msgid ""
+"Rulers along the canvas, in canvas units. Drag from one to make a guide,\n"
+"and drag a guide back onto a ruler to remove it. Guides are saved with the file."
+msgstr ""
+"Réguas ao longo da tela, em unidades da tela. Arraste de uma para criar uma guia,\n"
+"e arraste a guia de volta para a régua para removê-la. As guias são salvas no arquivo."
 
 msgid "Running"
 msgstr "Em execução"
@@ -6482,6 +6634,15 @@ msgstr "SA-MP %s encontrado"
 msgid "SA-MP 0.3.7 and open.mp with 0.3.7 clients allowed"
 msgstr "SA-MP 0.3.7 e open.mp com clientes 0.3.7 permitidos"
 
+msgid ""
+"SA-MP 0.3.7-R3 and newer: on 16:10 and wider screens the radar is made round\n"
+"(96 x 82, sized by the screen's height). On unless the player turned it off\n"
+"(nohudscalefix=1 in sa-mp.cfg). Not with the Widescreen Fix, which sizes the radar itself."
+msgstr ""
+"SA-MP 0.3.7-R3 e mais novos: em telas 16:10 e mais largas o radar fica redondo\n"
+"(96 x 82, dimensionado pela altura da tela). Ligado, a menos que o jogador desligue\n"
+"(nohudscalefix=1 no sa-mp.cfg). Não com o Widescreen Fix, que dimensiona o radar por conta própria."
+
 msgid "SA-MP 0.3.DL and open.mp clients download custom models."
 msgstr "Os clientes SA-MP 0.3.DL e open.mp baixam modelos personalizados."
 
@@ -6517,6 +6678,12 @@ msgstr "Faixas no mesmo sentido"
 
 msgid "Same Lanes"
 msgstr "Mesmas faixas"
+
+msgid "Same height as the key one"
+msgstr "Mesma altura do principal"
+
+msgid "Same width as the key one"
+msgstr "Mesma largura do principal"
 
 msgid "Santa Maria Pier"
 msgstr "Píer de Santa Maria"
@@ -6738,6 +6905,9 @@ msgstr "Seção"
 msgid "See-through (alpha)"
 msgstr "Transparente (alfa)"
 
+msgid "Segments"
+msgstr "Segmentos"
+
 msgid "Select"
 msgstr "Selecionar"
 
@@ -6916,6 +7086,9 @@ msgstr "Configuração, elementos, NPCs, textdraws, testes e salvamento, com cap
 
 msgid "Shadow"
 msgstr "Sombra"
+
+msgid "Shadow colour"
+msgstr "Cor da sombra"
 
 msgid "Shadow/outline colour"
 msgstr "Cor da sombra/contorno"
@@ -7541,6 +7714,13 @@ msgstr "Modo TextDraw: edite o arquivo de textdraws em uma tela em vez do mundo.
 msgid "TextDraws"
 msgstr "TextDraws"
 
+msgid ""
+"Textdraws can't be turned, so a triangle is boxes in steps.\n"
+"More steps make a smoother edge. Each step is a textdraw."
+msgstr ""
+"Textdraws não podem girar, então um triângulo é feito de caixas em degraus.\n"
+"Mais degraus deixam a borda mais suave. Cada degrau é um textdraw."
+
 #, c-format
 msgid "Textdraws have their own .pwn file: Save in the TextDraws window or %s."
 msgstr "Os textdraws têm seu próprio arquivo .pwn: Salvar na janela TextDraws ou %s."
@@ -7638,8 +7818,12 @@ msgstr ""
 "O tamanho do pixel da arte. Células menores seguem as formas mais\n"
 "de perto e usam mais gang zones."
 
-msgid "The chat is sized in the player's pixels: it takes less of a bigger screen."
-msgstr "O chat é medido em pixels do jogador: ocupa menos de uma tela maior."
+msgid ""
+"The chat and text outlines are sized in the player's pixels: on a bigger\n"
+"screen the chat takes less of it and outlines are thinner. Textdraws too."
+msgstr ""
+"O chat e os contornos de texto são medidos em pixels do jogador: numa tela\n"
+"maior o chat ocupa menos dela e os contornos ficam mais finos. Vale para textdraws também."
 
 msgid "The checkpoint's size; players enter it within about this distance."
 msgstr "O tamanho do checkpoint; os jogadores entram nele a cerca desta distância."
@@ -7771,6 +7955,9 @@ msgstr ""
 "A skin dos novos atores, classes de jogador e NPCs.\n"
 "As skins também estão na categoria Skins da aba Objetos."
 
+msgid "The sprites it is made of"
+msgstr "Os sprites que a compõem"
+
 msgid "The start screen: workspaces, their maps and the game folder."
 msgstr "A tela inicial: workspaces, seus mapas e a pasta do jogo."
 
@@ -7787,6 +7974,13 @@ msgstr "A atualização não foi instalada: %s"
 
 msgid "The way it faces, in degrees (the Z rotation). Drag, or double-click to type."
 msgstr "Para onde ele está virado, em graus (a rotação Z). Arraste ou clique duas vezes para digitar."
+
+msgid ""
+"The weapon icon keeps its shape (1 in the ini it ships with). Older builds\n"
+"and 0 squeeze it to the HUD's width."
+msgstr ""
+"O ícone da arma mantém o formato (1 no ini que vem com ele). Versões antigas\n"
+"e 0 o espremem na largura do HUD."
 
 msgid "The wheel zooms round the cursor, the middle button pans."
 msgstr "A roda aproxima em volta do cursor, o botão do meio arrasta a vista."
@@ -7930,8 +8124,8 @@ msgstr "Dica: %s"
 msgid "Tip: you can also drag & drop .dff/.txd/.col files anywhere in Haumea."
 msgstr "Dica: você também pode arrastar e soltar arquivos .dff/.txd/.col em qualquer lugar do Haumea."
 
-msgid "To each other, or to the screen when one is selected"
-msgstr "Entre si, ou à tela quando só um está selecionado"
+msgid "To"
+msgstr "Para"
 
 msgid "To edit that file itself instead, use File > Open Map."
 msgstr "Para editar esse arquivo em si, use Arquivo > Abrir mapa."
@@ -7942,8 +8136,14 @@ msgstr "Para todos (TextDrawCreate)"
 msgid "To keep them: a SA-MP 0.3.DL or open.mp custom model goes in the workspace's models/artconfig.txt (AddSimpleModel) with its DFF and TXD; anything else needs a similar game or SA-MP object in its place (search the Object Browser)."
 msgstr "Para mantê-los: um modelo personalizado do SA-MP 0.3.DL ou do open.mp vai no models/artconfig.txt do workspace (AddSimpleModel) com o DFF e o TXD; o resto precisa de um objeto parecido do jogo ou do SA-MP no lugar (procure no Navegador de objetos)."
 
+msgid "To the key one"
+msgstr "Ao principal"
+
 msgid "To the screen"
 msgstr "À tela"
+
+msgid "To the selection"
+msgstr "À seleção"
 
 msgid "Toggle object selection"
 msgstr "Alternar a seleção do objeto"
@@ -7959,6 +8159,9 @@ msgstr "Em cima à esquerda"
 
 msgid "Top right"
 msgstr "Em cima à direita"
+
+msgid "Top to bottom"
+msgstr "De cima para baixo"
 
 msgid "Toreno's ranch"
 msgstr "Rancho do Toreno"
@@ -8015,6 +8218,9 @@ msgstr "Tríades"
 
 msgid "Triads casino"
 msgstr "Cassino das Tríades"
+
+msgid "Triangle"
+msgstr "Triângulo"
 
 msgid "Truck"
 msgstr "Caminhão"
@@ -8362,6 +8568,15 @@ msgstr "Só molhado"
 
 msgid "Wet Road Effect"
 msgstr "Efeito de pista molhada"
+
+msgid ""
+"What aligning lines them up with. The key one is the one clicked last\n"
+"(outlined thicker), and it stays put. One on its own aligns to the screen.\n"
+"A group moves as one, and a shape aligns by its own edges."
+msgstr ""
+"Com o que o alinhamento os alinha. O principal é o último clicado\n"
+"(contorno mais grosso), e ele fica parado. Um sozinho se alinha à tela.\n"
+"Um grupo se move como um só, e uma forma se alinha pelas próprias bordas."
 
 msgid "What is kept?"
 msgstr "O que é guardado?"
