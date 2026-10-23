@@ -206,7 +206,7 @@ class EditorTests(unittest.TestCase):
 
     PANELS = ('open "$UI_FIXTURES/ui_floor.pwn"\nwait 50\n' +
               ''.join('shortcut window_%s\n' % w for w in (
-                  'camera', 'changes', 'pawn_code', 'textures', 'nodes')) +
+                  'camera', 'changes', 'textures', 'nodes')) +
               'wait 60\nassert clipped_items >= 0\n'
               'shortcut window_shortcuts\nwait 20\nassert clipped_items >= 0\n'
               'shortcut window_preferences\nwait 20\nassert clipped_items >= 0\n' +
@@ -231,6 +231,23 @@ class EditorTests(unittest.TestCase):
         grew = sorted(self.clipped(portuguese) - self.clipped(english))
         self.assertEqual(grew, [], 'labels cut off in pt-BR only (shorten the translation):\n' +
                          '\n'.join(grew))
+
+    def test_code_workspace_is_translated(self):
+        # Code is a workspace now: it hides the map's panels while selected.
+        self.editor('''open "$UI_FIXTURES/ui_floor.pwn"
+wait 10
+click_item '*' 'Code'
+wait 10
+assert window 'PawnIDE'
+assert item '*' 'Code'
+assert item 'PawnIDE' 'Salvar script'
+assert item 'PawnIDE' 'Localizar / Substituir'
+assert no_window 'Navegador de objetos'
+click_item '*' 'Map'
+wait 5
+assert window 'Navegador de objetos'
+exit
+''', savesettings='language pt-BR\n' + self.PANEL_FLAGS)
 
     def test_catalog_and_picker(self):
         """A catalog in HAUMEA_LANG_DIR is a language: the setting loads it, a
