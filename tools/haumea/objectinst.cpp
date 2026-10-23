@@ -4595,6 +4595,12 @@ bool
 RenderModelPreviewToRaster(int objectId, rw::V3d rot, float zoom, int colour1, int colour2,
 	rw::RGBA background, rw::Raster *colorRaster, rw::Raster *depthRaster)
 {
+	// The client draws these four as 18631 (a question mark), turned
+	// 180 about Z whatever the rotation (RenderStreamedModelPreviewToTextureSurface).
+	if(objectId == 1373 || objectId == 3118 || objectId == 3552 || objectId == 3553){
+		objectId = 18631;
+		rot.x = 0.0f; rot.y = 0.0f; rot.z = 180.0f;
+	}
 	ObjectDef *obj = GetObjectDef(objectId);
 	if(obj == nil)
 		return false;
@@ -4619,8 +4625,17 @@ RenderModelPreviewToRaster(int objectId, rw::V3d rot, float zoom, int colour1, i
 		radius = obj->m_colModel->boundingSphere.radius;
 	}else
 		previewGeometryBounds(atm, clump, &center, &radius);
+	// Where each kind is put in front of the camera: a skin at a fixed
+	// distance (RenderModelPreviewToTextureSurface, 0.05 above the camera,
+	// skin 162 0.15), a vehicle by its size and the zoom, a plane by its size
+	// alone (RenderCharacterLikePreviewToTextureSurface), anything else by
+	// its collision sphere (RenderStreamedModelPreviewToTextureSurface).
 	rw::V3d pos;
-	if(obj->m_isVehicle)
+	if(obj->m_isPed)
+		pos = { 0.0f, -2.25f * zoom, objectId == 162 ? 0.15f : 0.05f };
+	else if(obj->m_isVehicle && rw::strncmp_ci(obj->m_vehicleType, "plane", 16) == 0)
+		pos = { 0.0f, -5.5f - radius * 2.5f, 0.0f };
+	else if(obj->m_isVehicle)
 		pos = { 0.0f, -(1.0f + radius * 2.0f) * zoom, 0.0f };
 	else
 		pos = { -center.x, -(0.1f + radius * 2.25f) * zoom, -center.z };

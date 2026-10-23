@@ -856,6 +856,7 @@ struct PreviewEntry {
 	rw::Raster *color, *depth;
 	rw::Texture *texture;
 	bool ready;
+	bool failed;	// it couldn't be drawn: shown as its background, not tried again
 	int lastFrame;
 };
 static PreviewEntry gPreviews[16];
@@ -877,7 +878,7 @@ previewTexture(const TextDraw &td)
 	for(int i = 0; i < 16; i++)
 		if(previewMatches(gPreviews[i], td)){
 			gPreviews[i].lastFrame = frame;
-			return gPreviews[i].ready ? gPreviews[i].texture : nil;
+			return gPreviews[i].ready && !gPreviews[i].failed ? gPreviews[i].texture : nil;
 		}
 	// Take the least recently used entry and render it next frame.
 	PreviewEntry *e = &gPreviews[0];
@@ -898,6 +899,7 @@ previewTexture(const TextDraw &td)
 	e->colour1 = td.previewColour1; e->colour2 = td.previewColour2;
 	e->background = td.backgroundColour;
 	e->ready = false;
+	e->failed = false;
 	e->lastFrame = frame;
 	return nil;
 }
@@ -912,9 +914,10 @@ TextDrawsBeforeWorldRender(void)
 		rw::RGBA bg = { (uint8)(e.background >> 24), (uint8)(e.background >> 16),
 			(uint8)(e.background >> 8), (uint8)e.background };
 		rw::V3d rot = { e.rx, e.ry, e.rz };
-		e.ready = RenderModelPreviewToRaster(e.model, rot, e.zoom, e.colour1, e.colour2, bg, e.color, e.depth);
-		if(!e.ready)
-			e.model = -999999;	// don't try again every frame
+		// A model that can't be drawn stays failed while it is asked for: it
+		// used to be asked for, loaded and drawn again every frame.
+		e.failed = !RenderModelPreviewToRaster(e.model, rot, e.zoom, e.colour1, e.colour2, bg, e.color, e.depth);
+		e.ready = true;
 		return;	// one per frame
 	}
 }
