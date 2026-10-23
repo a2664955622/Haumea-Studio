@@ -147,6 +147,8 @@ static char gRecentMaps[MAX_RECENT_MAPS][1024];
 static int gNumRecentMaps;
 static bool gReopenLastMap = true;
 static bool gShowStartGuide = true;
+static bool gShowTextDrawsHint = true;
+static ImVec2 gTextDrawsHintAnchor;
 static float gUiScale = 1.0f;
 static int gPawnSaveFormat = PAWN_CODE_NATIVE;
 static uint32 gPawnLastSavedChangeSeq;
@@ -215,6 +217,7 @@ static bool parseIntSetting(const char *value, int *out);
 static bool savePawnMap(void);
 static void uiRunShortcut(int action);
 static void uiWorkspaceNavigation(void);
+static void uiTextDrawsHint(void);
 static int uiSelectionCount(void);
 // --profile: frame times are measured for a while after the map opens.
 static FILE *gProfileReport;
@@ -6563,6 +6566,8 @@ loadSaveSettings(void)
 			if(parseBoolSetting(value, &boolValue)) gOutlineMapObjects = boolValue;
 		}else if(strcmp(key, "panel_snap") == 0){
 			if(parseBoolSetting(value, &boolValue)) gPanelSnap = boolValue;
+		}else if(strcmp(key, "show_textdraws_hint") == 0){
+			if(parseBoolSetting(value, &boolValue)) gShowTextDrawsHint = boolValue;
 		}else if(strcmp(key, "show_start_guide") == 0){
 			if(parseBoolSetting(value, &boolValue)) gShowStartGuide = boolValue;
 		}else if(strcmp(key, "reopen_last_map") == 0){
@@ -6951,6 +6956,7 @@ saveSaveSettings(void)
 	RadarSaveSettings(f);
 	fprintf(f, "reopen_last_map %d\n", gReopenLastMap ? 1 : 0);
 	fprintf(f, "show_start_guide %d\n", gShowStartGuide ? 1 : 0);
+	fprintf(f, "show_textdraws_hint %d\n", gShowTextDrawsHint ? 1 : 0);
 	fprintf(f, "panel_snap %d\n", gPanelSnap ? 1 : 0);
 	fprintf(f, "outline_map_objects %d\n", gOutlineMapObjects ? 1 : 0);
 	fprintf(f, "outline_selection %d\n", gOutlineSelection ? 1 : 0);
@@ -12214,19 +12220,70 @@ InPawnIdeMode(void)
 static void
 uiWorkspaceNavigation(void)
 {
-	if(InTextDrawMode()) showPawnCodeWindow = false;
+	if(InTextDrawMode()){
+		showPawnCodeWindow = false;
+		if(gShowTextDrawsHint){ gShowTextDrawsHint = false; saveSaveSettings(); }
+	}
 	const char *labels[] = { L("Map"), L("TextDraws"), L("Code") };
 	for(int i = 0; i < 3; i++){
 		int mode = InTextDrawMode() ? 1 : (InPawnIdeMode() ? 2 : 0);
 		if(ImGui::MenuItem(labels[i], nil, mode == i)){
-			if(i == 1){ showPawnCodeWindow = false; EnterTextDrawMode(); }
+			if(i == 1){
+				showPawnCodeWindow = false;
+				EnterTextDrawMode();
+				if(gShowTextDrawsHint){ gShowTextDrawsHint = false; saveSaveSettings(); }
+			}
 			else { ExitTextDrawMode(); showPawnCodeWindow = i == 2; }
 		}
-		if(i == 1)
+		if(i == 1){
+			gTextDrawsHintAnchor = ImVec2((ImGui::GetItemRectMin().x + ImGui::GetItemRectMax().x) * 0.5f,
+				ImGui::GetItemRectMax().y);
 			ImGui::SetItemTooltip(_("TextDraw mode: edit the textdraw file on a canvas instead of the world."));
+		}
 		else if(i == 2)
 			ImGui::SetItemTooltip("%s", ShortcutLabel(SC_WINDOW_PAWN_CODE));
 	}
+}
+
+
+static void
+uiTextDrawsHint(void)
+{
+	if(!gShowTextDrawsHint || !isSA() || InTextDrawMode() || InPawnIdeMode() || StartScreenOpen() ||
+	   ImGui::GetIO().AppFocusLost || ImGui::IsPopupOpen((ImGuiID)0, ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel))
+		return;
+	static double appeared = -1.0;
+	if(appeared < 0.0) appeared = ImGui::GetTime();
+	const double age = ImGui::GetTime() - appeared;
+	// Five small jumps, then settle. The hint remains until used or dismissed.
+	float jump = age < 6.0 ? std::abs(std::sin(age * 3.141592653589793 / 1.2)) * 4.0f : 0.0f;
+	KeepNextEditorOverlayOnMainWindow();
+	ImGui::SetNextWindowPos(ImVec2(gTextDrawsHintAnchor.x, gTextDrawsHintAnchor.y + 12.0f - jump),
+		ImGuiCond_Always, ImVec2(0.5f, 0.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 4.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6.0f);
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.12f, 0.17f, 0.24f, 1.0f));
+	ImGui::PushStyleColor(ImGuiCol_Border, ImGui::GetStyleColorVec4(ImGuiCol_CheckMark));
+	ImGui::Begin("###TextDrawsNew", nil, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav |
+		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking);
+	ImGui::TextColored(ImGui::GetStyleColorVec4(ImGuiCol_CheckMark), "%s", _("New!"));
+	ImGui::SameLine();
+	if(ImGui::SmallButton(ICON_FA_XMARK "###DismissTextDrawsHint")){
+		gShowTextDrawsHint = false;
+		saveSaveSettings();
+	}
+	ImGui::SetItemTooltip("%s", _("Dismiss"));
+	ImVec2 pos = ImGui::GetWindowPos();
+	ImDrawList *dl = ImGui::GetForegroundDrawList();
+	ImVec2 tip(gTextDrawsHintAnchor.x, gTextDrawsHintAnchor.y + 2.0f);
+	ImVec2 left(tip.x - 5.0f, pos.y + 1.0f), right(tip.x + 5.0f, pos.y + 1.0f);
+	dl->AddTriangleFilled(tip, right, left, IM_COL32(31, 43, 61, 255));
+	dl->AddLine(left, tip, ImGui::GetColorU32(ImGuiCol_CheckMark));
+	dl->AddLine(tip, right, ImGui::GetColorU32(ImGuiCol_CheckMark));
+	ImGui::End();
+	ImGui::PopStyleColor(2);
+	ImGui::PopStyleVar(2);
 }
 
 
@@ -12969,6 +13026,7 @@ gui(void)
 	DrawAddCustomModelDialog();
 	if(showTestServerWindow) TestServerWindow(&showTestServerWindow, gPawnSaveFormat);
 	if(mapPanels && showInteriorsWindow) InteriorsWindow(&showInteriorsWindow);
+	uiTextDrawsHint();
 	DrawNamakaWindow(&showNamakaWindow);	// also runs the updater's queued Namaka update
 
 
