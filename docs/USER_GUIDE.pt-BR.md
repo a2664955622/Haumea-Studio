@@ -245,18 +245,32 @@ de você clicar. **Como grupo** coloca os objetos dele num grupo com o nome do p
 como anexos ou deslocamentos) e **Ao longo de uma linha** (distribuir objetos por um caminho que
 você clica). Movimentos e giros exatos ficam no modo Delta das Informações do objeto.
 
-**Pin de coordenadas** posiciona uma referência sem adicionar um objeto ao mapa. Clique em
-**Posicionar pin** e depois numa superfície, ou use **Pin no centro da seleção**. Arraste do marcador
-até um objeto para medir a distância total e as diferenças em X/Y/Z, com sinal. **Escolher destino**
-também funciona sem arrastar. O encaixe inclui objetos selecionados; no espaço vazio é usado um plano
-horizontal na altura do pin.
+**Pin de coordenadas**, em Ferramentas, serve como referência de alinhamento.
+**Posicionar pin** adiciona outro pin; **Limpar pin** remove só o ativo. Arraste a cabeça
+para mover o pin, o anel da base para medir ou a ponta para mover o destino. Ambos encaixam
+nas superfícies e nos cantos, pontos médios das arestas, centros das faces e centro dos
+limites de colisão dos objetos. Um losango azul indica o encaixe num ponto.
 
-Edite **XYZ do pin**, copie as coordenadas, alinhe cada eixo com o destino ou mova por uma **Distância
-da superfície** exata, na direção perpendicular à última superfície escolhida (negativo usa o outro
-lado). Para centralizar numa porta que faz parte de um prédio, escolha uma borda, escolha a outra como
-destino e use **Ponto médio**. O centro de um objeto selecionado vem dos limites de colisão. O pin e a
-régua são referências temporárias: ficam ocultos ao fechar a seção, Ferramentas ou o espaço Mapa e não
-são exportados.
+Segure **Shift** para uma reta em X/Y/Z, **Ctrl** para passos de ângulo horizontal (15° por
+padrão), **Shift+Ctrl** para passos no plano horizontal ou **Alt** para soltar o encaixe.
+Edite XYZ, copie coordenadas, use **Ponto médio** ou uma **Distância da superfície** exata.
+Em **Ajustes da régua**, digite a distância, o ângulo horizontal e a inclinação.
+**Régua até** vincula o destino a outro pin e acompanha seus movimentos. Arrastar essa
+ponta a torna livre.
+
+Em **Guias de alinhamento**, escolha as guias X/Y/Z, os eixos e a referência do objeto
+(mínimo, centro, máximo ou origem). Com o encaixe em objetos (`N`) ligado, os objetos
+encaixam nos pins e guias pelo centro ou pelas bordas. **Alinhar seleção ao pin** move a
+seleção em grupo; **Alinhar seleção à régua** projeta a referência de cada objeto na linha,
+preservando sua posição ao longo dela. **Distribuir entre as pontas** distribui os objetos
+na régua: dois objetos vão para pontas opostas. Cada comando é um passo de desfazer.
+**Girar na direção da régua** alinha o ângulo horizontal dos objetos com a linha.
+
+Para uma pista, marque um pin em cada canto, vincule-os em **Régua até**, selecione os dois
+objetos e alinhe-os à guia ou distribua entre as pontas. Deixe Z desmarcado para manter as
+alturas. Pins são referências temporárias e não são exportados. Continuam visíveis ao fechar
+Ferramentas ou trocar de painel; **Mostrar pins e guias** os oculta e desativa o encaixe
+neles. Sair de Mapa os oculta até você voltar.
 
 **Radar art a partir de objetos** (em Ferramentas) desenha os seus objetos no radar com gang zones.
 Ela usa todos os objetos, a seleção ou um grupo, vistos de cima, e coloca as zonas no grupo

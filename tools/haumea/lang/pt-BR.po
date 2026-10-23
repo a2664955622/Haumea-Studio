@@ -1098,6 +1098,12 @@ msgstr "Adicionar"
 msgid "Add Custom Model (SA-MP 0.3.DL / open.mp)"
 msgstr "Adicionar modelo personalizado (SA-MP 0.3.DL / open.mp)"
 
+msgid "Add a pin at the object's collision-box centre. For an embedded doorway, pick its two edges and use Midpoint."
+msgstr "Adiciona um pin no centro dos limites de colisão do objeto. Para uma porta no prédio, escolha as duas bordas e use Ponto médio."
+
+msgid "Add a pin on a surface. Drag its head to move it; drag its base ring to measure. Both ends snap to objects."
+msgstr "Adicione um pin numa superfície. Arraste a cabeça para mover; arraste o anel da base para medir. As duas pontas encaixam nos objetos."
+
 msgid "Add a text, box, sprite or model preview and drag it on the screen."
 msgstr "Adicione um texto, caixa, sprite ou prévia de modelo e arraste-o na tela."
 
@@ -1199,8 +1205,17 @@ msgstr "Alinhar"
 msgid "Align & distribute"
 msgstr "Alinhar e distribuir"
 
+msgid "Align axes:"
+msgstr "Alinhar eixos:"
+
 msgid "Align pin:"
 msgstr "Alinhar pin:"
+
+msgid "Align selection to pin"
+msgstr "Alinhar seleção ao pin"
+
+msgid "Align selection to ruler"
+msgstr "Alinhar seleção à régua"
 
 msgid "Align to surface"
 msgstr "Alinhar à superfície"
@@ -1209,8 +1224,15 @@ msgstr "Alinhar à superfície"
 msgid "Aligned %d instance(s) to ground"
 msgstr "%d instância(s) alinhada(s) ao chão"
 
+#, c-format
+msgid "Aligned %d object(s)"
+msgstr "%d objeto(s) alinhado(s)"
+
 msgid "Alignment"
 msgstr "Alinhamento"
+
+msgid "Alignment guides"
+msgstr "Guias de alinhamento"
 
 msgid "All"
 msgstr "Todos"
@@ -1316,6 +1338,9 @@ msgstr "Uma versão não oficial: ela atualiza para a próxima versão oficial."
 
 msgid "Angle"
 msgstr "Ângulo"
+
+msgid "Angle step"
+msgstr "Passo do ângulo"
 
 msgid "Animated"
 msgstr "Animado"
@@ -1984,9 +2009,6 @@ msgstr "Clique numa tecla para mudá-la e pressione a nova tecla com Ctrl, Shift
 
 msgid "Click a node to link it"
 msgstr "Clique num nó para ligá-lo"
-
-msgid "Click a surface to place the pin. Drag from the pin to measure to an object."
-msgstr "Clique numa superfície para posicionar o pin. Arraste a partir dele para medir até um objeto."
 
 msgid "Click a textdraw, or drag a box round several. Alt+click picks the one under it."
 msgstr "Clique num textdraw, ou arraste uma caixa em volta de vários. Alt+clique pega o de baixo."
@@ -2677,12 +2699,11 @@ msgstr "Dispensar"
 msgid "Distance"
 msgstr "Distância"
 
-#, c-format
-msgid "Distance: %.3f units"
-msgstr "Distância: %.3f unidades"
-
 msgid "Distribute"
 msgstr "Distribuir"
+
+msgid "Distribute between ends"
+msgstr "Distribuir entre as pontas"
 
 msgid "Does"
 msgstr "Faz"
@@ -2764,6 +2785,15 @@ msgstr "Arraste até uma régua para remover"
 
 msgid "Drag to adjust. Double-click to enter an exact value."
 msgstr "Arraste para ajustar. Clique duas vezes para digitar um valor exato."
+
+msgid "Drag to measure"
+msgstr "Arraste para medir"
+
+msgid "Drag to move endpoint"
+msgstr "Arraste para mover a ponta"
+
+msgid "Drag to move pin"
+msgstr "Arraste para mover o pin"
 
 msgid "Drag to move, wheel to zoom, double-click to fly there."
 msgstr "Arraste para mover, roda para zoom, clique duplo para voar até lá."
@@ -3087,6 +3117,9 @@ msgstr "FOV redefinido para 70°"
 msgid "FOV wheel step"
 msgstr "Passo do FOV na roda"
 
+msgid "Face ruler direction"
+msgstr "Girar na direção da régua"
+
 msgid "Face the way it walks"
 msgstr "Virar para onde anda"
 
@@ -3397,6 +3430,9 @@ msgstr "Para o layout e as predefinições: as guias da prancheta são removidas
 #, c-format
 msgid "Frame %d  %.1f km/h  Health %.0f  Armour %.0f  Weapon %d"
 msgstr "Quadro %d  %.1f km/h  Vida %.0f  Colete %.0f  Arma %d"
+
+msgid "Free endpoint"
+msgstr "Ponta livre"
 
 msgid "Freeze"
 msgstr "Congelar"
@@ -4695,6 +4731,9 @@ msgstr "Materiais"
 msgid "Max"
 msgstr "Máx"
 
+msgid "Maximum"
+msgstr "Máximo"
+
 msgid "Medium (2-10 m)"
 msgstr "Médio (2-10 m)"
 
@@ -4747,6 +4786,9 @@ msgstr "Meus (pasta de configuração do Haumea)"
 
 msgid "Minigun"
 msgstr "Minigun"
+
+msgid "Minimum"
+msgstr "Mínimo"
 
 msgid ""
 "Minimum time between drag-paint bursts, in milliseconds.\n"
@@ -5507,6 +5549,9 @@ msgstr "Os IDs de objeto vão de -1000 a -30000."
 msgid "Object Info"
 msgstr "Informações do objeto"
 
+msgid "Object anchor"
+msgstr "Referência do objeto"
+
 #, c-format
 msgid ""
 "Object snap (%s)\n"
@@ -5736,6 +5781,9 @@ msgstr "Ordem"
 
 msgid "Orig Switched Off"
 msgstr "Desligado original"
+
+msgid "Origin"
+msgstr "Origem"
 
 msgid "Original"
 msgstr "Original"
@@ -6011,6 +6059,9 @@ msgstr ""
 "Escolha esta área em Mundo e streaming de um objeto, em \"Só dentro da área\".\n"
 "Os itens citam a área pela variável dela (Nome acima)."
 
+msgid "Pick two different points for the ruler."
+msgstr "Escolha dois pontos diferentes para a régua."
+
 msgid "Picked points"
 msgstr "Pontos escolhidos"
 
@@ -6030,6 +6081,10 @@ msgstr "Pickups"
 msgid "Pill"
 msgstr "Pílula"
 
+#, c-format
+msgid "Pin %d"
+msgstr "Pin %d"
+
 msgid "Pin XYZ"
 msgstr "XYZ do pin"
 
@@ -6038,6 +6093,9 @@ msgstr "Pin no centro da seleção"
 
 msgid "Pin: keep it at the top of the list"
 msgstr "Fixar: manter no topo da lista"
+
+msgid "Pitch"
+msgstr "Inclinação"
 
 msgid "Pixel-exact"
 msgstr "Pixel exato"
@@ -6325,6 +6383,9 @@ msgstr "Barra de progresso"
 
 msgid "Progress ring"
 msgstr "Anel de progresso"
+
+msgid "Project each selected object's anchor onto the extended ruler, preserving its position along the guide."
+msgstr "Projeta a referência de cada objeto selecionado na linha da régua, preservando sua posição ao longo da guia."
 
 msgid "Property (free)"
 msgstr "Propriedade (livre)"
@@ -6881,6 +6942,12 @@ msgstr "Rota"
 msgid "Rows"
 msgstr "Linhas"
 
+msgid "Ruler settings"
+msgstr "Ajustes da régua"
+
+msgid "Ruler to"
+msgstr "Régua até"
+
 msgid "Rulers"
 msgstr "Réguas"
 
@@ -7435,6 +7502,9 @@ msgstr "Shift+clique na vista 3D"
 msgid "Shift+click object"
 msgstr "Shift+clique no objeto"
 
+msgid "Shift: straight X/Y/Z. Ctrl: angle steps. Shift+Ctrl: angle steps on a horizontal plane. Alt: free placement."
+msgstr "Shift: reta em X/Y/Z. Ctrl: passos de ângulo. Shift+Ctrl: passos de ângulo no plano horizontal. Alt: posicionamento livre."
+
 msgid "Shortcut"
 msgstr "Atalho"
 
@@ -7472,11 +7542,17 @@ msgstr "Mostrar tudo o que está oculto"
 msgid "Show getting started card on empty maps"
 msgstr "Mostrar o cartão de primeiros passos em mapas vazios"
 
+msgid "Show guides:"
+msgstr "Mostrar guias:"
+
 msgid "Show material indexes"
 msgstr "Mostrar índices dos materiais"
 
 msgid "Show or hide the group in the editor"
 msgstr "Mostrar ou esconder o grupo no editor"
+
+msgid "Show pins and guides"
+msgstr "Mostrar pins e guias"
 
 msgid "Show pressed keys (for tutorials and recordings)"
 msgstr "Mostrar teclas pressionadas (para tutoriais e gravações)"
@@ -7625,8 +7701,14 @@ msgstr "Encaixar painéis"
 msgid "Snap distance"
 msgstr "Distância de encaixe"
 
+msgid "Snap objects to pins"
+msgstr "Encaixar objetos nos pins"
+
 msgid "Snap panels to edges and each other"
 msgstr "Encaixar painéis nas bordas e uns nos outros"
+
+msgid "Snap pins and endpoints to collision-box corners, edge midpoints, face centres and object centres. Alt temporarily releases snapping."
+msgstr "Encaixa pins e pontas nos cantos, pontos médios das arestas, centros das faces e centro dos limites de colisão dos objetos. Alt solta o encaixe temporariamente."
 
 msgid "Snap rotations"
 msgstr "Encaixar rotações"
@@ -7634,6 +7716,9 @@ msgstr "Encaixar rotações"
 #, c-format
 msgid "Snap skipped some linked instances at the %d object cap"
 msgstr "O encaixe pulou algumas instâncias vinculadas no limite de %d objetos"
+
+msgid "Snap to object points"
+msgstr "Encaixar nos pontos dos objetos"
 
 msgid "Snap to surfaces"
 msgstr "Encaixar nas superfícies"
@@ -7692,6 +7777,9 @@ msgstr "Espaçar igualmente na horizontal"
 
 msgid "Space evenly down"
 msgstr "Espaçar igualmente na vertical"
+
+msgid "Space the selected objects evenly between the two endpoints. Two objects go to opposite ends. One undo restores the selection."
+msgstr "Distribui os objetos selecionados igualmente entre as duas pontas. Dois objetos vão para pontas opostas. Desfazer restaura a seleção em um passo."
 
 msgid ""
 "Spaces the objects evenly along the axis between the two\n"
@@ -8294,6 +8382,9 @@ msgstr ""
 "O objeto selecionado está no interior %d. Mude isso em Posição,\n"
 "em Informações do objeto."
 
+msgid "The selection contains read-only reference objects."
+msgstr "A seleção contém objetos de referência que não podem ser editados."
+
 msgid ""
 "The server makes at most 1024 gang zones. Use bigger cells, fewer colours,\n"
 "or streamed zones."
@@ -8794,9 +8885,6 @@ msgstr "Usar este workspace"
 msgid "User guide"
 msgstr "Guia do usuário"
 
-msgid "Uses the object's collision-box centre. For a doorway inside a building, pick its two edges and use Midpoint."
-msgstr "Usa o centro dos limites de colisão do objeto. Para uma porta dentro de um prédio, escolha suas duas bordas e use Ponto médio."
-
 #, c-format
 msgid "Using provided COL: %s"
 msgstr "Usando o COL fornecido: %s"
@@ -9094,6 +9182,9 @@ msgstr "Janelas > TextDraws inicia o modo TextDraw: uma tela em vez do mundo."
 
 msgid "Wine prefix"
 msgstr "Prefixo do Wine"
+
+msgid "With object snap enabled (N), moving objects snap their edges or centre to the pins and visible guides."
+msgstr "Com o encaixe em objetos ligado (N), os objetos encaixam as bordas ou o centro nos pins e guias visíveis ao serem movidos."
 
 msgid "With or without a far version"
 msgstr "Com ou sem versão distante"

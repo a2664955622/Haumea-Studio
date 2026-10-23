@@ -1,5 +1,6 @@
 #include "haumea.h"
 #include "coordinatepin.h"
+#include "alignmentmath.h"
 #include "i18n.h"
 #include "crashreports.h"
 #include "imgui/imgui_internal.h"
@@ -1788,6 +1789,11 @@ handleBrushTool(void)
 static void
 updateRectSelectEarly(void)
 {
+	if(CoordinatePinOwnsMouse()){
+		gRectSelectActive = false;
+		sRectSelectDragging = false;
+		return;
+	}
 	ImGuiIO &io = ImGui::GetIO();
 	bool blockInput = io.WantCaptureMouse || gGizmoHovered || gGizmoUsing;
 
@@ -1886,6 +1892,11 @@ rectSelectHighlightInst(ObjectInst *inst, void *data)
 static void
 handleRectSelect(void)
 {
+	if(CoordinatePinOwnsMouse()){
+		gRectSelectActive = false;
+		sRectSelectDragging = false;
+		return;
+	}
 	if(!sRectSelectDragging) return;
 
 	float curX = (float)CPad::newMouseState.x;
@@ -2959,6 +2970,24 @@ findObjectSnapDeltaForBounds(const ObjectSnapBounds &moving, ObjectInst *self, i
 		}
 	}
 
+	// Pins and ruler guides use the same snap mode and distance as objects.
+	std::vector<rw::V3d> pinTargets;
+	CoordinatePinSnapTargets(area, scale(add(moving.min, moving.max), .5f), pinTargets);
+	for(const rw::V3d &point : pinTargets){
+		if(point.x < moving.min.x - radius || point.x > moving.max.x + radius ||
+		   point.y < moving.min.y - radius || point.y > moving.max.y + radius ||
+		   point.z < moving.min.z - radius || point.z > moving.max.z + radius) continue;
+		rw::V3d delta = {0,0,0};
+		int axes = 0;
+		for(int axis = 0; axis < 3; axis++){
+			float d = Alignment::AxisCorrection((&moving.min.x)[axis], (&moving.max.x)[axis], (&point.x)[axis], radius);
+			if(fabsf(d) <= radius){ (&delta.x)[axis] = d; if(fabsf(d) > .0001f) axes++; }
+		}
+		if(!axes) continue;
+		ObjectSnapScore score = { std::max(fabsf(delta.x), std::max(fabsf(delta.y), fabsf(delta.z))),
+			dot(delta, delta), axes };
+		if(!found || snapScoreBetter(score, best)){ found = true; best = score; bestDelta = delta; }
+	}
 	if(!found || best.axes == 0)
 		return false;
 	*outDelta = bestDelta;

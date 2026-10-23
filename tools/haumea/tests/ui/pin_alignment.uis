@@ -1,0 +1,180 @@
+# Multiple independent pins; both draggable ends snap to actual object anchors.
+open "$UI_FIXTURES/ui_pin_alignment.pwn"
+click_object model=1271
+click_item 'Tools' 'Coordinate pin'
+click_item 'Tools' 'Place pin'
+click obj:1271:2:0:2 obj:1271:2:0:2
+wait 3
+assert pin.count == 1
+assert pin.snap_model == 1271
+assert pin.anchor_snapped == 1
+click_item 'Tools' 'Pick endpoint'
+click obj:1271:0:0:2 obj:1271:0:0:2
+wait 3
+assert pin.measured == 1
+assert pin.anchor_snapped == 1
+# A click selects a handle without moving the pin or detaching its ruler.
+set_item 'Tools' 'Pin XYZ/#0' '2020'
+set_item 'Tools' 'Pin XYZ/#1' '-2995'
+set_item 'Tools' 'Pin XYZ/#2' '5'
+click pin pin
+assert pin.x == 2020
+assert pin.y == -2995
+assert pin.z == 5
+# Pin head now moves the pin; endpoint now moves the endpoint.
+drag pin pin obj:1271:0:0:0 obj:1271:0:0:0 12
+wait 3
+assert pin.x < 2020
+assert pin.y < -2995
+assert pin.count == 1
+assert pin.anchor_snapped == 1
+assert pin.measured == 1
+drag pinend pinend obj:1271:2:0:0 obj:1271:2:0:0 12
+wait 3
+assert pin.anchor_snapped == 1
+assert pin.snap_model == 1271
+hold Shift
+drag pinend pinend 53% 44% 12
+release Shift
+wait 3
+assert pin.axis_aligned == 1
+hold Ctrl
+drag pinend pinend 35% 30% 12
+release Ctrl
+wait 3
+assert pin.angle_stepped == 1
+hold Alt
+drag pinend pinend 51% 47% 12
+release Alt
+assert pin.snap_model == -1
+assert objects == 2
+assert selected == 1
+# Place creates another independent reference rather than replacing the first.
+click_item 'Tools' 'Pin at selected centre'
+assert pin.count == 2
+set_item 'Tools' 'Pin XYZ/#0' '2030'
+set_item 'Tools' 'Pin XYZ/#1' '-2990'
+set_item 'Tools' 'Pin XYZ/#2' '5'
+click_item 'Tools' '##active_pin'
+click_item '*' 'Pin 1'
+set_item 'Tools' 'Pin XYZ/#0' '2030'
+set_item 'Tools' 'Pin XYZ/#1' '-3010'
+set_item 'Tools' 'Pin XYZ/#2' '5'
+click_item 'Tools' 'Ruler to'
+click_item '*' 'Pin 2'
+assert pin.distance == 20
+assert pin.heading == 90
+# Change the second pin and the linked ruler follows it.
+click_item 'Tools' '##active_pin'
+click_item '*' 'Pin 2'
+set_item 'Tools' 'Pin XYZ/#1' '-2980'
+click_item 'Tools' '##active_pin'
+click_item '*' 'Pin 1'
+assert pin.distance == 30
+# Use the combo explicitly, rather than typing into it.
+click_item 'Tools' 'Ruler to'
+click_item '*' 'Free endpoint'
+set_item 'Tools' 'Endpoint XYZ/#1' '-2990'
+assert pin.distance == 20
+# Fine angle and distance controls.
+click_item 'Tools' 'Ruler settings'
+scroll_until 'Tools' 'Pitch'
+set_item 'Tools' 'Distance' '40'
+set_item 'Tools' 'Heading' '0'
+set_item 'Tools' 'Pitch' '0'
+assert pin.dx == 40
+assert pin.dy < 0.001
+click_item 'Tools' 'Ruler settings'
+set_item 'Tools' 'Endpoint XYZ/#0' '2030'
+set_item 'Tools' 'Endpoint XYZ/#1' '-2990'
+set_item 'Tools' 'Endpoint XYZ/#2' '35'
+# Z is unchecked: a sloped guide must preserve the objects' heights.
+# Two runway-side objects stay apart when projected onto the guide.
+move 50% 45%
+shortcut window_map_objects
+wait 3
+click_item 'Map Objects' 'Ungrouped (2)' right
+click_item '*' 'Select all'
+shortcut window_map_objects
+wait 3
+assert selected == 2
+scroll_until 'Tools' 'Alignment guides'
+click_item 'Tools' 'Alignment guides'
+scroll_until 'Tools' 'Object anchor'
+click_item 'Tools' 'Object anchor'
+click_item '*' 'Origin'
+scroll_until 'Tools' 'Align selection to pin'
+click_item 'Tools' 'Align selection to pin'
+wait 3
+assert pawn_contains '2020.000000, -3015.000000, 5.000000'
+assert pawn_contains '2040.000000, -3005.000000, 5.000000'
+move 50% 45%
+shortcut undo
+wait 3
+scroll_until 'Tools' 'Align selection to ruler'
+click_item 'Tools' 'Align selection to ruler'
+wait 3
+assert pawn_contains '2030.000000, -3005.000000, 5.000000'
+assert pawn_contains '2030.000000, -2995.000000, 5.000000'
+move 50% 45%
+shortcut undo
+wait 3
+assert pawn_contains '2000.000000, -3005.000000, 5.000000'
+assert pawn_contains '2020.000000, -2995.000000, 5.000000'
+click_item 'Tools' 'Face ruler direction'
+click_item 'Tools' 'Align selection to ruler'
+wait 3
+assert drawn_rotation 0 0 0 90
+assert drawn_rotation 1 0 0 90
+move 50% 45%
+shortcut undo
+wait 3
+assert drawn_rotation 0 0 0 0
+assert drawn_rotation 1 0 0 0
+click_item 'Tools' 'Face ruler direction'
+scroll_until 'Tools' 'Distribute between ends'
+click_item 'Tools' 'Distribute between ends'
+wait 3
+assert pawn_contains '2030.000000, -3010.000000, 5.000000'
+assert pawn_contains '2030.000000, -2990.000000, 5.000000'
+move 50% 45%
+shortcut undo
+wait 3
+assert pawn_contains '2000.000000, -3005.000000, 5.000000'
+assert pawn_contains '2020.000000, -2995.000000, 5.000000'
+# Guide targets participate in the existing object snap system (N).
+move 90% 45%
+wheel 30
+click_item 'Tools' 'Coordinate pin'
+click_object model=1271
+click_item 'Tools' 'Coordinate pin'
+wait 3
+assert selected == 1
+assert snap_candidate 9.7 0 0 == 1
+scroll_until 'Tools' 'Snap objects to pins'
+click_item 'Tools' 'Snap objects to pins'
+assert snap_candidate 9.7 0 0 == 0
+assert objects == 2
+assert pin.count == 2
+# References stay usable while choosing objects in another panel.
+click_item 'Tools' 'Snap objects to pins'
+move 90% 45%
+wheel 30
+click_item 'Tools' 'Coordinate pin'
+wait 3
+assert snap_candidate 9.7 0 0 == 1
+shortcut window_tools
+wait 3
+assert snap_candidate 9.7 0 0 == 1
+shortcut window_tools
+click_item 'Tools' 'Coordinate pin'
+click_item 'Tools' 'Show pins and guides'
+wait 3
+assert snap_candidate 9.7 0 0 == 0
+assert pin.count == 2
+# Creating another reference also makes hidden guides visible again.
+click_item 'Tools' 'Pin at selected centre'
+wait 3
+assert pin.count == 3
+assert snap_candidate 9.7 0 0 == 1
+assert objects == 2

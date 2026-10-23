@@ -240,16 +240,30 @@ puts its objects in a group named after the prefab.
 offsets), and **Along a line** (lay objects along a path you click). Exact moves and turns
 are in Object Info's Delta mode.
 
-**Coordinate pin** places a reference pin without adding a map object. Click **Place pin**, then a
-surface, or use **Pin at selected centre**. Drag from the pin marker to an object to measure the total
-distance and signed X/Y/Z differences. **Pick endpoint** also works without dragging. Surface snapping
-includes selected objects; empty space uses a horizontal plane at the pin's height.
+**Coordinate pin** in Tools is an alignment reference. **Place pin** adds another pin;
+**Clear pin** removes only the active one. Drag a pin's head to move it, its base ring to
+measure, or the endpoint to move the other end. Both ends snap to object surfaces and
+collision-box corners, edge midpoints, face centres and centres. A cyan diamond marks a point snap.
 
-Edit **Pin XYZ**, copy the coordinates, align individual axes with the endpoint, or move by an exact
-**Surface offset** along the last picked surface normal (negative values use the other side). To
-centre a doorway embedded in a building, pick one edge, pick the other as the endpoint and use
-**Midpoint**. A selected object's centre comes from its collision box. The pin and ruler are temporary
-editor references; they are hidden when the section, Tools or Map workspace closes and are not exported.
+Hold **Shift** for a straight X/Y/Z line, **Ctrl** for heading steps (15° by default),
+**Shift+Ctrl** for heading steps on a horizontal plane, or **Alt** to release snapping.
+Edit XYZ directly, copy coordinates, use **Midpoint** or an exact **Surface offset**, and
+open **Ruler settings** to type the distance, heading and pitch. **Ruler to** links the
+endpoint to another pin and follows it when it moves. Dragging that endpoint makes it free.
+
+In **Alignment guides**, choose the visible X/Y/Z guides and the axes and object anchor
+(minimum, centre, maximum or origin) to align. With object snap (`N`) on, objects snap to
+pins and guides by their centre or edges. **Align selection to pin** moves the selection as
+a group; **Align selection to ruler** projects each object's anchor onto the extended line,
+keeping its position along the guide. **Distribute between ends** spaces the objects along
+it; two objects go to opposite ends. Each command is one undo step. **Face ruler direction**
+rotates object headings to the line.
+
+For a runway, put a pin at each corner, link them with **Ruler to**, select the two objects,
+and align to that guide or distribute between its ends. Leave Z unchecked to keep their
+heights. Pins are temporary editor references and are not exported with the map. They stay visible
+when you close Tools or switch panels; **Show pins and guides** hides them and disables
+their snap targets. Switching away from Map hides them until you return.
 
 **Radar art from objects** (in Tools) draws your objects on the radar with gang zones. It uses
 every object, the selection or one group, seen from above, and puts the zones in the group

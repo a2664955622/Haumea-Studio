@@ -1,222 +1,624 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-#include "haumea.h"
 #include "coordinatepin.h"
+#include "alignmentmath.h"
+#include "haumea.h"
 #include "i18n.h"
+#include "maptools.h"
 #include "shortcuts.h"
+#include <algorithm>
 #include <cmath>
 
-namespace {
-bool visible, placed, measured, dragging, nearPin;
-bool snapSurface = true;
-int picking; // 1: pin, 2: endpoint
-int panelFrame = -100;
-rw::V3d pin, endpoint, normal = {0, 0, 1};
-rw::V3d savedEnd;
-bool savedMeasured;
-float offset;
-
+namespace
+{
+struct Pin {
+	int id, area;
+	rw::V3d position, end, normal = {0, 0, 1};
+	bool measured = false;
+	int endPin = 0;
+};
+std::vector<Pin> pins;
+int active = -1, nextId = 1, picking, dragged = -1, dragHandle;
+int hovered = -1, hoverHandle, panelFrame = -100;
+bool visible, showPins = true, snapSurface = true, snapPoints = true, snapObjects = true;
+bool guides[3] = {true, true, false}, alignAxes[3] = {true, true, false}, faceRuler;
+int alignAnchor = 1;
+float offset, angleStep = 15;
+Pin saved;
+rw::V3d dragReference, snapPoint;
+int lastSnapModel = -1;
+bool anchorSnapped, dragMoved;
+ImVec2 dragStart;
+Pin *current()
+{
+	return active >= 0 && active < (int)pins.size() ? &pins[active] : nullptr;
+}
+rw::V3d fromArray(Alignment::Point p)
+{
+	return {p[0], p[1], p[2]};
+}
+Alignment::Point array(rw::V3d p)
+{
+	return {p.x, p.y, p.z};
+}
+bool sameArea(int a, int b)
+{
+	return gNoAreaCull || a == b || a == 13 || b == 13;
+}
+void resolveEndpoints()
+{
+	for(Pin &pin : pins)
+		if(pin.endPin) {
+			bool found = false;
+			for(const Pin &other : pins)
+				if(other.id == pin.endPin) {
+					pin.end = other.position;
+					found = true;
+					break;
+				}
+			if(!found)
+				pin.endPin = 0;
+		}
+}
 bool project(rw::V3d p, ImVec2 *screen)
 {
 	rw::V3d s;
 	float w, h;
-	if(!Sprite::CalcScreenCoors(p, &s, &w, &h, false)) return false;
+	if(!Sprite::CalcScreenCoors(p, &s, &w, &h, false))
+		return false;
 	*screen = EditorUiPoint(s.x, s.y);
 	return true;
 }
-
+void cancel()
+{
+	if(dragged >= 0 && dragged < (int)pins.size())
+		pins[dragged] = saved;
+	dragged = -1;
+	picking = 0;
+	anchorSnapped = false;
+}
 void arm(int kind)
 {
+	cancel();
 	SpawnExitPlaceMode();
 	ExitPrefabPlaceMode();
 	ExitBrushMode();
 	gRectSelectActive = false;
 	picking = kind;
-	dragging = false;
+	showPins = visible = true;
 }
-
+void append(rw::V3d position, rw::V3d normal)
+{
+	cancel();
+	showPins = true;
+	Pin pin;
+	pin.id = nextId++;
+	pin.area = currentArea;
+	pin.position = pin.end = position;
+	pin.normal = normal;
+	pins.push_back(pin);
+	active = (int)pins.size() - 1;
+}
+struct SnapSearch {
+	Ray ray;
+	float best = 0, depth = 1.0e30f, hitDepth = 1.0e30f;
+	rw::V3d point, normal;
+	int model = -1;
+};
+void snapObject(ObjectInst *inst, void *data)
+{
+	SnapSearch &search = *(SnapSearch *)data;
+	if(inst->m_isDeleted || inst->m_editorHidden)
+		return;
+	ObjectDef *obj = GetObjectDef(inst->m_objectId);
+	if(!obj || !obj->m_colModel)
+		return;
+	const auto &box = obj->m_colModel->boundingBox;
+	rw::V3d centre = scale(add(box.min, box.max), .5f), half = scale(sub(box.max, box.min), .5f);
+	rw::V3d::transformPoints(&centre, &centre, 1, &inst->m_matrix);
+	float radius = length(inst->m_matrix.right) * fabsf(half.x) + length(inst->m_matrix.up) * fabsf(half.y) +
+		       length(inst->m_matrix.at) * fabsf(half.z);
+	rw::V3d to = sub(centre, search.ray.start);
+	float depth = dot(to, search.ray.dir);
+	if(depth < -radius || depth - radius > search.hitDepth + depth * .03f)
+		return;
+	// A small silhouette margin makes corners reachable from either side.
+	float margin = std::max(.1f, depth * .03f);
+	rw::V3d perpendicular = sub(to, scale(search.ray.dir, depth));
+	if(dot(perpendicular, perpendicular) > (radius + margin) * (radius + margin))
+		return;
+	ImVec2 mouse = ImGui::GetIO().MousePos;
+	rw::V3d coordinates[3] = {box.min, scale(add(box.min, box.max), .5f), box.max};
+	for(int x = 0; x < 3; x++)
+		for(int y = 0; y < 3; y++)
+			for(int z = 0; z < 3; z++) {
+				rw::V3d p = {coordinates[x].x, coordinates[y].y, coordinates[z].z};
+				rw::V3d::transformPoints(&p, &p, 1, &inst->m_matrix);
+				ImVec2 s;
+				if(!project(p, &s))
+					continue;
+				float d = (s.x - mouse.x) * (s.x - mouse.x) + (s.y - mouse.y) * (s.y - mouse.y);
+				float t = dot(sub(p, search.ray.start), search.ray.dir);
+				if(d > search.best || (fabsf(d - search.best) < .01f && t >= search.depth))
+					continue;
+				search.best = d;
+				search.depth = t;
+				search.point = p;
+				search.model = PawnModelId(inst->m_objectId);
+				rw::V3d n = {(float)x - 1, (float)y - 1, (float)z - 1};
+				if(dot(n, n) < .1f)
+					n = {0, 1, 0};
+				rw::V3d::transformVectors(&n, &n, 1, &inst->m_matrix);
+				search.normal = normalize(n);
+			}
+}
 bool surface(rw::V3d *point, rw::V3d *outNormal)
 {
 	Ray ray;
 	ray.start = TheCamera.m_position;
 	ray.dir = normalize(TheCamera.m_mouseDir);
-	if(snapSurface){
-		ObjectInst *inst = GetVisibleInstUnderRay(ray, point);
-		if(inst){
-			rw::V3d detailed, n;
-			if(IntersectRayColModelDetailed(ray, inst, &detailed, &n)){
-				*point = detailed;
-				if(outNormal) *outNormal = n;
-			}else if(outNormal) *outNormal = {0, 0, 1};
-			return true;
+	bool alt = CPad::IsAltDown(), found = false;
+	lastSnapModel = -1;
+	anchorSnapped = false;
+	rw::V3d normal = {0, 0, 1};
+	float hitDepth = 1.0e30f;
+	if(!alt && (snapSurface || snapPoints)) {
+		rw::V3d hit;
+		ObjectInst *inst = GetVisibleInstUnderRay(ray, &hit, &hitDepth);
+		if(inst && snapSurface) {
+			*point = hit;
+			IntersectRayColModelDetailed(ray, inst, point, &normal);
+			lastSnapModel = PawnModelId(inst->m_objectId);
+			found = true;
 		}
 	}
-	// Empty space uses the pin's horizontal plane (camera target for placement).
-	float z = placed ? pin.z : TheCamera.m_target.z;
-	if(fabsf(ray.dir.z) < 0.0001f) return false;
-	float t = (z - ray.start.z) / ray.dir.z;
-	if(t <= 0 || t > 5000) return false;
-	*point = add(ray.start, scale(ray.dir, t));
-	if(outNormal) *outNormal = {0, 0, 1};
-	return true;
+	if(!found) {
+		Pin *pin = current();
+		float z = pin ? pin->position.z : TheCamera.m_target.z;
+		if(fabsf(ray.dir.z) > .0001f) {
+			float t = (z - ray.start.z) / ray.dir.z;
+			if(t > 0 && t <= 5000) {
+				*point = add(ray.start, scale(ray.dir, t));
+				found = true;
+			}
+		}
+	}
+	if(!alt && snapPoints) {
+		SnapSearch search;
+		search.ray = ray;
+		search.hitDepth = hitDepth;
+		float pixels = 12 * GetUiScale();
+		search.best = pixels * pixels;
+		ForEachVisibleInst(snapObject, &search);
+		if(search.model != -1) {
+			*point = search.point;
+			normal = search.normal;
+			lastSnapModel = search.model;
+			found = anchorSnapped = true;
+			snapPoint = *point;
+		}
+	}
+	if(outNormal)
+		*outNormal = normal;
+	return found;
 }
-
-void label(ImDrawList *draw, ImVec2 p, const char *text)
+rw::V3d constrain(rw::V3d point, rw::V3d reference)
+{
+	ImGuiIO &io = ImGui::GetIO();
+	rw::V3d result =
+	    add(reference,
+		fromArray(Alignment::Constrain(array(sub(point, reference)), io.KeyShift, io.KeyCtrl, angleStep)));
+	if(length(sub(result, point)) > .001f) {
+		anchorSnapped = false;
+		lastSnapModel = -1;
+	}
+	return result;
+}
+void label(ImDrawList *draw, ImVec2 p, const char *text, ImU32 colour)
 {
 	ImVec2 size = ImGui::CalcTextSize(text);
-	p.x -= size.x * 0.5f;
-	draw->AddRectFilled(ImVec2(p.x - 5, p.y - 3), ImVec2(p.x + size.x + 5, p.y + size.y + 3), IM_COL32(25, 25, 29, 230), 4);
-	draw->AddText(p, IM_COL32(255, 225, 90, 255), text);
+	p.x -= size.x * .5f;
+	draw->AddRectFilled(ImVec2(p.x - 5, p.y - 3), ImVec2(p.x + size.x + 5, p.y + size.y + 3),
+			    IM_COL32(25, 25, 29, 225), 4);
+	draw->AddText(p, colour, text);
 }
+void result(int count, const std::string &error)
+{
+	if(count < 0)
+		Toast(TOAST_SELECTION, "%s", _(error.c_str()));
+	else
+		Toast(TOAST_SELECTION, _("Aligned %d object(s)"), count);
 }
+} // namespace
 
+int CoordinatePinCount()
+{
+	return (int)pins.size();
+}
+int CoordinatePinSnapModel()
+{
+	return lastSnapModel;
+}
+bool CoordinatePinAnchorSnapped()
+{
+	return anchorSnapped;
+}
 bool CoordinatePinPosition(rw::V3d *position, rw::V3d *end)
 {
-	if(position) *position = pin;
-	if(end) *end = endpoint;
-	return placed && (!end || measured);
+	resolveEndpoints();
+	Pin *pin = current();
+	if(position)
+		*position = pin ? pin->position : rw::V3d{0, 0, 0};
+	if(end)
+		*end = pin ? pin->end : rw::V3d{0, 0, 0};
+	return pin && (!end || pin->measured);
 }
-
-bool CoordinatePinScreen(ImVec2 *point)
+bool CoordinatePinScreen(ImVec2 *point, int handle, int index)
 {
-	if(!placed || !project(pin, point)) return false;
-	point->y -= 20;
+	resolveEndpoints();
+	if(index < 0)
+		index = active;
+	if(index < 0 || index >= (int)pins.size())
+		return false;
+	Pin &pin = pins[index];
+	if(handle == 2 && !pin.measured)
+		return false;
+	if(!project(handle == 2 ? pin.end : pin.position, point))
+		return false;
+	if(handle == 0)
+		point->y -= 24 * GetUiScale();
 	return true;
 }
-
 void CoordinatePinPanel()
 {
 	panelFrame = ImGui::GetFrameCount();
-	if(ImGui::Button(_("Place pin"))) arm(1);
-	ImGui::SetItemTooltip(_("Click a surface to place the pin. Drag from the pin to measure to an object."));
+	resolveEndpoints();
+	ImGui::Checkbox(_("Show pins and guides"), &showPins);
+	if(ImGui::Button(_("Place pin")))
+		arm(1);
+	ImGui::SetItemTooltip(_("Add a pin on a surface. Drag its head to move it; drag its base ring to measure. Both "
+				"ends snap to objects."));
 	ImGui::SameLine();
-	ImGui::BeginDisabled(!placed);
-	if(ImGui::Button(_("Clear pin"))){ placed = measured = dragging = false; picking = 0; }
+	ImGui::BeginDisabled(!current());
+	if(ImGui::Button(_("Clear pin"))) {
+		cancel();
+		pins.erase(pins.begin() + active);
+		active = pins.empty() ? -1 : std::min(active, (int)pins.size() - 1);
+		resolveEndpoints();
+	}
 	ImGui::EndDisabled();
+	if(pins.size() > 1) {
+		char title[64];
+		snprintf(title, sizeof(title), _("Pin %d"), pins[active].id);
+		ImGui::SetNextItemWidth(-1);
+		if(ImGui::BeginCombo("##active_pin", title)) {
+			for(int i = 0; i < (int)pins.size(); i++) {
+				snprintf(title, sizeof(title), _("Pin %d"), pins[i].id);
+				if(ImGui::Selectable(title, active == i)) {
+					cancel();
+					active = i;
+				}
+			}
+			ImGui::EndCombo();
+		}
+	}
 	ImGui::Checkbox(_("Snap to surfaces"), &snapSurface);
-	if(picking) ImGui::TextWrapped("%s", picking == 1 ? _("Click to place the pin. Esc cancels.") : _("Click the measurement endpoint. Esc cancels."));
+	ImGui::Checkbox(_("Snap to object points"), &snapPoints);
+	ImGui::SetItemTooltip(_("Snap pins and endpoints to collision-box corners, edge midpoints, face centres and "
+				"object centres. Alt temporarily releases snapping."));
+	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 5);
+	if(ImGui::InputFloat(_("Angle step"), &angleStep, 0, 0, "%.0f"))
+		angleStep = clamp(angleStep, 1.0f, 180.0f);
+	ImGui::SetItemTooltip(_("Shift: straight X/Y/Z. Ctrl: angle steps. Shift+Ctrl: angle steps on a horizontal "
+				"plane. Alt: free placement."));
+	if(picking)
+		ImGui::TextWrapped("%s", picking == 1 ? _("Click to place the pin. Esc cancels.")
+						      : _("Click the measurement endpoint. Esc cancels."));
 	ImGui::BeginDisabled(!selection.first);
-	if(ImGui::Button(_("Pin at selected centre")) && selection.first){
-		ObjectInst *inst = (ObjectInst*)selection.first->item;
+	if(ImGui::Button(_("Pin at selected centre")) && selection.first) {
+		ObjectInst *inst = (ObjectInst *)selection.first->item;
 		ObjectDef *obj = GetObjectDef(inst->m_objectId);
 		rw::V3d centre = {0, 0, 0};
-		if(obj && obj->m_colModel) centre = scale(add(obj->m_colModel->boundingBox.min, obj->m_colModel->boundingBox.max), 0.5f);
-		pin = rw::add(inst->m_translation, add(add(scale(inst->m_matrix.right, centre.x), scale(inst->m_matrix.up, centre.y)), scale(inst->m_matrix.at, centre.z)));
-		normal = normalize(inst->m_matrix.up);
-		placed = true; measured = false; picking = 0;
+		if(obj && obj->m_colModel)
+			centre = scale(add(obj->m_colModel->boundingBox.min, obj->m_colModel->boundingBox.max), .5f);
+		rw::V3d::transformPoints(&centre, &centre, 1, &inst->m_matrix);
+		append(centre, normalize(inst->m_matrix.up));
 	}
-	ImGui::SetItemTooltip(_("Uses the object's collision-box centre. For a doorway inside a building, pick its two edges and use Midpoint."));
+	ImGui::SetItemTooltip(_("Add a pin at the object's collision-box centre. For an embedded doorway, pick its two "
+				"edges and use Midpoint."));
 	ImGui::EndDisabled();
-	if(!placed) return;
-	ImGui::InputFloat3(_("Pin XYZ"), &pin.x, "%.3f");
-	if(ImGui::Button(_("Copy coordinates"))){
+	Pin *pin = current();
+	if(!pin)
+		return;
+	ImGui::InputFloat3(_("Pin XYZ"), &pin->position.x, "%.3f");
+	if(ImGui::Button(_("Copy coordinates"))) {
 		char text[160];
-		snprintf(text, sizeof(text), "%.6f, %.6f, %.6f", pin.x, pin.y, pin.z);
+		snprintf(text, sizeof(text), "%.6f, %.6f, %.6f", pin->position.x, pin->position.y, pin->position.z);
 		ImGui::SetClipboardText(text);
 	}
 	ImGui::SameLine();
-	if(ImGui::Button(_("Pick endpoint"))) arm(2);
-	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 7);
-	ImGui::InputFloat(_("Surface offset"), &offset, 0, 0, "%.3f");
-	ImGui::SetItemTooltip(_("Move the pin this many units along the last picked surface normal. Negative values move to the other side."));
-	ImGui::SameLine();
-	if(ImGui::Button(_("Apply offset"))) pin = add(pin, scale(normal, offset));
-	if(!measured) return;
-	ImGui::InputFloat3(_("Endpoint XYZ"), &endpoint.x, "%.3f");
-	rw::V3d delta = sub(endpoint, pin);
-	ImGui::Text(_("Distance: %.3f units"), length(delta));
-	ImGui::Text("dX %.3f   dY %.3f   dZ %.3f", delta.x, delta.y, delta.z);
-	if(ImGui::Button(_("Midpoint"))){ pin = scale(add(pin, endpoint), 0.5f); measured = false; }
-	ImGui::SetItemTooltip(_("Place the pin halfway between the two picked points, for example the edges of a doorway."));
-	ImGui::SameLine();
-	ImGui::TextUnformatted(_("Align pin:"));
-	for(int axis = 0; axis < 3; axis++){
-		ImGui::SameLine();
-		const char *labels[] = {"X##pin_align", "Y##pin_align", "Z##pin_align"};
-		if(ImGui::SmallButton(labels[axis])){
-			if(axis == 0) pin.x = endpoint.x;
-			if(axis == 1) pin.y = endpoint.y;
-			if(axis == 2) pin.z = endpoint.z;
+	if(ImGui::Button(_("Pick endpoint")))
+		arm(2);
+	if(pins.size() > 1) {
+		char title[64];
+		snprintf(title, sizeof(title), "%s", _("Free endpoint"));
+		if(pin->endPin)
+			snprintf(title, sizeof(title), _("Pin %d"), pin->endPin);
+		ImGui::SetNextItemWidth(ImGui::GetFontSize() * 8);
+		if(ImGui::BeginCombo(_("Ruler to"), title)) {
+			if(ImGui::Selectable(_("Free endpoint"), !pin->endPin))
+				pin->endPin = 0;
+			for(const Pin &other : pins)
+				if(other.id != pin->id) {
+					snprintf(title, sizeof(title), _("Pin %d"), other.id);
+					if(ImGui::Selectable(title, pin->endPin == other.id)) {
+						pin->endPin = other.id;
+						pin->end = other.position;
+						pin->measured = true;
+					}
+				}
+			ImGui::EndCombo();
 		}
 	}
+	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 7);
+	ImGui::InputFloat(_("Surface offset"), &offset, 0, 0, "%.3f");
+	ImGui::SetItemTooltip(_("Move the pin this many units along the last picked surface normal. Negative values "
+				"move to the other side."));
+	ImGui::SameLine();
+	if(ImGui::Button(_("Apply offset")))
+		pin->position = add(pin->position, scale(pin->normal, offset));
+	if(pin->measured) {
+		if(ImGui::InputFloat3(_("Endpoint XYZ"), &pin->end.x, "%.3f"))
+			pin->endPin = 0;
+		if(ImGui::TreeNode(_("Ruler settings"))) {
+			auto angles = Alignment::Angles(array(sub(pin->end, pin->position)));
+			bool changed = false;
+			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 7);
+			changed |= ImGui::InputFloat(_("Distance"), &angles[0], 0, 0, "%.3f");
+			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 7);
+			changed |= ImGui::InputFloat(_("Heading"), &angles[1], 0, 0, "%.2f");
+			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 7);
+			changed |= ImGui::InputFloat(_("Pitch"), &angles[2], 0, 0, "%.2f");
+			if(changed) {
+				pin->end =
+				    add(pin->position, fromArray(Alignment::FromAngles(
+							   angles[0], angles[1], clamp(angles[2], -90.0f, 90.0f))));
+				pin->endPin = 0;
+			}
+			ImGui::TreePop();
+		}
+		rw::V3d d = sub(pin->end, pin->position);
+		ImGui::Text("dX %.3f   dY %.3f   dZ %.3f", d.x, d.y, d.z);
+		if(ImGui::Button(_("Midpoint"))) {
+			pin->position = scale(add(pin->position, pin->end), .5f);
+			pin->measured = false;
+			pin->endPin = 0;
+		}
+		ImGui::SetItemTooltip(
+		    _("Place the pin halfway between the two picked points, for example the edges of a doorway."));
+		ImGui::SameLine();
+		ImGui::TextUnformatted(_("Align pin:"));
+		for(int axis = 0; axis < 3; axis++) {
+			ImGui::SameLine();
+			const char *labels[] = {"X##pin_align", "Y##pin_align", "Z##pin_align"};
+			if(ImGui::SmallButton(labels[axis]))
+				(&pin->position.x)[axis] = (&pin->end.x)[axis];
+		}
+	}
+	if(!ImGui::TreeNode(_("Alignment guides")))
+		return;
+	ImGui::TextUnformatted(_("Show guides:"));
+	for(int i = 0; i < 3; i++) {
+		ImGui::SameLine();
+		const char *labels[] = {"X##guide", "Y##guide", "Z##guide"};
+		ImGui::Checkbox(labels[i], &guides[i]);
+	}
+	ImGui::Checkbox(_("Snap objects to pins"), &snapObjects);
+	ImGui::SetItemTooltip(_(
+	    "With object snap enabled (N), moving objects snap their edges or centre to the pins and visible guides."));
+	ImGui::TextUnformatted(_("Align axes:"));
+	for(int i = 0; i < 3; i++) {
+		ImGui::SameLine();
+		const char *labels[] = {"X##align_axis", "Y##align_axis", "Z##align_axis"};
+		ImGui::Checkbox(labels[i], &alignAxes[i]);
+	}
+	const char *anchors[] = {_("Minimum"), _("Centre"), _("Maximum"), _("Origin")};
+	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 8);
+	ImGui::Combo(_("Object anchor"), &alignAnchor, anchors, 4);
+	if(pin->measured)
+		ImGui::Checkbox(_("Face ruler direction"), &faceRuler);
+	int axes = (alignAxes[0] ? 1 : 0) | (alignAxes[1] ? 2 : 0) | (alignAxes[2] ? 4 : 0);
+	ImGui::BeginDisabled(!selection.first || !axes);
+	std::string error;
+	if(ImGui::Button(_("Align selection to pin")))
+		result(MapToolsAlignToGuide(pin->position, nullptr, axes, alignAnchor, false, false, &error), error);
+	if(pin->measured) {
+		if(ImGui::Button(_("Align selection to ruler")))
+			result(
+			    MapToolsAlignToGuide(pin->position, &pin->end, axes, alignAnchor, false, faceRuler, &error),
+			    error);
+		ImGui::SetItemTooltip(_("Project each selected object's anchor onto the extended ruler, preserving its "
+					"position along the guide."));
+		if(ImGui::Button(_("Distribute between ends")))
+			result(
+			    MapToolsAlignToGuide(pin->position, &pin->end, axes, alignAnchor, true, faceRuler, &error),
+			    error);
+		ImGui::SetItemTooltip(_("Space the selected objects evenly between the two endpoints. Two objects go "
+					"to opposite ends. One undo restores the selection."));
+	}
+	ImGui::EndDisabled();
+	ImGui::TreePop();
 }
-
 bool CoordinatePinOwnsMouse()
 {
-	return visible && (picking || dragging || nearPin);
+	return visible && (picking || dragged >= 0 || hovered >= 0);
 }
-
 bool CoordinatePinHandleViewport()
 {
-	if(!visible || (!picking && !dragging && !nearPin)) return false;
-	if(!dragging && ImGui::GetIO().WantCaptureMouse) return false;
-	if(ShortcutPressed(SC_CANCEL) || CPad::IsMButtonClicked(3)){
-		if(dragging){ endpoint = savedEnd; measured = savedMeasured; }
-		picking = 0; dragging = false;
+	if(!visible || (!picking && dragged < 0 && hovered < 0))
+		return false;
+	ImGuiIO &io = ImGui::GetIO();
+	if(ShortcutPressed(SC_CANCEL) || CPad::IsMButtonClicked(3)) {
+		cancel();
 		return true;
 	}
-	if(picking && CPad::IsMButtonClicked(1)){
+	if(dragged < 0 && io.WantCaptureMouse)
+		return false;
+	if(picking && CPad::IsMButtonClicked(1)) {
 		rw::V3d p, n;
-		if(surface(&p, &n)){
-			if(picking == 1){ pin = p; normal = n; placed = true; measured = false; }
-			else { endpoint = p; measured = true; }
+		if(surface(&p, &n)) {
+			if(picking == 1) {
+				bool snapped = anchorSnapped;
+				append(p, n);
+				anchorSnapped = snapped;
+			} else if(Pin *pin = current()) {
+				pin->end = constrain(p, pin->position);
+				pin->measured = true;
+				pin->endPin = 0;
+			}
 			picking = 0;
 		}
 		return true;
 	}
-	if(!picking && nearPin && CPad::IsMButtonJustDown(1)){
-		savedEnd = endpoint; savedMeasured = measured;
-		dragging = true;
+	if(!picking && hovered >= 0 && CPad::IsMButtonJustDown(1)) {
+		active = dragged = hovered;
+		dragHandle = hoverHandle;
+		saved = pins[dragged];
+		dragReference = dragHandle == 0 ? (saved.measured ? saved.end : saved.position) : saved.position;
+		dragStart = io.MousePos;
+		dragMoved = false;
 	}
-	if(dragging){
-		rw::V3d p;
-		if(!ImGui::GetIO().WantCaptureMouse && surface(&p, nullptr)){ endpoint = p; measured = true; }
-		if(!CPad::IsMButtonDown(1)) dragging = false;
+	if(dragged >= 0) {
+		float dx = io.MousePos.x - dragStart.x, dy = io.MousePos.y - dragStart.y;
+		if(dx * dx + dy * dy > 16 * GetUiScale() * GetUiScale()) dragMoved = true;
+		rw::V3d p, n;
+		if(dragMoved && !io.WantCaptureMouse && surface(&p, &n)) {
+			Pin &pin = pins[dragged];
+			p = constrain(p, dragReference);
+			if(dragHandle == 0) {
+				pin.position = p;
+				pin.normal = n;
+			} else {
+				pin.end = p;
+				pin.measured = true;
+				pin.endPin = 0;
+			}
+		}
+		if(!CPad::IsMButtonDown(1))
+			dragged = -1;
+		return true;
 	}
-	return picking || dragging || nearPin;
+	return picking || hovered >= 0;
 }
-
+void CoordinatePinSnapTargets(int area, const rw::V3d &centre, std::vector<rw::V3d> &targets)
+{
+	if(!visible || !snapObjects)
+		return;
+	resolveEndpoints();
+	for(const Pin &pin : pins)
+		if(sameArea(pin.area, area)) {
+			targets.push_back(pin.position);
+			for(int i = 0; i < 3; i++)
+				if(guides[i]) {
+					rw::V3d p = centre;
+					(&p.x)[i] = (&pin.position.x)[i];
+					targets.push_back(p);
+				}
+			if(pin.measured) {
+				targets.push_back(pin.end);
+				float t = Alignment::Projection(array(centre), array(pin.position), array(pin.end));
+				targets.push_back(add(pin.position, scale(sub(pin.end, pin.position), t)));
+			}
+		}
+}
 void CoordinatePinOverlay(bool enabled)
 {
-	visible = enabled && ImGui::GetFrameCount() - panelFrame <= 1;
-	nearPin = false;
-	if(!visible){
-		if(dragging){ endpoint = savedEnd; measured = savedMeasured; }
-		picking = 0; dragging = false;
+	visible = enabled && showPins;
+	hovered = -1;
+	if(!visible) {
+		cancel();
 		return;
 	}
-	if(!placed) return;
+	if(picking && ImGui::GetFrameCount() - panelFrame > 1) cancel();
+	resolveEndpoints();
 #ifdef IMGUI_HAS_VIEWPORT
 	ImDrawList *draw = ImGui::GetBackgroundDrawList(ImGui::GetMainViewport());
 #else
 	ImDrawList *draw = ImGui::GetBackgroundDrawList();
 #endif
-	ImVec2 foot, head;
-	const ImU32 yellow = IM_COL32(255, 218, 60, 255);
-	if(project(pin, &foot)){
-		head = ImVec2(foot.x, foot.y - 20);
-		ImVec2 mouse = ImGui::GetIO().MousePos;
-		float dx = mouse.x - head.x, dy = mouse.y - head.y;
-		nearPin = dx * dx + dy * dy < 15 * 15;
-		draw->AddLine(foot, head, yellow, 2);
-		draw->AddCircleFilled(head, 8, yellow);
-		draw->AddCircleFilled(head, 3, IM_COL32(50, 43, 26, 255));
-		if(nearPin && !ImGui::GetIO().WantCaptureMouse) ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-	}
-	if(measured){
-		// A world line remains correctly clipped when an endpoint is behind the camera.
-		RenderLine(pin, endpoint, {255, 218, 60, 255}, {255, 218, 60, 255});
-		ImVec2 end;
-		if(project(endpoint, &end)){
-			draw->AddCircle(end, 5, yellow, 0, 2);
-			draw->AddLine(ImVec2(end.x - 9, end.y), ImVec2(end.x + 9, end.y), yellow);
-			draw->AddLine(ImVec2(end.x, end.y - 9), ImVec2(end.x, end.y + 9), yellow);
+	const ImU32 yellow = IM_COL32(255, 218, 60, 255), dim = IM_COL32(235, 204, 80, 200);
+	float ui = GetUiScale(), best = 12 * ui * 12 * ui;
+	ImVec2 mouse = ImGui::GetIO().MousePos;
+	for(int i = 0; i < (int)pins.size(); i++) {
+		Pin &pin = pins[i];
+		if(!sameArea(pin.area, currentArea))
+			continue;
+		ImU32 colour = active == i ? yellow : dim;
+		ImVec2 foot, head, end;
+		auto hover = [&](ImVec2 p, int handle) {
+			if(gPlaceMode || gPrefabPlaceMode || gBrushMode) return;
+			float distance = (mouse.x - p.x) * (mouse.x - p.x) + (mouse.y - p.y) * (mouse.y - p.y);
+			if(distance < best || (fabsf(distance - best) < .01f && i == active)) {
+				best = distance;
+				hovered = i;
+				hoverHandle = handle;
+			}
+		};
+		if(project(pin.position, &foot)) {
+			head = ImVec2(foot.x, foot.y - 24 * ui);
+			draw->AddLine(foot, head, colour, 2 * ui);
+			draw->AddCircleFilled(head, 8 * ui, colour);
+			draw->AddCircle(foot, 5 * ui, colour, 0, 2 * ui);
+			char text[20];
+			snprintf(text, sizeof(text), "%d", pin.id);
+			draw->AddText(ImVec2(head.x + 10 * ui, head.y - ImGui::GetFontSize() * .5f), colour, text);
+			hover(head, 0);
+			hover(foot, 1);
 		}
-		rw::V3d delta = sub(endpoint, pin);
-		ImVec2 middle;
-		if(project(scale(add(pin, endpoint), 0.5f), &middle)){
-			char text[180];
-			snprintf(text, sizeof(text), _("%.3f units | dX %.3f  dY %.3f  dZ %.3f"), length(delta), delta.x, delta.y, delta.z);
-			label(draw, ImVec2(middle.x, middle.y - 24), text);
+		float span = clamp(length(sub(TheCamera.m_position, pin.position)) * 2, 50.0f, 2000.0f);
+		for(int axis = 0; axis < 3; axis++)
+			if(guides[axis]) {
+				rw::V3d direction = axis == 0	? rw::V3d{0, span, 0}
+						    : axis == 1 ? rw::V3d{span, 0, 0}
+								: rw::V3d{0, 0, span};
+				RenderLine(sub(pin.position, direction), add(pin.position, direction),
+					   {200, 190, 90, 90}, {200, 190, 90, 90});
+			}
+		if(pin.measured) {
+			rw::V3d delta = sub(pin.end, pin.position);
+			RenderLine(pin.position, pin.end, {255, 218, 60, 255}, {255, 218, 60, 255});
+			if(length(delta) > .001f) {
+				rw::V3d extension = scale(normalize(delta), span);
+				RenderLine(sub(pin.position, extension), add(pin.end, extension), {255, 218, 60, 80},
+					   {255, 218, 60, 80});
+			}
+			if(project(pin.end, &end)) {
+				draw->AddCircleFilled(end, 5 * ui, IM_COL32(30, 30, 30, 255));
+				draw->AddCircle(end, 6 * ui, colour, 0, 2 * ui);
+				hover(end, 2);
+			}
+			ImVec2 middle;
+			if(active == i && project(scale(add(pin.position, pin.end), .5f), &middle)) {
+				char text[180];
+				snprintf(text, sizeof(text), _("%.3f units | dX %.3f  dY %.3f  dZ %.3f"), length(delta),
+					 delta.x, delta.y, delta.z);
+				label(draw, ImVec2(middle.x, middle.y - 24 * ui), text, colour);
+			}
+		}
+	}
+	if(hovered >= 0 && !ImGui::GetIO().WantCaptureMouse) {
+		ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+		if(dragged < 0 && !picking)
+			ImGui::SetTooltip("%s", hoverHandle == 0   ? _("Drag to move pin")
+						: hoverHandle == 1 ? _("Drag to measure")
+								   : _("Drag to move endpoint"));
+	}
+	if(anchorSnapped && (picking || dragged >= 0)) {
+		ImVec2 point;
+		if(project(snapPoint, &point)) {
+			float r = 7 * ui;
+			draw->AddQuad(ImVec2(point.x - r, point.y), ImVec2(point.x, point.y - r),
+				      ImVec2(point.x + r, point.y), ImVec2(point.x, point.y + r),
+				      IM_COL32(90, 225, 255, 255), 2 * ui);
 		}
 	}
 }

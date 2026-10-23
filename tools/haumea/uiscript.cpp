@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
 #include "coordinatepin.h"
+#include "alignmentmath.h"
 #include "browserdiscovery.h"
 #include "crashreports.h"
 #include "editoricons.h"
@@ -564,11 +565,29 @@ coordinate(const std::string &s, bool vertical)
 	ImGuiIO &io = ImGui::GetIO();
 	if(!s.empty() && s.back() == '%')
 		return (int)(atof(s.c_str()) / 100.0f * (vertical ? io.DisplaySize.y : io.DisplaySize.x));
-	if(s == "pin"){
+	if(s == "pin" || s == "pinbase" || s == "pinend"){
 		ImVec2 point;
-		if(CoordinatePinScreen(&point)){
+		if(CoordinatePinScreen(&point, s == "pinbase" ? 1 : s == "pinend" ? 2 : 0)){
 			ImVec2 origin = ImGui::GetMainViewport()->Pos;
 			return (int)(vertical ? point.y - origin.y : point.x - origin.x);
+		}
+		return -1000;
+	}
+	if(s.compare(0,4,"obj:") == 0){
+		int model, x, y, z;
+		if(sscanf(s.c_str(),"obj:%d:%d:%d:%d",&model,&x,&y,&z) == 4){
+			for(CPtrNode *p=instances.first;p;p=p->next){
+				ObjectInst *inst=(ObjectInst*)p->item;
+				if(inst->m_isDeleted || IsPawnWorldObject(inst) || PawnModelId(inst->m_objectId)!=model) continue;
+				ObjectDef *obj=GetObjectDef(inst->m_objectId);
+				if(!obj || !obj->m_colModel) continue;
+				auto &box=obj->m_colModel->boundingBox;
+				rw::V3d choices[3]={box.min,rw::scale(rw::add(box.min,box.max),.5f),box.max};
+				rw::V3d point={choices[clamp(x,0,2)].x,choices[clamp(y,0,2)].y,choices[clamp(z,0,2)].z},screen;
+				rw::V3d::transformPoints(&point,&point,1,&inst->m_matrix);
+				float sw,sh;
+				if(Sprite::CalcScreenCoors(point,&screen,&sw,&sh,false)) return (int)(vertical?screen.y:screen.x);
+			}
 		}
 		return -1000;
 	}
@@ -896,14 +915,34 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		why = "yellow highlight count is " + std::to_string(count);
 		return compare(count, arg(1), atof(arg(2).c_str()));
 	}
+	if(what == "snap_candidate"){
+		std::vector<ObjectInst*> objs;
+		std::vector<rw::V3d> positions;
+		for(CPtrNode *p=selection.first;p;p=p->next){
+			ObjectInst *inst=(ObjectInst*)p->item;
+			objs.push_back(inst); positions.push_back(inst->m_translation);
+		}
+		rw::V3d correction;
+		bool found=FindSelectionSnapDelta(objs,positions,{(float)atof(arg(1).c_str()),(float)atof(arg(2).c_str()),(float)atof(arg(3).c_str())},&correction);
+		why=found?"snap target found":"no snap target";
+		return compare(found,arg(4),atof(arg(5).c_str()));
+	}
 	if(what.compare(0, 4, "pin.") == 0){
 		rw::V3d pin, end;
 		bool placed = CoordinatePinPosition(&pin), measured = CoordinatePinPosition(&pin, &end);
 		rw::V3d d = rw::sub(end, pin);
-		double value = what == "pin.placed" ? placed : what == "pin.measured" ? measured :
+		auto angles=Alignment::Angles({d.x,d.y,d.z});
+		double value = what == "pin.count" ? CoordinatePinCount() :
+			what == "pin.snap_model" ? CoordinatePinSnapModel() :
+			what == "pin.anchor_snapped" ? CoordinatePinAnchorSnapped() :
+			what == "pin.heading" ? angles[1] : what == "pin.pitch" ? angles[2] :
+			what == "pin.axis_aligned" ? ((fabsf(d.x)<.001f)+(fabsf(d.y)<.001f)+(fabsf(d.z)<.001f)>=2) :
+			what == "pin.angle_stepped" ? (fabsf(remainderf(angles[1],15))<.15f) :
+			what == "pin.placed" ? placed : what == "pin.measured" ? measured :
 			what == "pin.x" ? pin.x : what == "pin.y" ? pin.y : what == "pin.z" ? pin.z :
 			what == "pin.dx" ? d.x : what == "pin.dy" ? d.y : what == "pin.dz" ? d.z : rw::length(d);
 		why = what + " is " + std::to_string(value);
+		if(what == "pin.angle_stepped") why += "; heading=" + std::to_string(angles[1]) + "; length=" + std::to_string(angles[0]);
 		return compare(value, arg(1), atof(arg(2).c_str()));
 	}
 	if(what == "clipboard_contains"){

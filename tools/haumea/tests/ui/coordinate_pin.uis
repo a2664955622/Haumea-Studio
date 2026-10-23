@@ -9,7 +9,7 @@ assert pin.placed == 1
 assert pin.measured == 0
 assert selected == 1
 # Real drag from its visible marker to a surface.
-drag pin pin 50% 45% 16
+drag pinbase pinbase 50% 45% 16
 wait 3
 assert pin.measured == 1
 assert pin.distance > 0

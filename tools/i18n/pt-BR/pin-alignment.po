@@ -1,0 +1,99 @@
+msgid "Add a pin at the object's collision-box centre. For an embedded doorway, pick its two edges and use Midpoint."
+msgstr "Adiciona um pin no centro dos limites de colisão do objeto. Para uma porta no prédio, escolha as duas bordas e use Ponto médio."
+
+msgid "Add a pin on a surface. Drag its head to move it; drag its base ring to measure. Both ends snap to objects."
+msgstr "Adicione um pin numa superfície. Arraste a cabeça para mover; arraste o anel da base para medir. As duas pontas encaixam nos objetos."
+
+msgid "Align axes:"
+msgstr "Alinhar eixos:"
+
+msgid "Align selection to pin"
+msgstr "Alinhar seleção ao pin"
+
+msgid "Align selection to ruler"
+msgstr "Alinhar seleção à régua"
+
+msgid "Aligned %d object(s)"
+msgstr "%d objeto(s) alinhado(s)"
+
+msgid "Alignment guides"
+msgstr "Guias de alinhamento"
+
+msgid "Angle step"
+msgstr "Passo do ângulo"
+
+msgid "Distribute between ends"
+msgstr "Distribuir entre as pontas"
+
+msgid "Drag to measure"
+msgstr "Arraste para medir"
+
+msgid "Drag to move endpoint"
+msgstr "Arraste para mover a ponta"
+
+msgid "Drag to move pin"
+msgstr "Arraste para mover o pin"
+
+msgid "Face ruler direction"
+msgstr "Girar na direção da régua"
+
+msgid "Free endpoint"
+msgstr "Ponta livre"
+
+msgid "Maximum"
+msgstr "Máximo"
+
+msgid "Minimum"
+msgstr "Mínimo"
+
+msgid "Object anchor"
+msgstr "Referência do objeto"
+
+msgid "Origin"
+msgstr "Origem"
+
+msgid "Pick two different points for the ruler."
+msgstr "Escolha dois pontos diferentes para a régua."
+
+msgid "Pin %d"
+msgstr "Pin %d"
+
+msgid "Pitch"
+msgstr "Inclinação"
+
+msgid "Project each selected object's anchor onto the extended ruler, preserving its position along the guide."
+msgstr "Projeta a referência de cada objeto selecionado na linha da régua, preservando sua posição ao longo da guia."
+
+msgid "Ruler to"
+msgstr "Régua até"
+
+msgid "Shift: straight X/Y/Z. Ctrl: angle steps. Shift+Ctrl: angle steps on a horizontal plane. Alt: free placement."
+msgstr "Shift: reta em X/Y/Z. Ctrl: passos de ângulo. Shift+Ctrl: passos de ângulo no plano horizontal. Alt: posicionamento livre."
+
+msgid "Show guides:"
+msgstr "Mostrar guias:"
+
+msgid "Snap objects to pins"
+msgstr "Encaixar objetos nos pins"
+
+msgid "Snap pins and endpoints to collision-box corners, edge midpoints, face centres and object centres. Alt temporarily releases snapping."
+msgstr "Encaixa pins e pontas nos cantos, pontos médios das arestas, centros das faces e centro dos limites de colisão dos objetos. Alt solta o encaixe temporariamente."
+
+msgid "Snap to object points"
+msgstr "Encaixar nos pontos dos objetos"
+
+msgid "Space the selected objects evenly between the two endpoints. Two objects go to opposite ends. One undo restores the selection."
+msgstr "Distribui os objetos selecionados igualmente entre as duas pontas. Dois objetos vão para pontas opostas. Desfazer restaura a seleção em um passo."
+
+msgid "The selection contains read-only reference objects."
+msgstr "A seleção contém objetos de referência que não podem ser editados."
+
+msgid "With object snap enabled (N), moving objects snap their edges or centre to the pins and visible guides."
+msgstr "Com o encaixe em objetos ligado (N), os objetos encaixam as bordas ou o centro nos pins e guias visíveis ao serem movidos."
+
+msgid "Ruler settings"
+msgstr "Ajustes da régua"
+
+msgid "Show pins and guides"
+msgstr "Mostrar pins e guias"
+

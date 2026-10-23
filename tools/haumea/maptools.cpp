@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
 #include "coordinatepin.h"
+#include "alignmentmath.h"
 #include "i18n.h"
 #include "maptools.h"
 #include "shortcuts.h"
@@ -424,6 +425,64 @@ MapToolsAlign(int axis, int mode, std::string *error)
 		setComp(pos, axis, comp(pos, axis) + target - edge(objs[i]));
 		if(placeObject(objs[i], pos, objs[i]->m_rotation))
 			changed++;
+	}
+	UndoEndGroup();
+	return changed;
+}
+
+int
+MapToolsAlignToGuide(const rw::V3d &start, const rw::V3d *end, int axes, int anchor,
+	bool distribute, bool faceDirection, std::string *error)
+{
+	std::vector<ObjectInst*> objs = selectedObjects();
+	if(!needSelection(objs, distribute ? 2 : 1, error)) return -1;
+	if(!axes) return 0;
+	rw::V3d direction = end ? sub(*end, start) : rw::V3d{0,0,0};
+	if(end && length(direction) < .001f){
+		if(error) *error = N_("Pick two different points for the ruler.");
+		return -1;
+	}
+	struct Target { ObjectInst *inst; rw::V3d pos, point; rw::Quat rotation; float t; };
+	std::vector<Target> targets;
+	rw::V3d groupMin = {0,0,0}, groupMax = {0,0,0};
+	anchor = clamp(anchor, 0, 3);
+	for(ObjectInst *inst : objs){
+		if(!IsInstInIplMapDocument(inst)){
+			if(error) *error = N_("The selection contains read-only reference objects.");
+			return -1;
+		}
+		Target target;
+		target.inst = inst; target.pos = inst->m_translation; target.rotation = inst->m_rotation;
+		if(end && faceDirection){
+			rw::V3d angles = GetObjectRotationDegrees(inst->m_rotation);
+			angles.z = atan2f(direction.y, direction.x) * Alignment::Degrees;
+			target.rotation = MakeObjectRotationDegrees(angles);
+		}
+		rw::V3d mn, mx;
+		worldBox(inst->m_objectId, target.pos, target.rotation, &mn, &mx);
+		target.point = anchor == 0 ? mn : anchor == 2 ? mx : anchor == 3 ? target.pos : scale(add(mn, mx), .5f);
+		if(targets.empty()) groupMin = groupMax = target.point;
+		for(int i = 0; i < 3; i++){
+			setComp(groupMin, i, std::min(comp(groupMin, i), comp(anchor == 3 ? target.point : mn, i)));
+			setComp(groupMax, i, std::max(comp(groupMax, i), comp(anchor == 3 ? target.point : mx, i)));
+		}
+		rw::V3d projectedDirection = direction, projectedPoint = sub(target.point, start);
+		for(int i = 0; i < 3; i++) if(!(axes & (1 << i))){ setComp(projectedDirection, i, 0); setComp(projectedPoint, i, 0); }
+		float denominator = dot(projectedDirection, projectedDirection);
+		target.t = end && denominator > .000001f ? dot(projectedPoint, projectedDirection) / denominator : 0;
+		targets.push_back(target);
+	}
+	if(distribute) std::stable_sort(targets.begin(), targets.end(), [](const Target &a, const Target &b){ return a.t < b.t; });
+	rw::V3d groupAnchor = anchor == 0 ? groupMin : anchor == 2 ? groupMax : scale(add(groupMin, groupMax), .5f);
+	int changed = 0;
+	UndoBeginGroup();
+	for(size_t i = 0; i < targets.size(); i++){
+		Target &target = targets[i];
+		rw::V3d destination = start;
+		if(end) destination = add(start, scale(direction, distribute ? (float)i / (targets.size() - 1) : target.t));
+		rw::V3d delta = sub(destination, end ? target.point : groupAnchor);
+		for(int axis = 0; axis < 3; axis++) if(!(axes & (1 << axis))) setComp(delta, axis, 0);
+		if(placeObject(target.inst, add(target.pos, delta), target.rotation)) changed++;
 	}
 	UndoEndGroup();
 	return changed;

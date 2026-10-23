@@ -39,6 +39,11 @@ bool MapToolsMirrorPreview(int axis, const float *at, std::vector<rw::V3d> &posi
 // axis 0-2 (X, Y, Z); mode 0 = min, 1 = centre, 2 = max of the bounding
 // boxes, to the first selected object.
 int MapToolsAlign(int axis, int mode, std::string *error);
+// axes is an XYZ bitmask; anchor is min/centre/max/origin (0..3).
+// With an end, project individual anchors onto the infinite ruler or distribute
+// them between its ends. Without one, align the whole selection to the pin.
+int MapToolsAlignToGuide(const rw::V3d &start, const rw::V3d *end, int axes, int anchor,
+	bool distribute, bool faceDirection, std::string *error);
 // Even centre spacing between the two outermost objects along axis.
 int MapToolsDistribute(int axis, std::string *error);
 int MapToolsSnapRotations(float step, std::string *error);

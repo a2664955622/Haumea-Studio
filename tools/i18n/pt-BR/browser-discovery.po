@@ -25,9 +25,6 @@ msgstr "Ambos"
 msgid "Clear pin"
 msgstr "Limpar pin"
 
-msgid "Click a surface to place the pin. Drag from the pin to measure to an object."
-msgstr "Clique numa superfície para posicionar o pin. Arraste a partir dele para medir até um objeto."
-
 msgid "Click the measurement endpoint. Esc cancels."
 msgstr "Clique no ponto final da medição. Esc cancela."
 
@@ -45,9 +42,6 @@ msgstr "Dimensões"
 
 msgid "Dimensions compare metres. Proportions compare shape ratios regardless of overall size."
 msgstr "Dimensões compara medidas. Proporções compara as relações entre as medidas, independentemente do tamanho total."
-
-msgid "Distance: %.3f units"
-msgstr "Distância: %.3f unidades"
 
 msgid "Endpoint XYZ"
 msgstr "XYZ do destino"
@@ -141,9 +135,6 @@ msgstr "Tolerância"
 
 msgid "Unknown model"
 msgstr "Modelo desconhecido"
-
-msgid "Uses the object's collision-box centre. For a doorway inside a building, pick its two edges and use Midpoint."
-msgstr "Usa o centro dos limites de colisão do objeto. Para uma porta dentro de um prédio, escolha suas duas bordas e use Ponto médio."
 
 msgid "Yellow marks the search results. Your editing selection stays independent."
 msgstr "Amarelo indica os resultados da busca. A seleção para edição é independente."

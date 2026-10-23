@@ -29,9 +29,10 @@
   camera jumps take you between locations and interiors without changing the selection.
 - **Similar models** compares collision-box dimensions or proportions with adjustable
   tolerance; the existing previews let you compare the models' actual shapes.
-- **Coordinate pin** in Tools copies XYZ and measures from the pin to an object by dragging.
-  It shows total distance and signed X/Y/Z differences, with surface snapping, exact
-  coordinates, midpoint, axis alignment and offsets from a surface.
+- **Coordinate pins and alignment guides** in Tools: multiple movable pins and endpoints,
+  object surface and anchor snapping, linked rulers, axis/angle modifiers and exact XYZ,
+  distance, heading and pitch. Objects snap to the guides, align by centres or edges, or
+  distribute between the ends, with undo.
 
 ### Updating from an older beta
 
