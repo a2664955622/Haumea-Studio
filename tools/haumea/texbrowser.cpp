@@ -3,6 +3,7 @@
 #include "workspace.h"
 #include "icons.h"
 #include "i18n.h"
+#include "imgui/imgui_internal.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -456,7 +457,11 @@ tileGrid(const std::vector<int> &items, bool tstudio)
 {
 	float font = ImGui::GetFontSize();
 	float spacing = ImGui::GetStyle().ItemSpacing.x;
+	// Room for the scrollbar whether it shows or not, or the grid can flicker
+	// between two sizes as the scrollbar comes and goes.
 	float avail = ImGui::GetContentRegionAvail().x;
+	if(!ImGui::GetCurrentWindow()->ScrollbarY)
+		avail -= ImGui::GetStyle().ScrollbarSize;
 	int columns = std::max(1, (int)((avail + spacing) / (font * gTile + spacing)));
 	float tileW = floorf((avail - spacing * (columns - 1)) / columns);
 	float tileH = tileW + ImGui::GetTextLineHeightWithSpacing();

@@ -2333,6 +2333,17 @@ addTextDraw(int font)
 	TextDrawsChanged();
 }
 
+// A grid's width with room for its scrollbar whether it shows or not, so
+// the scrollbar coming and going doesn't change the columns every frame.
+static float
+gridWidth(void)
+{
+	float w = ImGui::GetContentRegionAvail().x;
+	if(!ImGui::GetCurrentWindow()->ScrollbarY)
+		w -= ImGui::GetStyle().ScrollbarSize;
+	return w;
+}
+
 static bool
 isFavSprite(const std::string &sprite)
 {
@@ -2404,7 +2415,7 @@ spritePicker(TextDraw &td)
 	}
 	ImGui::BeginChild("sprites", ImVec2(0, ImGui::GetFontSize() * 9.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY);
 	float cell = ImGui::GetFontSize() * 3.0f;
-	int perRow = std::max(1, (int)(ImGui::GetContentRegionAvail().x / (cell + 4.0f))), shownCount = 0;
+	int perRow = std::max(1, (int)(gridWidth() / (cell + 4.0f))), shownCount = 0;
 	for(size_t i = 0; i < sprites.size(); i++){
 		const std::string &name = sprites[i].first;
 		if(!want.empty() && lowered(name).find(want) == std::string::npos)
@@ -2478,7 +2489,7 @@ modelBrowser(int *model)
 		page = std::max(0, std::min(page, pages - 1));
 		ImGui::BeginChild("##grid", ImVec2(0, ImGui::GetFontSize() * 18.0f), ImGuiChildFlags_Borders);
 		float cell = ImGui::GetFontSize() * 4.0f;
-		int perRow = std::max(1, (int)(ImGui::GetContentRegionAvail().x / (cell + 8.0f)));
+		int perRow = std::max(1, (int)(gridWidth() / (cell + 8.0f)));
 		for(int k = page * perPage, n = 0; k < (int)ids.size() && k < (page + 1) * perPage; k++, n++){
 			int id = ids[k];
 			if(n % perRow)

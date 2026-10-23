@@ -9892,7 +9892,12 @@ uiTileGridLayout(void)
 	TileGridLayout layout;
 	float font = ImGui::GetFontSize();
 	float spacing = ImGui::GetStyle().ItemSpacing.x;
+	// Room for the scrollbar whether it shows or not: sizing the tiles to the
+	// width without it made a full grid overflow, the scrollbar come, the tiles
+	// shrink, the scrollbar go, and so on every frame (the browser flickered).
 	float availW = ImGui::GetContentRegionAvail().x;
+	if(!ImGui::GetCurrentWindow()->ScrollbarY)
+		availW -= ImGui::GetStyle().ScrollbarSize;
 	float minTile = font * gBrowserTileSize;
 	layout.columns = max(1, (int)((availW + spacing) / (minTile + spacing)));
 	layout.tileW = floorf((availW - spacing * (layout.columns - 1)) / layout.columns);
