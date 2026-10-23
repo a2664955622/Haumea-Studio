@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Build a macOS app and drag-to-Applications DMG from a complete portable stage.
 
-Requires macOS's vtool, install_name_tool, codesign and hdiutil. CI uses ad-hoc
-signatures; pass --identity with a Developer ID Application identity for distribution.
+Requires macOS's vtool, install_name_tool, codesign and hdiutil. Releases use
+ad-hoc app signatures for Apple Silicon compatibility and an unsigned DMG.
+Developer ID signing and notarization are not part of the release workflow.
 """
 import argparse
 from pathlib import Path

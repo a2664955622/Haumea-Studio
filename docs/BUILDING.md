@@ -145,8 +145,8 @@ python3 tools/release/package_macos.py --bundle /path/to/macos-stage \
   --stage /tmp/haumea-dmg-stage --output /tmp/haumea-downloads
 ```
 
-CI uses ad-hoc signing for build verification. For public distribution, pass
-`--identity 'Developer ID Application: ...'`, then notarize and staple the DMG
-with Apple's `notarytool` and `stapler`. Developer ID credentials are not configured
-by this workflow. The native Mac job mounts the DMG, copies the app into a private
-test directory, verifies its signature and repeats the live Namaka check there.
+The DMG ships without Developer ID signing or notarization. The app and bundled
+GLFW use ad-hoc signatures for Apple Silicon compatibility; no Apple account or
+certificates are needed. The native Mac job mounts the DMG, copies the app into a
+private test directory, verifies its ad-hoc signature and repeats the live Namaka
+check there.
