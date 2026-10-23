@@ -39,12 +39,14 @@ Começando com o Haumea Studio? Leia o **[guia do usuário](docs/USER_GUIDE.pt-B
 
 **Arquivos**
 
+- **Código**: edite o Pawn gerado ou abra scripts num editor nativo com cores, números de linha, desfazer/refazer e localizar/substituir. Edições manuais são salvas em um script separado, com recuperação de rascunhos.
 - **Mapas Pawn**: salve como código nativo ou streamer que compila com os includes do open.mp e do SA-MP 0.3.7.
 - **Outros editores**: abra mapas do Texture Studio e mescle mapas do MTA:SA e IPL ao seu.
 - **Autosave**: recupere o trabalho não salvo depois de um travamento.
 
 **O editor**
 
+- **Editores**: alterne entre Mapa, TextDraws e Código pela barra superior.
 - **Workspaces**: uma tela inicial com seus servidores e os mapas deles.
 - **Suas próprias teclas**: mude todos os atalhos.
 - **Painéis**: encaixe-os em volta da vista 3D ou deixe-os flutuando.
@@ -102,6 +104,9 @@ em Aplicativos. O app já inclui o GLFW. Para usar o ZIP portátil, instale o GL
 pelo Terminal. Essa versão é para Apple Silicon. O Namaka já está incluído: abra
 **Janelas → Namaka** para configurá-lo com Python 3.10 a 3.14
 (o Python 3.14 permite a instalação sem internet).
+
+Os downloads para macOS não são assinados. Se o macOS bloquear a primeira abertura, siga
+[as instruções da Apple para abrir um app de um desenvolvedor não identificado](https://support.apple.com/en-us/102445).
 
 O `.tar.gz` do Windows serve para atualizações automáticas, e o ZIP de símbolos, para
 relatórios de falhas. Eles não são necessários para instalar. O arquivo `SHA256SUMS`

@@ -2,7 +2,7 @@
 
 ## Build
 
-Haumea builds with Premake and librw. Set `LIBRW` to the librw source folder, and run the
+The editor requires a C++17 compiler and builds with Premake and librw. Set `LIBRW` to the librw source folder, and run the
 commands from the Haumea checkout. `patch_librw_haumea.py` also swaps librw's Dear ImGui for
 the docking build in `vendor/imgui-docking`. Without it Haumea still builds, but panels float
 instead of docking.

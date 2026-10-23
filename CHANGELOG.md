@@ -13,6 +13,18 @@ the Haumea map editor; what changed for its users is in
 
 ### New
 
+**Installation and editors**
+- Windows and Linux installers, an unsigned Apple Silicon DMG and one complete portable download
+  per platform. Each includes Namaka; separate companion ZIPs are no longer needed.
+- **Map**, **TextDraws** and **Code** share the top bar. TextDraws and Code have yellow discovery
+  hints that stay dismissed after first use or dismissal.
+- A native **Code** editor for Pawn with syntax highlighting, line numbers, undo/redo,
+  find/replace and recoverable drafts. Manual edits save as a separate script.
+- Incomplete GTA installations stay on the folder chooser with the missing files listed.
+- Linux self-updates relaunch the updated installation, preserving the original launch path
+  when the running executable moves into the rollback backup.
+
+
 **open.mp NPCs**
 - Place NPCs with a name, skin, weapon, health and armour, and pick how they
   move: along a path you draw from path points (`NPC_MoveByPath`), on the

@@ -46,6 +46,7 @@ New to Haumea Studio? Read the **[user guide](docs/USER_GUIDE.md)**.
 
 **The editor**
 
+- **Editors**: switch between Map, TextDraws and Code from the top bar.
 - **Workspaces**: a start screen with your servers and their maps.
 - **Your own keys**: change every shortcut.
 - **Panels**: dock them around the 3D view or let them float.
@@ -102,6 +103,9 @@ from Applications. The app includes GLFW. For the portable ZIP, install GLFW wit
 the `Haumea Studio` folder in Terminal. This build is for Apple Silicon. Namaka is
 included: open **Windows → Namaka** to set it up with Python 3.10–3.14
 (Python 3.14 supports offline setup).
+
+The macOS downloads are unsigned. If macOS blocks the first launch, follow
+[Apple's instructions for opening an app from an unidentified developer](https://support.apple.com/en-us/102445).
 
 The Windows `.tar.gz` is for automatic updates; the symbols ZIP is for crash reports.
 You do not need either to install. `SHA256SUMS` contains download checksums.

@@ -5,7 +5,7 @@
 O Haumea Studio é o editor completo para open.mp e SA-MP, construído sobre o GTA San Andreas.
 Você coloca objetos, veículos, NPCs e todos os outros elementos do servidor no mundo do jogo,
 desenha textdraws, verifica o mapa contra os limites do servidor e o testa no jogo, e o Haumea
-salva tudo num arquivo Pawn que o seu gamemode inclui.
+salva o mapa e os textdraws em arquivos Pawn que o seu gamemode inclui.
 
 As teclas abaixo são as padrão. Todas podem ser mudadas em **Preferências → Atalhos**, e
 **Ajuda → Atalhos de teclado** (`F1`) lista todas.
@@ -45,6 +45,19 @@ de configuração dele: `~/.config/haumea` no Linux, `%APPDATA%\Haumea` no Windo
 `<GTA>/haumea_data` de uma instalação antiga e deixa a pasta antiga como estava. Um Haumea dentro
 da pasta do GTA, ou iniciado a partir dela, encontra a pasta do jogo sem perguntar. Para as opções
 de linha de comando, veja [Building and testing](BUILDING.md#command-line) (em inglês).
+
+Se arquivos necessários do GTA estiverem ausentes ou ilegíveis, a tela inicial lista os
+arquivos e mantém a seleção de pasta aberta. Restaure os arquivos ou escolha outra instalação
+completa para continuar.
+
+## Mapa, TextDraws e Código
+
+Escolha **Mapa**, **TextDraws** ou **Código** na barra superior para alternar entre os editores.
+O mapa, o arquivo de textdraws e o documento de código continuam abertos ao alternar.
+**Janelas** contém os painéis e utilitários do editor.
+
+Os balões amarelos **Novo!** apresentam TextDraws e Código. Abrir um editor ou fechar o balão
+remove o aviso dele, inclusive depois de reiniciar.
 
 ## Movimentação
 
@@ -168,10 +181,10 @@ mapa salvo.
 
 ## TextDraws
 
-Os textdraws são salvos num arquivo próprio, separado do mapa. **Janelas → TextDraws** abre o modo
-TextDraw: o mundo dá lugar à tela do jogo de 640x448, com uma cor lisa ou um quadro parado da vista
-que você tinha, e a edição do mapa fica desligada até você sair com **Sair** no aviso ou com
-**Esc**. Adicione textos, caixas, sprites e prévias de modelo, arraste-os na tela (o canto os
+Os textdraws são salvos num arquivo próprio, separado do mapa. Escolha **TextDraws** na barra
+superior: o mundo dá lugar à tela do jogo de 640x448, com uma cor lisa ou um quadro parado da vista
+que você tinha. Escolha **Mapa** para voltar ao mundo; **Esc** também sai desse editor quando
+nenhum textdraw está selecionado. Adicione textos, caixas, sprites e prévias de modelo, arraste-os na tela (o canto os
 redimensiona) e defina o texto, a fonte, as cores e o estilo. Desfazer (Ctrl+Z) tem um histórico
 próprio aqui.
 
@@ -263,7 +276,7 @@ precisam da biblioteca C de 32 bits: veja [Instalação](../README.pt-BR.md#inst
 
 ## Salvando
 
-Um mapa é um arquivo Pawn. **Arquivo → Salvar** (`Ctrl+S`) o grava, e **Salvar como** escolhe um
+Em **Mapa**, o mapa é um arquivo Pawn. **Arquivo → Salvar** (`Ctrl+S`) o grava, e **Salvar como** escolhe um
 arquivo novo ou o estilo do código:
 
 - **Nativo**: `CreateObject`, `CreateActor`, ... para qualquer servidor.
@@ -285,7 +298,25 @@ do open.mp quanto com os do SA-MP 0.3.7.
   Mantenha esses comentários quando editar o arquivo à mão.
 - **Autosave**: enquanto um mapa tem mudanças não salvas, o Haumea salva cópias na pasta de
   configuração dele. **Arquivo → Recuperar salvamento automático** as abre.
-- **Código Pawn ao vivo** (em Janelas) mostra o código enquanto você edita.
+
+## Editor de código
+
+Escolha **Código** na barra superior (`Ctrl+9`) para editar Pawn com cores, números de linha,
+desfazer/refazer e **Localizar / Substituir** (`Ctrl+F`). Abra um `.pwn` ou `.inc` existente com
+**Abrir script...** ou comece pelo código gerado do mapa. **Nativo** e **Streamer** escolhem o
+formato usado ao gerar código do mapa.
+
+Enquanto o documento gerado não for editado, ele acompanha as mudanças do mapa. Quando você
+edita o código, suas alterações ficam no documento. **Atualizar a partir do mapa** gera uma
+cópia nova e pergunta antes de substituir alterações não salvas.
+
+**Salvar script** (`Ctrl+S`) salva o documento num script separado; o nome padrão do código
+gerado termina em `.script.pwn`. O editor protege o `.pwn` do mapa, que é gerado novamente ao
+salvar o mapa visual. Editar o código não muda a cena 3D. Escolha **Windows-1252** ou **UTF-8**
+para a codificação do script; use UTF-8 para caracteres que o Windows-1252 não representa.
+
+O código não salvo fica como um rascunho recuperável na pasta de configuração do Haumea.
+Ele reaparece ao abrir **Código** depois de reiniciar.
 
 ## Namaka (assistente de IA)
 

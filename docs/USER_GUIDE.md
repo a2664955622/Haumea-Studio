@@ -5,7 +5,7 @@ English | [Português (Brasil)](USER_GUIDE.pt-BR.md)
 Haumea Studio is the all-in-one editor for open.mp and SA-MP, built on GTA San Andreas.
 You place objects, vehicles, NPCs and every other server element in the game world, design
 textdraws, check the map against the server's limits and test it in game, and Haumea saves
-it all as a Pawn file your gamemode includes.
+the map and textdraws as Pawn files your gamemode includes.
 
 The keys below are the defaults. Every one can be changed in **Preferences → Shortcuts**,
 and **Help → Keyboard Shortcuts** (`F1`) lists them all.
@@ -38,12 +38,24 @@ automatically** to skip the screen; **File → Switch Workspace** shows it again
 also be changed in **File → Workspace** or **Preferences → Workspace**. The window title shows
 the workspace.
 
+If required GTA files are missing or unreadable, the start screen lists them and keeps the
+folder chooser open. Restore the files or choose another complete installation to continue.
+
 Haumea keeps its own settings, autosaves, recent maps, favourites and prefabs in its config
 folder: `~/.config/haumea` on Linux, `%APPDATA%\Haumea` on Windows, `~/Library/Application
 Support/Haumea` on macOS. The first start copies an older install's `<GTA>/haumea_data` there
 and leaves the old folder as it was. A Haumea inside the GTA folder, or started from it, finds
 the game folder without asking. For command-line options, see
 [Building and testing](BUILDING.md#command-line).
+
+## Map, TextDraws and Code
+
+Choose **Map**, **TextDraws** or **Code** in the top bar to switch editors. Your current map,
+textdraw file and code document stay open while you switch. **Windows** contains the panels
+and utilities for the editor.
+
+The yellow **New!** balloons introduce TextDraws and Code. Opening an editor or dismissing
+its balloon clears that hint, including after a restart.
 
 ## Moving around
 
@@ -165,10 +177,10 @@ and Map Check notes a font that isn't installed at all.
 
 ## TextDraws
 
-Textdraws are saved in a file of their own, apart from the map. **Windows → TextDraws** opens
-TextDraw mode: the world gives way to the 640x448 game screen, either a plain colour or a still
-frame of the view you had, and map editing is off until you leave with **Exit** in the banner or
-**Esc**. Add text, boxes, sprites and model previews, drag them on the screen (the corner resizes
+Textdraws are saved in a file of their own, apart from the map. Select **TextDraws** in the
+top bar: the world gives way to the 640x448 game screen, either a plain colour or a still
+frame of the view you had. Select **Map** to return to the world; **Esc** also leaves this editor
+when no textdraw is selected. Add text, boxes, sprites and model previews, drag them on the screen (the corner resizes
 them), and set their text, font, colours and style. Undo (Ctrl+Z) has its own history here.
 
 The window's **New**, **Open**, **Save** and **Save As** work on the textdraw file (a `.pwn` or
@@ -256,7 +268,7 @@ On 64-bit Linux, open.mp's server and compiler need the 32-bit C library: see
 
 ## Saving
 
-A map is a Pawn file. **File → Save** (`Ctrl+S`) writes it, and **Save As** picks a new file or
+In **Map**, a map is a Pawn file. **File → Save** (`Ctrl+S`) writes it, and **Save As** picks a new file or
 the code style:
 
 - **Native**: `CreateObject`, `CreateActor`, ... for any server.
@@ -277,7 +289,25 @@ and the SA-MP 0.3.7 includes.
   Keep these comments when you edit the file by hand.
 - **Autosave**: while a map has unsaved changes, Haumea saves copies in its config folder.
   **File → Recover Autosave** opens them.
-- **Live Pawn Code** (in Windows) shows the code as you edit.
+
+## Code editor
+
+Select **Code** in the top bar (`Ctrl+9`) to edit Pawn with syntax highlighting, line numbers,
+undo/redo and **Find / Replace** (`Ctrl+F`). Open an existing `.pwn` or `.inc` with
+**Open script...**, or start from the generated map code. **Native** and **Streamer** choose
+the format used when generating code from the map.
+
+While the generated document is untouched, it follows changes to the map. Once you edit it,
+your edits stay in the document. **Refresh from map** generates a fresh copy and asks before
+replacing unsaved edits.
+
+**Save script** (`Ctrl+S`) saves the document as a separate script; the default name for generated
+code ends in `.script.pwn`. The editor protects the map's own `.pwn`, which is regenerated when
+you save the visual map. Code edits do not change the 3D scene. Choose **Windows-1252** or **UTF-8**
+for the script's encoding; use UTF-8 for characters Windows-1252 cannot represent.
+
+Unsaved code is kept as a recoverable draft in Haumea's config folder. It reappears when you
+open **Code** after restarting.
 
 ## Namaka (AI assistant)
 
