@@ -44,7 +44,7 @@ static char gImGuiIniPath[1024];
 static const char *RESTART_PARENT_PID_ARG = "--haumea-restart-parent-pid";
 
 static bool
-GetEditorExecutablePath(char *path, size_t size)
+ResolveEditorExecutablePath(char *path, size_t size)
 {
 	if(path == nil || size == 0)
 		return false;
@@ -69,6 +69,22 @@ GetEditorExecutablePath(char *path, size_t size)
 	path[len] = '\0';
 	return true;
 #endif
+}
+
+// Keep the launch location before the updater moves the running executable.
+// On Linux /proc/self/exe follows that move into .haumea-previous/files;
+// resolving it again would relaunch the old version from the backup folder.
+static bool
+GetEditorExecutablePath(char *path, size_t size)
+{
+	static const std::string launchPath = []{
+		char resolved[1024];
+		return ResolveEditorExecutablePath(resolved, sizeof(resolved)) ? std::string(resolved) : std::string();
+	}();
+	if(path == nil || launchPath.empty() || size <= launchPath.size())
+		return false;
+	memcpy(path, launchPath.c_str(), launchPath.size() + 1);
+	return true;
 }
 
 #ifdef _WIN32
