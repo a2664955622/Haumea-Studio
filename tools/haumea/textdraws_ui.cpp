@@ -3179,6 +3179,9 @@ takeStillAt(int place, int hour)
 		TheCamera.m_at = rw::normalize(rw::sub(TheCamera.m_target, TheCamera.m_position));
 		TheCamera.m_up = up;
 		TheCamera.m_localup = up;
+		// The places are all outside: in an interior there would be nothing
+		// round the camera (it looked like being under the ground).
+		currentArea = 0;
 	}
 	if(hour >= 0){
 		currentHour = hour;
@@ -3200,6 +3203,8 @@ stillFramePlaces(void)
 		static int hour = 12;
 		ImGui::SetNextItemWidth(ImGui::GetFontSize() * 8.0f);
 		ImGui::SliderInt(L("Hour"), &hour, 0, 23, "%02d:00");
+		if(ImGui::IsItemDeactivatedAfterEdit())
+			takeStillAt(-1, hour);	// here, at the new hour
 		ImGui::SeparatorText(_("Places"));
 		for(int i = 0; i < IM_ARRAYSIZE(gStillPlaces); i++)
 			if(ImGui::MenuItem(_(gStillPlaces[i].name)))
