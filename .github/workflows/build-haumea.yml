@@ -824,8 +824,15 @@ jobs:
           foreach ($file in @('haumea.exe', 'glfw3.dll', 'START_HERE.txt', 'lang/pt-BR.po', 'namaka/namaka_install.py')) {
             if (!(Test-Path (Join-Path $dest $file))) { throw "Missing installed file: $file" }
           }
-          & "$dest/haumea.exe" --version
-          if ($LASTEXITCODE -ne 0) { throw 'Installed editor does not start' }
+          $editor = Start-Process "$dest/haumea.exe" -ArgumentList '--version' -Wait -PassThru `
+            -RedirectStandardOutput "$dest/version.txt" -RedirectStandardError "$dest/version-errors.txt"
+          Get-Content "$dest/version.txt"
+          Get-Content "$dest/version-errors.txt"
+          if ($editor.ExitCode -ne 0) { throw "Installed editor exited with code $($editor.ExitCode)" }
+          if (!(Select-String -Quiet -Path "$dest/version.txt" -Pattern '^Haumea Studio ')) {
+            throw 'Installed editor did not report its version'
+          }
+          Remove-Item "$dest/version.txt", "$dest/version-errors.txt"
           Set-Content "$dest/keep-map.pwn" '// user map'
           $uninstall = Start-Process "$dest/unins000.exe" -Wait -PassThru `
             -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'

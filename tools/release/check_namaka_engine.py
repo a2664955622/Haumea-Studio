@@ -87,7 +87,12 @@ def main():
                         break
                     time.sleep(.5)
                 else:
-                    raise RuntimeError('Editor did not start its Namaka listener; see engine.log')
+                    log.flush()
+                    details = (output / 'engine.log').read_text(errors='replace')[-16000:]
+                    print('Editor startup log:\n' + (details or '(empty)'), file=sys.stderr)
+                    code = editor.poll()
+                    state = f'exited with code {code}' if code is not None else 'timed out'
+                    raise RuntimeError(f'Editor {state} before its Namaka listener became ready; see engine.log')
                 asyncio.run(asyncio.wait_for(check_mcp(env, output, args.tools), timeout=120))
             finally:
                 editor.terminate()

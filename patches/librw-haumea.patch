@@ -1,5 +1,5 @@
 diff --git a/skeleton/glfw.cpp b/skeleton/glfw.cpp
-index 4ad4b06..a609029 100644
+index 4ad4b06..58fdecc 100644
 --- a/skeleton/glfw.cpp
 +++ b/skeleton/glfw.cpp
 @@ -110,23 +110,23 @@ initkeymap(void)
@@ -57,6 +57,15 @@ index 4ad4b06..a609029 100644
  int
  main(int argc, char *argv[])
  {
+@@ -231,7 +238,7 @@ main(int argc, char *argv[])
+ 	engineOpenParams.window = &window;
+ 
+ 	if(EventHandler(RWINITIALIZE, nil) == EVENTERROR)
+-		return 0;
++		return 1;
+ 
+ 	initkeymap();
+ 	glfwSetKeyCallback(window, keypress);
 @@ -240,9 +247,38 @@ main(int argc, char *argv[])
  	glfwSetCursorPosCallback(window, mousemove);
  	glfwSetMouseButtonCallback(window, mousebtn);
@@ -436,8 +445,22 @@ index cabfeff..207402b 100644
  void setD3dMaterial(D3DMATERIAL9 *mat9);
  #endif
  
+diff --git a/src/engine.cpp b/src/engine.cpp
+index 0583cb3..87c9668 100644
+--- a/src/engine.cpp
++++ b/src/engine.cpp
+@@ -308,7 +308,8 @@ Engine::start(void)
+ 		return 0;
+ 	}
+ 
+-	engine->device.system(DEVICEINIT, nil, 0);
++	if(!engine->device.system(DEVICEINIT, nil, 0))
++		return 0;
+ 
+ 	Engine::s_plglist.construct(engine);
+ 	for(uint i = 0; i < NUM_PLATFORMS; i++)
 diff --git a/src/gl/gl3device.cpp b/src/gl/gl3device.cpp
-index 5275fe5..6234f7c 100644
+index 5275fe5..d6a6a0a 100644
 --- a/src/gl/gl3device.cpp
 +++ b/src/gl/gl3device.cpp
 @@ -1398,7 +1398,12 @@ clearCamera(Camera *cam, RGBA *col, uint32 mode)
@@ -495,6 +518,31 @@ index 5275fe5..6234f7c 100644
  			glBindTexture(GL_TEXTURE_2D, boundTexture[0]);
  			return 1;
  		}
+@@ -1879,9 +1897,11 @@ static struct {
+ 	int major, minor;
+ } profiles[] = {
+ 	{ GLFW_OPENGL_API, 3, 3 },
++#ifndef __APPLE__
+ 	{ GLFW_OPENGL_API, 2, 1 },
+ 	{ GLFW_OPENGL_ES_API, 3, 1 },
+ 	{ GLFW_OPENGL_ES_API, 2, 0 },
++#endif
+ 	{ 0, 0, 0 },
+ };
+ 
+@@ -1894,6 +1914,12 @@ startGLFW(void)
+ 	mode = &glGlobals.modes[glGlobals.currentMode];
+ 
+ 	glfwSetErrorCallback(glfwerr);
++#ifdef __APPLE__
++	// NSGL supports modern OpenGL only in a forward-compatible core context.
++	// https://www.glfw.org/faq.html#how-do-i-create-an-opengl-30-context
++	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
++	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
++#endif
+ 	glfwWindowHint(GLFW_RED_BITS, mode->mode.redBits);
+ 	glfwWindowHint(GLFW_GREEN_BITS, mode->mode.greenBits);
+ 	glfwWindowHint(GLFW_BLUE_BITS, mode->mode.blueBits);
 diff --git a/src/gl/gl3immed.cpp b/src/gl/gl3immed.cpp
 index b66b7e5..c3c5bbe 100644
 --- a/src/gl/gl3immed.cpp
