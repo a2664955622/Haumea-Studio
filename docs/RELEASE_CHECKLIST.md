@@ -67,12 +67,13 @@ newer jobs. Nothing here is automatic: pushing and releasing are your call.
    - the download table points to one installer or portable download per platform;
    - Windows: `Haumea-Studio-Windows-Setup.exe`, `Haumea-Studio-Windows-Portable.zip`;
    - Linux: `Haumea-Studio-Linux-Setup.run`, `haumea-linux-amd64.tar.gz`;
-   - macOS: `Haumea-Studio-macOS-Apple-Silicon-Portable.zip`;
+   - macOS: `Haumea-Studio-macOS-Apple-Silicon-Setup.dmg`,
+     `Haumea-Studio-macOS-Apple-Silicon-Portable.zip`;
    - updater/support files: `haumea-windows-gl3.tar.gz`,
      `haumea-symbols-<version>.zip` and `SHA256SUMS`;
-   - no separate Namaka ZIPs: Windows and Linux already include the assistant payload;
-   - run both installers, launch the installed editor, then uninstall and confirm
-     that maps and settings remain; the Windows CI installer job checks this too;
+   - no separate Namaka ZIPs: every platform already includes the assistant payload;
+   - run each installer, launch the installed editor, then uninstall and confirm
+     that maps and settings remain; the Windows and Mac CI jobs check this too;
    - download one bundle and check it against `SHA256SUMS`.
 4. Edit the draft's text: the body is the run's notes, this version's
    CHANGELOG section and the license line. For the first beta, paste the

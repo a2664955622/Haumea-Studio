@@ -1,9 +1,11 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Exercise the actual release packager and Linux install/uninstall in a private HOME."""
 import hashlib
+import importlib.util
 import os
 from pathlib import Path
 import shutil
+import plistlib
 import subprocess
 import sys
 import tarfile
@@ -43,8 +45,7 @@ class DownloadsTests(unittest.TestCase):
         output = self.work / 'downloads'
         cmd = [sys.executable, str(PACKAGER), '--platform', platform,
                '--engine', str(self.engine), '--stage', str(stage), '--output', str(output)]
-        if platform != 'macos':
-            cmd += ['--namaka', str(self.namaka)]
+        cmd += ['--namaka', str(self.namaka)]
         if platform == 'windows':
             cmd += ['--glfw', str(self.glfw)]
         subprocess.run(cmd, check=True, capture_output=True, text=True)
@@ -111,6 +112,44 @@ class DownloadsTests(unittest.TestCase):
             self.assertTrue(archive.getinfo('Haumea Studio/haumea').external_attr >> 16 & 0o111)
             self.assertIn('Haumea Studio/lang/pt-BR.po', archive.namelist())
             self.assertIn('Haumea Studio/START_HERE.txt', archive.namelist())
+            for name in ('namaka/haumea_namaka-1.0.0-py3-none-any.whl',
+                         'namaka/namaka_install.py', 'namaka/wheelhouse/dependency.whl'):
+                self.assertIn('Haumea Studio/' + name, archive.namelist())
+            self.assertIn('Namaka is included', archive.read('Haumea Studio/START_HERE.txt').decode())
+        self.assertEqual([p.name for p in output.iterdir()],
+                         ['Haumea-Studio-macOS-Apple-Silicon-Portable.zip'])
+
+    def test_macos_download_refuses_to_ship_without_namaka(self):
+        result = subprocess.run([sys.executable, str(PACKAGER), '--platform', 'macos',
+                                 '--engine', str(self.engine), '--stage', str(self.work / 'macos'),
+                                 '--output', str(self.work / 'downloads')], capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('must include the Namaka bundle', result.stderr)
+
+    @unittest.skipIf(os.name == 'nt', 'macOS app resources use POSIX links')
+    def test_macos_app_keeps_resources_and_namaka_accessible_to_the_editor(self):
+        stage, _ = self.package('macos')
+        spec = importlib.util.spec_from_file_location('package_macos', ROOT / 'tools/release/package_macos.py')
+        builder = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(builder)
+        image_root = self.work / 'disk-image'
+        app = builder.create_app(stage, image_root, '1.2.3.42', '13.0')
+        info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
+        self.assertEqual(info['CFBundleShortVersionString'], '1.2.3')
+        self.assertEqual(info['CFBundleVersion'], '42')
+        self.assertEqual(info['CFBundlePackageType'], 'APPL')
+        self.assertIn('/opt/homebrew/bin', info['LSEnvironment']['PATH'])
+        executable = app / 'Contents/MacOS' / info['CFBundleExecutable']
+        self.assertTrue(executable.stat().st_mode & 0o111)
+        for name in ('fonts/Inter-Regular.ttf', 'lang/pt-BR.po', 'LICENSE',
+                     'namaka/namaka_install.py', 'namaka/wheelhouse/dependency.whl'):
+            resource = executable.parent / name
+            self.assertTrue(resource.is_file(), name)
+            self.assertTrue(resource.resolve().is_relative_to(app))
+        icon = app / 'Contents/Resources' / info['CFBundleIconFile']
+        self.assertEqual(icon.read_bytes()[:4], b'icns')
+        self.assertEqual(os.readlink(image_root / 'Applications'), '/Applications')
+        self.assertTrue((stage / 'haumea').is_file(), 'building the app must preserve the portable stage')
 
 
 if __name__ == '__main__':

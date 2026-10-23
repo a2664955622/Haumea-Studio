@@ -69,14 +69,14 @@ Começando com o Haumea Studio? Leia o **[guia do usuário](docs/USER_GUIDE.pt-B
 Baixe o Haumea Studio na [página de releases](https://github.com/itsneufox/Haumea-Studio/releases).
 Você também precisa do GTA San Andreas e, para testar mapas, de uma pasta de servidor open.mp ou SA-MP.
 
-Baixe **um arquivo** para sua plataforma. Os downloads para Windows e Linux já incluem o
+Baixe **um arquivo** para sua plataforma. Os downloads de todas as plataformas já incluem o
 Namaka; não é preciso baixar um ZIP separado do assistente.
 
 | Plataforma | Instalação (recomendada) | Portátil |
 | --- | --- | --- |
 | Windows 64 bits | `Haumea-Studio-Windows-Setup.exe` | `Haumea-Studio-Windows-Portable.zip` |
 | Linux x86_64 | `Haumea-Studio-Linux-Setup.run` | `haumea-linux-amd64.tar.gz` |
-| macOS Apple Silicon | | `Haumea-Studio-macOS-Apple-Silicon-Portable.zip` |
+| macOS Apple Silicon | `Haumea-Studio-macOS-Apple-Silicon-Setup.dmg` | `Haumea-Studio-macOS-Apple-Silicon-Portable.zip` |
 
 **Windows**: execute o Setup para adicionar o Haumea Studio ao menu Iniciar. A instalação
 é feita para sua conta e pode ser removida nas Configurações do Windows. Para usar a versão
@@ -96,8 +96,12 @@ Execute-o com seu usuário normal. Ele instala em `$XDG_DATA_HOME/haumea-studio`
 `~/.local/share/haumea-studio`) e mostra o comando para desinstalar. Para usar a versão
 portátil, extraia `haumea-linux-amd64.tar.gz` numa pasta própria e execute `./haumea` nela.
 
-**macOS**: instale o GLFW com `brew install glfw`, extraia o ZIP e execute `./haumea` na
-pasta `Haumea Studio` pelo Terminal. Essa versão é para Apple Silicon.
+**macOS**: abra o DMG e arraste o **Haumea Studio** para **Aplicativos**, depois abra-o
+em Aplicativos. O app já inclui o GLFW. Para usar o ZIP portátil, instale o GLFW com
+`brew install glfw`, extraia o ZIP e execute `./haumea` na pasta `Haumea Studio`
+pelo Terminal. Essa versão é para Apple Silicon. O Namaka já está incluído: abra
+**Janelas → Namaka** para configurá-lo com Python 3.10 a 3.14
+(o Python 3.14 permite a instalação sem internet).
 
 O `.tar.gz` do Windows serve para atualizações automáticas, e o ZIP de símbolos, para
 relatórios de falhas. Eles não são necessários para instalar. O arquivo `SHA256SUMS`

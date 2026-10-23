@@ -69,14 +69,14 @@ New to Haumea Studio? Read the **[user guide](docs/USER_GUIDE.md)**.
 Download Haumea Studio from the [releases page](https://github.com/itsneufox/Haumea-Studio/releases).
 You also need GTA San Andreas, and, to test maps, an open.mp or SA-MP server folder.
 
-Download **one file** for your platform. Namaka is included in the Windows and Linux downloads;
+Download **one file** for your platform. Namaka is included in every platform download;
 there is no separate companion ZIP to install.
 
 | Platform | Install (recommended) | Portable |
 | --- | --- | --- |
 | Windows 64-bit | `Haumea-Studio-Windows-Setup.exe` | `Haumea-Studio-Windows-Portable.zip` |
 | Linux x86_64 | `Haumea-Studio-Linux-Setup.run` | `haumea-linux-amd64.tar.gz` |
-| macOS Apple Silicon | | `Haumea-Studio-macOS-Apple-Silicon-Portable.zip` |
+| macOS Apple Silicon | `Haumea-Studio-macOS-Apple-Silicon-Setup.dmg` | `Haumea-Studio-macOS-Apple-Silicon-Portable.zip` |
 
 **Windows**: run Setup to add Haumea Studio to the Start menu. It installs for your account
 and can be removed from Windows Settings. For portable use, extract the **entire** ZIP,
@@ -95,8 +95,12 @@ as your normal user. It installs in `$XDG_DATA_HOME/haumea-studio` (usually
 `~/.local/share/haumea-studio`) and prints the uninstall command. For portable use, extract
 `haumea-linux-amd64.tar.gz` into its own folder and run `./haumea` there.
 
-**macOS**: install GLFW with `brew install glfw`, extract the ZIP and run `./haumea` from
-the `Haumea Studio` folder in Terminal. This build is for Apple Silicon.
+**macOS**: open the DMG and drag **Haumea Studio** onto **Applications**, then open it
+from Applications. The app includes GLFW. For the portable ZIP, install GLFW with
+`brew install glfw`, extract the ZIP and run `./haumea` from
+the `Haumea Studio` folder in Terminal. This build is for Apple Silicon. Namaka is
+included: open **Windows → Namaka** to set it up with Python 3.10–3.14
+(Python 3.14 supports offline setup).
 
 The Windows `.tar.gz` is for automatic updates; the symbols ZIP is for crash reports.
 You do not need either to install. `SHA256SUMS` contains download checksums.

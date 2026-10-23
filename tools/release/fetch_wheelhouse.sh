@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # Downloads Namaka's dependency wheels for setup-agent's offline install.
 #
-#   tools/release/fetch_wheelhouse.sh linux|windows <dest>
+#   tools/release/fetch_wheelhouse.sh linux|windows|macos <dest>
 #
 # Binary wheels (pydantic-core, Pillow, pywin32...) for CPython 3.14 only,
 # the one version that installs fully offline; pure-Python wheels for every
@@ -23,9 +23,20 @@ windows)
 	UV_PLATFORM=x86_64-pc-windows-msvc
 	PIP_PLATFORMS="--platform win_amd64"
 	;;
-*) echo "usage: $0 linux|windows <dest>" >&2; exit 2 ;;
+macos)
+	UV_PLATFORM=aarch64-apple-darwin
+	# Match the resolver's deployment target to pip's Apple Silicon tags.
+	MACOSX_DEPLOYMENT_TARGET=11.0
+	export MACOSX_DEPLOYMENT_TARGET
+	PIP_PLATFORMS="--platform macosx_11_0_arm64 --platform macosx_11_0_universal2"
+	# Universal2 wheels may advertise an older Intel deployment target.
+	for minor in 16 15 14 13 12 11 10 9 8 7 6 5 4; do
+		PIP_PLATFORMS="$PIP_PLATFORMS --platform macosx_10_${minor}_universal2"
+	done
+	;;
+*) echo "usage: $0 linux|windows|macos <dest>" >&2; exit 2 ;;
 esac
-DEST=${2:?usage: $0 linux|windows <dest>}
+DEST=${2:?usage: $0 linux|windows|macos <dest>}
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 if python3 -m pip --version > /dev/null 2>&1; then
 	PIP="python3 -m pip"

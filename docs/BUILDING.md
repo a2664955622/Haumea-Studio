@@ -100,7 +100,7 @@ on Linux under Xvfb.
 ## Package downloads
 
 `tools/release/package_downloads.py` stages the editor, fonts, prefabs, translations,
-licences and (on Windows/Linux) Namaka in one folder. Use a new staging directory:
+licences and Namaka in one folder. Use a new staging directory:
 
 ```sh
 python3 tools/release/package_downloads.py --platform linux \
@@ -124,6 +124,29 @@ to make the per-user Windows setup program. The `installer-windows` CI job build
 and exercises installation/uninstallation on every run. No release is published
 unless the manual release workflow requests it.
 
-For macOS, pass `--platform macos` and the Apple Silicon editor, without `--namaka`
-or `--glfw`. The portable ZIP preserves the executable bit; GLFW must be installed
-on the target Mac.
+For macOS, fetch the Apple Silicon wheels with `fetch_wheelhouse.sh macos`, then
+use `package_agent.py` to make the internal Namaka companion. Pass `--platform macos`,
+the Apple Silicon editor and `--namaka /path/to/Haumea-Namaka-macos-arm64.zip` to the
+download packager (without `--glfw`). The single portable ZIP includes Namaka and
+preserves the executable bit; GLFW must be installed on the target Mac. The
+`agent-bundle-macos` CI job tests offline installation and repair with Python 3.14,
+the MCP tool list, automatic listening and live camera/status/capture calls against
+the native editor using a synthetic game, then uninstalls Namaka. Releases require
+this job to pass.
+
+`package_macos.py` wraps the complete Mac stage in `Haumea Studio.app`, bundles
+GLFW in `Contents/Frameworks`, rewrites its load path and checks for unbundled
+libraries. It preserves the editor's resource lookups through links into
+`Contents/Resources`. The disk image contains the app and an Applications shortcut:
+
+```sh
+python3 tools/release/package_macos.py --bundle /path/to/macos-stage \
+  --glfw "$(brew --prefix glfw)/lib/libglfw.3.dylib" --version 1.0.0.1 \
+  --stage /tmp/haumea-dmg-stage --output /tmp/haumea-downloads
+```
+
+CI uses ad-hoc signing for build verification. For public distribution, pass
+`--identity 'Developer ID Application: ...'`, then notarize and staple the DMG
+with Apple's `notarytool` and `stapler`. Developer ID credentials are not configured
+by this workflow. The native Mac job mounts the DMG, copies the app into a private
+test directory, verifies its signature and repeats the live Namaka check there.

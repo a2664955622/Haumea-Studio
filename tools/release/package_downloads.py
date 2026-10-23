@@ -70,8 +70,8 @@ __HAUMEA_PAYLOAD__
 
 
 def package(platform, engine, stage, output, namaka=None, glfw=None):
-    if platform in ('windows', 'linux') and namaka is None:
-        raise ValueError('Windows and Linux downloads must include the Namaka bundle')
+    if namaka is None:
+        raise ValueError('Every platform download must include the Namaka bundle')
     if platform == 'windows' and glfw is None:
         raise ValueError('The Windows download needs --glfw glfw3.dll')
     stage.mkdir(parents=True, exist_ok=False)

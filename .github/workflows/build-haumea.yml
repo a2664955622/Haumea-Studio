@@ -673,6 +673,115 @@ jobs:
           name: haumea-namaka-windows-x86_64
           path: dist/agent/${{ env.BUNDLE }}.zip
 
+  # Internal companion artifact only: users get Namaka inside the Mac portable ZIP.
+  agent-bundle-macos:
+    needs: build-macos
+    runs-on: macos-latest
+    env:
+      AGENT_MCP_TOOLS: 83
+      BUNDLE: Haumea-Namaka-macos-arm64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: haumea
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: haumea-macos-arm64-gl3
+          path: dist/engine
+      - name: Install editor dependency
+        run: |
+          test "$(uname -m)" = arm64
+          brew install glfw
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.7"
+      - name: Build Namaka and its Apple Silicon wheelhouse
+        run: |
+          python3 haumea/tools/release/gen_buildinfo.py --python haumea/tools/agent/_version.py
+          uv build --wheel -o dist/wheel haumea
+          sh haumea/tools/release/fetch_wheelhouse.sh macos dist/wheelhouse
+          python3 haumea/tools/release/check_notices.py dist/wheelhouse haumea/THIRD_PARTY_NOTICES.md
+      - name: Package the Mac companion and the user download
+        run: |
+          chmod +x dist/engine/haumea
+          python3 haumea/tools/release/package_agent.py --engine dist/engine/haumea \
+            --wheel dist/wheel/haumea_namaka-*.whl --wheelhouse dist/wheelhouse \
+            --output dist/agent --name "$BUNDLE"
+          python3 haumea/tools/release/package_downloads.py --platform macos \
+            --engine dist/engine/haumea --namaka "dist/agent/$BUNDLE.zip" \
+            --stage dist/macos-stage --output dist/downloads
+          unzip -q dist/downloads/Haumea-Studio-macOS-Apple-Silicon-Portable.zip -d "$RUNNER_TEMP/mac-portable"
+          test -x "$RUNNER_TEMP/mac-portable/Haumea Studio/haumea"
+          uv python install -q 3.14
+      - name: Install, repair and check Namaka offline on the Mac
+        env:
+          PIP_NO_INDEX: "1"
+          HTTP_PROXY: http://127.0.0.1:9
+          HTTPS_PROXY: http://127.0.0.1:9
+        run: |
+          py=$(uv python find 3.14)
+          bundle="$RUNNER_TEMP/mac-portable/Haumea Studio/namaka"
+          venv="$RUNNER_TEMP/namaka-macos-venv"
+          for action in install repair status; do
+            "$py" "$bundle/namaka_install.py" "$action" --bundle "$bundle" --venv "$venv" --offline
+          done
+          "$venv/bin/python" haumea/tools/release/check_agent_bundle.py "$venv/bin/haumea-mcp" --tools "$AGENT_MCP_TOOLS"
+          "$venv/bin/haumeactl" --help >/dev/null
+      - name: Check the installed MCP against the native Mac editor
+        run: |
+          python3 haumea/tools/haumea/tests/fixture/make_game.py "$RUNNER_TEMP/namaka-game"
+          "$RUNNER_TEMP/namaka-macos-venv/bin/python" haumea/tools/release/check_namaka_engine.py \
+            --engine "$RUNNER_TEMP/mac-portable/Haumea Studio/haumea" \
+            --game "$RUNNER_TEMP/namaka-game" --output "$RUNNER_TEMP/namaka-macos-check" \
+            --tools "$AGENT_MCP_TOOLS"
+      - name: Build the macOS app and DMG installer
+        run: |
+          version=$(python3 haumea/tools/release/gen_buildinfo.py --print | cut -d ' ' -f1)
+          python3 haumea/tools/release/package_macos.py \
+            --bundle "$RUNNER_TEMP/mac-portable/Haumea Studio" \
+            --glfw "$(brew --prefix glfw)/lib/libglfw.3.dylib" --version "$version" \
+            --stage dist/macos-dmg --output dist/installer
+      - name: Install from the DMG and check the installed app
+        run: |
+          mount="$RUNNER_TEMP/haumea-dmg"
+          mkdir -p "$mount" "$RUNNER_TEMP/mac-install"
+          hdiutil attach -nobrowse -readonly -mountpoint "$mount" dist/installer/Haumea-Studio-macOS-Apple-Silicon-Setup.dmg
+          trap 'hdiutil detach "$mount"' EXIT
+          test "$(readlink "$mount/Applications")" = /Applications
+          ditto "$mount/Haumea Studio.app" "$RUNNER_TEMP/mac-install/Haumea Studio.app"
+          app="$RUNNER_TEMP/mac-install/Haumea Studio.app"
+          codesign --verify --deep --strict "$app"
+          "$app/Contents/MacOS/haumea" --version
+          "$RUNNER_TEMP/namaka-macos-venv/bin/python" haumea/tools/release/check_namaka_engine.py \
+            --engine "$app/Contents/MacOS/haumea" --game "$RUNNER_TEMP/namaka-game" \
+            --output "$RUNNER_TEMP/namaka-macos-app-check" --tools "$AGENT_MCP_TOOLS"
+      - name: Check uninstallation
+        run: |
+          rm -rf "$RUNNER_TEMP/mac-install/Haumea Studio.app"
+          py=$(uv python find 3.14)
+          "$py" "$RUNNER_TEMP/mac-portable/Haumea Studio/namaka/namaka_install.py" uninstall \
+            --venv "$RUNNER_TEMP/namaka-macos-venv"
+          test ! -e "$RUNNER_TEMP/namaka-macos-venv"
+      - name: Upload failed Mac check logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: namaka-macos-check
+          path: |
+            ${{ runner.temp }}/namaka-macos-check
+            ${{ runner.temp }}/namaka-macos-app-check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: haumea-namaka-macos-arm64
+          path: dist/agent/${{ env.BUNDLE }}.zip
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: haumea-macos-installer
+          path: dist/installer/Haumea-Studio-macOS-Apple-Silicon-Setup.dmg
+          if-no-files-found: error
+
   installer-windows:
     needs: [build-windows, agent-bundle-windows]
     runs-on: windows-latest
@@ -732,7 +841,7 @@ jobs:
   release:
     # A manual run asking for a draft or a release.
     if: github.event_name == 'workflow_dispatch' && inputs.release != 'build only'
-    needs: [build-windows, build-linux, build-macos, test-linux, pawn, agent-bundle-linux, agent-bundle-windows, installer-windows]
+    needs: [build-windows, build-linux, build-macos, test-linux, pawn, agent-bundle-linux, agent-bundle-windows, agent-bundle-macos, installer-windows]
     runs-on: ubuntu-latest
 
     steps:
@@ -796,7 +905,13 @@ jobs:
           name: haumea-windows-installer
           path: dist/release
 
-      # One portable per platform; Namaka is included in Windows and Linux.
+      - name: Download the macOS installer
+        uses: actions/download-artifact@v4
+        with:
+          name: haumea-macos-installer
+          path: dist/release
+
+      # One portable per platform; Namaka is included on every platform.
       # The tar names remain stable for editors already using auto-update.
       - name: Make the portable downloads, Linux installer and SHA256SUMS
         run: |
@@ -809,7 +924,9 @@ jobs:
             --namaka dist/namaka/haumea-namaka-linux-x86_64/Haumea-Namaka-linux-x86_64.zip \
             --stage dist/linux-bundle --output dist/release
           python3 haumea/tools/release/package_downloads.py --platform macos \
-            --engine dist/macos/haumea --stage dist/macos-bundle --output dist/release
+            --engine dist/macos/haumea \
+            --namaka dist/namaka/haumea-namaka-macos-arm64/Haumea-Namaka-macos-arm64.zip \
+            --stage dist/macos-bundle --output dist/release
           # The symbols for crash reports (tools/server/symbols.py reads this zip);
           # not part of any bundle.
           python3 haumea/tools/release/make_symbols.py \
@@ -837,12 +954,12 @@ jobs:
             base="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/${{ steps.plan.outputs.tag }}"
             echo "| Windows 64-bit | [Setup.exe]($base/Haumea-Studio-Windows-Setup.exe) | [Portable ZIP]($base/Haumea-Studio-Windows-Portable.zip) |"
             echo "| Linux x86_64 | [Setup.run]($base/Haumea-Studio-Linux-Setup.run) | [Portable tar.gz]($base/haumea-linux-amd64.tar.gz) |"
-            echo "| macOS Apple Silicon | | [Portable ZIP]($base/Haumea-Studio-macOS-Apple-Silicon-Portable.zip) |"
+            echo "| macOS Apple Silicon | [Setup.dmg]($base/Haumea-Studio-macOS-Apple-Silicon-Setup.dmg) | [Portable ZIP]($base/Haumea-Studio-macOS-Apple-Silicon-Portable.zip) |"
             echo
-            echo 'Download **one file** for your platform. Windows and Linux include Namaka; no companion ZIP is needed.'
+            echo 'Download **one file** for your platform. All platforms include Namaka; no companion ZIP is needed.'
             echo 'Windows: run Setup.exe, or extract the entire portable ZIP and open haumea.exe.'
             echo 'Linux: run `sh Haumea-Studio-Linux-Setup.run` (Python 3.10+, libglfw3 and curl required).'
-            echo 'macOS: install GLFW (`brew install glfw`), extract the ZIP and run `./haumea` from its folder.'
+            echo 'macOS: open Setup.dmg and drag Haumea Studio into Applications. The app includes GLFW and Namaka.'
             echo
             echo 'The Windows `.tar.gz` is used by the built-in updater. The symbols ZIP is for crash reports, and SHA256SUMS verifies downloads. These are not extra installs.'
             echo
