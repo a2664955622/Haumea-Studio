@@ -40,7 +40,7 @@ static const float gScreenAspects[NUM_TD_SCREENS] = { 0.0f, 4.0f / 3.0f, 16.0f /
 static const char *gScreenNames[NUM_TD_SCREENS] = { N_("Window"), "4:3", "16:10", "16:9", "21:9" };
 static int gScreen = TD_SCREEN_WINDOW;
 static float gZoom = 1.0f, gPanX, gPanY;	// the pan in pixels, from the centred canvas
-static bool gSnap = true, gGrid, gCompare, gRulers = true;
+static bool gSnap = true, gGrid, gCompare, gRulers = true, gGuidesLocked;
 static float gGridSize = 10.0f;
 static float gNudge = 1.0f;	// the arrow keys' step; Shift ten times it
 static bool gClickThroughLocked = true;
@@ -248,9 +248,11 @@ LoadTextDrawSetting(const char *key, const char *value)
 			at = end + 1;
 		}
 	}else if(strcmp(key, "textdraw_canvas") == 0){
-		int snap = 1, grid = 0, through = 1, compare = 0, rulers = 1;
-		sscanf(value, "%d %d %d %f %f %d %d %d", &gScreen, &snap, &grid, &gGridSize, &gNudge, &through, &compare, &rulers);
+		int snap = 1, grid = 0, through = 1, compare = 0, rulers = 1, locked = 0;
+		sscanf(value, "%d %d %d %f %f %d %d %d %d", &gScreen, &snap, &grid, &gGridSize, &gNudge, &through, &compare, &rulers,
+			&locked);
 		gRulers = rulers != 0;
+		gGuidesLocked = locked != 0;
 		gScreen = std::max(0, std::min(gScreen, NUM_TD_SCREENS - 1));
 		gSnap = snap != 0;
 		gGrid = grid != 0;
@@ -320,8 +322,8 @@ SaveTextDrawSettings(FILE *f)
 	for(unsigned int c : gSavedColours)
 		fprintf(f, " %08X", c);
 	fputc('\n', f);
-	fprintf(f, "textdraw_canvas %d %d %d %g %g %d %d %d\n", gScreen, gSnap ? 1 : 0, gGrid ? 1 : 0, gGridSize, gNudge,
-		gClickThroughLocked ? 1 : 0, gCompare ? 1 : 0, gRulers ? 1 : 0);
+	fprintf(f, "textdraw_canvas %d %d %d %g %g %d %d %d %d\n", gScreen, gSnap ? 1 : 0, gGrid ? 1 : 0, gGridSize, gNudge,
+		gClickThroughLocked ? 1 : 0, gCompare ? 1 : 0, gRulers ? 1 : 0, gGuidesLocked ? 1 : 0);
 	fprintf(f, "textdraw_hud %d %x %d %d %d %d %d %d %d %d %d %d\n", gHud.show ? 1 : 0, (unsigned int)gHud.parts,
 		gHud.hour, gHud.minute, gHud.money, gHud.health, gHud.armour, gHud.breath,
 		gHud.wanted, gHud.weapon, gHud.ammo, gHud.clip);
@@ -3008,7 +3010,7 @@ DrawTextDrawsOverlay(void)
 		}
 	}
 	std::vector<TextDrawGuide> &guides = GetTextDrawGuides();
-	if(gRulers && !grabbed && hoverHandle < 0 && overCanvas && !onRuler){
+	if(gRulers && !gGuidesLocked && !grabbed && hoverHandle < 0 && overCanvas && !onRuler){
 		int hoverGuide = -1;
 		for(int k = 0; k < (int)guides.size(); k++)
 			if(guides[k].board == gBoard &&
@@ -3030,7 +3032,7 @@ DrawTextDrawsOverlay(void)
 		bool top = m0.y < areaPos.y + rs, side = m0.x < areaPos.x + rs;
 		for(int k = 0; k < (int)guides.size(); k++){
 			const TextDrawGuide &gd = guides[k];
-			if(gd.board == gBoard && ((top && !side && gd.vertical && fabsf(cv.at(gd.at, 0).x - m0.x) <= 5.0f) ||
+			if(!gGuidesLocked && gd.board == gBoard && ((top && !side && gd.vertical && fabsf(cv.at(gd.at, 0).x - m0.x) <= 5.0f) ||
 			   (side && !top && !gd.vertical && fabsf(cv.at(0, gd.at).y - m0.y) <= 5.0f)))
 				gGuideDrag = k;
 		}
@@ -4385,6 +4387,222 @@ stillFramePlaces(void)
 }
 
 // Above the canvas: the mode and file, the artboards, then how the canvas shows.
+// ---- Guides ----
+
+static void
+addGuide(bool vertical, float at)
+{
+	std::vector<TextDrawGuide> &guides = GetTextDrawGuides();
+	for(const TextDrawGuide &g : guides)
+		if(g.board == gBoard && g.vertical == vertical && fabsf(g.at - at) < 0.01f)
+			return;	// already one there
+	TextDrawGuide g = { gBoard, vertical, at };
+	guides.push_back(g);
+}
+
+static void
+clearGuides(void)
+{
+	std::vector<TextDrawGuide> &guides = GetTextDrawGuides();
+	for(int k = (int)guides.size() - 1; k >= 0; k--)
+		if(guides[k].board == gBoard)
+			guides.erase(guides.begin() + k);
+}
+
+// Photoshop's New Guide Layout: columns and rows (a width or height of 0
+// shares the room out), each with a gutter, inside margins.
+struct GuideLayout {
+	bool columns, rows, margins, clear;
+	int numColumns, numRows;
+	float columnWidth, columnGutter, rowHeight, rowGutter;
+	float top, left, bottom, right;
+};
+static GuideLayout gLayout = { true, false, false, true, 4, 3, 0.0f, 10.0f, 0.0f, 10.0f, 20.0f, 20.0f, 20.0f, 20.0f };
+
+// Edges along one side: from a to b, n cells of size (0: fill) apart by gutter.
+static void
+layoutGuides(bool vertical, float a, float b, int n, float size, float gutter)
+{
+	n = std::max(1, n);
+	if(size <= 0.0f)
+		size = (b - a - gutter * (n - 1)) / n;
+	for(int k = 0; k < n; k++){
+		float from = a + k * (size + gutter);
+		addGuide(vertical, from);
+		addGuide(vertical, from + size);
+	}
+}
+
+static void
+applyGuideLayout(const GuideLayout &l)
+{
+	if(l.clear)
+		clearGuides();
+	float x0 = 0.0f, y0 = 0.0f, x1 = 640.0f, y1 = 448.0f;
+	if(l.margins){
+		x0 = l.left; x1 = 640.0f - l.right;
+		y0 = l.top; y1 = 448.0f - l.bottom;
+		addGuide(true, x0); addGuide(true, x1);
+		addGuide(false, y0); addGuide(false, y1);
+	}
+	if(l.columns)
+		layoutGuides(true, x0, x1, l.numColumns, l.columnWidth, l.columnGutter);
+	if(l.rows)
+		layoutGuides(false, y0, y1, l.numRows, l.rowHeight, l.rowGutter);
+	TextDrawGuidesChanged();
+}
+
+static void
+guidesButton(void)
+{
+	if(ImGui::SmallButton(ICON_FA_GEAR "##guides"))
+		ImGui::OpenPopup("##guides_popup");
+	ImGui::SetItemTooltip("%s", _("Guides: new ones at exact places, presets and layouts of columns and rows,\n"
+		"as in Photoshop's New Guide Layout."));
+	if(!ImGui::BeginPopup("##guides_popup"))
+		return;
+	std::vector<TextDrawGuide> &guides = GetTextDrawGuides();
+	float w = ImGui::GetFontSize() * 6.0f;
+	bool changed = false;
+
+	ImGui::SeparatorText(_("New guide"));
+	static int vertical = 1;
+	static float at = 320.0f;
+	ImGui::RadioButton(L("Vertical"), &vertical, 1);
+	ImGui::SameLine();
+	ImGui::RadioButton(L("Horizontal"), &vertical, 0);
+	ImGui::SetNextItemWidth(w);
+	ImGui::InputFloat(L("Position"), &at, 0.0f, 0.0f, "%.1f");
+	ImGui::SameLine();
+	if(ImGui::Button(LI(ICON_FA_PLUS, "Add##guide"))){
+		addGuide(vertical != 0, at);
+		changed = true;
+	}
+	ImGui::SetItemTooltip("%s", _("In canvas units: 0 to 640 across, 0 to 448 down."));
+
+	ImGui::SeparatorText(_("Presets"));
+	struct Preset { const char *name; int columns, rows; float margin; bool centre; };
+	static const Preset presets[] = {
+		{ N_("Centre lines"), 0, 0, 0.0f, true },
+		{ N_("Thirds"), 3, 3, 0.0f, false },
+		{ N_("Safe area (5%)"), 0, 0, -1.0f, false },
+		{ N_("2 columns"), 2, 0, 20.0f, false },
+		{ N_("3 columns"), 3, 0, 20.0f, false },
+		{ N_("4 columns"), 4, 0, 20.0f, false },
+		{ N_("6 columns"), 6, 0, 20.0f, false },
+		{ N_("12 columns"), 12, 0, 20.0f, false },
+		{ N_("3 x 3 grid"), 3, 3, 20.0f, false },
+	};
+	for(int k = 0; k < IM_ARRAYSIZE(presets); k++){
+		const Preset &pr = presets[k];
+		if(k % 3)
+			ImGui::SameLine();
+		if(ImGui::Button(_(pr.name), ImVec2(ImGui::GetFontSize() * 8.0f, 0.0f))){
+			if(gLayout.clear)
+				clearGuides();
+			if(pr.centre){
+				addGuide(true, 320.0f);
+				addGuide(false, 224.0f);
+			}else if(pr.margin < 0.0f){
+				addGuide(true, 32.0f); addGuide(true, 608.0f);
+				addGuide(false, 22.4f); addGuide(false, 425.6f);
+			}else{
+				GuideLayout l = gLayout;
+				l.clear = false;
+				l.columns = pr.columns > 0; l.numColumns = pr.columns;
+				l.rows = pr.rows > 0; l.numRows = pr.rows;
+				l.columnWidth = l.rowHeight = 0.0f;
+				l.columnGutter = l.rowGutter = pr.margin > 0.0f ? 10.0f : 0.0f;
+				l.margins = pr.margin > 0.0f;
+				l.top = l.left = l.bottom = l.right = pr.margin;
+				applyGuideLayout(l);
+			}
+			changed = true;
+		}
+	}
+
+	ImGui::SeparatorText(_("New guide layout"));
+	ImGui::PushItemWidth(w);
+	ImGui::Checkbox(L("Columns"), &gLayout.columns);
+	ImGui::BeginDisabled(!gLayout.columns);
+	ImGui::InputInt(L("Number##columns"), &gLayout.numColumns, 1, 1);
+	ImGui::InputFloat(L("Width##columns"), &gLayout.columnWidth, 0.0f, 0.0f, "%.1f");
+	ImGui::SetItemTooltip("%s", _("0 shares the room out between them."));
+	ImGui::InputFloat(L("Gutter##columns"), &gLayout.columnGutter, 0.0f, 0.0f, "%.1f");
+	ImGui::EndDisabled();
+	ImGui::Checkbox(L("Rows"), &gLayout.rows);
+	ImGui::BeginDisabled(!gLayout.rows);
+	ImGui::InputInt(L("Number##rows"), &gLayout.numRows, 1, 1);
+	ImGui::InputFloat(L("Height##rows"), &gLayout.rowHeight, 0.0f, 0.0f, "%.1f");
+	ImGui::SetItemTooltip("%s", _("0 shares the room out between them."));
+	ImGui::InputFloat(L("Gutter##rows"), &gLayout.rowGutter, 0.0f, 0.0f, "%.1f");
+	ImGui::EndDisabled();
+	ImGui::Checkbox(L("Margins"), &gLayout.margins);
+	ImGui::BeginDisabled(!gLayout.margins);
+	float tb[2] = { gLayout.top, gLayout.bottom }, lr[2] = { gLayout.left, gLayout.right };
+	ImGui::SetNextItemWidth(w * 1.5f);
+	if(ImGui::InputFloat2(L("Top, bottom"), tb, "%.1f")){ gLayout.top = tb[0]; gLayout.bottom = tb[1]; }
+	ImGui::SetNextItemWidth(w * 1.5f);
+	if(ImGui::InputFloat2(L("Left, right"), lr, "%.1f")){ gLayout.left = lr[0]; gLayout.right = lr[1]; }
+	ImGui::EndDisabled();
+	ImGui::PopItemWidth();
+	gLayout.numColumns = std::max(1, std::min(gLayout.numColumns, 64));
+	gLayout.numRows = std::max(1, std::min(gLayout.numRows, 64));
+	ImGui::Checkbox(L("Clear existing guides"), &gLayout.clear);
+	ImGui::SetItemTooltip("%s", _("For the layout and the presets: the board's guides go first."));
+	if(ImGui::Button(L("Make the layout"))){
+		applyGuideLayout(gLayout);
+		changed = true;
+	}
+
+	// This board's guides, to type exact places.
+	int count = 0;
+	for(const TextDrawGuide &g : guides)
+		count += g.board == gBoard;
+	char title[64];
+	snprintf(title, sizeof(title), _("Guides on this board: %d"), count);
+	ImGui::SeparatorText(title);
+	if(ImGui::Checkbox(L("Lock guides"), &gGuidesLocked))
+		SaveEditorSettings();
+	ImGui::SetItemTooltip("%s", _("They can't be dragged on the canvas. New ones can still be made."));
+	ImGui::SameLine();
+	ImGui::BeginDisabled(count == 0);
+	if(ImGui::Button(L("Clear guides"))){
+		clearGuides();
+		changed = true;
+	}
+	ImGui::EndDisabled();
+	if(count > 0){
+		ImGui::BeginChild("##guide_list", ImVec2(ImGui::GetFontSize() * 10.0f,
+			std::min(count, 8) * ImGui::GetFrameHeightWithSpacing() + 4.0f));
+		int remove = -1;
+		for(int k = 0; k < (int)guides.size(); k++){
+			TextDrawGuide &g = guides[k];
+			if(g.board != gBoard)
+				continue;
+			ImGui::PushID(k);
+			ImGui::AlignTextToFramePadding();
+			ImGui::TextUnformatted(g.vertical ? "x" : "y");
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(w);
+			if(ImGui::InputFloat("##at", &g.at, 0.0f, 0.0f, "%.1f"))
+				changed = true;
+			ImGui::SameLine();
+			if(ImGui::SmallButton(ICON_FA_TRASH "##remove"))
+				remove = k;
+			ImGui::PopID();
+		}
+		ImGui::EndChild();
+		if(remove >= 0){
+			guides.erase(guides.begin() + remove);
+			changed = true;
+		}
+	}
+	if(changed)
+		TextDrawGuidesChanged();
+	ImGui::EndPopup();
+}
+
 static void
 drawToolbar(void)
 {
@@ -4493,20 +4711,9 @@ drawToolbar(void)
 		SaveEditorSettings();
 	ImGui::SetItemTooltip("%s", _("Rulers along the canvas, in canvas units. Drag from one to make a guide,\n"
 		"and drag a guide back onto a ruler to remove it. Guides are saved with the file."));
-	{
-		std::vector<TextDrawGuide> &guides = GetTextDrawGuides();
-		bool any = false;
-		for(const TextDrawGuide &g : guides)
-			any |= g.board == gBoard;
-		if(gRulers && any){
-			ImGui::SameLine();
-			if(ImGui::SmallButton(L("Clear guides"))){
-				for(int k = (int)guides.size() - 1; k >= 0; k--)
-					if(guides[k].board == gBoard)
-						guides.erase(guides.begin() + k);
-				TextDrawGuidesChanged();
-			}
-		}
+	if(gRulers){
+		ImGui::SameLine();
+		guidesButton();
 	}
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 3.0f);

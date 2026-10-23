@@ -2962,3 +2962,124 @@ msgstr ""
 "Com o que o alinhamento os alinha. O principal é o último clicado\n"
 "(contorno mais grosso), e ele fica parado. Um sozinho se alinha à tela.\n"
 "Um grupo se move como um só, e uma forma se alinha pelas próprias bordas."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "0 shares the room out between them."
+msgstr "0 divide o espaço igualmente entre eles."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "12 columns"
+msgstr "12 colunas"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "2 columns"
+msgstr "2 colunas"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "3 columns"
+msgstr "3 colunas"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "4 columns"
+msgstr "4 colunas"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "6 columns"
+msgstr "6 colunas"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "3 x 3 grid"
+msgstr "Grade 3 x 3"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Centre lines"
+msgstr "Linhas centrais"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Clear existing guides"
+msgstr "Limpar as guias existentes"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Columns"
+msgstr "Colunas"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "For the layout and the presets: the board's guides go first."
+msgstr "Para o layout e as predefinições: as guias da prancheta são removidas antes."
+
+#: tools/haumea/textdraws_ui.cpp
+#, c-format
+msgid "Guides on this board: %d"
+msgstr "Guias nesta prancheta: %d"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Gutter"
+msgstr "Medianiz"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Horizontal"
+msgstr "Horizontal"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "In canvas units: 0 to 640 across, 0 to 448 down."
+msgstr "Em unidades da tela: 0 a 640 na horizontal, 0 a 448 na vertical."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Left, right"
+msgstr "Esquerda, direita"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Lock guides"
+msgstr "Travar guias"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Make the layout"
+msgstr "Criar o layout"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Margins"
+msgstr "Margens"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "New guide"
+msgstr "Nova guia"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "New guide layout"
+msgstr "Novo layout de guias"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid ""
+"Guides: new ones at exact places, presets and layouts of columns and rows,\n"
+"as in Photoshop's New Guide Layout."
+msgstr ""
+"Guias: novas em posições exatas, predefinições e layouts de colunas e linhas,\n"
+"como o Novo layout de guias do Photoshop."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Number"
+msgstr "Quantidade"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Rows"
+msgstr "Linhas"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Safe area (5%)"
+msgstr "Área segura (5%)"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "They can't be dragged on the canvas. New ones can still be made."
+msgstr "Não podem ser arrastadas na tela. Ainda dá para criar novas."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Thirds"
+msgstr "Terços"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Top, bottom"
+msgstr "Topo, base"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Vertical"
+msgstr "Vertical"

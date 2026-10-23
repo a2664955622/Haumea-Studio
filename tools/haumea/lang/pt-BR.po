@@ -762,6 +762,9 @@ msgstr "0 - Desativado (sem semáforo)"
 msgid "0 Beckett (gothic)"
 msgstr "0 Beckett (gótica)"
 
+msgid "0 shares the room out between them."
+msgstr "0 divide o espaço igualmente entre eles."
+
 msgid "0-127 are the game's, 128-255 SA-MP's"
 msgstr "0-127 são do jogo, 128-255 do SA-MP"
 
@@ -805,6 +808,9 @@ msgstr "12  Explode veículos"
 msgid "12 - Unknown"
 msgstr "12 - Desconhecido"
 
+msgid "12 columns"
+msgstr "12 colunas"
+
 msgid "13  Slows vehicles down"
 msgstr "13  Deixa veículos lentos"
 
@@ -840,6 +846,9 @@ msgstr "2 - Fase Oeste-Leste"
 
 msgid "2 Bank Gothic (capitals)"
 msgstr "2 Bank Gothic (maiúsculas)"
+
+msgid "2 columns"
+msgstr "2 colunas"
 
 #, c-format
 msgid ""
@@ -882,6 +891,12 @@ msgstr "3 - Não usado (indefinido no jogo original)"
 msgid "3 Pricedown (capitals)"
 msgstr "3 Pricedown (maiúsculas)"
 
+msgid "3 columns"
+msgstr "3 colunas"
+
+msgid "3 x 3 grid"
+msgstr "Grade 3 x 3"
+
 msgid "3-24 characters: letters, digits and [ ] ( ) $ @ . _ ="
 msgstr "3 a 24 caracteres: letras, dígitos e [ ] ( ) $ @ . _ ="
 
@@ -916,6 +931,9 @@ msgstr "4 - Desconhecido"
 msgid "4 Sprite"
 msgstr "4 Sprite"
 
+msgid "4 columns"
+msgstr "4 colunas"
+
 msgid "4.  Textdraws: Windows > TextDraws. They go in a file of their own."
 msgstr "4.  Textdraws: Janelas > TextDraws. Ficam num arquivo próprio."
 
@@ -937,6 +955,9 @@ msgstr "6  Aéreo (cresce, encolhe, some)"
 
 msgid "6 - Unknown"
 msgstr "6 - Desconhecido"
+
+msgid "6 columns"
+msgstr "6 colunas"
 
 #, c-format
 msgid "6.  %s saves the map."
@@ -1783,6 +1804,9 @@ msgstr "Centro (meio)"
 msgid "Centre"
 msgstr "Centro"
 
+msgid "Centre lines"
+msgstr "Linhas centrais"
+
 msgid "Centre on Camera"
 msgstr "Centralizar na câmera"
 
@@ -1906,6 +1930,9 @@ msgstr "Limpar"
 
 msgid "Clear all"
 msgstr "Limpar tudo"
+
+msgid "Clear existing guides"
+msgstr "Limpar as guias existentes"
 
 msgid "Clear guides"
 msgstr "Limpar guias"
@@ -2075,6 +2102,9 @@ msgstr "Cores"
 
 msgid "Colt 45"
 msgstr "Colt 45"
+
+msgid "Columns"
+msgstr "Colunas"
 
 msgid "Combat shotgun"
 msgstr "Escopeta de combate"
@@ -3247,6 +3277,9 @@ msgstr "Para objetos sem grupo."
 msgid "For the game's roads, pick \"Walk the nodes\" (Windows > Nodes, %s)."
 msgstr "Para as ruas do jogo, escolha \"Andar pelos nós\" (Janelas > Nós, %s)."
 
+msgid "For the layout and the presets: the board's guides go first."
+msgstr "Para o layout e as predefinições: as guias da prancheta são removidas antes."
+
 #, c-format
 msgid "Frame %d  %.1f km/h  Health %.0f  Armour %.0f  Weapon %d"
 msgstr "Quadro %d  %.1f km/h  Vida %.0f  Colete %.0f  Arma %d"
@@ -3520,6 +3553,20 @@ msgstr "Grupos organizam os Objetos do mapa e ganham um comentário de título n
 msgid "Grove Street"
 msgstr "Grove Street"
 
+#, c-format
+msgid "Guides on this board: %d"
+msgstr "Guias nesta prancheta: %d"
+
+msgid ""
+"Guides: new ones at exact places, presets and layouts of columns and rows,\n"
+"as in Photoshop's New Guide Layout."
+msgstr ""
+"Guias: novas em posições exatas, predefinições e layouts de colunas e linhas,\n"
+"como o Novo layout de guias do Photoshop."
+
+msgid "Gutter"
+msgstr "Medianiz"
+
 msgid "Gym"
 msgstr "Academia"
 
@@ -3705,6 +3752,9 @@ msgstr ""
 
 msgid "Hold the last frame when it ends."
 msgstr "Mantém o último quadro quando termina."
+
+msgid "Horizontal"
+msgstr "Horizontal"
 
 msgid "Horse race (0.3.7-R2)"
 msgstr "Corrida de cavalos (0.3.7-R2)"
@@ -3893,6 +3943,9 @@ msgstr ""
 "Em Pawn: NPC_OpenNode(%d), depois NPC_PlayNode(npcid, %d, ...).\n"
 "O id do ponto é a posição do nó no seu arquivo; adicionar ou excluir\n"
 "nós nesse arquivo renumera os que vêm depois."
+
+msgid "In canvas units: 0 to 640 across, 0 to 448 down."
+msgstr "Em unidades da tela: 0 a 640 na horizontal, 0 a 448 na vertical."
 
 #, c-format
 msgid "In game: SetPlayerTime(playerid, %d, %d); SetPlayerWeather(playerid, %d);"
@@ -4148,6 +4201,9 @@ msgstr "Deixado de fora porque o SA-MP não tem equivalente:"
 msgid "Left to right"
 msgstr "Da esquerda para a direita"
 
+msgid "Left, right"
+msgstr "Esquerda, direita"
+
 msgid "Left-click a node in the viewport to select it"
 msgstr "Clique com o botão esquerdo num nó na viewport para selecioná-lo"
 
@@ -4298,6 +4354,9 @@ msgstr "Travar X"
 msgid "Lock Y"
 msgstr "Travar Y"
 
+msgid "Lock guides"
+msgstr "Travar guias"
+
 msgid "Lock or unlock the group"
 msgstr "Travar ou destravar o grupo"
 
@@ -4383,6 +4442,9 @@ msgstr "Principal"
 msgid "Make an NPC walk a route"
 msgstr "Faço um NPC andar por uma rota"
 
+msgid "Make the layout"
+msgstr "Criar o layout"
+
 msgid "Make upright"
 msgstr "Endireitar"
 
@@ -4452,6 +4514,9 @@ msgstr "Os mapas abrem depois que a pasta do jogo for carregada."
 
 msgid "Marco's Bistro music (0.3.7-R2)"
 msgstr "Música do Marco's Bistro (0.3.7-R2)"
+
+msgid "Margins"
+msgstr "Margens"
 
 msgid "Marker (colour)"
 msgstr "Marcador (cor)"
@@ -4915,6 +4980,12 @@ msgstr ""
 "Novidades antes de todo mundo, e às vezes bugs novos.\n"
 "Você recebe a mais nova entre Beta e Produção."
 
+msgid "New guide"
+msgstr "Nova guia"
+
+msgid "New guide layout"
+msgstr "Novo layout de guias"
+
 msgid "New map"
 msgstr "Novo mapa"
 
@@ -5205,6 +5276,9 @@ msgstr "Nada foi importado."
 
 msgid "Notifications"
 msgstr "Notificações"
+
+msgid "Number"
+msgstr "Quantidade"
 
 msgid ""
 "Number of lanes going in the same direction as the navi direction.\n"
@@ -6585,6 +6659,9 @@ msgstr "Arredonda cada ângulo de rotação para este passo."
 msgid "Route"
 msgstr "Rota"
 
+msgid "Rows"
+msgstr "Linhas"
+
 msgid "Rulers"
 msgstr "Réguas"
 
@@ -6672,6 +6749,10 @@ msgstr "Os padrões do SA-MP"
 
 msgid "SELECT"
 msgstr "SELECIONAR"
+
+#, c-format
+msgid "Safe area (5%)"
+msgstr "Área segura (5%)"
 
 msgid "Same Dir Lanes"
 msgstr "Faixas no mesmo sentido"
@@ -8001,12 +8082,18 @@ msgstr "Depois clique numa camada de imagem na tela (Esc cancela)."
 msgid "Thermal goggles"
 msgstr "Óculos térmicos"
 
+msgid "They can't be dragged on the canvas. New ones can still be made."
+msgstr "Não podem ser arrastadas na tela. Ainda dá para criar novas."
+
 #, c-format
 msgid "They go into %s."
 msgstr "Eles vão para %s."
 
 msgid "They stay in the map and are saved with it. TextDraws can move them later."
 msgstr "Ficam no mapa e são salvos com ele. TextDraws pode movê-los depois."
+
+msgid "Thirds"
+msgstr "Terços"
 
 msgid ""
 "ThirteenAG's GTA SA Widescreen Fix: the HUD unstretched and smaller, the radar round.\n"
@@ -8166,6 +8253,9 @@ msgstr "Em cima à direita"
 
 msgid "Top to bottom"
 msgstr "De cima para baixo"
+
+msgid "Top, bottom"
+msgstr "Topo, base"
 
 msgid "Toreno's ranch"
 msgstr "Rancho do Toreno"
@@ -8473,6 +8563,9 @@ msgstr "Veículos"
 
 msgid "Ventilation (0.3.7-R2)"
 msgstr "Ventilação (0.3.7-R2)"
+
+msgid "Vertical"
+msgstr "Vertical"
 
 msgid "Vibrator"
 msgstr "Vibrador"
