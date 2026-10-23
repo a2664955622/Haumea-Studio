@@ -1,5 +1,5 @@
 diff --git a/skeleton/glfw.cpp b/skeleton/glfw.cpp
-index 4ad4b06..041ecfa 100644
+index 4ad4b06..a609029 100644
 --- a/skeleton/glfw.cpp
 +++ b/skeleton/glfw.cpp
 @@ -110,23 +110,23 @@ initkeymap(void)
@@ -57,7 +57,7 @@ index 4ad4b06..041ecfa 100644
  int
  main(int argc, char *argv[])
  {
-@@ -240,9 +247,28 @@ main(int argc, char *argv[])
+@@ -240,9 +247,38 @@ main(int argc, char *argv[])
  	glfwSetCursorPosCallback(window, mousemove);
  	glfwSetMouseButtonCallback(window, mousebtn);
  	glfwSetScrollCallback(window, mousewheel);
@@ -82,6 +82,16 @@ index 4ad4b06..041ecfa 100644
 +			lastTime = glfwGetTime()*1000;
 +			continue;
 +		}
++
++		// Unfocused, vsync is off (see showRaster): about 30 frames a second
++		// instead of as many as the GPU can draw.
++		static double frameStart;
++		if(!glfwGetWindowAttrib(window, GLFW_FOCUSED)){
++			double wait = 1.0/30.0 - (glfwGetTime() - frameStart);
++			if(wait > 0.0)
++				glfwWaitEventsTimeout(wait);
++		}
++		frameStart = glfwGetTime();
 +
  		float currTime  = glfwGetTime()*1000;
  		float timeDelta = (currTime - lastTime)*0.001f;
@@ -427,7 +437,7 @@ index cabfeff..207402b 100644
  #endif
  
 diff --git a/src/gl/gl3device.cpp b/src/gl/gl3device.cpp
-index 5275fe5..224413f 100644
+index 5275fe5..6234f7c 100644
 --- a/src/gl/gl3device.cpp
 +++ b/src/gl/gl3device.cpp
 @@ -1398,7 +1398,12 @@ clearCamera(Camera *cam, RGBA *col, uint32 mode)
@@ -444,20 +454,31 @@ index 5275fe5..224413f 100644
  
  	if(setScissor)
  		glDisable(GL_SCISSOR_TEST);
-@@ -1423,7 +1428,11 @@ showRaster(Raster *raster, uint32 flags)
+@@ -1423,10 +1428,19 @@ showRaster(Raster *raster, uint32 flags)
  		SDL_GL_SetSwapInterval(0);
  	SDL_GL_SwapWindow(glGlobals.window);
  #elif defined(LIBRW_GLFW)
 -	if(flags & Raster::FLIPWAITVSYNCH)
+-		glfwSwapInterval(1);
+-	else
+-		glfwSwapInterval(0);
 +	// Disable vsync when the window is not focused so glfwSwapBuffers
 +	// doesn't stall waiting for a compositor that has paused presentation.
 +	// This prevents the OS "Application Not Responding" dialog on alt-tab.
 +	bool hasFocus = glfwGetWindowAttrib(glGlobals.window, GLFW_FOCUSED);
-+	if((flags & Raster::FLIPWAITVSYNCH) && hasFocus)
- 		glfwSwapInterval(1);
- 	else
- 		glfwSwapInterval(0);
-@@ -1447,10 +1456,14 @@ rasterRenderFast(Raster *raster, int32 x, int32 y)
++	int interval = (flags & Raster::FLIPWAITVSYNCH) && hasFocus ? 1 : 0;
++	// Set only when it changes: NVIDIA's and Windows drivers keep a little
++	// memory every time the swap interval is set, which every frame for
++	// hours came to gigabytes.
++	static int lastInterval = -1;
++	if(interval != lastInterval){
++		glfwSwapInterval(interval);
++		lastInterval = interval;
++	}
+ 	glfwSwapBuffers(glGlobals.window);
+ #else
+ 	not implemented
+@@ -1447,10 +1461,14 @@ rasterRenderFast(Raster *raster, int32 x, int32 y)
  	case Raster::CAMERATEXTURE:
  		switch(src->type){
  		case Raster::CAMERA:
