@@ -619,6 +619,7 @@ textDrawBounds(const TextDraw &td, float *x0, float *y0, float *x1, float *y1)
 		else if(td.alignment == 3){ *x0 = td.sizeX; *x1 = td.x; }
 		else{ *x0 = td.x; *x1 = td.sizeX; }
 		if(*x1 < *x0) std::swap(*x0, *x1);
+		if(*y1 < *y0) std::swap(*y0, *y1);	// a negative letter height: the box grows up
 		*x0 -= 2.0f; *x1 += 2.0f; *y0 -= 2.0f; *y1 += 2.0f;
 	}else{
 		*x0 = minX;
@@ -2040,8 +2041,9 @@ DrawTextDrawsOverlay(void)
 				}else if(td.useBox){
 					if(td.alignment == 2) td.sizeY = std::max(1.0f, td.sizeY + dx * 2.0f);
 					else td.sizeX += dx;
-					int lines = std::max(1, (int)((y1 - y0) / std::max(0.01f, lineHeight(td))));
-					td.letterY = std::max(0.05f, td.letterY + dy / (TD_LINE_HEIGHT * lines));
+					// A box can go negative: it then grows up from its place.
+					int lines = std::max(1, (int)(fabsf(y1 - y0) / std::max(0.01f, fabsf(lineHeight(td)))));
+					td.letterY += dy / (TD_LINE_HEIGHT * lines);
 				}else{
 					float width = std::max(1.0f, x1 - x0);
 					td.letterX = std::max(0.05f, td.letterX * (width + dx) / width);
@@ -2650,7 +2652,7 @@ properties(void)
 			}
 			if(isText){
 				float letter[2] = { td.letterX, td.letterY };
-				if(ImGui::DragFloat2(L("Letter size"), letter, 0.005f, 0.0f, 10.0f, "%.3f"))
+				if(ImGui::DragFloat2(L("Letter size"), letter, 0.005f, td.useBox ? -50.0f : 0.0f, 50.0f, "%.3f"))
 					all([&](TextDraw &t){ t.letterX = letter[0]; t.letterY = letter[1]; });
 				int align = td.alignment - 1;
 				const char *aligns[] = { _("Left"), _("Centre"), _("Right") };

@@ -989,6 +989,10 @@ void UpdateObjectAttachments(void);
 rw::Texture *GetObjectMaterialTextPreview(const ObjectMaterialOverride &material);
 // Re-renders every material text texture, e.g. after the font list changed.
 void RefreshMaterialTextTextures(void);
+// Show material indexes: the selected objects show each slot's number, white
+// on green; nothing is saved. UpdateMaterialIndexView runs every frame.
+extern bool gShowMaterialIndexes;
+void UpdateMaterialIndexView(void);
 
 // Toast notifications
 enum ToastCategory {
@@ -1345,6 +1349,7 @@ struct ObjectInst
 	// shared by ObjectDef instances and is never mutated by these edits.
 	ObjectMaterialOverride *m_materialOverrides;
 	bool m_materialGeometryApplied;
+	bool m_showingMaterialIndexes;	// Show material indexes: drawn with the index overrides
 	rw::Geometry *m_materialBaseGeometry;
 	rw::Geometry *m_materialCustomGeometry;
 	// SA-MP object properties; nil means all defaults.

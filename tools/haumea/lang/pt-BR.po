@@ -5470,6 +5470,13 @@ msgstr "Pintura 1"
 msgid "Paintjob 2"
 msgstr "Pintura 2"
 
+msgid ""
+"Paints each material slot of the selected objects with its number, white on green,\n"
+"as Texture Studio does, to see which part is which index. Only shown here; nothing is saved."
+msgstr ""
+"Pinta cada slot de material dos objetos selecionados com o número dele, branco no verde,\n"
+"como o Texture Studio faz, para ver qual parte é qual índice. Só aparece aqui; nada é salvo."
+
 msgid "Palm Tree"
 msgstr "Palmeira"
 
@@ -6973,6 +6980,9 @@ msgstr "Mostrar tudo o que está oculto"
 
 msgid "Show getting started card on empty maps"
 msgstr "Mostrar o cartão de primeiros passos em mapas vazios"
+
+msgid "Show material indexes"
+msgstr "Mostrar índices dos materiais"
 
 msgid "Show or hide the group in the editor"
 msgstr "Mostrar ou esconder o grupo no editor"

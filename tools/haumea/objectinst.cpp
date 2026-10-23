@@ -2336,16 +2336,67 @@ ObjectInst::RefreshMaterialOverrides(void)
 			setMaterialPipeline(rw::Atomic::fromClump(lnk), m_materialGeometryApplied);
 }
 
+bool gShowMaterialIndexes;
+
+// Show material indexes: each slot shows its number, white on green, as
+// Texture Studio paints them, so it is clear which part is which index.
+static const ObjectMaterialOverride*
+materialIndexOverrides(void)
+{
+	static ObjectMaterialOverride overrides[MAX_PAWN_MATERIALS];
+	static bool made;
+	if(!made){
+		made = true;
+		for(int i = 0; i < MAX_PAWN_MATERIALS; i++){
+			InitObjectMaterialOverride(&overrides[i], -1);
+			overrides[i].textEnabled = true;
+			// A grid of it: models often map only part of the texture.
+			snprintf(overrides[i].text, sizeof(overrides[i].text), "%d   %d   %d\n%d   %d   %d\n%d   %d   %d",
+				i, i, i, i, i, i, i, i, i);
+			overrides[i].fontSize = 56;
+			overrides[i].bold = true;
+			overrides[i].textColor = { 255, 255, 255, 255 };
+			overrides[i].backgroundColor = { 40, 170, 70, 255 };
+			overrides[i].alignment = 1;	// centred
+			overrides[i].materialSize = 140;	// 256x256
+		}
+	}
+	return overrides;
+}
+
+// Every frame: the selected objects show their indexes while it is on, and
+// go back to their own materials when deselected or when it is turned off.
+void
+UpdateMaterialIndexView(void)
+{
+	static bool wasOn;
+	if(!gShowMaterialIndexes && !wasOn)
+		return;
+	wasOn = gShowMaterialIndexes;
+	for(CPtrNode *p = instances.first; p; p = p->next){
+		ObjectInst *inst = (ObjectInst*)p->item;
+		bool want = gShowMaterialIndexes && inst->m_selected && !inst->m_isDeleted && !inst->m_isVehicle &&
+			inst->m_rwObject != nil;
+		if(want != inst->m_showingMaterialIndexes){
+			inst->m_showingMaterialIndexes = want;
+			inst->RefreshMaterialOverrides();
+		}
+	}
+}
+
 void
 ObjectInst::refreshMaterialGeometry(void)
 {
 	ObjectDef *obj = GetObjectDef(m_objectId);
 	if(obj == nil || m_rwObject == nil)
 		return;
+	// Show material indexes puts its own overrides in the place of the real ones.
+	const ObjectMaterialOverride *overrides = m_showingMaterialIndexes ? materialIndexOverrides() : m_materialOverrides;
+	bool anyOverride = m_showingMaterialIndexes || HasObjectMaterialOverrides(this);
 
 	if(obj->m_type == ObjectDef::ATOMIC){
 		rw::Atomic *atomic = (rw::Atomic*)m_rwObject;
-		if(!HasObjectMaterialOverrides(this)){
+		if(!anyOverride){
 			if(m_materialCustomGeometry && atomic->geometry == m_materialCustomGeometry &&
 			   m_materialBaseGeometry){
 				rw::Geometry *base = m_materialBaseGeometry;
@@ -2364,11 +2415,11 @@ ObjectInst::refreshMaterialGeometry(void)
 		bool havePrivate = m_materialCustomGeometry && atomic->geometry == m_materialCustomGeometry;
 		if(!havePrivate ||
 		   !privateGeometryMatchesPrelight(m_materialCustomGeometry,
-			m_materialBaseGeometry, m_materialOverrides)){
+			m_materialBaseGeometry, overrides)){
 			if(!havePrivate)
 				m_materialBaseGeometry = atomic->geometry;
 			rw::Geometry *copy = clonePrivateMaterialGeometry(m_materialBaseGeometry,
-				m_materialOverrides);
+				overrides);
 			if(copy == nil){
 				if(havePrivate)
 					atomic->setGeometry(m_materialBaseGeometry, 0);
@@ -2384,7 +2435,7 @@ ObjectInst::refreshMaterialGeometry(void)
 			m_materialGeometryApplied = true;
 		}
 		applyMaterialOverridesToGeometry(atomic->geometry, m_materialBaseGeometry,
-			m_materialOverrides);
+			overrides);
 		return;
 	}
 
@@ -2406,14 +2457,14 @@ ObjectInst::refreshMaterialGeometry(void)
 		if(base == nil)
 			base = atomic->geometry;
 		if(m_materialGeometryApplied &&
-		   privateGeometryMatchesPrelight(atomic->geometry, base, m_materialOverrides))
+		   privateGeometryMatchesPrelight(atomic->geometry, base, overrides))
 			continue;
-		rw::Geometry *copy = clonePrivateMaterialGeometry(base, m_materialOverrides);
+		rw::Geometry *copy = clonePrivateMaterialGeometry(base, overrides);
 		if(copy)
 			atomic->setGeometry(copy, 0);
 	}
 	m_materialGeometryApplied = true;
-	applyMaterialOverridesToClump(clump, obj->m_clump, m_materialOverrides);
+	applyMaterialOverridesToClump(clump, obj->m_clump, overrides);
 }
 
 void*

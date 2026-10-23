@@ -1,0 +1,19 @@
+# Show material indexes: the selected object's slots show their numbers, and
+# nothing of it reaches the map file.
+open "$UI_FIXTURES/ui_materials.pwn"
+wait 5
+shortcut window_map_objects
+wait 10
+click_item 'Map Objects' 'wall_c (wall001)'
+wait 3
+shortcut window_object_info
+wait 20
+scroll_until 'Object Info' 'Show material indexes'
+click_item 'Object Info' 'Show material indexes'
+wait 10
+assert selected == 1
+shortcut save_map
+wait 5
+assert pawn_lacks "0   0   0"
+click_item 'Object Info' 'Show material indexes'
+wait 5

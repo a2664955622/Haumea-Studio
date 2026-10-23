@@ -5968,6 +5968,9 @@ uiMaterialInfo(ObjectInst *inst)
 	}
 	if(!canEdit)
 		ImGui::TextDisabled(_("Material controls are locked for this object."));
+	ImGui::Checkbox(L("Show material indexes"), &gShowMaterialIndexes);
+	ImGui::SetItemTooltip("%s", _("Paints each material slot of the selected objects with its number, white on green,\n"
+		"as Texture Studio does, to see which part is which index. Only shown here; nothing is saved."));
 	{
 		std::vector<ObjectInst*> targets;
 		uiMaterialTargets(inst, 0, targets);
@@ -12888,6 +12891,7 @@ gui(void)
 	for(int action = 0; action < SC_NUM_ACTIONS; action++)
 		if(ShortcutPressed(action))
 			uiRunShortcut(action);
+	UpdateMaterialIndexView();
 	if(InTextDrawMode()){
 		// Map editing is off: nothing selected or being placed.
 		uiExitPlacementModes();

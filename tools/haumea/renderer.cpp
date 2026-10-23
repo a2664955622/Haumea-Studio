@@ -637,7 +637,8 @@ RenderInst(ObjectInst *inst)
 	gta::colourCode.blue = inst->m_id>>16 & 0xFF;
 	gta::colourCode.alpha = 255;
 
-	if(inst->m_selected && inst->m_highlight < HIGHLIGHT_SELECTION)
+	// Showing its material indexes, it isn't tinted: the outline still marks it.
+	if(inst->m_selected && inst->m_highlight < HIGHLIGHT_SELECTION && !inst->m_showingMaterialIndexes)
 		inst->m_highlight = HIGHLIGHT_SELECTION;
 	highlightColor = highlightCols[inst->m_highlight];
 	highlightAlpha = inst->m_highlight == HIGHLIGHT_SELECTION ?
