@@ -1025,10 +1025,11 @@ drawTextDraw(ImDrawList *dl, const Canvas &cv, const TextDraw &td)
 	if(td.font == TD_FONT_PREVIEW){
 		// Rendered with its own background, rotation and zoom, then drawn in
 		// TextDrawColor like any textdraw texture (DrawTextDrawRuntimeTexture).
-		// A negative size mirrors it, as it does a sprite: the rendered
-		// picture is upside down, so v runs from 1 unless mirrored.
+		// A negative size mirrors it, as it does a sprite. The rendered
+		// picture is upside down and the wrong way round (the preview camera
+		// is turned half round), so u and v run from 1 unless mirrored.
 		rw::Texture *tex = previewTexture(td);
-		ImVec2 uv0(x1 < x0 ? 1.0f : 0.0f, y1 < y0 ? 0.0f : 1.0f), uv1(1.0f - uv0.x, 1.0f - uv0.y);
+		ImVec2 uv0(x1 < x0 ? 0.0f : 1.0f, y1 < y0 ? 0.0f : 1.0f), uv1(1.0f - uv0.x, 1.0f - uv0.y);
 		if(x1 < x0) std::swap(x0, x1);
 		if(y1 < y0) std::swap(y0, y1);
 		if(tex)
