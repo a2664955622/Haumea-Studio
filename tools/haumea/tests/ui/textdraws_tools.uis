@@ -16,7 +16,7 @@ assert textdraws == 7
 scroll_until 'TextDraws' 'Browse models...'
 click_item 'TextDraws' 'Browse models...'
 wait 10
-assert item '*' 'Name or ID'
+assert item '*' '##search'
 close_popup
 wait 3
 click_item '*' 'Place'
