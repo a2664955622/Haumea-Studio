@@ -1805,6 +1805,7 @@ void RenderEverythingCollisions(void);
 void RenderDebugLines(void);
 void SplashProgress(float progress, const char *status);
 void SplashKeepAlive(void);
+extern ImFont *gCodeFont;
 extern ImFont *gTitleFont;
 void RenderLinesNow(const rw::V3d *points, int numPoints, rw::RGBA col);
 void RenderObjectOutlines(void);

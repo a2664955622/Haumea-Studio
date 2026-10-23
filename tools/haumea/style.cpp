@@ -2,7 +2,10 @@
 #include "haumea.h"
 #include "icons.h"
 #include "font_data.h"
+#include <string>
+#include <cstdio>
 
+ImFont *gCodeFont;
 ImFont *gTitleFont;	// large Inter for the splash screen title
 
 // Accent color — used for highlights, active elements, selection
@@ -212,6 +215,19 @@ SetupFonts(void)
 	io.Fonts->AddFontFromMemoryTTF(
 		(void *)fa_solid_font_data, fa_solid_font_size,
 		fontSize - 1.0f, &iconCfg, iconRanges);
+
+ // A real monospace face, bundled for material text in every release.
+ char editorRoot[2048];
+ std::string mono;
+ if(GetEditorRootDirectory(editorRoot, sizeof(editorRoot))){
+  const char *paths[] = { "/fonts/material/LiberationMono-Regular.ttf", "/../../../fonts/material/LiberationMono-Regular.ttf" };
+  for(const char *relative : paths){
+   std::string candidate = std::string(editorRoot) + relative;
+   FILE *f = fopen(candidate.c_str(), "rb");
+   if(f){ fclose(f); mono = candidate; break; }
+  }
+ }
+ gCodeFont = mono.empty() ? io.Fonts->AddFontDefault() : io.Fonts->AddFontFromFileTTF(mono.c_str(), fontSize);
 
 	// --- Title font: the splash wordmark. Baked large because the backend
 	// cannot render fonts at new sizes, so it is only ever scaled down; only

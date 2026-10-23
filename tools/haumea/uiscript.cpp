@@ -4,6 +4,7 @@
 #include "editoricons.h"
 #include "trains.h"
 #include "workspace.h"
+#include "pawneditor.h"
 #include "shortcuts.h"
 #include "playerview.h"
 #include "keycast.h"
@@ -887,6 +888,13 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		why = "\"" + needle + "\" occurs " + std::to_string(count) + " time(s)";
 		return compare(count, arg(2), atof(arg(3).c_str()));
 	}
+ if(what == "ide_contains" || what == "ide_lacks"){
+  bool found = PawnEditorText().find(arg(1)) != std::string::npos;
+  why = found ? "found" : "not found";
+  return what == "ide_contains" ? found : !found;
+ }
+ if(what == "ide_dirty") return compare(PawnEditorHasUnsavedChanges() ? 1 : 0, arg(1), atof(arg(2).c_str()));
+
 	if(what == "pawn_contains" || what == "pawn_lacks"){
 		std::string text = pawnText(arg(2) == "streamer");
 		bool found = text.find(arg(1)) != std::string::npos;

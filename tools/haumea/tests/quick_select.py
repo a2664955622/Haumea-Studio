@@ -31,6 +31,10 @@ NONE = ('docs/', 'README', 'CHANGELOG', '.github/', 'tools/release/', 'tools/age
 # Source files and the real-game tests they need: UI scripts (without .uis),
 # 'roundtrip', 'showcase'. Files not listed here (and not in NONE) select all.
 SOURCES = {
+	'pawneditor.cpp': ['pawn_ide'],
+	'pawneditor.h': ['pawn_ide'],
+	'pawnsyntax.cpp': ['pawn_ide'],
+	'pawnsyntax.h': ['pawn_ide'],
 	'i18n.cpp': [],
 	'i18n.h': [],
 	'camera.cpp': ['fly_updown', 'ctrl_keys', 'shortcuts'],

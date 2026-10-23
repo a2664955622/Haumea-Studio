@@ -23,6 +23,7 @@
 #include "areas.h"
 #include "radarart.h"
 #include "encoding.h"
+#include "pawneditor.h"
 #include "shortcuts.h"
 #include "version.h"
 #include "versionutil.h"
@@ -167,11 +168,7 @@ static int gMaterialTextureBrowserSlot = -1;
 static bool gOpenMaterialTexturePopup;
 static int gMaterialTextureBrowserTxd = -1;
 static ObjectMaterialOverride gMaterialTextureBrowserInitial;
-static int gLivePawnCodeFormat = PAWN_CODE_NATIVE;
-static int gLivePawnCodeCachedFormat = -1;
-static uint32 gLivePawnCodeSequence = (uint32)-1;
-static char gLivePawnCodePath[1024];
-static std::string gLivePawnCode;
+
 static const int MAX_INTERIOR_AREA_CODE = 255;
 
 
@@ -2688,6 +2685,7 @@ static void uiResetPanelLayout(void);
 static void
 uiUndo(void)
 {
+	if(InPawnIdeMode()){ PawnEditorRequest(PAWN_EDITOR_UNDO); return; }
 	if(TextDrawModeShortcut(SC_UNDO))
 		return;
 	finishTransformPanelEdit();
@@ -2698,6 +2696,7 @@ uiUndo(void)
 static void
 uiRedo(void)
 {
+	if(InPawnIdeMode()){ PawnEditorRequest(PAWN_EDITOR_REDO); return; }
 	if(TextDrawModeShortcut(SC_REDO))
 		return;
 	finishTransformPanelEdit();
@@ -2874,12 +2873,12 @@ uiMainmenu(void)
 {
 	if(ImGui::BeginMainMenuBar()){
 		if(ImGui::BeginMenu(LI(ICON_FA_FOLDER_OPEN, "File"))){
-			if(ImGui::MenuItem(TI(ICON_FA_FILE, "New Map"), ShortcutLabel(SC_NEW_MAP), false, isSA()))
+			if(ImGui::MenuItem(InPawnIdeMode() ? TI(ICON_FA_FILE, "New script") : TI(ICON_FA_FILE, "New Map"), ShortcutLabel(SC_NEW_MAP), false, isSA()))
 				requestMapAction(MAP_ACTION_NEW);
-			if(ImGui::MenuItem(TI(ICON_FA_FOLDER_OPEN, "Open Map..."), ShortcutLabel(SC_OPEN_MAP), false, isSA()))
+			if(ImGui::MenuItem(InPawnIdeMode() ? TI(ICON_FA_FOLDER_OPEN, "Open script...") : TI(ICON_FA_FOLDER_OPEN, "Open Map..."), ShortcutLabel(SC_OPEN_MAP), false, isSA()))
 				requestMapAction(MAP_ACTION_OPEN);
-			ImGui::SetItemTooltip(_("Open a .pwn map. The current scene is replaced by its objects,\nremoved buildings and materials."));
-			if(ImGui::BeginMenu(LI(ICON_FA_CLOCK_ROTATE_LEFT, "Open Recent"), isSA() && gNumRecentMaps > 0)){
+			if(!InPawnIdeMode()) ImGui::SetItemTooltip(_("Open a .pwn map. The current scene is replaced by its objects,\nremoved buildings and materials."));
+			if(ImGui::BeginMenu(LI(ICON_FA_CLOCK_ROTATE_LEFT, "Open Recent"), isSA() && !InPawnIdeMode() && gNumRecentMaps > 0)){
 				for(int i = 0; i < gNumRecentMaps; i++){
 					ImGui::PushID(i);
 					if(ImGui::MenuItem(pathFilename(gRecentMaps[i]))){
@@ -2901,7 +2900,7 @@ uiMainmenu(void)
 				}
 				ImGui::EndMenu();
 			}
-			if(ImGui::BeginMenu(L("Recover Autosave"), isSA())){
+			if(ImGui::BeginMenu(L("Recover Autosave"), isSA() && !InPawnIdeMode())){
 				std::vector<std::string> autosaves;
 				listAutosaves(autosaves);
 				for(size_t i = 0; i < autosaves.size(); i++){
@@ -2921,10 +2920,10 @@ uiMainmenu(void)
 			uiWorkspaceMenu();
 			ImGui::Separator();
 			if(ImGui::MenuItem(TI(ICON_FA_FLOPPY_DISK, "Save"), ShortcutLabel(SC_SAVE_MAP), false, isSA()))
-				savePawnMap();
+				if(InPawnIdeMode()) PawnEditorRequest(PAWN_EDITOR_SAVE); else savePawnMap();
 			if(ImGui::MenuItem(TI(ICON_FA_FLOPPY_DISK, "Save As..."), ShortcutLabel(SC_SAVE_MAP_AS), false, isSA()))
-				gOpenSavePawnAs = true;
-			if(isSA()){
+				if(InPawnIdeMode()) PawnEditorRequest(PAWN_EDITOR_SAVE_AS); else gOpenSavePawnAs = true;
+			if(isSA() && !InPawnIdeMode()){
 				ImGui::TextDisabled(mapHasUnsavedChanges() ? _("Unsaved changes - %s") : _("Saved - %s"),
 					currentMapName());
 				if(gPawnSavePath[0])
@@ -2956,7 +2955,7 @@ uiMainmenu(void)
 			}
 			ImGui::SetItemTooltip(_("Export needs a selection."));
 			ImGui::Separator();
-			if(ImGui::MenuItem(TI(ICON_FA_PLAY, "Test in game"), ShortcutLabel(SC_TEST_IN_GAME), false, isSA())){
+			if(ImGui::MenuItem(TI(ICON_FA_PLAY, "Test in game"), ShortcutLabel(SC_TEST_IN_GAME), false, isSA() && !InPawnIdeMode())){
 				uiMapCheckBefore("testing");
 				TestServerRunMap(gPawnSaveFormat);
 				showTestServerWindow = true;
@@ -2979,7 +2978,16 @@ uiMainmenu(void)
 			ImGui::EndMenu();
 		}
 		if(ImGui::BeginMenu(LI(ICON_FA_PEN, "Edit"))){
-			bool hasSelection = selection.first != nil;
+   if(InPawnIdeMode()){
+    if(ImGui::MenuItem(_("Undo"), "Ctrl+Z")) PawnEditorRequest(PAWN_EDITOR_UNDO);
+    if(ImGui::MenuItem(_("Redo"), "Ctrl+Y")) PawnEditorRequest(PAWN_EDITOR_REDO);
+    ImGui::Separator();
+    if(ImGui::MenuItem(_("Cut"), "Ctrl+X")) PawnEditorRequest(PAWN_EDITOR_CUT);
+    if(ImGui::MenuItem(_("Copy"), "Ctrl+C")) PawnEditorRequest(PAWN_EDITOR_COPY);
+    if(ImGui::MenuItem(_("Paste"), "Ctrl+V")) PawnEditorRequest(PAWN_EDITOR_PASTE);
+    if(ImGui::MenuItem(_("Select all"), "Ctrl+A")) PawnEditorRequest(PAWN_EDITOR_SELECT_ALL);
+   }else{
+   bool hasSelection = selection.first != nil;
 			if(ImGui::MenuItem(TI(ICON_FA_ROTATE_LEFT, "Undo"), ShortcutLabel(SC_UNDO))) uiUndo();
 			if(ImGui::MenuItem(TI(ICON_FA_ROTATE_RIGHT, "Redo"), ShortcutLabel(SC_REDO))) uiRedo();
 			ImGui::Separator();
@@ -3002,6 +3010,7 @@ uiMainmenu(void)
 			if(ImGui::MenuItem(_("Isolate Selection"), ShortcutLabel(SC_ISOLATE_SELECTION), false, hasSelection)) uiRunShortcut(SC_ISOLATE_SELECTION);
 			if(ImGui::MenuItem(TI(ICON_FA_EYE, "Show All"), ShortcutLabel(SC_SHOW_ALL), false, CountHiddenInstances() > 0)) uiRunShortcut(SC_SHOW_ALL);
 			ImGui::SetItemTooltip(_("Hiding is only for editing: hidden objects stay in the map and are saved as usual."));
+   }
 			ImGui::EndMenu();
 		}
 		if(ImGui::BeginMenu(LI(ICON_FA_WINDOW_MAXIMIZE, "Windows"))){
@@ -3025,7 +3034,7 @@ uiMainmenu(void)
 			if(ImGui::MenuItem(TI(ICON_FA_EYE, "View"), ShortcutLabel(SC_WINDOW_VIEW), showViewWindow)) { showViewWindow ^= 1; }
 			if(ImGui::MenuItem(TI(ICON_FA_VIDEO, "Camera"), ShortcutLabel(SC_WINDOW_CAMERA), showEditorWindow)) { showEditorWindow ^= 1; }
 			ImGui::Separator();
-			if(ImGui::MenuItem(TI(ICON_FA_FILE, "Live Pawn Code"), ShortcutLabel(SC_WINDOW_PAWN_CODE), showPawnCodeWindow)) { showPawnCodeWindow ^= 1; }
+			if(ImGui::MenuItem(TI(ICON_FA_FILE, "Code"), ShortcutLabel(SC_WINDOW_PAWN_CODE), showPawnCodeWindow)) { ExitTextDrawMode(); showPawnCodeWindow ^= 1; }
 			if(ImGui::MenuItem(TI(ICON_FA_CODE_COMPARE, "Changes"), ShortcutLabel(SC_WINDOW_CHANGES), showDiffWindow)) { showDiffWindow ^= 1; }
 			if(ImGui::MenuItem(TI(ICON_FA_LIST, "Map Check"), ShortcutLabel(SC_WINDOW_MAP_CHECK), showMapCheckWindow)) { showMapCheckWindow ^= 1; }
 			if(ImGui::MenuItem(TI(ICON_FA_LIST, "Log"), ShortcutLabel(SC_WINDOW_LOG), showLogWindow)) { showLogWindow ^= 1; }
@@ -3073,8 +3082,8 @@ uiMainmenu(void)
 			ImGui::EndMenu();
 		}
 
-		// The map's tools, not shown while TextDraw mode edits the textdraws.
-		if(!InTextDrawMode()){
+		// The map's tools are only shown in the Map workspace.
+		if(!InTextDrawMode() && !InPawnIdeMode()){
 		uiToolbar();
 
 		// Interior the editor shows; new objects are placed in it.
@@ -3661,6 +3670,11 @@ quitAfterTextDraws(void)
 static void
 requestMapAction(int action, const char *path)
 {
+ if(action == MAP_ACTION_QUIT) PawnEditorFlushDraft();
+ else if(InPawnIdeMode() && !path){
+  PawnEditorRequest(action == MAP_ACTION_NEW ? PAWN_EDITOR_NEW : PAWN_EDITOR_OPEN);
+  return;
+ }
 	// The textdraw file is asked about first, then the map.
 	if(action == MAP_ACTION_QUIT && !gTextDrawsAskedBeforeQuit && TextDrawFileHasUnsavedChanges()){
 		RequestTextDrawFileClose(quitAfterTextDraws);
@@ -3828,6 +3842,7 @@ uiUnsavedMapPopup(void)
 static void
 onWindowCloseRequested(GLFWwindow *window)
 {
+ PawnEditorFlushDraft();
 	if(!mapHasUnsavedChanges() && !TextDrawFileHasUnsavedChanges())
 		return;
 	glfwSetWindowShouldClose(window, GLFW_FALSE);
@@ -12190,64 +12205,35 @@ uiDiffWindow(void)
 	ImGui::End();
 }
 
-static void
-uiPawnCodeWindow(void)
+bool
+InPawnIdeMode(void)
 {
-	if(!showPawnCodeWindow)
-		return;
-	ImGui::SetNextWindowSize(ImVec2(760.0f, 620.0f), ImGuiCond_FirstUseEver);
-	uiNextPanelSizeConstraints();
-	if(!ImGui::Begin(L("Live Pawn Code"), &showPawnCodeWindow)){
-		ImGui::End();
-		return;
-	}
-	uiFitItemsToPanel();
-	if(!isSA()){
-		ImGui::TextDisabled(_("Pawn export is available while editing GTA San Andreas."));
-		ImGui::End();
-		return;
-	}
-	if(gLivePawnCodeSequence != GetLatestChangeSeq() ||
-	   gLivePawnCodeFormat != gLivePawnCodeCachedFormat ||
-	   strcmp(gLivePawnCodePath, gPawnSavePath) != 0){
-		int skipped = 0;
-		if(BuildPawnCode(gPawnSavePath, (PawnCodeFormat)gLivePawnCodeFormat,
-			false, gLivePawnCode, &skipped) >= 0){
-			gLivePawnCodeSequence = GetLatestChangeSeq();
-			gLivePawnCodeCachedFormat = gLivePawnCodeFormat;
-			strncpy(gLivePawnCodePath, gPawnSavePath, sizeof(gLivePawnCodePath)-1);
-			gLivePawnCodePath[sizeof(gLivePawnCodePath)-1] = '\0';
-		}else{
-			gLivePawnCode.clear();
-			ImGui::TextColored(ImVec4(1.0f, 0.35f, 0.3f, 1.0f), _("Could not generate Pawn code."));
-		}
-	}
-	if(ImGui::RadioButton(_("Native"), gLivePawnCodeFormat == PAWN_CODE_NATIVE))
-		gLivePawnCodeFormat = PAWN_CODE_NATIVE;
-	ImGui::SameLine();
-	if(ImGui::RadioButton(_("Streamer"), gLivePawnCodeFormat == PAWN_CODE_STREAMER))
-		gLivePawnCodeFormat = PAWN_CODE_STREAMER;
-	ImGui::SameLine();
-	if(ImGui::Button(_("Copy code")))
-		ImGui::SetClipboardText(gLivePawnCode.c_str());
-	ImGui::SameLine();
-	if(ImGui::Button(_("Save Pawn Map"))){
-		int savedFormat = gPawnSaveFormat;
-		gPawnSaveFormat = gLivePawnCodeFormat;
-		if(!savePawnMap())
-			gPawnSaveFormat = savedFormat;
-	}
-	ImGui::TextDisabled(_("%d characters | %s"), (int)gLivePawnCode.size(),
-		GetLatestChangeSeq() == gPawnLastSavedChangeSeq ? _("Saved") : _("Unsaved changes"));
-	ImGui::Separator();
-	bool codeChildVisible = ImGui::BeginChild("##live_pawn_code", ImVec2(0.0f, 0.0f), true,
-		ImGuiWindowFlags_HorizontalScrollbar);
-	if(codeChildVisible){
-		ImGui::TextUnformatted(gLivePawnCode.c_str(),
-			gLivePawnCode.c_str() + gLivePawnCode.size());
-	}
-	ImGui::EndChild();
-	ImGui::End();
+ return showPawnCodeWindow && !InTextDrawMode();
+}
+
+static void
+uiWorkspaceTabs(void)
+{
+ if(InTextDrawMode()) showPawnCodeWindow = false;
+ int mode = InTextDrawMode() ? 1 : (InPawnIdeMode() ? 2 : 0);
+ static int lastMode = -1;
+ const bool sync = mode != lastMode;
+ ImGui::BeginViewportSideBar("##WorkspaceTabs", ImGui::GetMainViewport(), ImGuiDir_Up,
+  ImGui::GetFrameHeight() + ImGui::GetStyle().WindowPadding.y * 2,
+  ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings);
+ if(ImGui::BeginTabBar("##Editors")){
+  const char *labels[] = { L("Map"), L("TextDraws"), L("Code") };
+  for(int i = 0; i < 3; i++){
+   if(ImGui::BeginTabItem(labels[i], nullptr, sync && mode == i ? ImGuiTabItemFlags_SetSelected : 0)){
+    if(i == 1){ showPawnCodeWindow = false; EnterTextDrawMode(); }
+    else { ExitTextDrawMode(); showPawnCodeWindow = i == 2; }
+    ImGui::EndTabItem();
+   }
+  }
+  ImGui::EndTabBar();
+ }
+ ImGui::End();
+ lastMode = InTextDrawMode() ? 1 : (InPawnIdeMode() ? 2 : 0);
 }
 
 
@@ -12295,8 +12281,12 @@ uiStatusBar(void)
 	const char *mode;
 	ImVec4 modeColor;
 	char hint[512];
-	if(InTextDrawMode()){
-		mode = _("TEXTDRAW");
+ if(InPawnIdeMode()){
+  mode = "PAWN";
+  modeColor = ImVec4(0.45f, 0.80f, 1.0f, 1.0f);
+  snprintf(hint, sizeof(hint), "%s", _("Edit Pawn code. Ctrl+S saves the script; Ctrl+F searches."));
+ }else if(InTextDrawMode()){
+  mode = _("TEXTDRAW");
 		modeColor = ImVec4(0.95f, 0.75f, 0.20f, 1.0f);
 		snprintf(hint, sizeof(hint), _("Editing %s: drag a textdraw to move it, its corner to resize it. "
 			"%s saves the textdraws, %s goes back to the map."), GetTextDrawFileName(),
@@ -12513,7 +12503,15 @@ uiScrollPanel(float direction)
 static void
 uiRunShortcut(int action)
 {
-	int count;
+ int count;
+ if(InPawnIdeMode()){
+  if(action == SC_SAVE_MAP) PawnEditorRequest(PAWN_EDITOR_SAVE);
+  else if(action == SC_SAVE_MAP_AS) PawnEditorRequest(PAWN_EDITOR_SAVE_AS);
+  else if(action == SC_NEW_MAP) PawnEditorRequest(PAWN_EDITOR_NEW);
+  else if(action == SC_OPEN_MAP) PawnEditorRequest(PAWN_EDITOR_OPEN);
+  else if(action == SC_WINDOW_PAWN_CODE) showPawnCodeWindow = false;
+  return;
+ }
 	// TextDraw mode takes the file keys and leaves out map editing.
 	if(action != SC_UNDO && action != SC_REDO && TextDrawModeShortcut(action))
 		return;
@@ -12665,7 +12663,7 @@ uiRunShortcut(int action)
 	case SC_WINDOW_TIME_WEATHER: showTimeWeatherWindow ^= 1; break;
 	case SC_WINDOW_CAMERA: showEditorWindow ^= 1; break;
 	case SC_WINDOW_CHANGES: showDiffWindow ^= 1; break;
-	case SC_WINDOW_PAWN_CODE: showPawnCodeWindow ^= 1; break;
+	case SC_WINDOW_PAWN_CODE: ExitTextDrawMode(); showPawnCodeWindow ^= 1; break;
 	case SC_WINDOW_TEXTURES: showTextureBrowserWindow ^= 1; break;
 	case SC_WINDOW_NODES:
 		if(isSA())
@@ -12878,12 +12876,13 @@ gui(void)
 	updateMapWindowTitle();
 	uiSnapPanels();
 	uiMainmenu();
+	uiWorkspaceTabs();
 	uiWorkspaceWindow();
 	uiStatusBar();
 #ifdef IMGUI_HAS_DOCK
 	uiDockSpace();
 #endif
-	if(!InTextDrawMode()){
+	if(!InTextDrawMode() && !InPawnIdeMode()){
 		uiStartGuide();
 		uiPlayerViewOverlay();
 		uiDrawSampElementOverlays();
@@ -12899,12 +12898,14 @@ gui(void)
 
 	// While looking around, W/A/S/D fly and no key is a shortcut (W/E/R
 	// don't switch the gizmo).
-	ShortcutsBeginFrame(gCopyableTextCopiedThisFrame || gCameraLooking);
+	if(InPawnIdeMode()) PawnEditorDraw();
+	PawnEditorTick();
+	ShortcutsBeginFrame(gCopyableTextCopiedThisFrame || gCameraLooking || InPawnIdeMode());
 	for(int action = 0; action < SC_NUM_ACTIONS; action++)
 		if(ShortcutPressed(action))
 			uiRunShortcut(action);
 	UpdateMaterialIndexView();
-	if(InTextDrawMode()){
+	if(InTextDrawMode() || InPawnIdeMode()){
 		// Map editing is off: nothing selected or being placed.
 		uiExitPlacementModes();
 		if(selection.first)
@@ -12913,7 +12914,7 @@ gui(void)
 
 	// TextDraw mode keeps only its own panel and the editor's general windows:
 	// the map's panels go, and their docks give the canvas the room.
-	const bool mapPanels = !InTextDrawMode();
+	const bool mapPanels = !InTextDrawMode() && !InPawnIdeMode();
 	if(mapPanels && showTimeWeatherWindow){
 		uiNextPanelSizeConstraints();
 		ImGui::Begin(LI(ICON_FA_CLOUD_SUN, "Time & Weather"), &showTimeWeatherWindow);
@@ -12968,7 +12969,6 @@ gui(void)
 	}
 	if(mapPanels){
 		uiTextureBrowserWindow();
-		uiPawnCodeWindow();
 		SAPaths::DrawNodesWindow(&showNodesWindow);
 	}
 	SAPaths::UpdateNodesUndo();

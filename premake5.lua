@@ -299,6 +299,9 @@ project "vcsview"
 	debugdir "V:/."
 
 project "haumea"
+	cppdialect "C++17"
+	files { "vendor/imgui-texteditor/TextEditor.cpp", "vendor/imgui-texteditor/TextEditor.h" }
+	includedirs { "vendor/imgui-texteditor", path.join(Librw, "skeleton/imgui") }
 	kind "WindowedApp"
 	targetname "haumea"
 	characterset ("MBCS")

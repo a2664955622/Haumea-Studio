@@ -39,6 +39,7 @@ New to Haumea Studio? Read the **[user guide](docs/USER_GUIDE.md)**.
 
 **Files**
 
+- **Code workspace**: edit generated Pawn or open scripts in a native editor with syntax highlighting, line numbers, undo/redo and find/replace. Manual edits save as a separate script, with recoverable drafts.
 - **Pawn maps**: save as native or streamer code that compiles with the open.mp and SA-MP 0.3.7 includes.
 - **Other editors**: open Texture Studio maps, and merge MTA:SA and IPL maps into yours.
 - **Autosave**: get back unsaved work after a crash.

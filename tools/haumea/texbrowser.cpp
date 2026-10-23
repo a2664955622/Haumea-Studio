@@ -381,7 +381,7 @@ preview(const Pick &pick, const std::string &key)
 }
 
 static int
-apply(const Pick &pick, const std::string &key)
+applyTextureSelection(const Pick &pick, const std::string &key)
 {
 	endPreview();
 	if(pick.model < 0 || GetObjectDef(pick.model) == nil){
@@ -526,7 +526,7 @@ tileGrid(const std::vector<int> &items, bool tstudio)
 						pick.texture.c_str(), pick.txd.c_str(), PawnModelId(pick.model));
 				}
 				if(clicked){
-					int n = apply(pick, key);
+					int n = applyTextureSelection(pick, key);
 					if(n == 0)
 						Toast(TOAST_SELECTION, "%s", _("Select objects to apply the texture to"));
 				}

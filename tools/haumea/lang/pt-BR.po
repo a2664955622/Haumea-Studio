@@ -128,10 +128,6 @@ msgid "%d changed world object(s) will be removed per player with RemoveBuilding
 msgstr "%d objeto(s) do mundo alterado(s) serão removidos por jogador com RemoveBuildingForPlayer e recriados pelo código Pawn exportado quando não forem excluídos."
 
 #, c-format
-msgid "%d characters | %s"
-msgstr "%d caracteres | %s"
-
-#, c-format
 msgid "%d checkpoint(s) and %d race checkpoint(s): a player sees one of each at a time, so the streamer shows the nearest."
 msgstr "%d checkpoint(s) e %d race checkpoint(s): o jogador vê um de cada por vez, então o streamer mostra o mais próximo."
 
@@ -1902,6 +1898,9 @@ msgstr "Escolher TXD..."
 msgid "Choose a TXD, preview its textures, then click one to assign it to this material slot."
 msgstr "Escolha um TXD, veja as texturas dele e clique em uma para atribuí-la a este slot de material."
 
+msgid "Choose a separate script file. Saving the map regenerates its Pawn file."
+msgstr "Escolha um arquivo de script separado. Salvar o mapa gera novamente o arquivo Pawn dele."
+
 msgid "Choose an image"
 msgstr "Escolha uma imagem"
 
@@ -2086,6 +2085,9 @@ msgstr "Roupas"
 msgid "Cluckin' Bell"
 msgstr "Cluckin' Bell"
 
+msgid "Code"
+msgstr "Código"
+
 msgid "Code Glass"
 msgstr "Vidro de código"
 
@@ -2247,9 +2249,6 @@ msgstr "Copiar como anexos"
 msgid "Copy as offsets"
 msgstr "Copiar como deslocamentos"
 
-msgid "Copy code"
-msgstr "Copiar código"
-
 msgid "Copy for Claude Code"
 msgstr "Copiar para o Claude Code"
 
@@ -2307,12 +2306,21 @@ msgstr "Não foi possível mover os textdraws: %s"
 msgid "Could not open %s"
 msgstr "Não foi possível abrir %s"
 
+msgid "Could not open the script."
+msgstr "Não foi possível abrir o script."
+
+msgid "Could not preserve the code draft. Save the script before closing."
+msgstr "Não foi possível preservar o rascunho do código. Salve o script antes de fechar."
+
 #, c-format
 msgid "Could not read %s"
 msgstr "Não foi possível ler %s"
 
 msgid "Could not restart Haumea. No files or editor changes were modified."
 msgstr "Não foi possível reiniciar o Haumea. Nenhum arquivo ou alteração do editor foi modificado."
+
+msgid "Could not save the script."
+msgstr "Não foi possível salvar o script."
 
 #, c-format
 msgid "Could not save the textdraws: %s"
@@ -2853,6 +2861,9 @@ msgstr "Cada ponto é um textdraw: o SA-MP permite 2048 globais e 256 por jogado
 msgid "Edit"
 msgstr "Editar"
 
+msgid "Edit Pawn code. Ctrl+S saves the script; Ctrl+F searches."
+msgstr "Edite código Pawn. Ctrl+S salva o script; Ctrl+F pesquisa."
+
 msgid "Edit all selected"
 msgstr "Editar todos os selecionados"
 
@@ -3157,6 +3168,15 @@ msgstr "Os nomes de textura filtrados incluem o TXD de origem."
 
 msgid "Filters"
 msgstr "Filtros"
+
+msgid "Find"
+msgstr "Localizar"
+
+msgid "Find / Replace"
+msgstr "Localizar / Substituir"
+
+msgid "Find all"
+msgstr "Localizar todos"
 
 msgid "Find it in Object Browser > Custom models and place it like any object."
 msgstr "Encontre-o em Navegador de objetos > Modelos personalizados e coloque-o como qualquer objeto."
@@ -4356,9 +4376,6 @@ msgstr "Escutando o Namaka"
 msgid "Listening for Namaka on %s"
 msgstr "Escutando o Namaka em %s"
 
-msgid "Live Pawn Code"
-msgstr "Código Pawn ao vivo"
-
 msgid "Load"
 msgstr "Carregar"
 
@@ -4497,6 +4514,9 @@ msgstr ""
 msgid "Makes the zones, as one undo step."
 msgstr "Cria as zonas, num único passo de desfazer."
 
+msgid "Map"
+msgstr "Mapa"
+
 msgid "Map Check"
 msgstr "Verificação do mapa"
 
@@ -4506,6 +4526,9 @@ msgstr "Objetos do mapa"
 #, c-format
 msgid "Map Objects (%s): everything placed in this map."
 msgstr "Objetos do mapa (%s): tudo o que foi colocado neste mapa."
+
+msgid "Map changed. Refresh from map to generate its latest code."
+msgstr "O mapa mudou. Atualize a partir do mapa para gerar o código mais recente."
 
 #, c-format
 msgid "Map check (%s) lists what will break in game before you ship it."
@@ -4518,6 +4541,9 @@ msgstr "Verificação do mapa antes de salvar: %s. %s abre a lista."
 #, c-format
 msgid "Map check before testing: %s. %s opens the list."
 msgstr "Verificação do mapa antes de testar: %s. %s abre a lista."
+
+msgid "Map code"
+msgstr "Código do mapa"
 
 msgid "Map draw distance"
 msgstr "Distância de desenho do mapa"
@@ -5037,6 +5063,9 @@ msgstr "Novos objetos ficam em cima do objeto sob o cursor."
 msgid "New points go on the end of this path."
 msgstr "Novos pontos vão para o fim deste caminho."
 
+msgid "New script"
+msgstr "Novo script"
+
 msgid "New textdraw file"
 msgstr "Novo arquivo de textdraws"
 
@@ -5551,6 +5580,12 @@ msgstr "Abrir pasta de fontes"
 msgid "Open map"
 msgstr "Abrir mapa"
 
+msgid "Open script"
+msgstr "Abrir script"
+
+msgid "Open script..."
+msgstr "Abrir script..."
+
 msgid "Open the folder"
 msgstr "Abrir a pasta"
 
@@ -5781,9 +5816,6 @@ msgstr "Caminho: %s"
 msgid "Pause"
 msgstr "Pausar"
 
-msgid "Pawn export is available while editing GTA San Andreas."
-msgstr "A exportação Pawn está disponível ao editar o GTA San Andreas."
-
 msgid "Pawn map saving is only supported for GTA San Andreas"
 msgstr "Salvar mapas Pawn só é suportado no GTA San Andreas"
 
@@ -5793,6 +5825,10 @@ msgid ""
 msgstr ""
 "Variável Pawn deste objeto, ex.: bank_door. Deixe vazio e o Haumea\n"
 "só dá um nome quando materiais ou anexos precisam de uma referência."
+
+#, c-format
+msgid "Pawn | Line %d, column %d | %s"
+msgstr "Pawn | Linha %d, coluna %d | %s"
 
 msgid "Pay 'n' Spray"
 msgstr "Pay 'n' Spray"
@@ -6393,6 +6429,9 @@ msgstr "Gravação"
 msgid "Recover Autosave"
 msgstr "Recuperar salvamento automático"
 
+msgid "Recovered draft"
+msgstr "Rascunho recuperado"
+
 msgid "Rectangle"
 msgstr "Retângulo"
 
@@ -6424,6 +6463,9 @@ msgstr "Refazer (%s)"
 
 msgid "Reference object — only the opened IPL is editable."
 msgstr "Objeto de referência — só o IPL aberto pode ser editado."
+
+msgid "Refresh from map"
+msgstr "Atualizar a partir do mapa"
 
 #, c-format
 msgid "Related timed: %s\n"
@@ -6512,6 +6554,15 @@ msgstr "Substituir"
 #, c-format
 msgid "Replace \"%s\" with the current view?"
 msgstr "Substituir \"%s\" pela vista atual?"
+
+msgid "Replace all"
+msgstr "Substituir todos"
+
+msgid "Replace existing file"
+msgstr "Substituir arquivo existente"
+
+msgid "Replace this document with generated map code. Manual edits are saved as a separate script."
+msgstr "Substitua este documento pelo código gerado do mapa. Edições manuais são salvas em um script separado."
 
 msgid "Replace this group's zones"
 msgstr "Substituir as zonas deste grupo"
@@ -6843,9 +6894,6 @@ msgstr ""
 msgid "Save As..."
 msgstr "Salvar como..."
 
-msgid "Save Pawn Map"
-msgstr "Salvar mapa Pawn"
-
 msgid "Save Pawn Map As"
 msgstr "Salvar mapa Pawn como"
 
@@ -6874,6 +6922,12 @@ msgstr "Salvar em"
 msgid "Save or discard SA path edits before switching source."
 msgstr "Salve ou descarte as edições de caminhos do SA antes de trocar a fonte."
 
+msgid "Save script"
+msgstr "Salvar script"
+
+msgid "Save script as"
+msgstr "Salvar script como"
+
 msgid "Save the filters under this name (an existing preset is replaced)."
 msgstr "Salva os filtros com este nome (uma predefinição existente é substituída)."
 
@@ -6894,6 +6948,9 @@ msgstr "Salvar esta cor"
 
 msgid "Save your changes first."
 msgstr "Salve suas alterações primeiro."
+
+msgid "Save your code before replacing this document?"
+msgstr "Salvar o código antes de substituir este documento?"
 
 msgid "Saved"
 msgstr "Salvo"
@@ -6972,6 +7029,9 @@ msgstr "Escopeta de cano serrado"
 
 msgid "School"
 msgstr "Escola"
+
+msgid "Script file"
+msgstr "Arquivo de script"
 
 msgid "Scripting and server help from the open.mp community."
 msgstr "Ajuda com scripts e servidores da comunidade open.mp."
@@ -7459,6 +7519,9 @@ msgstr ""
 "- A IA não entra nele vindo de um nó não desligado (barreira direcional)\n"
 "- É ignorado como ponto de spawn de veículos em alguns casos\n"
 "Usado por missões/scripts para fechar ruas com SwitchRoadsOffInArea."
+
+msgid "Some characters cannot be saved as Windows-1252. Choose UTF-8."
+msgstr "Alguns caracteres não podem ser salvos em Windows-1252. Escolha UTF-8."
 
 msgid "Something went wrong: click for the Log"
 msgstr "Algo deu errado: clique para ver o Log"
@@ -8173,6 +8236,9 @@ msgstr "Este Haumea não tem o pacote do Namaka (uma build de desenvolvimento): 
 msgid "This does not look like a server folder (no gamemodes/, scriptfiles/ or server executable). It can still be the workspace."
 msgstr "Isto não parece uma pasta de servidor (sem gamemodes/, scriptfiles/ ou executável do servidor). Ainda pode ser o workspace."
 
+msgid "This file changed on disk. Use Save As to keep your edits in another file."
+msgstr "Este arquivo mudou no disco. Use Salvar como para manter suas edições em outro arquivo."
+
 msgid "This folder does not exist."
 msgstr "Esta pasta não existe."
 
@@ -8490,6 +8556,9 @@ msgstr "Alterações não salvas"
 #, c-format
 msgid "Unsaved changes - %s"
 msgstr "Alterações não salvas - %s"
+
+msgid "Unsaved code"
+msgstr "Código não salvo"
 
 msgid ""
 "Unsaved editor changes will always require confirmation.\n"

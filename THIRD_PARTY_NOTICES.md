@@ -14,6 +14,8 @@ reads everything else from your own game folder.
 | librw | MIT | Copyright (c) 2014 aap | https://github.com/aap/librw |
 | miniLZO | GPL-2.0-or-later | Copyright (C) 1996-2017 Markus Franz Xaver Johannes Oberhumer | https://www.oberhumer.com/opensource/lzo/ |
 | Dear ImGui (docking branch, v1.92.2b) | MIT | Copyright (c) 2014-2025 Omar Cornut | https://github.com/ocornut/imgui |
+| ImGuiColorTextEdit (native Pawn editor, `vendor/imgui-texteditor`) | MIT | Copyright (c) 2024-2026 Johan A. Goossens | https://github.com/goossens/ImGuiColorTextEdit |
+| Pawn syntax categories and keyword lists (`pawnsyntax.cpp`), adapted from vscode-pawn | MIT | Copyright (c) 2013-2014 Eldar Abusalimov; Pawn modifications Sergei Marochkin, 2016; Copyright (c) 2019 IndianOceanRoleplay | https://github.com/openmultiplayer/vscode-pawn |
 | stb_truetype, stb_rect_pack, stb_textedit (inside Dear ImGui) | MIT or public domain (Unlicense), at your choice | Copyright (c) 2017 Sean Barrett | https://github.com/nothings/stb |
 | ImGuizmo (in librw's skeleton) | MIT | Copyright (c) 2021 Cedric Guillemet | https://github.com/CedricGuillemet/ImGuizmo |
 | LodePNG (in librw) | zlib | Copyright (c) 2005-2020 Lode Vandevenne | https://github.com/lvandeve/lodepng |
@@ -908,3 +910,53 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
   This Source Code Form is "Incompatible With Secondary Licenses", as
   defined by the Mozilla Public License, v. 2.0.
 ```
+
+## Native Pawn editor licenses
+
+### ImGuiColorTextEdit
+
+MIT License
+
+Copyright (c) 2024-2026 Johan A. Goossens. All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+### vscode-pawn
+
+MIT License
+
+Copyright (c) 2019 Indian Ocean Roleplay
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

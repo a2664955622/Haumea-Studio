@@ -958,10 +958,6 @@ msgstr "Escutando o Namaka"
 msgid "Listening for Namaka on %s"
 msgstr "Escutando o Namaka em %s"
 
-#: tools/haumea/shortcuts.cpp:83
-msgid "Live Pawn Code"
-msgstr "Código Pawn ao vivo"
-
 #: tools/haumea/haumea.cpp:2631
 msgid "Loading SA-MP objects"
 msgstr "Carregando objetos do SA-MP"

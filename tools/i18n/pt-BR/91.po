@@ -571,10 +571,6 @@ msgstr "Exibir"
 msgid "Camera"
 msgstr "Câmera"
 
-#: gui.cpp:2835
-msgid "Live Pawn Code"
-msgstr "Código Pawn ao vivo"
-
 #: gui.cpp:2836
 msgid "Changes"
 msgstr "Alterações"

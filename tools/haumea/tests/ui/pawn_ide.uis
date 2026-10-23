@@ -1,0 +1,87 @@
+# The Code workspace edits a document, rather than the map serializer's preview.
+open "$UI_FIXTURES/ui_map.pwn"
+wait 5
+click_item '*' 'Code'
+wait 8
+assert window 'PawnIDE'
+assert ide_contains 'CreateObject('
+assert ide_dirty == 0
+assert no_window 'Object Browser'
+# Actual keyboard input goes into the native editor and never triggers map tools.
+click 500 300
+key Ctrl+Home
+type "// manual Pawn edit"
+key Enter
+wait 5
+assert ide_contains '// manual Pawn edit'
+assert ide_dirty == 1
+assert objects == 4
+key Ctrl+Home
+type "X"
+wait 3
+assert ide_contains 'X// manual Pawn edit'
+key Ctrl+Z
+wait 3
+assert ide_lacks 'X// manual Pawn edit'
+key Ctrl+Y
+wait 3
+assert ide_contains 'X// manual Pawn edit'
+key Ctrl+Z
+wait 3
+click_item '*' 'Map'
+wait 5
+assert no_window 'PawnIDE'
+click_item '*' 'TextDraws'
+wait 5
+assert window 'TextDraws'
+click_item '*' 'Code'
+wait 5
+assert no_window 'TextDraws'
+assert ide_contains '// manual Pawn edit'
+# A changed map must not regenerate an edited document.
+open "$UI_FIXTURES/ui_floor.pwn"
+wait 5
+assert ide_contains '// manual Pawn edit'
+assert ide_contains 'CreateObject(1271'
+open "$UI_FIXTURES/ui_map.pwn"
+wait 5
+# Refresh must ask before discarding manual code, including from another tab.
+click_item 'PawnIDE' 'Refresh from map'
+wait 3
+assert window 'Unsaved code'
+click_item 'Unsaved code' 'Cancel'
+wait 3
+assert ide_contains '// manual Pawn edit'
+# Autosave the draft independently of the map.
+wait 100
+assert file_contains "$XDG_CONFIG_HOME/haumea/pawn-ide/draft.pwn" '// manual Pawn edit'
+# A separate script contains the edits; the source map is protected.
+click_item 'PawnIDE' 'Save script'
+wait 3
+set_item 'Script file' 'Path' "$UI_FIXTURES/ui_map.pwn"
+click_item 'Script file' 'Replace existing file'
+click_item 'Script file' 'Save'
+wait 3
+assert window 'Script file'
+assert item 'Script file' 'Save'
+assert ide_dirty == 1
+set_item 'Script file' 'Path' "$XDG_CONFIG_HOME/haumea/manual-script.pwn"
+click_item 'Script file' 'Save'
+wait 5
+assert no_window 'Script file'
+assert ide_dirty == 0
+assert file_contains "$XDG_CONFIG_HOME/haumea/manual-script.pwn" '// manual Pawn edit'
+# Regeneration is explicit once the document is a saved script.
+click_item 'PawnIDE' 'Refresh from map'
+wait 3
+assert ide_lacks '// manual Pawn edit'
+assert ide_contains 'CreateObject('
+assert file_contains "$XDG_CONFIG_HOME/haumea/manual-script.pwn" '// manual Pawn edit'
+click_item 'PawnIDE' 'Open script...'
+wait 3
+set_item 'Script file' 'Path' "$XDG_CONFIG_HOME/haumea/manual-script.pwn"
+click_item 'Script file' 'Open'
+wait 5
+assert ide_contains '// manual Pawn edit'
+assert ide_dirty == 0
+

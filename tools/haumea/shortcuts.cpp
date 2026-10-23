@@ -80,7 +80,7 @@ const ShortcutDef defs[SC_NUM_ACTIONS] = {
 	{ { "window_time_weather", N_("Windows"), N_("Time & Weather"), SHORTCUT_EDITOR, false }, { { ImGuiKey_6, CTRL } } },
 	{ { "window_camera", N_("Windows"), N_("Camera"), SHORTCUT_EDITOR, false }, { { ImGuiKey_7, CTRL } } },
 	{ { "window_changes", N_("Windows"), N_("Changes"), SHORTCUT_EDITOR, false }, { { ImGuiKey_8, CTRL } } },
-	{ { "window_pawn_code", N_("Windows"), N_("Live Pawn Code"), SHORTCUT_EDITOR, false }, { { ImGuiKey_9, CTRL } } },
+	{ { "window_pawn_code", N_("Windows"), N_("Code"), SHORTCUT_EDITOR, false }, { { ImGuiKey_9, CTRL } } },
 	{ { "window_textures", N_("Windows"), N_("Texture Browser"), SHORTCUT_EDITOR, false }, { { ImGuiKey_T, CTRL } } },
 	{ { "window_nodes", N_("Windows"), N_("Nodes (open.mp)"), SHORTCUT_EDITOR, false }, { { ImGuiKey_F3, 0 } } },
 	{ { "window_shortcuts", N_("Windows"), N_("Keyboard Shortcuts"), SHORTCUT_EDITOR, false }, { { ImGuiKey_F1, 0 } } },

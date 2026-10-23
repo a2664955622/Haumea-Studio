@@ -50,11 +50,6 @@ msgstr "%d adicionado(s), %d excluído(s), %d movido(s), %d girado(s), %d de mat
 msgid "%d audio streams: a player hears one at a time, the last one started."
 msgstr "%d audio streams: o jogador ouve um de cada vez, o último iniciado."
 
-#: tools/haumea/gui.cpp:12005
-#, c-format
-msgid "%d characters | %s"
-msgstr "%d caracteres | %s"
-
 #: tools/haumea/gui.cpp:8880
 #, c-format
 msgid "%d corner(s)"
@@ -1151,10 +1146,6 @@ msgstr "Copiar como anexos"
 msgid "Copy as offsets"
 msgstr "Copiar como deslocamentos"
 
-#: tools/haumea/gui.cpp:11996
-msgid "Copy code"
-msgstr "Copiar código"
-
 #: tools/haumea/gui.cpp:10163
 msgid "Copy model ID"
 msgstr "Copiar ID do modelo"
@@ -2147,10 +2138,6 @@ msgstr ""
 msgid "List"
 msgstr "Lista"
 
-#: tools/haumea/gui.cpp:11965
-msgid "Live Pawn Code"
-msgstr "Código Pawn ao vivo"
-
 #: tools/haumea/gui.cpp:8039
 msgid "Local (MAPICON_LOCAL)"
 msgstr "Local (MAPICON_LOCAL)"
@@ -2851,10 +2838,6 @@ msgstr "Caminho"
 msgid "Path %s"
 msgstr "Caminho %s"
 
-#: tools/haumea/gui.cpp:11971
-msgid "Pawn export is available while editing GTA San Andreas."
-msgstr "A exportação Pawn está disponível ao editar o GTA San Andreas."
-
 #: tools/haumea/gui.cpp:9205
 msgid ""
 "Pawn variable for this object, e.g. bank_door. Leave empty and Haumea\n"
@@ -3342,10 +3325,6 @@ msgstr "Carga explosiva"
 #: tools/haumea/gui.cpp:6925
 msgid "Save"
 msgstr "Salvar"
-
-#: tools/haumea/gui.cpp:11999
-msgid "Save Pawn Map"
-msgstr "Salvar mapa Pawn"
 
 #: tools/haumea/gui.cpp:7996
 msgid "Save disk"

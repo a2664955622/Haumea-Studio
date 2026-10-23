@@ -1,0 +1,88 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Choose a separate script file. Saving the map regenerates its Pawn file."
+msgstr "Escolha um arquivo de script separado. Salvar o mapa gera novamente o arquivo Pawn dele."
+
+msgid "Code"
+msgstr "Código"
+
+msgid "Could not open the script."
+msgstr "Não foi possível abrir o script."
+
+msgid "Could not preserve the code draft. Save the script before closing."
+msgstr "Não foi possível preservar o rascunho do código. Salve o script antes de fechar."
+
+msgid "Could not save the script."
+msgstr "Não foi possível salvar o script."
+
+msgid "Edit Pawn code. Ctrl+S saves the script; Ctrl+F searches."
+msgstr "Edite código Pawn. Ctrl+S salva o script; Ctrl+F pesquisa."
+
+msgid "Find"
+msgstr "Localizar"
+
+msgid "Find / Replace"
+msgstr "Localizar / Substituir"
+
+msgid "Find all"
+msgstr "Localizar todos"
+
+msgid "Map"
+msgstr "Mapa"
+
+msgid "Map changed. Refresh from map to generate its latest code."
+msgstr "O mapa mudou. Atualize a partir do mapa para gerar o código mais recente."
+
+msgid "Map code"
+msgstr "Código do mapa"
+
+msgid "New script"
+msgstr "Novo script"
+
+msgid "Open script"
+msgstr "Abrir script"
+
+msgid "Open script..."
+msgstr "Abrir script..."
+
+msgid "Pawn | Line %d, column %d | %s"
+msgstr "Pawn | Linha %d, coluna %d | %s"
+
+msgid "Recovered draft"
+msgstr "Rascunho recuperado"
+
+msgid "Refresh from map"
+msgstr "Atualizar a partir do mapa"
+
+msgid "Replace all"
+msgstr "Substituir todos"
+
+msgid "Replace existing file"
+msgstr "Substituir arquivo existente"
+
+msgid "Replace this document with generated map code. Manual edits are saved as a separate script."
+msgstr "Substitua este documento pelo código gerado do mapa. Edições manuais são salvas em um script separado."
+
+msgid "Save script"
+msgstr "Salvar script"
+
+msgid "Save script as"
+msgstr "Salvar script como"
+
+msgid "Save your code before replacing this document?"
+msgstr "Salvar o código antes de substituir este documento?"
+
+msgid "Script file"
+msgstr "Arquivo de script"
+
+msgid "Some characters cannot be saved as Windows-1252. Choose UTF-8."
+msgstr "Alguns caracteres não podem ser salvos em Windows-1252. Escolha UTF-8."
+
+msgid "This file changed on disk. Use Save As to keep your edits in another file."
+msgstr "Este arquivo mudou no disco. Use Salvar como para manter suas edições em outro arquivo."
+
+msgid "Unsaved code"
+msgstr "Código não salvo"
+

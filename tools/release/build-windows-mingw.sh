@@ -77,12 +77,15 @@ COMMON="-O2 -DNDEBUG $GFXDEFS -DLODEPNG_NO_COMPILE_CPP $GFXINC"
 # compile <objdir> <extra flags> <sources...>: in parallel, only what changed.
 compile() {
 	objdir=$1; flags=$2; shift 2
+	cppstd=c++14
+	case "$objdir" in */haumea) cppstd=c++17 ;; esac
+	stampflags="$flags -std=$cppstd"
 	# Objects built with other flags (a define added to a makefile) are stale.
-	if [ "$(cat "$objdir/.flags" 2>/dev/null)" != "$flags" ]; then
+	if [ "$(cat "$objdir/.flags" 2>/dev/null)" != "$stampflags" ]; then
 		rm -rf "$objdir"
 	fi
 	mkdir -p "$objdir"
-	printf '%s' "$flags" > "$objdir/.flags"
+	printf '%s' "$stampflags" > "$objdir/.flags"
 	for src in "$@"; do
 		# The folder goes into the name: librw's skeleton has a camera.cpp too.
 		obj="$objdir/$(echo "$src" | sed 's|\.[^.]*$||; s|.*/\([^/]*/[^/]*\)$|\1|; s|/|_|g').o"
@@ -91,9 +94,9 @@ compile() {
 		fi
 	done | xargs -r -P "$JOBS" -I{} sh -c '
 		src=${1%%|*}; obj=${1#*|}
-		case "$src" in *.c) comp="$2" ;; *) comp="$3 -std=c++14" ;; esac
+		case "$src" in *.c) comp="$2" ;; *) comp="$3 -std=$5" ;; esac
 		echo "  $(basename "$src")"
-		$comp $4 -c "$src" -o "$obj"' _ {} "$CC" "$CXX" "$flags"
+		$comp $4 -c "$src" -o "$obj"' _ {} "$CC" "$CXX" "$flags" "$cppstd"
 	# Objects of sources no longer listed (a removed file, or a header an older
 	# script took for a source) would be archived or linked by the *.o globs.
 	keep=$(for src in "$@"; do
@@ -156,7 +159,7 @@ python3 "$ROOT/tools/release/gen_buildinfo.py" --header "$ROOT/tools/haumea/haum
 # compile() follows sources, not headers: a new build number rebuilds versionutil.
 [ "$ROOT/tools/haumea/haumea_buildinfo.h" -nt "$OUT/obj/haumea/haumea_versionutil.o" ] &&
 	rm -f "$OUT/obj/haumea/haumea_versionutil.o"
-compile "$OUT/obj/haumea" "$COMMON -I$LIBRW -I$ROOT/src -I$LIBRW/skeleton -I$ROOT -I$ROOT/tools/haumea -DHAUMEA_CHANNEL=\"$CHANNEL\" -D_MBCS $HAUMEA_DEFINES" \
+compile "$OUT/obj/haumea" "$COMMON -I$LIBRW -I$ROOT/src -I$LIBRW/skeleton -I$ROOT -I$ROOT/tools/haumea -I$ROOT/vendor/imgui-texteditor -I$LIBRW/skeleton/imgui -DHAUMEA_CHANNEL=\"$CHANNEL\" -D_MBCS $HAUMEA_DEFINES" \
 	$HAUMEA_SOURCES "$ROOT/tools/haumea/minilzo/minilzo.c"
 # The manifest (UTF-8 code page) goes in as a resource, as MSVC embeds it
 # itself, and the version info (haumea.rc).
