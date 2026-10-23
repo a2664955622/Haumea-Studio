@@ -40,7 +40,7 @@ static const float gScreenAspects[NUM_TD_SCREENS] = { 0.0f, 4.0f / 3.0f, 16.0f /
 static const char *gScreenNames[NUM_TD_SCREENS] = { N_("Window"), "4:3", "16:10", "16:9", "21:9" };
 static int gScreen = TD_SCREEN_WINDOW;
 static float gZoom = 1.0f, gPanX, gPanY;	// the pan in pixels, from the centred canvas
-static bool gSnap = true, gGrid, gCompare, gRulers = true, gGuidesLocked;
+static bool gSnap = true, gGrid, gCompare, gRulers = true, gGuidesLocked, gPixelExact;
 static float gGridSize = 10.0f;
 static float gNudge = 1.0f;	// the arrow keys' step; Shift ten times it
 static bool gClickThroughLocked = true;
@@ -248,9 +248,10 @@ LoadTextDrawSetting(const char *key, const char *value)
 			at = end + 1;
 		}
 	}else if(strcmp(key, "textdraw_canvas") == 0){
-		int snap = 1, grid = 0, through = 1, compare = 0, rulers = 1, locked = 0;
-		sscanf(value, "%d %d %d %f %f %d %d %d %d", &gScreen, &snap, &grid, &gGridSize, &gNudge, &through, &compare, &rulers,
-			&locked);
+		int snap = 1, grid = 0, through = 1, compare = 0, rulers = 1, locked = 0, exact = 0;
+		sscanf(value, "%d %d %d %f %f %d %d %d %d %d", &gScreen, &snap, &grid, &gGridSize, &gNudge, &through, &compare,
+			&rulers, &locked, &exact);
+		gPixelExact = exact != 0;
 		gRulers = rulers != 0;
 		gGuidesLocked = locked != 0;
 		gScreen = std::max(0, std::min(gScreen, NUM_TD_SCREENS - 1));
@@ -322,8 +323,8 @@ SaveTextDrawSettings(FILE *f)
 	for(unsigned int c : gSavedColours)
 		fprintf(f, " %08X", c);
 	fputc('\n', f);
-	fprintf(f, "textdraw_canvas %d %d %d %g %g %d %d %d %d\n", gScreen, gSnap ? 1 : 0, gGrid ? 1 : 0, gGridSize, gNudge,
-		gClickThroughLocked ? 1 : 0, gCompare ? 1 : 0, gRulers ? 1 : 0, gGuidesLocked ? 1 : 0);
+	fprintf(f, "textdraw_canvas %d %d %d %g %g %d %d %d %d %d\n", gScreen, gSnap ? 1 : 0, gGrid ? 1 : 0, gGridSize, gNudge,
+		gClickThroughLocked ? 1 : 0, gCompare ? 1 : 0, gRulers ? 1 : 0, gGuidesLocked ? 1 : 0, gPixelExact ? 1 : 0);
 	fprintf(f, "textdraw_hud %d %x %d %d %d %d %d %d %d %d %d %d\n", gHud.show ? 1 : 0, (unsigned int)gHud.parts,
 		gHud.hour, gHud.minute, gHud.money, gHud.health, gHud.armour, gHud.breath,
 		gHud.wanted, gHud.weapon, gHud.ammo, gHud.clip);
@@ -904,9 +905,120 @@ previewTexture(const TextDraw &td)
 	return nil;
 }
 
+// ---- Pixel-exact canvas ----
+
+// The screen drawn at the player's resolution, then scaled onto the canvas:
+// where a box edge meets an edge inside a picture, the pixels come out as a
+// player at that resolution sees them. Last frame's draw list is drawn here,
+// before the world.
+static ImDrawList *gExactList;
+static rw::Camera *gExactCamera;
+static rw::Raster *gExactColor, *gExactDepth;
+static rw::Texture *gExactTexture;
+static bool gExactReady;
+
+static bool
+exactTarget(int w, int h)
+{
+	if(gExactCamera == nil){
+		gExactCamera = rw::Camera::create();
+		rw::Frame *frame = rw::Frame::create();
+		if(gExactCamera == nil || frame == nil)
+			return false;
+		gExactCamera->setFrame(frame);
+		gExactCamera->setNearPlane(0.1f);
+		gExactCamera->setFarPlane(10.0f);
+	}
+	if(gExactColor && gExactColor->width == w && gExactColor->height == h)
+		return true;
+	if(gExactTexture){
+		gExactTexture->raster = nil;
+		gExactTexture->destroy();
+		gExactTexture = nil;
+	}
+	if(gExactColor) gExactColor->destroy();
+	if(gExactDepth) gExactDepth->destroy();
+	gExactColor = rw::Raster::create(w, h, 32, rw::Raster::C8888|rw::Raster::CAMERATEXTURE);
+	gExactDepth = rw::Raster::create(w, h, 0, rw::Raster::ZBUFFER);
+	gExactReady = false;
+	if(gExactColor == nil || gExactDepth == nil)
+		return false;
+	gExactTexture = rw::Texture::create(gExactColor);
+	gExactTexture->setFilter(rw::Texture::NEAREST);	// zoomed in, its pixels show
+	return true;
+}
+
+static void
+renderExactScreen(int w, int h)
+{
+	if(gExactList == nil || gExactList->VtxBuffer.Size == 0 || !exactTarget(w, h))
+		return;
+	gExactCamera->frameBuffer = gExactColor;
+	gExactCamera->zBuffer = gExactDepth;
+	rw::RGBA black = { 0, 0, 0, 255 };
+	gExactCamera->clear(&black, rw::Camera::CLEARIMAGE|rw::Camera::CLEARZ);
+	gExactCamera->beginUpdate();
+	static std::vector<rw::RWDEVICE::Im2DVertex> verts;
+	const ImDrawList *list = gExactList;
+	verts.resize(list->VtxBuffer.Size);
+	float recipZ = 1.0f / gExactCamera->nearPlane;
+	for(int i = 0; i < list->VtxBuffer.Size; i++){
+		const ImDrawVert &v = list->VtxBuffer[i];
+		verts[i].setScreenX(v.pos.x);
+		verts[i].setScreenY(v.pos.y);
+		verts[i].setScreenZ(rw::im2d::GetNearZ());
+		verts[i].setCameraZ(gExactCamera->nearPlane);
+		verts[i].setRecipCameraZ(recipZ);
+		verts[i].setColor(v.col & 0xFF, v.col >> 8 & 0xFF, v.col >> 16 & 0xFF, v.col >> 24 & 0xFF);
+		verts[i].setU(v.uv.x, recipZ);
+		verts[i].setV(v.uv.y, recipZ);
+	}
+	int vertexAlpha = rw::GetRenderState(rw::VERTEXALPHA);
+	int srcBlend = rw::GetRenderState(rw::SRCBLEND), dstBlend = rw::GetRenderState(rw::DESTBLEND);
+	int ztest = rw::GetRenderState(rw::ZTESTENABLE), cull = rw::GetRenderState(rw::CULLMODE);
+	void *raster = rw::GetRenderStatePtr(rw::TEXTURERASTER);
+	int filter = rw::GetRenderState(rw::TEXTUREFILTER);
+	int addrU = rw::GetRenderState(rw::TEXTUREADDRESSU), addrV = rw::GetRenderState(rw::TEXTUREADDRESSV);
+	rw::SetRenderState(rw::VERTEXALPHA, 1);
+	rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+	rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+	rw::SetRenderState(rw::ZTESTENABLE, 0);
+	rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
+	for(int i = 0; i < list->CmdBuffer.Size; i++){
+		const ImDrawCmd &cmd = list->CmdBuffer[i];
+		if(cmd.UserCallback || cmd.ElemCount == 0)
+			continue;
+		rw::Texture *tex = (rw::Texture*)cmd.GetTexID();
+		if(tex && tex->raster){
+			rw::SetRenderStatePtr(rw::TEXTURERASTER, tex->raster);
+			rw::SetRenderState(rw::TEXTUREADDRESSU, tex->getAddressU());
+			rw::SetRenderState(rw::TEXTUREADDRESSV, tex->getAddressV());
+			rw::SetRenderState(rw::TEXTUREFILTER, tex->getFilter());
+		}else
+			rw::SetRenderStatePtr(rw::TEXTURERASTER, nil);
+		rw::im2d::RenderIndexedPrimitive(rw::PRIMTYPETRILIST, verts.data() + cmd.VtxOffset,
+			list->VtxBuffer.Size - cmd.VtxOffset, list->IdxBuffer.Data + cmd.IdxOffset, cmd.ElemCount);
+	}
+	rw::SetRenderState(rw::VERTEXALPHA, vertexAlpha);
+	rw::SetRenderState(rw::SRCBLEND, srcBlend);
+	rw::SetRenderState(rw::DESTBLEND, dstBlend);
+	rw::SetRenderState(rw::ZTESTENABLE, ztest);
+	rw::SetRenderState(rw::CULLMODE, cull);
+	rw::SetRenderStatePtr(rw::TEXTURERASTER, raster);
+	rw::SetRenderState(rw::TEXTUREFILTER, filter);
+	rw::SetRenderState(rw::TEXTUREADDRESSU, addrU);
+	rw::SetRenderState(rw::TEXTUREADDRESSV, addrV);
+	gExactCamera->endUpdate();
+	gExactReady = true;
+}
+
 void
 TextDrawsBeforeWorldRender(void)
 {
+	if(gMode && gPixelExact){
+		int r = std::max(0, std::min(gHud.resolution, NUM_HUD_RESOLUTIONS - 1));
+		renderExactScreen(gHudResolutions[r].w, gHudResolutions[r].h);
+	}
 	for(int i = 0; i < 16; i++){
 		PreviewEntry &e = gPreviews[i];
 		if(e.texture == nil || e.ready)
@@ -2950,7 +3062,23 @@ DrawTextDrawsOverlay(void)
 	ImGuiViewport *vp = ImGui::GetMainViewport();
 	dl->AddRectFilled(vp->Pos, ImVec2(vp->Pos.x + vp->Size.x, vp->Pos.y + vp->Size.y), IM_COL32(24, 26, 30, 255));
 	dl->PushClipRect(areaPos, areaEnd, true);
-	drawScreen(dl, cv);
+	if(gPixelExact){
+		// Drawn at the player's resolution, shown next frame (see renderExactScreen).
+		int r = std::max(0, std::min(gHud.resolution, NUM_HUD_RESOLUTIONS - 1));
+		float w = (float)gHudResolutions[r].w, h = (float)gHudResolutions[r].h;
+		if(gExactList == nil)
+			gExactList = IM_NEW(ImDrawList)(ImGui::GetDrawListSharedData());
+		gExactList->_ResetForNewFrame();
+		gExactList->PushClipRect(ImVec2(0.0f, 0.0f), ImVec2(w, h));
+		gExactList->PushTexture(ImGui::GetIO().Fonts->TexRef);
+		Canvas player = { 0.0f, 0.0f, w / 640.0f, h / 448.0f, 0.0f };
+		drawScreen(gExactList, player);
+		if(gExactReady && gExactTexture)
+			dl->AddImage((ImTextureID)gExactTexture, cv.at(0, 0), cv.at(640, 448));
+		else
+			drawScreen(dl, cv);
+	}else
+		drawScreen(dl, cv);
 	const std::vector<TextDraw> &mapTds = GetMapTextDraws();
 	for(size_t i = 0; i < mapTds.size(); i++){
 		float x0, y0, x1, y1;
@@ -4748,6 +4876,25 @@ drawToolbar(void)
 	if(ImGui::Checkbox(L("Compare"), &gCompare))
 		SaveEditorSettings();
 	ImGui::SetItemTooltip("%s", _("Small views of this board at 4:3, 16:9 and 21:9 in the corner."));
+	ImGui::SameLine();
+	if(ImGui::Checkbox(L("Pixel-exact"), &gPixelExact))
+		SaveEditorSettings();
+	ImGui::SetItemTooltip("%s", _("Draws the screen at the player's resolution and scales that to the canvas, so\n"
+		"seams and gaps between textdraws show as they do in game. Zoom in to see\n"
+		"single pixels."));
+	if(gPixelExact){
+		ImGui::SameLine();
+		char res[NUM_HUD_RESOLUTIONS][24];
+		const char *resNames[NUM_HUD_RESOLUTIONS];
+		for(int i = 0; i < NUM_HUD_RESOLUTIONS; i++){
+			snprintf(res[i], sizeof(res[i]), "%d x %d", gHudResolutions[i].w, gHudResolutions[i].h);
+			resNames[i] = res[i];
+		}
+		ImGui::SetNextItemWidth(ImGui::GetFontSize() * 7.0f);
+		if(ImGui::Combo("##exact_res", &gHud.resolution, resNames, NUM_HUD_RESOLUTIONS))
+			SaveEditorSettings();
+		ImGui::SetItemTooltip("%s", _("The player's screen (the same one the chat and outlines use)."));
+	}
 	ImGui::SameLine();
 	ImGui::TextDisabled("|");
 	ImGui::SameLine();

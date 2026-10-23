@@ -3187,3 +3187,21 @@ msgid ""
 msgstr ""
 "Abre o jogo (o launcher do open.mp, ou o SA-MP) e entra no servidor de teste.\n"
 "Qual deles: Preferências > Servidor de teste."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid ""
+"Draws the screen at the player's resolution and scales that to the canvas, so\n"
+"seams and gaps between textdraws show as they do in game. Zoom in to see\n"
+"single pixels."
+msgstr ""
+"Desenha a tela na resolução do jogador e a escala para o canvas, para que\n"
+"emendas e frestas entre textdraws apareçam como no jogo. Aproxime para ver\n"
+"cada pixel."
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "Pixel-exact"
+msgstr "Pixel exato"
+
+#: tools/haumea/textdraws_ui.cpp
+msgid "The player's screen (the same one the chat and outlines use)."
+msgstr "A tela do jogador (a mesma que o chat e os contornos usam)."

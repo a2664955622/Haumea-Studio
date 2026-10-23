@@ -2777,6 +2777,15 @@ msgstr ""
 "200 m, e só o que está no mundo virtual abaixo e no interior da barra de menus.\n"
 "Objetos selecionados continuam visíveis. Nada é salvo."
 
+msgid ""
+"Draws the screen at the player's resolution and scales that to the canvas, so\n"
+"seams and gaps between textdraws show as they do in game. Zoom in to see\n"
+"single pixels."
+msgstr ""
+"Desenha a tela na resolução do jogador e a escala para o canvas, para que\n"
+"emendas e frestas entre textdraws apareçam como no jogo. Aproxime para ver\n"
+"cada pixel."
+
 msgid "Drive"
 msgstr "Dirigir"
 
@@ -5887,6 +5896,9 @@ msgstr "Pílula"
 msgid "Pin: keep it at the top of the list"
 msgstr "Fixar: manter no topo da lista"
 
+msgid "Pixel-exact"
+msgstr "Pixel exato"
+
 msgid "Place"
 msgstr "Colocar"
 
@@ -8054,6 +8066,9 @@ msgstr "O pai foi excluído, então este anexo não é exportado."
 
 msgid "The path's Pawn variable. NPCs follow it by this name."
 msgstr "A variável Pawn do caminho. Os NPCs o seguem por este nome."
+
+msgid "The player's screen (the same one the chat and outlines use)."
+msgstr "A tela do jogador (a mesma que o chat e os contornos usam)."
 
 msgid "The player's screen shape. Textdraws stretch with it; the chat doesn't."
 msgstr "O formato da tela do jogador. Os textdraws esticam com ele; o chat não."
