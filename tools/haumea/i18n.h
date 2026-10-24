@@ -60,3 +60,8 @@ bool I18nLoadCatalogText(const std::string &po, int *dropped = nullptr);
 
 // Preferences > Language.
 bool uiLanguagePreferences(void);	// true when the choice changed
+
+// The characters (codepoints) the installed catalogs translate into, so the
+// font atlas can bake exactly what a language draws. ASCII is left out: the UI
+// font's default ranges already cover it.
+void I18nCatalogCodepoints(std::vector<unsigned int> &out);

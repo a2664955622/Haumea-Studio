@@ -586,3 +586,52 @@ uiLanguagePreferences(void)
 	ImGui::SetItemTooltip("%s", _("Auto follows the system language when Haumea has it, else English.\nA language is a lang/<code>.po file beside the editor."));
 	return changed;
 }
+
+// The non-ASCII characters of a UTF-8 string, appended to out. A stray or
+// truncated sequence is skipped, not guessed at.
+static void
+addCodepoints(const std::string &text, std::vector<unsigned int> &out)
+{
+	for(size_t i = 0; i < text.size(); ){
+		unsigned char c = (unsigned char)text[i];
+		unsigned int cp;
+		if(c < 0x80){
+			i += 1;
+			continue;
+		}else if((c & 0xE0) == 0xC0 && i + 1 < text.size()){
+			cp = ((c & 0x1Fu) << 6) | ((unsigned char)text[i + 1] & 0x3Fu);
+			i += 2;
+		}else if((c & 0xF0) == 0xE0 && i + 2 < text.size()){
+			cp = ((c & 0x0Fu) << 12) | (((unsigned char)text[i + 1] & 0x3Fu) << 6)
+				| ((unsigned char)text[i + 2] & 0x3Fu);
+			i += 3;
+		}else if((c & 0xF8) == 0xF0 && i + 3 < text.size()){
+			cp = ((c & 0x07u) << 18) | (((unsigned char)text[i + 1] & 0x3Fu) << 12)
+				| (((unsigned char)text[i + 2] & 0x3Fu) << 6) | ((unsigned char)text[i + 3] & 0x3Fu);
+			i += 4;
+		}else{
+			i += 1;
+			continue;
+		}
+		// The atlas is 16-bit: astral characters are out of reach, and the
+		// surrogate block is not a character.
+		if(cp >= 0x80 && cp <= 0xFFFF && (cp < 0xD800 || cp > 0xDFFF))
+			out.push_back(cp);
+	}
+}
+
+void
+I18nCatalogCodepoints(std::vector<unsigned int> &out)
+{
+	std::string dir = langDir();
+	if(dir.empty())
+		return;
+	for(const I18nLanguage &lang : I18nLanguages()){
+		std::string text;
+		if(!readFile(dir + "/" + lang.code + ".po", text))
+			continue;
+		for(const PoEntry &entry : parsePo(text))
+			if(!entry.id.empty())
+				addCodepoints(entry.str, out);
+	}
+}

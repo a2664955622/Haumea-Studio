@@ -2,6 +2,8 @@
 #include "haumea.h"
 #include "icons.h"
 #include "font_data.h"
+#include "i18n.h"
+#include <algorithm>
 #include <string>
 #include <cstdio>
 
@@ -215,6 +217,101 @@ SetupFonts(void)
 	io.Fonts->AddFontFromMemoryTTF(
 		(void *)fa_solid_font_data, fa_solid_font_size,
 		fontSize - 1.0f, &iconCfg, iconRanges);
+
+	// --- Other scripts: Inter covers Latin, Greek and Cyrillic, and the atlas
+	// holds only the ranges it is given, so a catalog in any other script drew
+	// every character as "?". Bake the characters the catalogs translate into,
+	// so a language pays only for the glyphs it uses, and merge them in from a
+	// face that has them. Static, like iconRanges: the atlas is built at the
+	// first frame, after this function returns. ---
+	static const ImWchar *scriptRanges = nil;
+	static std::vector<ImWchar> scriptRangeList;
+	static bool eastAsian = false;
+	if(scriptRanges == nil){
+		std::vector<unsigned int> codepoints;
+		I18nCatalogCodepoints(codepoints);
+		// Text the user types (group names, notes) is in no catalog, so an East
+		// Asian catalog also gets the common Chinese set. Only characters past
+		// Latin Extended-A need baking: the defaults cover the rest, which is
+		// why a catalog that only uses them changes nothing here.
+		for(unsigned int cp : codepoints)
+			if(cp >= 0x2E80)
+				eastAsian = true;
+		std::vector<unsigned int> baked;
+		for(unsigned int cp : codepoints)
+			if(cp >= 0x180)
+				baked.push_back(cp);
+		if(eastAsian){
+			for(const ImWchar *r = io.Fonts->GetGlyphRangesChineseSimplifiedCommon(); r[0]; r += 2)
+				for(unsigned int c = r[0]; c <= r[1]; c++)
+					if(c >= 0x180)
+						baked.push_back(c);
+		}
+		std::sort(baked.begin(), baked.end());
+		baked.erase(std::unique(baked.begin(), baked.end()), baked.end());
+		// Neighbouring characters share one range; a range per character would
+		// make this array needlessly large.
+		for(size_t i = 0; i < baked.size(); ){
+			size_t last = i;
+			while(last + 1 < baked.size() && baked[last + 1] == baked[last] + 1)
+				last++;
+			scriptRangeList.push_back((ImWchar)baked[i]);
+			scriptRangeList.push_back((ImWchar)baked[last]);
+			i = last + 1;
+		}
+		if(!scriptRangeList.empty()){
+			scriptRangeList.push_back(0);
+			scriptRanges = scriptRangeList.data();
+		}
+	}
+	if(scriptRanges != nil && !eastAsian){
+		// Inter carries Greek, Cyrillic and the Latin extensions itself: bake
+		// those from the embedded copy instead of loading another face.
+		ImFontConfig latinCfg;
+		latinCfg.MergeMode = true;
+		latinCfg.PixelSnapH = true;
+		latinCfg.FontDataOwnedByAtlas = false;
+		io.Fonts->AddFontFromMemoryTTF(
+			(void *)inter_font_data, inter_font_size,
+			fontSize, &latinCfg, scriptRanges);
+	}
+	if(scriptRanges != nil && eastAsian){
+		// A bundled face when the build ships one, else the system's, which
+		// every desktop has for its own language.
+		std::string scriptFace;
+		ImU32 scriptFaceNo = 0;
+		char fontRoot[2048];
+		if(GetEditorRootDirectory(fontRoot, sizeof(fontRoot))){
+			const char *paths[] = { "/fonts/NotoSansSC-Regular.ttf", "/../../../fonts/NotoSansSC-Regular.ttf" };
+			for(const char *relative : paths){
+				std::string candidate = std::string(fontRoot) + relative;
+				FILE *f = fopen(candidate.c_str(), "rb");
+				if(f){ fclose(f); scriptFace = candidate; break; }
+			}
+		}
+		if(scriptFace.empty()){
+			// A .ttc holds several faces; FontNo picks one from it.
+			struct { const char *path; ImU32 face; } faces[] = {
+				{ "C:/Windows/Fonts/msyh.ttc", 0 },	// Microsoft YaHei
+				{ "C:/Windows/Fonts/simhei.ttf", 0 },	// SimHei
+				{ "C:/Windows/Fonts/simsun.ttc", 0 },	// SimSun
+				{ "/System/Library/Fonts/PingFang.ttc", 0 },	// macOS
+				{ "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", 0 },	// Debian, Ubuntu
+				{ "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc", 0 },	// elsewhere
+			};
+			for(const auto &candidate : faces){
+				FILE *f = fopen(candidate.path, "rb");
+				if(f){ fclose(f); scriptFace = candidate.path; scriptFaceNo = candidate.face; break; }
+			}
+		}
+		if(!scriptFace.empty()){
+			ImFontConfig scriptCfg;
+			scriptCfg.MergeMode = true;
+			scriptCfg.PixelSnapH = true;
+			scriptCfg.FontNo = scriptFaceNo;
+			io.Fonts->AddFontFromFileTTF(scriptFace.c_str(), fontSize, &scriptCfg, scriptRanges);
+		}
+	}
 
  // A real monospace face, bundled for material text in every release.
  char editorRoot[2048];
