@@ -315,6 +315,43 @@ struct Client::Impl {
 		return "{\"cmd\":\"SET_ACTIVITY\",\"args\":{\"pid\":" + std::to_string(pid) +
 		       ",\"activity\":" + activity + "},\"nonce\":\"" + std::to_string(++nonce) + "\"}";
 	}
+	void ClearActivity(Connection &connection, Workspace mode, std::string &received)
+	{
+		if (!connection.Send(1, Activity(mode, true)))
+			return;
+		const std::string clearNonce = std::to_string(nonce);
+		// Closing a Unix socket with unread replies can reset it and discard
+		// the clear request. Drain earlier replies and await this one's receipt.
+		// The worker stays bounded when Discord has stopped responding.
+		auto deadline = Clock::now() + std::chrono::milliseconds(250);
+		while (Clock::now() < deadline) {
+			char buffer[4096];
+			int length = connection.Read(buffer, sizeof(buffer));
+			if (length == -1)
+				return;
+			if (length == -2) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(5));
+				continue;
+			}
+			received.append(buffer, (size_t)length);
+			if (received.size() > MaxPayload + 8)
+				return;
+			while (received.size() >= 8) {
+				uint32_t opcode = read32(received.data()), size = read32(received.data() + 4);
+				if (size > MaxPayload)
+					return;
+				if (received.size() < size + 8)
+					break;
+				std::string payload = received.substr(8, size);
+				received.erase(0, size + 8);
+				if (opcode == 2 || opcode > 4 ||
+				    (opcode == 1 && rootString(payload, "nonce") == clearNonce))
+					return;
+				if (opcode == 3 && !connection.Send(4, payload))
+					return;
+			}
+		}
+	}
 	void Shutdown()
 	{
 		{
@@ -351,7 +388,7 @@ struct Client::Impl {
 			}
 			if (stop || !active) {
 				if (ready)
-					connection.Send(1, Activity(mode, true));
+					ClearActivity(connection, mode, received);
 				connection.Close();
 				received.clear();
 				ready = false;

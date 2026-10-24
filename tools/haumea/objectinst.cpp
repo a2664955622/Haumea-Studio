@@ -17,6 +17,7 @@
 #include "samp_loader.h"
 #include "materialtext.h"
 #include "radarart.h"
+#include "tempstream.h"
 #include <errno.h>
 #include <sys/stat.h>
 #include <cctype>
@@ -8284,12 +8285,12 @@ BuildPawnCode(const char *pathHint, PawnCodeFormat format, bool selectedOnly,
 		return -1;
 	if(!isSA())
 		return -1;
-	FILE *f = tmpfile();
+	FILE *f = OpenTemporaryCodeStream();
 	if(f == nil)
 		return -1;
 	const char *hint = pathHint && pathHint[0] ? pathHint : "haumea-map.pwn";
 	int count = pawnWriteCode(f, hint, format, selectedOnly, numSkipped);
-	if(fflush(f) != 0 || fseek(f, 0, SEEK_END) != 0){
+	if(fflush(f) != 0 || ferror(f) || fseek(f, 0, SEEK_END) != 0){
 		fclose(f);
 		return -1;
 	}

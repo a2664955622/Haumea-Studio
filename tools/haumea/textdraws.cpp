@@ -3,6 +3,7 @@
 #include "textdraws.h"
 #include "encoding.h"
 #include "documentxml.h"
+#include "tempstream.h"
 
 #include <errno.h>
 #include <ctype.h>
@@ -202,7 +203,7 @@ BuildTextDrawFileCode(const char *path)
 {
 	std::string prefix = TextDrawFilePrefix(path);
 	const char *p = prefix.c_str();
-	FILE *f = tmpfile();
+	FILE *f = OpenTemporaryCodeStream();
 	if(f == nil)
 		return std::string();
 	fprintf(f, "// TextDraws made with Haumea Studio.\n"
@@ -223,6 +224,10 @@ BuildTextDrawFileCode(const char *path)
 	writeGlobals(f, gTextDraws, p);
 	writeFunctions(f, gTextDraws, p);
 	std::string code;
+	if(fflush(f) != 0 || ferror(f)){
+		fclose(f);
+		return code;
+	}
 	long size = ftell(f);
 	if(size > 0 && fseek(f, 0, SEEK_SET) == 0){
 		code.resize((size_t)size);

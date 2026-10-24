@@ -31,6 +31,7 @@ NONE = ('docs/', 'README', 'CHANGELOG', '.github/', 'tools/release/', 'tools/age
 # Source files and the real-game tests they need: UI scripts (without .uis),
 # 'roundtrip', 'showcase'. Files not listed here (and not in NONE) select all.
 SOURCES = {
+	'tempstream.h': ['pawn_ide', 'import_export', 'roundtrip', 'textdraws', 'textdraws_boards'],
 	'discordrpc.cpp': ['discord_presence'],
 	'discordrpc.h': ['discord_presence'],
 	'discordpresence.cpp': ['discord_presence'],

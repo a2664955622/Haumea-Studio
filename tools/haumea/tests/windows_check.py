@@ -155,6 +155,21 @@ class WindowsCheck:
         print('ok   %s: built %s (%d bytes)' % (gfx, exe.name, exe.stat().st_size))
         return exe
 
+    def temporary_code_streams(self):
+        """Code generation uses the user's Unicode temp path and cleans up after itself."""
+        binary = self.work / 'tempstream-check.exe'
+        result = run([os.environ.get('CXX', 'x86_64-w64-mingw32-g++'), '-std=c++17', '-static',
+                      '-I' + str(ROOT / 'tools/haumea'), str(HERE / 'fixtures/tempstream.cpp'),
+                      '-o', str(binary)])
+        if result.returncode:
+            self.fail('Temporary code stream check did not build\n' + result.stdout + result.stderr)
+            return
+        result = run(['wine', str(binary)], env=self.wine_env, cwd=self.work, timeout=60)
+        if result.returncode or 'Temporary code streams: passed' not in result.stdout:
+            self.fail('Temporary code streams failed\n' + result.stdout + result.stderr)
+        else:
+            print('ok   code generation: user temp folder, Unicode paths, binary seeks and cleanup')
+
     def roundtrips(self, gfx, exe):
         for source in MAPS:
             name = source.stem
@@ -281,6 +296,7 @@ class WindowsCheck:
         try:
             self.setup()
             self.discord_presence()
+            self.temporary_code_streams()
             for gfx in self.args.gfx.split(','):
                 print('== ' + gfx)
                 exe = self.build(gfx)

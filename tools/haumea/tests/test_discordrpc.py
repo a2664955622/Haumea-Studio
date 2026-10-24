@@ -43,8 +43,9 @@ int main(int argc,char **argv){
 
 
 class Peer:
-    def __init__(self,path,ready=True):
+    def __init__(self,path,ready=True,pause_after_reply=0,acknowledge=True):
         self.ready=ready;self.path=path;self.events=queue.Queue();self.lock=threading.Lock()
+        self.pause_after_reply=pause_after_reply;self.acknowledge=acknowledge;self.replies=queue.Queue()
         self.stop=threading.Event();self.connection=None;self.errors=[]
         self.listener=socket.socket(socket.AF_UNIX)
         self.listener.bind(str(path));self.listener.listen(2);self.listener.settimeout(.1)
@@ -80,8 +81,11 @@ class Peer:
                         self.events.put((opcode,payload,time.monotonic()))
                         if opcode==0 and self.ready:
                             self.send(1,{'cmd':'DISPATCH','data':{'evt':'ERROR','user':{'username':'private'}},'evt':'READY'},True)
-                        elif opcode==1:
+                        elif opcode==1 and self.acknowledge:
                             self.send(1,{'cmd':'SET_ACTIVITY','evt':None,'nonce':payload['nonce']})
+                            self.replies.put(payload['nonce'])
+                            # Keep a reply unread while the client disables presence.
+                            if self.pause_after_reply:self.stop.wait(self.pause_after_reply)
             except (BrokenPipeError,ConnectionResetError,OSError):pass
             except Exception as error:self.errors.append(error)
             finally:
@@ -123,8 +127,8 @@ class DiscordRPCTests(unittest.TestCase):
         self.folder=tempfile.TemporaryDirectory(prefix='hdc-',dir='/tmp')
         self.addCleanup(self.folder.cleanup);self.path=Path(self.folder.name,'d.sock')
 
-    def start(self,peer=True,ready=True):
-        self.peer=Peer(self.path,ready) if peer else None
+    def start(self,peer=True,ready=True,**peer_options):
+        self.peer=Peer(self.path,ready,**peer_options) if peer else None
         if self.peer:self.addCleanup(self.peer.close)
         self.process=subprocess.Popen([str(self.binary),str(self.path)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,
                                       stderr=subprocess.PIPE,text=True)
@@ -211,6 +215,21 @@ class DiscordRPCTests(unittest.TestCase):
         self.assertEqual(next_activity['timestamps'],first['timestamps'])
         self.process.stdin.write('quit\n');self.process.stdin.flush()
         self.process.wait(timeout=2)
+        self.assertIsNone(self.activity())
+
+    def test_disable_drains_previous_reply_before_closing(self):
+        self.start(pause_after_reply=.1)
+        self.activity();self.peer.replies.get(timeout=3)
+        self.command('off')
+        self.assertIsNone(self.activity())
+        self.assertEqual(self.peer.replies.get(timeout=3),'2')
+
+    def test_silent_clear_does_not_block_shutdown(self):
+        self.start(acknowledge=False);self.activity()
+        started=time.monotonic()
+        self.process.stdin.write('quit\n');self.process.stdin.flush()
+        self.process.wait(timeout=2)
+        self.assertLess(time.monotonic()-started,1)
         self.assertIsNone(self.activity())
 
     def test_discovery_includes_native_and_sandboxed_clients(self):

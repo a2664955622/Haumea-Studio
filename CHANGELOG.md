@@ -10,9 +10,10 @@
   hints introduce TextDraws and Code and stay dismissed after use.
 - Edit Pawn in the native **Code** workspace with syntax colours, line numbers, undo/redo,
   find/replace and recoverable drafts. Manual changes save to a separate script.
-
 - Discord Rich Presence shows the active workspace and session time, with a switch under
   Preferences → Privacy. Map names and project paths stay private.
+- Disabling Discord activity or closing Haumea waits briefly for the clear acknowledgement,
+  preventing an unread reply from discarding the request.
 
 ### Map documents
 
@@ -52,6 +53,8 @@ shortcut. The new build fixes subsequent restarts.
 
 ### Fixes and polish
 
+- Windows code generation uses the user's temporary folder, fixing Pawn and TextDraw
+  generation failures that required running the editor as administrator.
 - Linux self-updates launch the newly installed executable rather than the old rollback copy.
 - Missing essential GTA files return to the folder chooser with the missing names listed.
 - macOS requests the required OpenGL Core profile; a failed graphics initialization stops
