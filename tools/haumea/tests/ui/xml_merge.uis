@@ -1,0 +1,31 @@
+# Merging a paired map remaps document IDs and attaches to the imported parent.
+open "$UI_FIXTURES/ui_xml_merge.pwn"
+assert objects == 2
+shortcut save_map
+wait 5
+assert file_contains "$UI_FIXTURES/ui_xml_merge.pwn.xml" 'parent="1"'
+click_item '' 'File'
+click_item '*' 'Import'
+click_item '*' 'Merge Pawn File...'
+wait 5
+set_item 'Merge Pawn File' '##merge_path' "$UI_FIXTURES/ui_xml_merge.pwn"
+click_item 'Merge Pawn File' 'Merge into map'
+wait 10
+assert objects == 4
+assert selected == 2
+click_item 'Merge Pawn File' 'Close'
+move 50% 45%
+key Ctrl+Z
+wait 5
+assert objects == 2
+key Ctrl+Y
+wait 5
+assert objects == 4
+shortcut save_map
+wait 5
+assert file_contains "$UI_FIXTURES/ui_xml_merge.pwn.xml" 'parent="3"'
+assert file_contains "$UI_FIXTURES/ui_xml_merge.pwn.xml" 'comment="linked lamp"'
+assert file_lacks "$UI_FIXTURES/ui_xml_merge.pwn" '@group'
+reopen
+assert objects == 4
+assert pawn_count 'AttachObjectToObject(' == 2

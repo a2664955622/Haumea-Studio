@@ -36,4 +36,4 @@ assert objects == 4
 assert pawn_contains "CreateDynamicRaceCP(0, 199" streamer
 assert pawn_contains "CreateDynamicRaceCP(1, 200" streamer
 assert pawn_lacks "CreateDynamicCP(" streamer
-assert pawn_contains ", 0.000000, 0.000000, 0.000000, 6.00, -1, -1, -1, STREAMER_RACE_CP_SD); // checkpoint @race(\"rally\")" streamer
+assert pawn_contains ", 0.000000, 0.000000, 0.000000, 6.00, -1, -1, -1, STREAMER_RACE_CP_SD); // checkpoint" streamer

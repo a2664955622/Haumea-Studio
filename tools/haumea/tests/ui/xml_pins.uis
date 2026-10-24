@@ -1,0 +1,40 @@
+# Pins, links and exact alignment settings belong to the map's XML.
+open "$UI_FIXTURES/ui_pin_alignment.pwn"
+click_object model=1271
+click_item 'Tools' 'Coordinate pin'
+click_item 'Tools' 'Pin at selected centre'
+set_item 'Tools' 'Pin XYZ/#0' '2030'
+set_item 'Tools' 'Pin XYZ/#1' '-3010'
+click_item 'Tools' 'Pin at selected centre'
+set_item 'Tools' 'Pin XYZ/#0' '2030'
+set_item 'Tools' 'Pin XYZ/#1' '-2990'
+click_item 'Tools' '##active_pin'
+click_item '*' 'Pin 1'
+click_item 'Tools' 'Ruler to'
+click_item '*' 'Pin 2'
+assert pin.distance == 20
+shortcut save_map
+wait 5
+assert file_contains "$UI_FIXTURES/ui_pin_alignment.pwn.xml" 'end-pin="2"'
+assert file_lacks "$UI_FIXTURES/ui_pin_alignment.pwn" 'end-pin'
+assert file_contains "$UI_FIXTURES/ui_pin_alignment.pwn.pre-xml.bak" 'CreatePinAlignmentTest'
+reopen
+assert pin.count == 2
+assert pin.distance == 20
+assert pin.x == 2030
+# Merely selecting a pin must leave the map saved.
+click pin pin
+shortcut new_map
+wait 5
+assert no_window 'Unsaved changes'
+assert pin.count == 0
+open "$UI_FIXTURES/ui_pin_alignment.pwn"
+assert pin.count == 2
+set_item 'Tools' 'Pin XYZ/#0' '2040'
+wait 5
+shortcut new_map
+wait 5
+assert window 'Unsaved changes'
+click_item 'Unsaved changes' 'Cancel'
+assert pin.count == 2
+assert pin.x == 2040

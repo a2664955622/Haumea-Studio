@@ -2,11 +2,15 @@
 #include "coordinatepin.h"
 #include "alignmentmath.h"
 #include "haumea.h"
+#include "editorxml.h"
+#include "xmlfields.h"
 #include "i18n.h"
 #include "maptools.h"
 #include "shortcuts.h"
 #include <algorithm>
 #include <cmath>
+#include <climits>
+#include <unordered_set>
 
 namespace
 {
@@ -28,6 +32,7 @@ rw::V3d dragReference, snapPoint;
 int lastSnapModel = -1;
 bool anchorSnapped, dragMoved;
 ImVec2 dragStart;
+std::string documentBaseline;
 Pin *current()
 {
 	return active >= 0 && active < (int)pins.size() ? &pins[active] : nullptr;
@@ -532,6 +537,15 @@ void CoordinatePinSnapTargets(int area, const rw::V3d &centre, std::vector<rw::V
 }
 void CoordinatePinOverlay(bool enabled)
 {
+	// Pins are document content now. Finish a drag/typed edit as one dirty
+	// change, independently of which panel is visible.
+	EditorXML::Node state = WriteCoordinatePinXML();
+	state.attributes.erase("active");
+	std::string signature = EditorXML::Serialize(state);
+	if(documentBaseline.empty()) documentBaseline = signature;
+	else if(signature != documentBaseline && !ImGui::IsAnyItemActive() && !ImGui::IsMouseDown(0)){
+		BumpChangeSeq(); documentBaseline = signature;
+	}
 	visible = enabled && showPins;
 	hovered = -1;
 	if(!visible) {
@@ -621,4 +635,95 @@ void CoordinatePinOverlay(bool enabled)
 				      IM_COL32(90, 225, 255, 255), 2 * ui);
 		}
 	}
+}
+
+EditorXML::Node WriteCoordinatePinXML()
+{
+	using XMLFields::write;
+	EditorXML::Node node("alignment");
+	node.set("active", active);
+	node.set("next-id", nextId);
+	node.set("show", showPins);
+	node.set("snap-surfaces", snapSurface);
+	node.set("snap-points", snapPoints);
+	node.set("snap-objects", snapObjects);
+	write(node, "guides", guides);
+	write(node, "align-axes", alignAxes);
+	node.set("face-ruler", faceRuler);
+	node.set("anchor", alignAnchor);
+	node.set("offset", offset);
+	node.set("angle-step", angleStep);
+	for (const Pin &pin : pins) {
+		EditorXML::Node &p = node.add("pin");
+		p.set("id", pin.id);
+		p.set("area", pin.area);
+		write(p, "position", pin.position);
+		write(p, "end", pin.end);
+		write(p, "normal", pin.normal);
+		p.set("measured", pin.measured);
+		p.set("end-pin", pin.endPin);
+	}
+	return node;
+}
+bool ReadCoordinatePinXML(const EditorXML::Node &node, std::string *error, bool apply)
+{
+	using XMLFields::read;
+	std::vector<Pin> loaded;
+	int activeValue = -1, next = 1, anchor = 1;
+	float distance = 0, step = 15;
+	bool show = true, surfaces = true, points = true, objects = true, face = false, guide[3] = {true, true, false},
+	     axes[3] = {true, true, false};
+	if (!read(node, "active", activeValue, error) || !read(node, "next-id", next, error) ||
+	    !read(node, "show", show, error) || !read(node, "snap-surfaces", surfaces, error) ||
+	    !read(node, "snap-points", points, error) || !read(node, "snap-objects", objects, error) ||
+	    !read(node, "guides", guide, error) || !read(node, "align-axes", axes, error) ||
+	    !read(node, "face-ruler", face, error) || !read(node, "anchor", anchor, error) ||
+	    !read(node, "offset", distance, error) || !read(node, "angle-step", step, error))
+		return false;
+	std::unordered_set<int> ids;
+	for (const EditorXML::Node &p : node.children)
+		if (p.name == "pin") {
+			Pin pin = {};
+			pin.normal = {0, 0, 1};
+			if (!read(p, "id", pin.id, error) || !read(p, "area", pin.area, error) ||
+			    !read(p, "position", pin.position, error) || !read(p, "end", pin.end, error) ||
+			    !read(p, "normal", pin.normal, error) || !read(p, "measured", pin.measured, error) ||
+			    !read(p, "end-pin", pin.endPin, error))
+				return false;
+			if (pin.id <= 0 || pin.id >= INT_MAX || !ids.insert(pin.id).second) {
+				*error = "Invalid alignment pin identifier";
+				return false;
+			}
+			next = std::max(next, pin.id + 1);
+			loaded.push_back(pin);
+		}
+	if (!apply)
+		return true;
+	cancel();
+	pins = std::move(loaded);
+	active = pins.empty() ? -1 : clamp(activeValue, 0, (int)pins.size() - 1);
+	nextId = std::max(1, next);
+	showPins = show;
+	snapSurface = surfaces;
+	snapPoints = points;
+	snapObjects = objects;
+	faceRuler = face;
+	std::copy(guide, guide + 3, guides);
+	std::copy(axes, axes + 3, alignAxes);
+	alignAnchor = clamp(anchor, 0, 3);
+	offset = distance;
+	angleStep = clamp(step, 1.0f, 180.0f);
+	resolveEndpoints();
+	EditorXML::Node state = WriteCoordinatePinXML();
+	state.attributes.erase("active");
+	documentBaseline = EditorXML::Serialize(state);
+	return true;
+}
+void ResetCoordinatePins()
+{
+	cancel();
+	pins.clear();
+	active = -1;
+	nextId = 1;
+	documentBaseline.clear();
 }

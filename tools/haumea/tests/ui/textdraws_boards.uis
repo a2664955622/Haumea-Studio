@@ -22,5 +22,5 @@ wait 5
 assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "_ShowMain(playerid)"
 assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "_HideBoard(playerid)"
 assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "_ResetPlayer(playerid)"
-assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "// Haumea: board \"Board\""
-assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "// Haumea: reference \""
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn.xml" 'board="Board"'
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn.xml" 'font="6"'

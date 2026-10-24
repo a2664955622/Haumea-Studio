@@ -2661,8 +2661,8 @@ msgid "Show material indexes"
 msgstr "Mostrar índices dos materiais"
 
 #: tools/haumea/gui.cpp
-msgid "Paints each material slot of the selected objects with its number, white on green,\nas Texture Studio does, to see which part is which index. Only shown here; nothing is saved."
-msgstr "Pinta cada slot de material dos objetos selecionados com o número dele, branco no verde,\ncomo o Texture Studio faz, para ver qual parte é qual índice. Só aparece aqui; nada é salvo."
+msgid "Paints each material slot of the selected objects with its number, white on green,\nas Texture Studio does, to see which part is which index. The game materials stay unchanged."
+msgstr "Pinta cada slot de material dos objetos selecionados com o número dele, branco no verde,\ncomo o Texture Studio faz, para ver qual parte é qual índice. Os materiais do jogo continuam iguais."
 
 #: tools/haumea/textdraws_ui.cpp
 msgid "/hudscalefix"

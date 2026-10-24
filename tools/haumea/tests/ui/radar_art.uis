@@ -35,7 +35,8 @@ assert radar_zones > 0
 key Ctrl+S
 wait 5
 assert pawn_contains "_AddStreamedZone("
-assert pawn_contains "// radar art"
+assert pawn_lacks "// radar art"
+assert xml_contains 'radar="true"'
 assert pawn_contains "CreateDynamicRectangle("
 reopen
 wait 10

@@ -16,7 +16,7 @@ enum {
 	TD_FONT_SPRITE,	// text is "txd:texture"
 	TD_FONT_PREVIEW,	// a 3D model
 	// Not a textdraw: an image to build on (text is its file), drawn in the
-	// editor only and kept in the file as a comment.
+	// editor only and kept in the XML companion.
 	TD_FONT_REFERENCE,
 };
 
@@ -38,8 +38,7 @@ struct TextDraw
 	int previewModel;
 	float previewRotX, previewRotY, previewRotZ, previewZoom;
 	int previewColour1, previewColour2;
-	// The editor's own, saved as a comment after the create line
-	// (// Haumea: locked hidden group "name"); the game never sees them.
+	// Editor properties saved in XML; legacy // Haumea: comments are still read.
 	bool locked;	// can't be dragged on the canvas
 	bool hidden;	// not drawn in the editor (it is still in the file)
 	std::string group;	// a name shared by textdraws edited together

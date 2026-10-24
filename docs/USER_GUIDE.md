@@ -194,7 +194,9 @@ when no textdraw is selected. Add text, boxes, sprites and model previews, drag 
 them), and set their text, font, colours and style. Undo (Ctrl+Z) has its own history here.
 
 The window's **New**, **Open**, **Save** and **Save As** work on the textdraw file (a `.pwn` or
-`.inc`), and Ctrl+S saves it while the mode is on. Include it in your gamemode and call
+`.inc`) plus its `.xml` companion (for example, `hud.inc.xml`). Ctrl+S saves the pair while the mode
+is on. The XML keeps layers, reference images, locks, groups, artboards, shapes and ruler guides.
+Include the Pawn file in your gamemode and call
 `Haumea_<file>_CreateTextDraws()` from `OnGameModeInit` and `Haumea_<file>_ShowTextDraws(playerid)`
 when a player should see them. **Test in game** includes the open textdraw file as it is.
 
@@ -261,7 +263,7 @@ rotates object headings to the line.
 
 For a runway, put a pin at each corner, link them with **Ruler to**, select the two objects,
 and align to that guide or distribute between its ends. Leave Z unchecked to keep their
-heights. Pins are temporary editor references and are not exported with the map. They stay visible
+heights. Pins and their alignment settings are saved in the map’s XML, and stay out of the game code. They stay visible
 when you close Tools or switch panels; **Show pins and guides** hides them and disables
 their snap targets. Switching away from Map hides them until you return.
 
@@ -320,8 +322,15 @@ and the SA-MP 0.3.7 includes.
   texture list; when your server has Texture Studio installed, Haumea uses that server's list.
 - **Merge**: **File → Import → Merge Pawn File** adds another `.pwn`, `.db`, MTA:SA `.map` or IPL
   map to yours.
-- **Groups and notes** are saved after each object as `// model @group("...") @note("...")`.
-  Keep these comments when you edit the file by hand.
+- **Pawn + XML**: saving `map.pwn` also writes `map.pwn.xml`. The Pawn contains runnable game
+  code; the UTF-8 XML mirrors the scene, including full object properties and materials, groups,
+  notes, hidden objects, radar layers, embedded TextDraws, alignment pins and the camera view.
+  Keep both files together when copying or sharing an editable map. The game only needs the Pawn.
+- **Older maps** open as before. Their first save creates the XML and keeps an exact copy of the
+  previous Pawn as `map.pwn.pre-xml.bak`. Opening alone does not modify a map.
+- **Editing by hand**: a changed Pawn supplies the runtime values; XML metadata is applied to
+  matching objects. If the XML is invalid, the map opens from Pawn with an import report and saving
+  over that XML is blocked until it is repaired or moved. [Format details](MAP_FORMAT.md).
 - **Autosave**: while a map has unsaved changes, Haumea saves copies in its config folder.
   **File → Recover Autosave** opens them.
 

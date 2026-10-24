@@ -37,7 +37,7 @@ click 50% 55%
 wait 10
 assert objects == 7
 assert selected == 3
-assert pawn_contains '@group("Bus stop")'
+assert xml_contains 'group="Bus stop"'
 assert pawn_contains "bustopm"
 
 # Save the selection as a prefab of its own

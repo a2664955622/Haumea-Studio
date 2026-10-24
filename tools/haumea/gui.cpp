@@ -1,5 +1,6 @@
 #include "haumea.h"
 #include "coordinatepin.h"
+#include "documentxml.h"
 #include "crashreports.h"
 #include "telemetry.h"
 #include "editoricons.h"
@@ -1055,8 +1056,11 @@ writeAutosave(void)
 	log("Autosave: wrote %s\n", path);
 	std::vector<std::string> files;
 	listAutosaves(files);
-	for(size_t i = gAutosaveKeepCount; i < files.size(); i++)
+	for(size_t i = gAutosaveKeepCount; i < files.size(); i++){
 		remove(files[i].c_str());
+		remove(EditorXML::Sidecar(files[i]).c_str());
+		remove((EditorXML::Sidecar(files[i])+".previous").c_str());
+	}
 }
 
 static void
@@ -3591,6 +3595,11 @@ openPawnMap(const char *path)
 		return false;
 	}
 	gPawnSaveFormat = streamer ? PAWN_CODE_STREAMER : PAWN_CODE_NATIVE;
+	if(!foreignMap){
+		int xmlFormat = RestoreMapXMLWorkspace(path);
+		if(xmlFormat == PAWN_CODE_NATIVE || xmlFormat == PAWN_CODE_STREAMER)
+			gPawnSaveFormat = xmlFormat;
+	}
 	// Its text keeps the encoding it came in; other tools' maps get the
 	// client's Windows-1252.
 	if(!foreignMap)
@@ -5997,9 +6006,10 @@ uiMaterialInfo(ObjectInst *inst)
 	}
 	if(!canEdit)
 		ImGui::TextDisabled(_("Material controls are locked for this object."));
-	ImGui::Checkbox(L("Show material indexes"), &gShowMaterialIndexes);
+	if(ImGui::Checkbox(L("Show material indexes"), &gShowMaterialIndexes))
+		BumpChangeSeq();
 	ImGui::SetItemTooltip("%s", _("Paints each material slot of the selected objects with its number, white on green,\n"
-		"as Texture Studio does, to see which part is which index. Only shown here; nothing is saved."));
+		"as Texture Studio does, to see which part is which index. The game materials stay unchanged."));
 	{
 		std::vector<ObjectInst*> targets;
 		uiMaterialTargets(inst, 0, targets);

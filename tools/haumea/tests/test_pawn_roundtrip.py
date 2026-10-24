@@ -8,6 +8,7 @@ from pathlib import Path
 import glob
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -127,6 +128,7 @@ class PawnRoundtripTests(unittest.TestCase):
             first = self.roundtrip(FIXTURE, Path(tmp, 'map.pwn'))
             copy = Path(tmp, 'copy.pwn')
             copy.write_text(first)
+            shutil.copyfile(Path(tmp, 'map.pwn.xml'), Path(tmp, 'copy.pwn.xml'))
             second = self.roundtrip(copy, Path(tmp, 'map.pwn'))
             self.assertEqual(first, second, 'saving an opened map must not change it')
 
@@ -144,7 +146,7 @@ class PawnRoundtripTests(unittest.TestCase):
         # Streamer world/interior/distances, names, groups and notes.
         self.assertIn('new sign = CreateDynamicObject(19353, 1612.000000, -1890.000000, 14.000000, '
                       '10.000000, 20.000000, 30.000000, 5, 3, -1, 200.00, 150.00); '
-                      '// wall001 @group("Shop") @note("front sign")', first)
+                      '// wall001', first)
         # Streamer material text puts the index before the text.
         self.assertIn('SetDynamicObjectMaterialText(sign, 1, "OPEN"', first)
         # The attached crate sits on its parent and the attachment is kept.
@@ -168,7 +170,7 @@ class PawnRoundtripTests(unittest.TestCase):
         self.assertIn('PlayAudioStreamForPlayer(playerid, "http://example.com/radio.pls", 1630.000000, '
                       '-1890.000000, 13.500000, 60.00, true); // sound', first)
         self.assertRegex(first, r'\tHaumea_\w+_AddSound\(1142, 1634\.000000, -1890\.000000, 13\.500000, '
-                         r'40\.00, false, 3, 1\); // sound @note\("crowd"\)')
+                         r'40\.00, false, 3, 1\); // sound')
         self.assertIn('CreateDynamicSphere(x, y, z, radius, worldid, interiorid);', first)
         self.assertNotIn('Haumea_old_', first)
         # A hand-written name nothing else uses keeps its name and is marked
@@ -177,13 +179,13 @@ class PawnRoundtripTests(unittest.TestCase):
         self.assertRegex(first, r'\tnew bike = AddStaticVehicleEx\(468, [^\n]*\n\t#pragma unused bike\n')
         self.assertEqual(first.count('#pragma unused'), 2)
         # Checkpoints (streamer only): a race is chained by its next points,
-        # written in order and tagged with its name.
+        # written in order; the XML retains its name.
         self.assertIn('CreateDynamicCP(1644.000000, -1890.000000, 13.500000, 3.00, -1, -1, -1, '
                       'STREAMER_CP_SD); // checkpoint', first)
         self.assertRegex(first, r'CreateDynamicRaceCP\(0, 1650\.000000, -1890\.000000, 13\.500000, '
-                         r'1660\.000000, -1890\.000000, 13\.500000, 8\.00, [^\n]*@race\("race1"\)\n'
+                         r'1660\.000000, -1890\.000000, 13\.500000, 8\.00, [^\n]*// checkpoint\n'
                          r'\tCreateDynamicRaceCP\(1, 1660\.000000, -1890\.000000, 13\.500000, '
-                         r'0\.000000, 0\.000000, 0\.000000, 8\.00, [^\n]*@race\("race1"\)\n')
+                         r'0\.000000, 0\.000000, 0\.000000, 8\.00, [^\n]*// checkpoint\n')
 
 
 if __name__ == '__main__':

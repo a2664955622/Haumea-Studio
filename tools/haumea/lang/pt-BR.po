@@ -5881,10 +5881,10 @@ msgstr "Pintura 2"
 
 msgid ""
 "Paints each material slot of the selected objects with its number, white on green,\n"
-"as Texture Studio does, to see which part is which index. Only shown here; nothing is saved."
+"as Texture Studio does, to see which part is which index. The game materials stay unchanged."
 msgstr ""
 "Pinta cada slot de material dos objetos selecionados com o número dele, branco no verde,\n"
-"como o Texture Studio faz, para ver qual parte é qual índice. Só aparece aqui; nada é salvo."
+"como o Texture Studio faz, para ver qual parte é qual índice. Os materiais do jogo continuam iguais."
 
 msgid "Palm Tree"
 msgstr "Palmeira"

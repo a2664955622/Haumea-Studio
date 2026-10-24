@@ -55,6 +55,6 @@ shortcut save_map_as
 wait 5
 click_item 'Save TextDraws As' 'Save'
 wait 5
-assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "shape \"rounded 0.00 179.00 "
-assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "// Haumea: guide y "
-assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "group \"Rounded box 2\""
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn.xml" 'shape="rounded 0.00 179.00 '
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn.xml" 'vertical="false"'
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn.xml" 'group="Rounded box 2"'

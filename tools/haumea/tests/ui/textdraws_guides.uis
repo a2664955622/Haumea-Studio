@@ -17,8 +17,8 @@ shortcut save_map_as
 wait 5
 click_item 'Save TextDraws As' 'Save'
 wait 5
-assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "// Haumea: guide x 20.000"
-assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "// Haumea: guide x 172.500"
-assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "// Haumea: guide x 620.000"
-assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "// Haumea: guide y 428.000"
-assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn" "// Haumea: guide x 100.000"
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn.xml" 'at="20"'
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn.xml" 'at="172.5"'
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn.xml" 'at="620"'
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn.xml" 'at="428"'
+assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn.xml" 'at="100"'

@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 #include <vector>
+#include <string>
 namespace rw { struct V3d; }
 struct ImVec2;
+namespace EditorXML { struct Node; }
 
 void CoordinatePinPanel();
 void CoordinatePinOverlay(bool enabled);
@@ -16,3 +18,6 @@ int CoordinatePinSnapModel();
 bool CoordinatePinAnchorSnapped();
 // The same guides used by the alignment panel are targets for N / object snap.
 void CoordinatePinSnapTargets(int area, const rw::V3d &centre, std::vector<rw::V3d> &targets);
+EditorXML::Node WriteCoordinatePinXML();
+bool ReadCoordinatePinXML(const EditorXML::Node &node, std::string *error, bool apply = true);
+void ResetCoordinatePins();

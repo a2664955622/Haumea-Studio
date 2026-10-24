@@ -1314,6 +1314,7 @@ struct ObjectInst
 
 	// additional stuff
 	int32 m_id;	// to identify when picking
+	uint32 m_editorDocumentId;	// stable only within the map's XML document
 	int m_selected;
 	uint32 m_selectSeq;	// when it was selected: the earliest is the gizmo's pivot
 	int m_highlight;	// various ways to highlight this object
@@ -1391,6 +1392,9 @@ extern CPtrList selection;
 ObjectInst *GetInstanceByID(int32 id);
 int32 pick(void);
 ObjectInst *AddInstance(void);
+// XML restores individual entities; it must not automatically create a LOD.
+ObjectInst *SpawnDocumentInstance(int model, const rw::V3d &position, const rw::Quat &rotation);
+void RestoreDocumentTransform(ObjectInst *inst, const rw::V3d &position, const rw::Quat &rotation, bool deleted);
 void BuildInstanceMatrix(rw::Matrix *matrix, const rw::Quat &rotation, const rw::V3d &translation, bool iplRotation);
 void ClearSelection(void);
 void DeleteSelected(void);

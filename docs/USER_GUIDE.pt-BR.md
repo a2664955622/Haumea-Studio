@@ -199,7 +199,8 @@ redimensiona) e defina o texto, a fonte, as cores e o estilo. Desfazer (Ctrl+Z) 
 próprio aqui.
 
 **Novo**, **Abrir**, **Salvar** e **Salvar como** da janela trabalham no arquivo de textdraws (um
-`.pwn` ou `.inc`), e Ctrl+S o salva enquanto o modo está ligado. Inclua-o no seu gamemode e chame
+`.pwn` ou `.inc`) e seu XML (por exemplo, `hud.inc.xml`); Ctrl+S salva o par enquanto o modo está ligado.
+O XML guarda camadas, imagens de referência, bloqueios, grupos, pranchetas, formas e guias da régua. Inclua o Pawn no seu gamemode e chame
 `Haumea_<arquivo>_CreateTextDraws()` no `OnGameModeInit` e `Haumea_<arquivo>_ShowTextDraws(playerid)`
 quando um jogador precisar vê-los. **Testar no jogo** inclui o arquivo de textdraws aberto como está.
 
@@ -268,7 +269,7 @@ na régua: dois objetos vão para pontas opostas. Cada comando é um passo de de
 
 Para uma pista, marque um pin em cada canto, vincule-os em **Régua até**, selecione os dois
 objetos e alinhe-os à guia ou distribua entre as pontas. Deixe Z desmarcado para manter as
-alturas. Pins são referências temporárias e não são exportados. Continuam visíveis ao fechar
+alturas. Pins e suas configurações de alinhamento ficam no XML do mapa, fora do código do jogo. Continuam visíveis ao fechar
 Ferramentas ou trocar de painel; **Mostrar pins e guias** os oculta e desativa o encaixe
 neles. Sair de Mapa os oculta até você voltar.
 
@@ -331,8 +332,16 @@ do open.mp quanto com os do SA-MP 0.3.7.
   lista desse servidor.
 - **Mesclar**: **Arquivo → Importar → Mesclar arquivo Pawn** adiciona outro `.pwn`, `.db`, `.map`
   do MTA:SA ou mapa IPL ao seu.
-- **Grupos e notas** são salvos depois de cada objeto como `// model @group("...") @note("...")`.
-  Mantenha esses comentários quando editar o arquivo à mão.
+- **Pawn + XML**: salvar `mapa.pwn` também grava `mapa.pwn.xml`. O Pawn contém o código para
+  o jogo; o XML em UTF-8 espelha a cena, com propriedades e materiais dos objetos, grupos, notas,
+  objetos ocultos, camadas do radar, TextDraws incorporados, pins de alinhamento e vista da câmera.
+  Mantenha os dois arquivos juntos ao copiar ou compartilhar um mapa editável. O jogo só precisa do Pawn.
+- **Mapas antigos** continuam abrindo. O primeiro salvamento cria o XML e guarda uma cópia exata
+  do Pawn anterior em `mapa.pwn.pre-xml.bak`. Só abrir o mapa não modifica seus arquivos.
+- **Edição à mão**: quando o Pawn muda, ele fornece os valores do jogo; os metadados do XML são
+  aplicados aos objetos correspondentes. Se o XML for inválido, o mapa abre pelo Pawn com um
+  relatório; sobrescrever aquele XML fica bloqueado até repará-lo ou movê-lo.
+  [Detalhes do formato](MAP_FORMAT.md) (em inglês).
 - **Autosave**: enquanto um mapa tem mudanças não salvas, o Haumea salva cópias na pasta de
   configuração dele. **Arquivo → Recuperar salvamento automático** as abre.
 

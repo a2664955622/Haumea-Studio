@@ -24,7 +24,7 @@ bool Cp1252CanEncode(const std::string &utf8);
 std::string Cp1252Unencodable(const std::string &utf8);
 bool IsAscii(const char *s);
 
-// The open map's text encoding, saved as a "// Text encoding:" header line.
+// The open map's text encoding, saved in its XML companion. Legacy headers are still read.
 PawnTextEncoding GetPawnTextEncoding(void);
 void SetPawnTextEncoding(PawnTextEncoding encoding);
 const char *PawnTextEncodingName(PawnTextEncoding encoding);

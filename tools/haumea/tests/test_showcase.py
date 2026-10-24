@@ -10,7 +10,8 @@ a custom model. The custom model's files are cut from the game's own gta3.img
 at test time, so no game files are kept in the repository; the recording
 (TRAIN_LINDEN_TO_UNITY) ships with the open.mp server.
 
-Opening and saving it must give the same file, twice, and the result must
+The legacy encoding/race tags migrate into XML on save. The runtime code must
+stay identical and its second save must be stable. The result must
 compile with 0 errors and 0 warnings against open.mp's includes. Needs a built
 editor, a GTA San Andreas directory and a display: set HAUMEA_GAME_DIR (and
 HAUMEA_BINARY if it is not in bin/). The compile step needs the Pawn toolchain
@@ -19,6 +20,8 @@ HAUMEA_BINARY if it is not in bin/). The compile step needs the Pawn toolchain
 from pathlib import Path
 import glob
 import os
+import re
+import xml.etree.ElementTree as ET
 import shutil
 import struct
 import subprocess
@@ -92,6 +95,14 @@ class ShowcaseTests(unittest.TestCase):
                 self.skipTest('the game folder has no gta3.img with barrel4 (synthetic fixture)')
             first, second = self.roundtrip(tmp, server, SHOWCASE / 'showcase.pwn')
             expected = (SHOWCASE / 'showcase.pwn').read_text()
+            # Only these editor tags leave the legacy showcase's Pawn.
+            expected = re.sub(r'^// Text encoding:.*\n', '', expected, flags=re.M)
+            expected = re.sub(r' @race\("[^"\n]*"\)', '', expected)
+            xml = ET.parse(str(first) + '.xml')
+            self.assertEqual(xml.getroot().get('encoding'), 'Windows-1252')
+            self.assertEqual(sum(n.get('cpRace') == 'plazarace' for n in xml.findall('./scene/object/properties')), 3)
+            self.assertEqual(ET.tostring(xml.getroot().find('scene')),
+                             ET.tostring(ET.parse(str(second)+'.xml').getroot().find('scene')))
             self.assertEqual(first.read_text(), expected,
                              'opening and saving the showcase changed it')
             self.assertEqual(second.read_text(), expected, 'saving it again changed it')

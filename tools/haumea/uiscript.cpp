@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "documentxml.h"
 #include "coordinatepin.h"
 #include "alignmentmath.h"
 #include "browserdiscovery.h"
@@ -678,27 +679,12 @@ compare(double a, const std::string &op, double b)
 }
 
 static std::string
-pawnText(bool streamer)
+pawnText(bool streamer, bool xml = false)
 {
-	// Named like the open map, so the variables read as in the saved file.
-	std::string name = GetPawnMapPath();
-	size_t slash = name.find_last_of("/\\");
-	if(slash != std::string::npos)
-		name = name.substr(slash + 1);
-	if(name.empty())
-		name = "ui-script-export.pwn";
-	std::string path = std::string(GetConfigDir()) + "/" + name;
-	int skipped = 0;
-	ExportPawnCode(path.c_str(), streamer ? PAWN_CODE_STREAMER : PAWN_CODE_NATIVE, false, &skipped);
-	std::string text;
-	FILE *f = fopen(path.c_str(), "rb");
-	if(f){
-		char buf[4096];
-		size_t n;
-		while((n = fread(buf, 1, sizeof(buf), f)) > 0) text.append(buf, n);
-		fclose(f);
-	}
-	return text;
+	std::string code;
+	if(xml)BeginMapXMLExport();
+	BuildPawnCode(GetPawnMapPath(), streamer ? PAWN_CODE_STREAMER : PAWN_CODE_NATIVE, false, code, nil);
+	return xml ? EditorXML::Serialize(FinishMapXMLExport()) : code;
 }
 
 static bool
@@ -982,11 +968,11 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		return why.find(arg(1)) != std::string::npos;
 	}
 
-	if(what == "pawn_contains" || what == "pawn_lacks"){
-		std::string text = pawnText(arg(2) == "streamer");
+	if(what == "pawn_contains" || what == "pawn_lacks" || what == "xml_contains" || what == "xml_lacks"){
+		std::string text = pawnText(arg(2) == "streamer", what.compare(0, 3, "xml") == 0);
 		bool found = text.find(arg(1)) != std::string::npos;
 		why = found ? "found" : "not found";
-		return what == "pawn_contains" ? found : !found;
+		return what == "pawn_contains" || what == "xml_contains" ? found : !found;
 	}
 	if(what == "toast_contains"){
 		why = "last toast: " + gLastToast;

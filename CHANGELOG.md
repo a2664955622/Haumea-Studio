@@ -11,6 +11,13 @@
 - Edit Pawn in the native **Code** workspace with syntax colours, line numbers, undo/redo,
   find/replace and recoverable drafts. Manual changes save to a separate script.
 
+### Map documents
+
+- Saves now create clean Pawn code and a companion XML with the full editable scene: objects,
+  materials, groups, notes, hidden state, radar layers, TextDraw layers and guides, and alignment pins.
+- Older maps migrate when saved, keeping an exact backup of their previous Pawn. Paired saves
+  retain the previous document if writing fails; externally edited Pawn keeps its runtime changes.
+
 ### TextDraw editing and previews
 
 - Artboards, layers, multiselection, locking, editable shapes, eight resize handles,

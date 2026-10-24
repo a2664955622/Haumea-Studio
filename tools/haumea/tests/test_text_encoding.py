@@ -3,8 +3,7 @@
 
 pawn/maps/hv_text.pwn is a pawno-style Windows-1252 map with "Ação, Coração,
 € and ñ" in a label, material text, a global and a per-player textdraw and a
-note. Opened and saved it must keep those bytes (not UTF-8) and say so in its
-header, and compiled, the .amx must hold each string as Windows-1252 cells.
+note. Opened and saved it must keep those bytes (not UTF-8), with its encoding in XML, and compiled, the .amx must hold each string as Windows-1252 cells.
 Needs a built editor and a game folder (HAUMEA_GAME_DIR); the compile step
 needs the Pawn toolchain (PAWN_TOOLCHAIN, fetched by run_all.sh).
 """
@@ -16,6 +15,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from haumea_test_env import editor_env, run_editor  # noqa: E402
@@ -40,12 +40,15 @@ class TextEncodingTests(unittest.TestCase):
             run_editor([BINARY, '--game', GAME_DIR, '--pawn-roundtrip', str(MAP), str(out)],
                            cwd=tmp, env=editor_env(tmp), capture_output=True)
             data = out.read_bytes()
-            self.assertIn(b'// Text encoding: Windows-1252', data)
+            xml = ET.parse(str(out) + '.xml')
+            self.assertEqual(xml.getroot().get('encoding'), 'Windows-1252')
+            self.assertNotIn(b'// Text encoding:', data)
             # Three times: the label, the material text and the textdraw.
             self.assertEqual(data.count(TEXT.encode('cp1252')), 3)
             self.assertNotIn(TEXT.encode('utf-8'), data)
             self.assertIn(PLAYER_TEXT.encode('cp1252'), data)
-            self.assertIn('@note("Coração da praça")'.encode('cp1252'), data)
+            self.assertNotIn(b'@note(', data)
+            self.assertTrue(any(n.get('comment') == 'Coração da praça' for n in xml.findall('./scene/object/properties')))
 
             toolchain = Path(os.environ.get('PAWN_TOOLCHAIN') or HERE / 'pawn' / '.toolchain')
             pawncc = toolchain / 'bin' / 'pawncc'

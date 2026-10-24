@@ -2,6 +2,7 @@
 #include "haumea.h"
 #include "textdraws.h"
 #include "encoding.h"
+#include "documentxml.h"
 
 #include <errno.h>
 #include <ctype.h>
@@ -142,6 +143,7 @@ readFile(const char *path, std::string &out)
 bool
 OpenTextDrawFile(const char *path, std::string *error)
 {
+	error->clear();
 	std::string raw;
 	if(path == nil || !readFile(path, raw)){
 		*error = std::string("could not read ") + (path ? path : "");
@@ -149,9 +151,17 @@ OpenTextDrawFile(const char *path, std::string *error)
 	}
 	PawnTextEncoding encoding;
 	std::string source = DecodePawnFileText(raw, &encoding);
+	EditorXML::Node document;std::string xmlError;
+	int xmlState=EditorXML::ReadDocument(path,raw,"textdraws",&document,&xmlError);
+	if(xmlState<0||(xmlState>0&&!ValidateEditorDocument(document,&xmlError))){*error=xmlError;return false;}
+	if(xmlState==1){
+		encoding=document.get("encoding")=="UTF-8"?PAWN_TEXT_UTF8:PAWN_TEXT_CP1252;
+		source=encoding==PAWN_TEXT_UTF8?raw:Cp1252ToUtf8(raw);
+	}
 	std::vector<TextDraw> read;
 	std::vector<TextDrawGuide> guides;
 	ImportTextDrawsFromSource(source, read, &guides);
+	if(xmlState>0&&!ReadTextDrawXML(document,xmlState==1,read,guides,error))return false;
 	gTextDraws = read;
 	gGuides = guides;
 	gFilePath = path;
@@ -226,6 +236,7 @@ BuildTextDrawFileCode(const char *path)
 bool
 SaveTextDrawFile(const char *path, std::string *error)
 {
+	error->clear();
 	std::string target = path && path[0] ? path : gFilePath;
 	if(target.empty()){
 		*error = "the textdraw file has no name yet";
@@ -236,23 +247,11 @@ SaveTextDrawFile(const char *path, std::string *error)
 		return false;
 	}
 	std::string code = EncodePawnFileText(BuildTextDrawFileCode(target.c_str()), gFileEncoding);
-	// Written beside it and renamed over it, so a failed save keeps the old file.
-	std::string temp = target + ".tmp";
-	FILE *f = fopen(temp.c_str(), "wb");
-	bool written = f && fwrite(code.data(), 1, code.size(), f) == code.size();
-	if(f)
-		written = fclose(f) == 0 && written;
-	int writeErrno = errno;
-#ifdef _WIN32
-	written = written && MoveFileExA(temp.c_str(), target.c_str(), MOVEFILE_REPLACE_EXISTING) != 0;
-#else
-	written = written && rename(temp.c_str(), target.c_str()) == 0;
-#endif
-	if(!written){
-		*error = "could not write " + target + ": " + strerror(written ? errno : writeErrno);
-		remove(temp.c_str());
-		log("TextDraws: %s\n", error->c_str());
-		return false;
+	if(code.empty()){*error="Could not generate TextDraw code";return false;}
+	EditorXML::Node document=BuildTextDrawXML(gTextDraws,gGuides,gFileEncoding);
+	if(!CanSaveEditorDocument(target,"textdraws",error)||!ValidateEditorDocument(document,error)||
+	   !EditorXML::WriteDocument(target,code,std::move(document),error)){
+		log("TextDraws: %s\n",error->c_str());return false;
 	}
 	gFilePath = target;
 	gSavedSeq = ++gChangeSeq;
@@ -532,7 +531,6 @@ WriteTextDrawsPawnGlobals(FILE *f, const char *prefix)
 	writeGlobals(f, gMapTextDraws, prefix);
 }
 
-static void writeNote(FILE *f, const TextDraw &td);
 
 static void
 writeTextDraw(FILE *f, const TextDraw &td, const std::string &name, const char *ind = "\t")
@@ -549,10 +547,6 @@ writeTextDraw(FILE *f, const TextDraw &td, const std::string &name, const char *
 		fprintf(f, "%s%s = TextDrawCreate(%.3f, %.3f, ", ind, n, td.x, td.y);
 	writeString(f, td.text.empty() ? std::string("_") : td.text);
 	fputs(");", f);
-	if(td.locked || td.hidden || !td.group.empty() || !td.board.empty() || !td.shape.empty()){
-		fputs(" // Haumea:", f);
-		writeNote(f, td);
-	}
 	fputs("\n", f);
 	const char *t = target.c_str();
 	const char *p = fn.c_str();
@@ -590,56 +584,14 @@ writeTextDraw(FILE *f, const TextDraw &td, const std::string &name, const char *
 	}
 }
 
-// The editor's words after "// Haumea:".
-static void
-writeNote(FILE *f, const TextDraw &td)
-{
-	if(td.locked) fputs(" locked", f);
-	if(td.hidden) fputs(" hidden", f);
-	if(!td.group.empty()){
-		fputs(" group ", f);
-		writeString(f, td.group);
-	}
-	if(!td.board.empty()){
-		fputs(" board ", f);
-		writeString(f, td.board);
-	}
-	if(!td.shape.empty()){
-		fputs(" shape ", f);
-		writeString(f, td.shape);
-	}
-}
-
-// A reference image: a comment only the editor reads, where it is in the stack.
-static void
-writeReference(FILE *f, const TextDraw &td)
-{
-	fputs("\t// Haumea: reference ", f);
-	writeString(f, td.text);
-	fprintf(f, " %.3f %.3f %.3f %.3f 0x%08X", td.x, td.y, td.sizeX, td.sizeY, td.colour);
-	writeNote(f, td);
-	fputc('\n', f);
-}
-
 static void
 writeFunctions(FILE *f, const std::vector<TextDraw> &tds, const char *prefix)
 {
 	std::vector<std::string> names;
 	buildNames(tds, prefix, names);
 	fprintf(f, "stock %s_CreateTextDraws()\n{\n", prefix);
-	if(&tds == &gTextDraws)
-		for(const TextDrawGuide &g : gGuides){
-			fprintf(f, "\t// Haumea: guide %s %.3f", g.vertical ? "x" : "y", g.at);
-			if(!g.board.empty()){
-				fputs(" board ", f);
-				writeString(f, g.board);
-			}
-			fputc('\n', f);
-		}
 	for(size_t i = 0; i < tds.size(); i++)
-		if(tds[i].font == TD_FONT_REFERENCE)
-			writeReference(f, tds[i]);
-		else if(!tds[i].perPlayer)
+		if(tds[i].font != TD_FONT_REFERENCE && !tds[i].perPlayer)
 			writeTextDraw(f, tds[i], names[i]);
 	fprintf(f, "}\n\n");
 	std::vector<std::string> boards, suffixes;

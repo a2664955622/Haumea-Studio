@@ -25,7 +25,7 @@ wait 10
 assert toast_contains "Merged ui_tstudio.db"
 assert objects == 8
 assert pawn_contains "\"ferry_build14\""
-assert pawn_contains "@note(\"ts ramp\")"
+assert xml_contains 'comment="ts ramp"'
 click_item 'Merge Pawn File' 'Close'
 wait 3
 assert no_window "Merge Pawn File"
