@@ -144,6 +144,6 @@ Licenciado sob a GNU GPL v2 ou posterior; veja [LICENSE](LICENSE) e [THIRD_PARTY
 
 Para relatar um bug, sugerir um recurso, traduzir ou contribuir com código, veja [CONTRIBUTING.md](CONTRIBUTING.md) (em inglês).
 
-Discord do Haumea: https://discord.gg/yTF8DWQqpP
+Discord do Haumea: https://discord.gg/YSxtANrsB4
 
 Discord do open.mp: https://discord.gg/samp

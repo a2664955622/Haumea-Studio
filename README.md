@@ -142,6 +142,6 @@ Licensed under the GNU GPL v2 or later; see [LICENSE](LICENSE) and [THIRD_PARTY_
 
 To report a bug, suggest a feature, translate or contribute code, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Haumea Discord: https://discord.gg/yTF8DWQqpP
+Haumea Discord: https://discord.gg/YSxtANrsB4
 
 open.mp Discord: https://discord.gg/samp

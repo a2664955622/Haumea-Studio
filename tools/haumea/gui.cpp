@@ -4931,7 +4931,7 @@ uiHelpWindow(void)
 	ImGui::SetItemTooltip(_("Every command and its key (%s). Change them in Preferences > Shortcuts."),
 		uiKey(SC_WINDOW_SHORTCUTS));
 	ImGui::SameLine();
-	ImGui::TextLinkOpenURL(_("Editor Discord"), "https://discord.gg/yTF8DWQqpP");
+	ImGui::TextLinkOpenURL(_("Editor Discord"), "https://discord.gg/YSxtANrsB4");
 	ImGui::SetItemTooltip(_("Help, bug reports and editor updates."));
 	ImGui::SameLine();
 	ImGui::TextLinkOpenURL(_("open.mp Discord"), "https://discord.gg/samp");
