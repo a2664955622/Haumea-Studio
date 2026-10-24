@@ -731,10 +731,17 @@ jobs:
       - name: Check the installed MCP against the native Mac editor
         run: |
           python3 haumea/tools/haumea/tests/fixture/make_game.py "$RUNNER_TEMP/namaka-game"
+          result=0
           "$RUNNER_TEMP/namaka-macos-venv/bin/python" haumea/tools/release/check_namaka_engine.py \
             --engine "$RUNNER_TEMP/mac-portable/Haumea Studio/haumea" \
             --game "$RUNNER_TEMP/namaka-game" --output "$RUNNER_TEMP/namaka-macos-check" \
-            --tools "$AGENT_MCP_TOOLS"
+            --tools "$AGENT_MCP_TOOLS" --probe-macos-graphics || result=$?
+          if [ "$result" = 78 ]; then
+            echo "::warning::This macOS runner has no accelerated OpenGL 3.3 renderer; native live MCP/capture was not tested. See namaka-macos-check/graphics.json."
+            echo "Native portable MCP/capture check: unavailable on this runner (no accelerated OpenGL 3.3). Installation, offline MCP tools and executable version checks passed. A GPU-capable Mac is still required for the live rendering check." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$result" != 0 ]; then
+            exit "$result"
+          fi
       - name: Build the macOS app and DMG installer
         run: |
           version=$(python3 haumea/tools/release/gen_buildinfo.py --print | cut -d ' ' -f1)
@@ -753,9 +760,16 @@ jobs:
           app="$RUNNER_TEMP/mac-install/Haumea Studio.app"
           codesign --verify --deep --strict "$app"
           "$app/Contents/MacOS/haumea" --version
+          result=0
           "$RUNNER_TEMP/namaka-macos-venv/bin/python" haumea/tools/release/check_namaka_engine.py \
             --engine "$app/Contents/MacOS/haumea" --game "$RUNNER_TEMP/namaka-game" \
-            --output "$RUNNER_TEMP/namaka-macos-app-check" --tools "$AGENT_MCP_TOOLS"
+            --output "$RUNNER_TEMP/namaka-macos-app-check" --tools "$AGENT_MCP_TOOLS" --probe-macos-graphics || result=$?
+          if [ "$result" = 78 ]; then
+            echo "::warning::DMG installation passed; live app MCP/capture requires a GPU-capable Mac."
+            echo "Installed app MCP/capture check: unavailable on this runner (no accelerated OpenGL 3.3). DMG mounting, copying, ad-hoc signature verification and executable version checks passed." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$result" != 0 ]; then
+            exit "$result"
+          fi
       - name: Check uninstallation
         run: |
           rm -rf "$RUNNER_TEMP/mac-install/Haumea Studio.app"
@@ -763,8 +777,8 @@ jobs:
           "$py" "$RUNNER_TEMP/mac-portable/Haumea Studio/namaka/namaka_install.py" uninstall \
             --venv "$RUNNER_TEMP/namaka-macos-venv"
           test ! -e "$RUNNER_TEMP/namaka-macos-venv"
-      - name: Upload failed Mac check logs
-        if: failure()
+      - name: Upload Mac graphics and MCP check logs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: namaka-macos-check

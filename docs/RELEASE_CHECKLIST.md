@@ -109,9 +109,14 @@ locally only.
   `.deb` cache (`winehq-11.0.0.0~noble-1`). If the install step fails, check
   those URLs first.
 
-**macOS** (`build-macos`): it has been built locally only on Linux, never on
-a Mac runner since the workspace, test server, textdraw and Windows changes.
-Watch for missing headers or frameworks; the release job needs it.
+**macOS** (`build-macos`, `agent-bundle-macos`): native Apple Silicon builds, offline Namaka
+installation/repair and MCP tool discovery must pass. The portable and installed DMG app must
+also report their version. Before live MCP/capture, a CGL probe checks the accelerated OpenGL
+3.3 capability required by GLFW. Only a verified unavailable renderer (exit 78) permits that
+live check to be reported as untested, with a job warning/summary and `graphics.json` artifact.
+Other probe errors and all editor failures on a capable runner fail the job. A GPU-capable Mac
+must run the live check before claiming native rendering/MCP capture is verified; hosted VM
+results alone do not establish that. The downloaded app still uses native NSGL.
 
 **build-windows** (MSVC): now also compiles `tools/haumea/haumea.exe.manifest`
 into the exe (UTF-8 paths). If the link step complains about a duplicate

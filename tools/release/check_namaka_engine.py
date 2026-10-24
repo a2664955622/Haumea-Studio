@@ -51,6 +51,8 @@ def main():
     parser.add_argument('--game', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--tools', type=int, required=True)
+    parser.add_argument('--probe-macos-graphics', action='store_true',
+                        help='probe CGL first; exit 78 only when this Mac has no supported native renderer')
     args = parser.parse_args()
     if not (args.game / 'data/maps/fixture.ide').is_file():
         parser.error('--game must be a synthetic game from tests/fixture/make_game.py')
@@ -58,6 +60,24 @@ def main():
         parser.error('run with the Python from a Namaka venv installed by namaka_install.py')
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
+    if args.probe_macos_graphics:
+        if sys.platform != 'darwin':
+            parser.error('--probe-macos-graphics requires macOS')
+        # Even a VM without graphics must load the installed executable and
+        # report its version; bad binaries/dependencies remain hard failures.
+        version = subprocess.run([str(args.engine.resolve()), '--version'], capture_output=True, text=True, timeout=30)
+        (output / 'version.log').write_text(version.stdout + version.stderr)
+        if version.returncode or not version.stdout.startswith('Haumea Studio '):
+            raise RuntimeError('Installed editor failed --version; see version.log')
+        from macos_graphics import GraphicsUnavailable, probe
+        try:
+            capability = probe()
+        except GraphicsUnavailable as error:
+            capability = {'available': False, 'reason': str(error), 'live_mcp_check': 'not run'}
+            (output / 'graphics.json').write_text(json.dumps(capability, indent=2) + '\n')
+            print('Native graphics unavailable: ' + str(error), file=sys.stderr)
+            return 78
+        (output / 'graphics.json').write_text(json.dumps(capability, indent=2) + '\n')
     env = editor_env(str(output))
     env['HAUMEA_CONFIG_DIR'] = str(output / 'config')
     env['HAUMEA_NAMAKA_VENV'] = sys.prefix
@@ -104,4 +124,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())
