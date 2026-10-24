@@ -11,6 +11,9 @@
 - Edit Pawn in the native **Code** workspace with syntax colours, line numbers, undo/redo,
   find/replace and recoverable drafts. Manual changes save to a separate script.
 
+- Discord Rich Presence shows the active workspace and session time, with a switch under
+  Preferences → Privacy. Map names and project paths stay private.
+
 ### Map documents
 
 - Saves now create clean Pawn code and a companion XML with the full editable scene: objects,

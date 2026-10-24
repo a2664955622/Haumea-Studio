@@ -414,10 +414,20 @@ você alterou é guardado como `<arquivo>.local`. **Ajuda → Voltar para a vers
 anterior. **Preferências → Atualizações** liga ou desliga a verificação e os downloads automáticos
 e escolhe o canal; **Ajuda → Procurar atualizações** verifica na hora.
 
+## Atividade no Discord
+
+**Preferências → Privacidade → Mostrar atividade no Discord** compartilha o modo de edição
+(**Mapa**, **TextDraws** ou **Código**) e o tempo da sessão enquanto o Discord para desktop está
+aberto. A opção vem ligada e reconecta se o Discord for aberto depois. Desligá-la ou fechar o
+Haumea limpa a atividade. Nomes de mapas, arquivos e caminhos de projetos nunca são enviados.
+Não precisa de token de bot nem login no Discord pelo Haumea; as configurações de privacidade
+de atividade do próprio Discord continuam valendo.
+
 ## Privacidade
 
-O Haumea não envia nada a menos que você escolha, e nunca os seus mapas. Ele pode enviar duas
-coisas: um ping diário de uso e relatórios de travamento.
+O Haumea mantém o conteúdo dos seus mapas no seu computador. Os serviços de diagnóstico recebem
+pings diários de uso e relatórios de travamento só com a sua permissão. A atividade no Discord
+é controlada separadamente, como descrito acima.
 
 O **ping diário de uso** só vai se você disser sim: a tela inicial pergunta uma vez (fechá-la sem
 responder vale como não), e **Preferências → Privacidade** o liga ou desliga a qualquer momento.

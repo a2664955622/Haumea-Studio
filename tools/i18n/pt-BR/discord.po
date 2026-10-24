@@ -1,0 +1,19 @@
+#: tools/haumea/discordpresence.cpp
+msgid "Discord"
+msgstr "Discord"
+
+#: tools/haumea/discordpresence.cpp
+msgid "Show activity on Discord"
+msgstr "Mostrar atividade no Discord"
+
+#: tools/haumea/discordpresence.cpp
+msgid "Shows the active workspace and session time through Discord desktop.\nMap names, filenames and project paths are never shared."
+msgstr "Mostra o modo de edição e o tempo da sessão pelo Discord para desktop.\nNomes de mapas, arquivos e caminhos de projetos nunca são compartilhados."
+
+#: tools/haumea/discordpresence.cpp
+msgid "Connected to Discord"
+msgstr "Conectado ao Discord"
+
+#: tools/haumea/discordpresence.cpp
+msgid "Waiting for Discord desktop"
+msgstr "Aguardando o Discord para desktop"

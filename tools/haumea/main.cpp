@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "discordpresence.h"
 #include "i18n.h"
 #include "crashreports.h"
 #include "workspace.h"
@@ -1151,11 +1152,12 @@ AppEventHandler(sk::Event e, void *param)
 		if(!BeginSplashWindow(HAUMEA_SPLASH_WIDTH, HAUMEA_SPLASH_HEIGHT))
 			ApplyInitialEditorWindowState();
 		return EVENTPROCESSED;
-#if defined(_WIN32) && defined(RW_D3D9)
 	case RWTERMINATE:
+		DiscordPresenceShutdown();
+#if defined(_WIN32) && defined(RW_D3D9)
 		ImGui_ImplRW_Shutdown();
-		return EVENTNOTPROCESSED; // skeleton terminates librw after the GUI releases its device
 #endif
+		return EVENTNOTPROCESSED; // skeleton terminates librw after the GUI releases its device
 	case PLUGINATTACH:
 		return attachPlugins() ? EVENTPROCESSED : EVENTERROR;
 	case KEYDOWN:

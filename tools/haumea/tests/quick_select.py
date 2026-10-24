@@ -31,6 +31,10 @@ NONE = ('docs/', 'README', 'CHANGELOG', '.github/', 'tools/release/', 'tools/age
 # Source files and the real-game tests they need: UI scripts (without .uis),
 # 'roundtrip', 'showcase'. Files not listed here (and not in NONE) select all.
 SOURCES = {
+	'discordrpc.cpp': ['discord_presence'],
+	'discordrpc.h': ['discord_presence'],
+	'discordpresence.cpp': ['discord_presence'],
+	'discordpresence.h': ['discord_presence'],
 	'alignmentmath.h': ['coordinate_pin', 'pin_alignment', 'xml_pins'],
 	'maptools.h': ['map_tools', 'coordinate_pin', 'pin_alignment', 'xml_pins'],
 	'coordinatepin.cpp': ['coordinate_pin', 'pin_alignment', 'xml_pins'],

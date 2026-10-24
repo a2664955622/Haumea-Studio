@@ -126,6 +126,22 @@ class WindowsCheck:
                 folder.mkdir()
         print('== Wine ' + run(['wine', '--version']).stdout.strip() + ', fresh prefix')
 
+    def discord_presence(self):
+        """A real Win32 named-pipe transport check, without a Discord account/client."""
+        binary=self.work/'discord-ipc-check.exe'
+        result=run([os.environ.get('CXX','x86_64-w64-mingw32-g++'),'-std=c++17','-static',
+                    '-static-libgcc','-static-libstdc++','-I'+str(ROOT/'tools/haumea'),
+                    str(HERE/'fixtures/discord_rpc_windows.cpp'),str(ROOT/'tools/haumea/discordrpc.cpp'),
+                    '-o',str(binary)])
+        if result.returncode:
+            self.fail('Discord named-pipe check did not build\n'+result.stdout+result.stderr)
+            return
+        result=run(['wine',str(binary)],env=self.wine_env,timeout=60)
+        if result.returncode or 'Discord Windows IPC:' not in result.stdout:
+            self.fail('Discord named-pipe transport failed\n'+result.stdout+result.stderr)
+        else:
+            print('ok   Discord: Windows named-pipe handshake, activity, ping/pong and clear')
+
     def build(self, gfx):
         exe = self.work / 'build' / ('win-amd64-' + gfx) / 'haumea.exe'
         if self.args.no_build:
@@ -264,6 +280,7 @@ class WindowsCheck:
     def main(self):
         try:
             self.setup()
+            self.discord_presence()
             for gfx in self.args.gfx.split(','):
                 print('== ' + gfx)
                 exe = self.build(gfx)

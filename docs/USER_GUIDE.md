@@ -406,10 +406,19 @@ kept as `<file>.local`. **Help → Roll back** puts the previous version back.
 **Preferences → Updates** turns the check or automatic downloads on or off and picks the
 channel; **Help → Check for updates** checks right away.
 
+## Discord activity
+
+**Preferences → Privacy → Show activity on Discord** shares the active workspace (**Map**,
+**TextDraws** or **Code**) and elapsed session time while Discord desktop is running. It is on
+by default and reconnects when Discord starts later. Turning it off or closing Haumea clears the
+activity. Filenames, map names and project paths are never included. No bot token or Discord
+login inside Haumea is needed; Discord's own activity privacy settings still apply.
+
 ## Privacy
 
-Haumea sends nothing unless you choose to, and never your maps. It can send two things: a daily
-usage ping and crash reports.
+Haumea keeps your map contents on your computer. Its diagnostic services receive daily usage
+pings and crash reports only with your permission. Discord activity is controlled separately,
+as described above.
 
 The **daily usage ping** goes only if you say yes: the start screen asks once (closing it
 without answering means no), and **Preferences → Privacy** turns it on or off at any time.

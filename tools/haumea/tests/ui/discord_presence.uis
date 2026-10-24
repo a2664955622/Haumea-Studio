@@ -1,0 +1,13 @@
+# Presence is suppressed in automated runs; preferences still persist.
+open "$UI_FIXTURES/ui_map.pwn"
+shortcut window_preferences
+wait 5
+click_item 'Preferences' 'Privacy'
+wait 3
+assert item 'Preferences' 'Show activity on Discord'
+click_item 'Preferences' 'Show activity on Discord'
+wait 3
+assert file_contains "$UI_CONFIG_DIR/savesettings.txt" 'discord_presence 0'
+click_item 'Preferences' 'Show activity on Discord'
+wait 3
+assert file_contains "$UI_CONFIG_DIR/savesettings.txt" 'discord_presence 1'

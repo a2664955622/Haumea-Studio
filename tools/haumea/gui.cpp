@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "discordpresence.h"
 #include "coordinatepin.h"
 #include "documentxml.h"
 #include "crashreports.h"
@@ -6562,7 +6563,7 @@ loadSaveSettings(void)
 			if(parseQuotedStringValue(value, path, sizeof(path)))
 				recentTextDraws.push_back(path);
 		}else if(LoadTextDrawSetting(key, value) || KeycastLoadSetting(key, value) ||
-		         RadarLoadSetting(key, value)){
+		         RadarLoadSetting(key, value) || DiscordPresenceLoadSetting(key, value)){
 		}else if(strcmp(key, "shortcut") == 0){
 			ShortcutParseSetting(value);
 		}else if(strcmp(key, "language") == 0){
@@ -6994,6 +6995,7 @@ saveSaveSettings(void)
 	fprintf(f, "window_maximized %d\n", gSavedWindowMaximized ? 1 : 0);
 	fprintf(f, "save_destination %d\n", (int)gSaveDestination);
 	fprintf(f, "confirm_reload_game %d\n", gConfirmReloadGame ? 1 : 0);
+	DiscordPresenceSaveSettings(f);
 	fprintf(f, "autosave %d\n", gAutosaveEnabled ? 1 : 0);
 	fprintf(f, "autosave_interval %d\n", gAutosaveIntervalSeconds);
 	fprintf(f, "autosave_keep %d\n", gAutosaveKeepCount);
@@ -8152,6 +8154,8 @@ uiPreferencesWindow(void)
 			ImGui::EndTabItem();
 		}
 		if(ImGui::BeginTabItem(L("Privacy"))){
+			if(DiscordPresencePreferences())saveSaveSettings();
+			ImGui::Spacing();
 			TelemetryPreferences();
 			ImGui::Spacing();
 			CrashReportsPreferences();
@@ -13007,6 +13011,7 @@ gui(void)
 	// don't switch the gizmo).
 	if(InPawnIdeMode()) PawnEditorDraw();
 	PawnEditorTick();
+	DiscordPresenceTick();
 	ShortcutsBeginFrame(gCopyableTextCopiedThisFrame || gCameraLooking || InPawnIdeMode());
 	for(int action = 0; action < SC_NUM_ACTIONS; action++)
 		if(ShortcutPressed(action))

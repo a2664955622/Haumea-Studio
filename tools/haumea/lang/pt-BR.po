@@ -2197,6 +2197,9 @@ msgstr "Confirmar antes de recarregar os arquivos do jogo"
 msgid "Connect an AI assistant"
 msgstr "Conectar um assistente de IA"
 
+msgid "Connected to Discord"
+msgstr "Conectado ao Discord"
+
 msgid "Constant machinery noise"
 msgstr "Ruído constante de máquina"
 
@@ -2692,6 +2695,9 @@ msgstr "Discoteca, hip-hop (0.3.7-R2)"
 
 msgid "Disco, rock (0.3.7-R2)"
 msgstr "Discoteca, rock (0.3.7-R2)"
+
+msgid "Discord"
+msgstr "Discord"
 
 msgid "Dismiss"
 msgstr "Dispensar"
@@ -7529,6 +7535,9 @@ msgstr "Mostrar teclas pressionadas"
 msgid "Show Radar"
 msgstr "Mostrar radar"
 
+msgid "Show activity on Discord"
+msgstr "Mostrar atividade no Discord"
+
 msgid "Show all"
 msgstr "Mostrar todos"
 
@@ -7585,6 +7594,13 @@ msgid ""
 msgstr ""
 "Mostrado só a jogadores dentro desta dynamic area (o areaid do streamer).\n"
 "Selecione vários itens para defini-la em todos."
+
+msgid ""
+"Shows the active workspace and session time through Discord desktop.\n"
+"Map names, filenames and project paths are never shared."
+msgstr ""
+"Mostra o modo de edição e o tempo da sessão pelo Discord para desktop.\n"
+"Nomes de mapas, arquivos e caminhos de projetos nunca são compartilhados."
 
 msgid "Shows the first-steps card while the map is empty."
 msgstr "Mostra o cartão de primeiros passos enquanto o mapa está vazio."
@@ -8974,6 +8990,9 @@ msgstr "Volume"
 
 msgid "Volume (m³)"
 msgstr "Volume (m³)"
+
+msgid "Waiting for Discord desktop"
+msgstr "Aguardando o Discord para desktop"
 
 msgid "Walk"
 msgstr "Andar"
