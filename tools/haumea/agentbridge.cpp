@@ -824,6 +824,37 @@ parseFloat(const std::string &text, float *value)
 	return true;
 }
 
+static bool
+parseFloatVector3(const std::string &text, rw::V3d *value)
+{
+	const char *cursor = text.c_str();
+	float values[3];
+	for(int i = 0; i < 3; i++){
+		while(isspace((unsigned char)*cursor) || *cursor == '[' || *cursor == ',') cursor++;
+		char *end = nil;
+		values[i] = strtof(cursor, &end);
+		if(end == cursor)
+			return false;
+		cursor = end;
+	}
+	while(isspace((unsigned char)*cursor) || *cursor == ',' || *cursor == ']') cursor++;
+	if(*cursor != '\0')
+		return false;
+	*value = { values[0], values[1], values[2] };
+	return true;
+}
+
+static bool
+parseUint32Field(const std::string &text, uint32 *value)
+{
+	char *end = nil;
+	unsigned long long parsed = strtoull(text.c_str(), &end, 0);
+	if(end == text.c_str() || *end != '\0' || parsed > 0xFFFFFFFFULL)
+		return false;
+	*value = (uint32)parsed;
+	return true;
+}
+
 static ObjectDef*
 resolveObject(const std::string &text, int *objectId)
 {
@@ -1488,6 +1519,12 @@ jsonFloat(float value)
 }
 
 static std::string
+jsonVector3(const rw::V3d &value)
+{
+	return "[" + jsonFloat(value.x) + "," + jsonFloat(value.y) + "," + jsonFloat(value.z) + "]";
+}
+
+static std::string
 jsonColor(uint32 rgba)
 {
 	char text[16];
@@ -1523,9 +1560,19 @@ agentPropertiesJson(ObjectInst *inst)
 		add("area", str(p.areaName));
 	switch(kind){
 	case SAMP_ELEMENT_OBJECT:
-		if(p.attachParent >= 0){
-			add("attach_to", std::to_string(p.attachParent));
+		if(p.attachParent >= 0 || p.attachParent == PAWN_ATTACH_PLAYER){
+			add("attach_to", p.attachParent == PAWN_ATTACH_PLAYER ? str("player") : std::to_string(p.attachParent));
 			add("attach_sync_rotation", p.attachSyncRotation ? "true" : "false");
+			if(p.attachBone >= 1){
+				add("attach_bone", std::to_string(p.attachBone));
+				add("attach_slot", std::to_string(p.attachSlot));
+				add("attach_offset", jsonVector3(p.attachOffset));
+				add("attach_rotation", jsonVector3(p.attachRotation));
+				add("attach_scale", jsonVector3(p.attachScale));
+				add("attach_color1", jsonColor(p.attachColor1));
+				add("attach_color2", jsonColor(p.attachColor2));
+				add("attach_skin", std::to_string(p.attachSkin));
+			}
 		}
 		break;
 	case AGENT_KIND_VEHICLE:
@@ -1744,6 +1791,14 @@ struct AgentInstanceEdit
 	int respawnDelay;
 	bool setAttach;
 	int32 attachTo;
+	bool setAttachBone;
+	bool setAttachSlot;
+	bool setAttachOffset;
+	bool setAttachRotation;
+	bool setAttachScale;
+	bool setAttachColor1;
+	bool setAttachColor2;
+	bool setAttachSkin;
 	bool setPaintjob;
 	int paintjob;
 	bool setPlate;
@@ -1814,13 +1869,54 @@ applyAgentProperty(ObjectInst *inst, int kind, ObjectPawnProperties &p, AgentIns
 	}
 	if(key == "attach_to"){
 		if(!only({ SAMP_ELEMENT_OBJECT })) return false;
-		if(!parseInt(value, &i)) return fail("expects an instance id, or -1 to detach");
+		if(lowercase(value.c_str()) == "player")
+			i = PAWN_ATTACH_PLAYER;
+		else if(!parseInt(value, &i) || i < PAWN_ATTACH_NONE) return fail("expects an instance id, player, or -1 to detach");
 		edit.setAttach = true; edit.attachTo = i; return true;
 	}
 	if(key == "attach_sync_rotation"){
 		if(!only({ SAMP_ELEMENT_OBJECT })) return false;
 		if(!parseBoolField(value, &b)) return fail("expects true or false");
 		p.attachSyncRotation = b; return true;
+	}
+	if(key == "attach_bone"){
+		if(!only({ SAMP_ELEMENT_OBJECT })) return false;
+		if(!parseInt(value, &i) || i < 1 || i > 18) return fail("expects a player bone id from 1 to 18");
+		p.attachBone = i; edit.setAttachBone = true; return true;
+	}
+	if(key == "attach_slot"){
+		if(!only({ SAMP_ELEMENT_OBJECT })) return false;
+		if(!parseInt(value, &i) || i < 0 || i > 9) return fail("expects a player slot from 0 to 9");
+		p.attachSlot = i; edit.setAttachSlot = true; return true;
+	}
+	if(key == "attach_offset" || key == "attach_rotation" || key == "attach_scale"){
+		if(!only({ SAMP_ELEMENT_OBJECT })) return false;
+		rw::V3d vector;
+		if(!parseFloatVector3(value, &vector)) return fail("expects three numbers, e.g. [0.0, 0.0, 0.0]");
+		if(key == "attach_offset"){
+			p.attachOffset = vector; edit.setAttachOffset = true;
+		}else if(key == "attach_rotation"){
+			p.attachRotation = vector; edit.setAttachRotation = true;
+		}else{
+			if(vector.x <= 0.0f || vector.y <= 0.0f || vector.z <= 0.0f ||
+			   vector.x > 50.0f || vector.y > 50.0f || vector.z > 50.0f)
+				return fail("scale values must be above 0 and at most 50");
+			p.attachScale = vector; edit.setAttachScale = true;
+		}
+		return true;
+	}
+	if(key == "attach_color1" || key == "attach_color2"){
+		if(!only({ SAMP_ELEMENT_OBJECT })) return false;
+		uint32 color;
+		if(!parseUint32Field(value, &color)) return fail("expects a 32-bit colour, e.g. 0xFFFFFFFF");
+		if(key == "attach_color1"){ p.attachColor1 = color; edit.setAttachColor1 = true; }
+		else { p.attachColor2 = color; edit.setAttachColor2 = true; }
+		return true;
+	}
+	if(key == "attach_skin"){
+		if(!only({ SAMP_ELEMENT_OBJECT })) return false;
+		if(!parseInt(value, &i) || i < 0 || i > 311) return fail("expects a skin id from 0 to 311");
+		p.attachSkin = i; edit.setAttachSkin = true; return true;
 	}
 	if(key == "color1" || key == "color2"){
 		if(!only({ AGENT_KIND_VEHICLE })) return false;
@@ -2187,24 +2283,63 @@ applyAgentProperties(ObjectInst *inst, const std::vector<std::string> &lines, si
 		   lines[i].substr(eq + 1), error))
 			return false;
 	}
+	ObjectPawnProperties requested = p;
 	// A new animation plays at SA-MP's usual speed unless one was given.
 	if((kind == SAMP_ELEMENT_ACTOR || kind == SAMP_ELEMENT_NPC) && p.animName[0] && p.animDelta <= 0.0f)
 		p.animDelta = 4.1f;
 	ObjectInst *parent = nil;
 	if(edit.setAttach && edit.attachTo >= 0){
 		parent = GetInstanceByID(edit.attachTo);
-		if(parent == nil || parent->m_isDeleted || parent == inst || parent->m_isVehicle ||
-		   GetSampElementKind(parent) != SAMP_ELEMENT_OBJECT){
-			*error = "attach_to: not an object in the map";
+		bool validTarget = parent && !parent->m_isDeleted && parent != inst &&
+			(parent->m_isVehicle || IsPlayerAttachmentTarget(parent) ||
+			 GetSampElementKind(parent) == SAMP_ELEMENT_OBJECT);
+		if(!validTarget){
+			*error = "attach_to: not an object, player, NPC or vehicle in the map";
 			return false;
 		}
 	}
+	int32 attachmentTargetId = edit.setAttach ? edit.attachTo : p.attachParent;
+	ObjectInst *currentTarget = attachmentTargetId >= 0 ? GetInstanceByID(attachmentTargetId) : nil;
+	bool playerAttachment = attachmentTargetId == PAWN_ATTACH_PLAYER ||
+		IsPlayerAttachmentTarget(currentTarget);
+	if((edit.setAttachBone || edit.setAttachSlot || edit.setAttachScale || edit.setAttachColor1 ||
+	    edit.setAttachColor2 || edit.setAttachSkin) && !playerAttachment){
+		*error = "player bone, slot, scale, colour and skin properties need a player or NPC target";
+		return false;
+	}
 	SetObjectPawnProperties(inst, p, true);
 	if(edit.setAttach){
-		if(parent){
-			if(!AttachObjectInstance(inst, parent, p.attachSyncRotation)){
-				*error = "attach_to: attaching would make a cycle";
+		if(edit.attachTo == PAWN_ATTACH_PLAYER){
+			if(!AttachObjectToPlayer(inst, requested.attachSkin)){
+				*error = "attach_to: the player already has 10 attached objects";
 				return false;
+			}
+			ObjectPawnProperties attached = *GetObjectPawnProperties(inst);
+			if(edit.setAttachBone) attached.attachBone = requested.attachBone;
+			if(edit.setAttachSlot) attached.attachSlot = requested.attachSlot;
+			if(edit.setAttachOffset) attached.attachOffset = requested.attachOffset;
+			if(edit.setAttachRotation) attached.attachRotation = requested.attachRotation;
+			if(edit.setAttachScale) attached.attachScale = requested.attachScale;
+			if(edit.setAttachColor1) attached.attachColor1 = requested.attachColor1;
+			if(edit.setAttachColor2) attached.attachColor2 = requested.attachColor2;
+			if(edit.setAttachSkin) attached.attachSkin = requested.attachSkin;
+			SetObjectPawnProperties(inst, attached, true);
+		}else if(parent){
+			if(!AttachObjectInstance(inst, parent, p.attachSyncRotation)){
+				*error = "attach_to: this object can't attach to that target";
+				return false;
+			}
+			if(playerAttachment){
+				ObjectPawnProperties attached = *GetObjectPawnProperties(inst);
+				if(edit.setAttachBone) attached.attachBone = requested.attachBone;
+				if(edit.setAttachSlot) attached.attachSlot = requested.attachSlot;
+				if(edit.setAttachOffset) attached.attachOffset = requested.attachOffset;
+				if(edit.setAttachRotation) attached.attachRotation = requested.attachRotation;
+				if(edit.setAttachScale) attached.attachScale = requested.attachScale;
+				if(edit.setAttachColor1) attached.attachColor1 = requested.attachColor1;
+				if(edit.setAttachColor2) attached.attachColor2 = requested.attachColor2;
+				if(edit.setAttachSkin) attached.attachSkin = requested.attachSkin;
+				SetObjectPawnProperties(inst, attached, true);
 			}
 		}else
 			DetachObjectInstance(inst);

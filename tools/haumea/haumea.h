@@ -390,6 +390,11 @@ struct ObjectPawnProperties
 	rw::V3d attachOffset;	// in the parent's frame
 	rw::V3d attachRotation;	// degrees, SA-MP Euler order
 	bool attachSyncRotation;
+	int attachBone;	// SA-MP player bone ID (1-18), or -1 for object/vehicle attachment
+	int attachSlot;	// SetPlayerAttachedObject slot (0-9)
+	rw::V3d attachScale;	// SetPlayerAttachedObject scale
+	uint32 attachColor1, attachColor2;	// SetPlayerAttachedObject material colours (ARGB)
+	int attachSkin;	// preview skin for the generic player target
 
 	// SA-MP element settings; elementKind is SAMP_ELEMENT_OBJECT for objects
 	// and vehicles. The world, draw and stream distances above apply too.
@@ -990,6 +995,21 @@ ObjectInst *FindObjectByPawnName(const char *name, const ObjectInst *except = ni
 bool AttachObjectInstance(ObjectInst *child, ObjectInst *parent, bool syncRotation = true);
 void DetachObjectInstance(ObjectInst *child);
 ObjectInst *GetAttachParent(const ObjectInst *inst);
+enum { PAWN_ATTACH_PLAYER = -2, PAWN_ATTACH_NONE = -1 };
+bool IsPlayerAttachmentTarget(const ObjectInst *inst);
+bool IsPlayerAttachedObject(const ObjectInst *inst);
+bool AttachObjectToPlayer(ObjectInst *child, int previewSkin = 1);
+bool IsAttachmentWorkspaceActive(void);
+bool AttachmentWorkspaceHidesWorld(void);
+bool AttachmentWorkspaceShowsInstance(const ObjectInst *inst);
+void OpenAttachmentWorkspace(ObjectInst *target, bool voidView);
+void OpenPlayerAttachmentWorkspace(int skin, bool voidView);
+void CloseAttachmentWorkspace(void);
+void SetAttachmentWorkspaceVoid(bool voidView);
+void SetAttachmentWorkspacePlayerSkin(int skin);
+int GetAttachmentWorkspacePlayerSkin(void);
+ObjectInst *GetAttachmentWorkspacePlayerPreview(void);
+ObjectInst *GetAttachmentWorkspaceTarget(void);
 // The vehicle an NPC sits in (npcVehicle), or nil on foot or when it was deleted.
 ObjectInst *GetNpcVehicle(const ObjectInst *npc);
 // Once per frame, after recordings move vehicles: seats NPCs in their vehicles.
@@ -1805,6 +1825,7 @@ void BuildRenderList(void);
 void RenderOpaque(void);
 void RenderTransparent(void);
 void RenderEverything(void);
+void RenderAttachmentWorkspacePreview(void);
 bool IntersectRayColModelDetailed(const Ray &ray, ObjectInst *inst, rw::V3d *hitPos, rw::V3d *hitNormal);
 ObjectInst *GetVisibleInstUnderRay(const Ray &ray, rw::V3d *hitPos = nil, float *hitT = nil);
 void ForEachVisibleInst(void (*fn)(ObjectInst *inst, void *data), void *data);

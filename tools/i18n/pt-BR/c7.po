@@ -3621,10 +3621,6 @@ msgstr "Texto"
 msgid "TextDraws"
 msgstr "TextDraws"
 
-#: tools/haumea/gui.cpp:9312 tools/haumea/gui.cpp:9315
-msgid "That would attach an object to itself"
-msgstr "Isso anexaria um objeto a ele mesmo"
-
 #: tools/haumea/gui.cpp:8031
 msgid "The Truth"
 msgstr "The Truth"

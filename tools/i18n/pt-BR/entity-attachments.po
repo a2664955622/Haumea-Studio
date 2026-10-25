@@ -1,0 +1,140 @@
+msgid "%s is attached to a target that can't be used by Pawn."
+msgstr "%s está anexado a um alvo que não pode ser usado pelo Pawn."
+
+msgid "%s shares player attachment slot %d with %s."
+msgstr "%s usa o mesmo slot de acessório do jogador (%d) que %s."
+
+msgid "%s uses a player bone attachment, but its target isn't a player or NPC."
+msgstr "%s usa um acessório preso a um osso do jogador, mas o alvo não é jogador nem NPC."
+
+msgid "Add selected model"
+msgstr "Adicionar modelo selecionado"
+
+msgid "Attach to player"
+msgstr "Anexar ao jogador"
+
+msgid "Attached to player preview (skin %d)"
+msgstr "Anexado à prévia do jogador (skin %d)"
+
+msgid "Attachment Workspace"
+msgstr "Área de trabalho de anexos"
+
+msgid "Bone"
+msgstr "Osso"
+
+msgid "Browse models"
+msgstr "Procurar modelos"
+
+msgid "Choose an object model in the browser first."
+msgstr "Escolha primeiro um modelo de objeto no navegador."
+
+msgid "Could not attach this object to that target."
+msgstr "Não foi possível anexar este objeto a esse alvo."
+
+msgid "Could not attach to the selected target."
+msgstr "Não foi possível anexar ao alvo selecionado."
+
+msgid "Creates a player bone attachment and opens its preview workspace."
+msgstr "Cria um acessório preso a um osso do jogador e abre a área de prévia."
+
+msgid "Edit in attachment workspace"
+msgstr "Editar na área de trabalho de anexos"
+
+msgid "Focus target"
+msgstr "Focar alvo"
+
+msgid "Head"
+msgstr "Cabeça"
+
+msgid "Isolated void view"
+msgstr "Visualização isolada no vazio"
+
+msgid "Jaw"
+msgstr "Mandíbula"
+
+msgid "Left calf"
+msgstr "Panturrilha esquerda"
+
+msgid "Left clavicle"
+msgstr "Clavícula esquerda"
+
+msgid "Left foot"
+msgstr "Pé esquerdo"
+
+msgid "Left forearm"
+msgstr "Antebraço esquerdo"
+
+msgid "Left hand"
+msgstr "Mão esquerda"
+
+msgid "Left thigh"
+msgstr "Coxa esquerda"
+
+msgid "Left upper arm"
+msgstr "Braço esquerdo"
+
+msgid "Material colour 1"
+msgstr "Cor do material 1"
+
+msgid "Material colour 2"
+msgstr "Cor do material 2"
+
+msgid "Neck"
+msgstr "Pescoço"
+
+msgid "No attachment target"
+msgstr "Nenhum alvo de anexo"
+
+msgid "Optional material colours for the attached model."
+msgstr "Cores opcionais para o material do modelo anexado."
+
+msgid "Player attachment workspace"
+msgstr "Área de trabalho de acessórios do jogador"
+
+msgid "Player skin"
+msgstr "Skin do jogador"
+
+msgid "Player slot"
+msgstr "Slot do jogador"
+
+msgid "Preview skin used to position bone attachments."
+msgstr "Skin de prévia usada para posicionar os acessórios nos ossos."
+
+msgid "Right calf"
+msgstr "Panturrilha direita"
+
+msgid "Right clavicle"
+msgstr "Clavícula direita"
+
+msgid "Right foot"
+msgstr "Pé direito"
+
+msgid "Right forearm"
+msgstr "Antebraço direito"
+
+msgid "Right hand"
+msgstr "Mão direita"
+
+msgid "Right thigh"
+msgstr "Coxa direita"
+
+msgid "Right upper arm"
+msgstr "Braço direito"
+
+msgid "Scale"
+msgstr "Escala"
+
+msgid "Select an object, player, NPC or vehicle as the target."
+msgstr "Selecione um objeto, jogador, NPC ou veículo como alvo."
+
+msgid "Show only the target and its attachments against an empty background."
+msgstr "Mostra apenas o alvo e seus anexos sobre um fundo vazio."
+
+msgid "Spine"
+msgstr "Coluna"
+
+msgid "Target: %s"
+msgstr "Alvo: %s"
+
+msgid "The player already has 10 attached objects."
+msgstr "O jogador já tem 10 objetos anexados."

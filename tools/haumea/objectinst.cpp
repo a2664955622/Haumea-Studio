@@ -863,6 +863,13 @@ ObjectInst::UpdateMatrix(void)
 	// RemoveBuildingForPlayer plus CreateObject, so it is drawn as one.
 	bool ipl = m_iplRotation && (IsIplMapDocumentOpen() || !PawnObjectNeedsExport(this));
 	BuildInstanceMatrix(&m_matrix, m_rotation, m_translation, ipl);
+	const ObjectPawnProperties *properties = GetObjectPawnProperties(this);
+	if(IsPlayerAttachedObject(this)){
+		m_matrix.right = scale(m_matrix.right, properties->attachScale.x);
+		m_matrix.up = scale(m_matrix.up, properties->attachScale.y);
+		m_matrix.at = scale(m_matrix.at, properties->attachScale.z);
+		m_matrix.flags = 0;
+	}
 }
 
 static bool
@@ -1484,8 +1491,16 @@ static void updateRwFrameForInst(ObjectInst *inst);
  */
 
 static bool gAttachmentListDirty = true;
+static bool gAttachmentWorkspaceActive;
+static bool gAttachmentWorkspaceVoid;
+static bool gAttachmentWorkspacePlayerMode;
+static int gAttachmentWorkspacePlayerSkin = 1;
+static bool gAttachmentWorkspacePlayerSkinSet;
+static ObjectInst *gAttachmentWorkspaceTarget;
+static ObjectInst *gAttachmentPlayerPreview;
 static void setInstanceElementModel(ObjectInst *inst, int modelId);
 static void applyInstanceModelId(ObjectInst *inst, int editorModelId);
+static void destroyInstanceRwObject(ObjectInst *inst, ObjectDef *obj);
 
 void
 InitObjectPawnProperties(ObjectPawnProperties *properties)
@@ -1496,6 +1511,9 @@ InitObjectPawnProperties(ObjectPawnProperties *properties)
 	properties->virtualWorld = -1;
 	properties->attachParent = -1;
 	properties->attachSyncRotation = true;
+	properties->attachBone = -1;
+	properties->attachScale = { 1.0f, 1.0f, 1.0f };
+	properties->attachSkin = 1;
 	properties->npcVehicle = -1;
 }
 
@@ -1902,9 +1920,26 @@ normalizeObjectPawnProperties(ObjectPawnProperties *properties)
 		if(properties->classWeapons[i] == 0)
 			properties->classAmmo[i] = 0;
 	}
-	// Only objects attach to objects.
+	// Only map objects can be attached. Player attachments use the negative
+	// PAWN_ATTACH_PLAYER target; ordinary object/vehicle links use an instance ID.
 	if(properties->elementKind != SAMP_ELEMENT_OBJECT)
 		properties->attachParent = -1;
+	if(properties->attachParent < PAWN_ATTACH_PLAYER)
+		properties->attachParent = -1;
+	if(properties->attachBone < -1 || properties->attachBone > 18 || properties->attachBone == 0)
+		properties->attachBone = -1;
+	properties->attachSlot = clamp(properties->attachSlot, 0, 9);
+	properties->attachScale.x = clamp(properties->attachScale.x, 0.01f, 50.0f);
+	properties->attachScale.y = clamp(properties->attachScale.y, 0.01f, 50.0f);
+	properties->attachScale.z = clamp(properties->attachScale.z, 0.01f, 50.0f);
+	properties->attachSkin = clamp(properties->attachSkin, 0, 311);
+	if(properties->attachBone < 1){
+		if(properties->attachParent == PAWN_ATTACH_PLAYER)
+			properties->attachParent = PAWN_ATTACH_NONE;
+		properties->attachScale = { 1.0f, 1.0f, 1.0f };
+		properties->attachColor1 = properties->attachColor2 = 0;
+		properties->attachSkin = 1;
+	}
 	if(properties->elementKind != SAMP_ELEMENT_PATHPOINT && properties->elementKind != SAMP_ELEMENT_NPC)
 		properties->pathName[0] = '\0';
 	// Repeating is for an NPC that walks a path.
@@ -1912,11 +1947,16 @@ normalizeObjectPawnProperties(ObjectPawnProperties *properties)
 	if(properties->elementKind != SAMP_ELEMENT_NPC || !properties->pathName[0] ||
 	   properties->npcRecording[0] || properties->npcPlaysNode)
 		properties->npcPathRepeat = NPC_PATH_ONCE;
-	if(properties->attachParent < 0){
+	if(properties->attachParent == -1){
 		properties->attachParent = -1;
 		properties->attachOffset = { 0.0f, 0.0f, 0.0f };
 		properties->attachRotation = { 0.0f, 0.0f, 0.0f };
 		properties->attachSyncRotation = true;
+		properties->attachBone = -1;
+		properties->attachSlot = 0;
+		properties->attachScale = { 1.0f, 1.0f, 1.0f };
+		properties->attachColor1 = properties->attachColor2 = 0;
+		properties->attachSkin = 1;
 	}
 }
 
@@ -1935,7 +1975,11 @@ SetObjectPawnProperties(ObjectInst *inst, const ObjectPawnProperties &properties
 	bool attachmentChanged = old.attachParent != normalized.attachParent ||
 		memcmp(&old.attachOffset, &normalized.attachOffset, sizeof(rw::V3d)) != 0 ||
 		memcmp(&old.attachRotation, &normalized.attachRotation, sizeof(rw::V3d)) != 0 ||
-		old.attachSyncRotation != normalized.attachSyncRotation;
+		old.attachSyncRotation != normalized.attachSyncRotation || old.attachBone != normalized.attachBone ||
+		old.attachSlot != normalized.attachSlot ||
+		memcmp(&old.attachScale, &normalized.attachScale, sizeof(rw::V3d)) != 0 ||
+		old.attachColor1 != normalized.attachColor1 || old.attachColor2 != normalized.attachColor2 ||
+		old.attachSkin != normalized.attachSkin;
 	if(ObjectPawnPropertiesAreDefault(normalized)){
 		delete inst->m_pawnProperties;
 		inst->m_pawnProperties = nil;
@@ -1947,6 +1991,10 @@ SetObjectPawnProperties(ObjectInst *inst, const ObjectPawnProperties &properties
 	if(attachmentChanged)
 		// Snap to the (new) offset on the next attachment update.
 		inst->m_attachApplied = false;
+	if(memcmp(&old.attachScale, &normalized.attachScale, sizeof(rw::V3d)) != 0){
+		inst->UpdateMatrix();
+		updateRwFrameForInst(inst);
+	}
 	if(strcmp(old.animLib, normalized.animLib) != 0 || strcmp(old.animName, normalized.animName) != 0 ||
 	   old.npcVehicle != normalized.npcVehicle || old.npcSeat != normalized.npcSeat ||
 	   old.animLoop != normalized.animLoop || old.animLockX != normalized.animLockX ||
@@ -2099,10 +2147,101 @@ ObjectInst*
 GetAttachParent(const ObjectInst *inst)
 {
 	const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+	if(properties->attachParent == PAWN_ATTACH_PLAYER)
+		return gAttachmentWorkspaceActive && gAttachmentWorkspacePlayerMode ?
+			GetAttachmentWorkspacePlayerPreview() : nil;
 	if(properties->attachParent < 0)
 		return nil;
 	ObjectInst *parent = GetInstanceByID(properties->attachParent);
 	return parent && !parent->m_isDeleted ? parent : nil;
+}
+
+bool
+IsPlayerAttachmentTarget(const ObjectInst *inst)
+{
+	if(inst == nil || inst->m_isDeleted || inst->m_isVehicle)
+		return false;
+	int kind = GetSampElementKind(inst);
+	return kind == SAMP_ELEMENT_CLASS || kind == SAMP_ELEMENT_NPC;
+}
+
+bool
+IsPlayerAttachedObject(const ObjectInst *inst)
+{
+	if(inst == nil || inst->m_isVehicle ||
+	   GetSampElementKind(inst) != SAMP_ELEMENT_OBJECT)
+		return false;
+	const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+	if(properties->attachParent == PAWN_ATTACH_NONE || properties->attachBone < 1)
+		return false;
+	if(properties->attachParent == PAWN_ATTACH_PLAYER)
+		return true;
+	ObjectInst *parent = GetInstanceByID(properties->attachParent);
+	return IsPlayerAttachmentTarget(parent);
+}
+
+static int
+playerBoneNodeId(int sampBone)
+{
+	// SA-MP's bone numbers mapped to the GTA HAnim node IDs used by skin DFFs.
+	static const int nodes[] = {
+		-1, 3, 5, 32, 22, 34, 24, 41, 51, 43, 53, 52, 42, 33, 23, 31, 21, 4, 8
+	};
+	return sampBone >= 1 && sampBone <= 18 ? nodes[sampBone] : -1;
+}
+
+static bool
+playerBoneMatrix(const ObjectInst *parent, int sampBone, rw::Matrix *matrix)
+{
+	if(parent == nil || parent->m_rwObject == nil || matrix == nil)
+		return false;
+	ObjectDef *obj = GetObjectDef(parent->m_objectId);
+	if(obj == nil || obj->m_type != ObjectDef::CLUMP || !obj->m_isPed)
+		return false;
+	rw::Clump *clump = (rw::Clump*)parent->m_rwObject;
+	rw::HAnimHierarchy *hier = rw::HAnimHierarchy::get(clump);
+	int node = playerBoneNodeId(sampBone);
+	int index = hier && node >= 0 ? hier->getIndex(node) : -1;
+	if(index < 0 || index >= hier->numNodes || hier->nodeInfo[index].frame == nil)
+		return false;
+	*matrix = *hier->nodeInfo[index].frame->getLTM();
+	return true;
+}
+
+static int
+nextPlayerAttachmentSlot(int32 parentId, int skin, const ObjectInst *except)
+{
+	bool used[10] = {};
+	ObjectInst *target = parentId >= 0 ? GetInstanceByID(parentId) : nil;
+	bool classTarget = target && GetSampElementKind(target) == SAMP_ELEMENT_CLASS;
+	bool npcTarget = target && GetSampElementKind(target) == SAMP_ELEMENT_NPC;
+	for(CPtrNode *p = instances.first; p; p = p->next){
+		ObjectInst *inst = (ObjectInst*)p->item;
+		if(inst == except || inst->m_isDeleted || inst->m_isVehicle ||
+		   GetSampElementKind(inst) != SAMP_ELEMENT_OBJECT)
+			continue;
+		const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+		ObjectInst *otherTarget = properties->attachParent >= 0 ? GetInstanceByID(properties->attachParent) : nil;
+		int otherKind = otherTarget ? GetSampElementKind(otherTarget) : -1;
+		bool samePlayer = properties->attachParent == parentId ||
+			properties->attachParent == PAWN_ATTACH_PLAYER;
+		if(parentId == PAWN_ATTACH_PLAYER)
+			samePlayer = true; // this slot is emitted for every player skin
+		else if(classTarget)
+			samePlayer = samePlayer ||
+				((otherKind == SAMP_ELEMENT_CLASS || otherKind == SAMP_ELEMENT_NPC) &&
+				 GetObjectPawnProperties(otherTarget)->elementModel == skin);
+		else if(npcTarget)
+			samePlayer = samePlayer || (otherKind == SAMP_ELEMENT_CLASS &&
+				GetObjectPawnProperties(otherTarget)->elementModel == skin);
+		if(samePlayer && properties->attachBone >= 1 &&
+		   properties->attachSlot >= 0 && properties->attachSlot < 10)
+			used[properties->attachSlot] = true;
+	}
+	for(int slot = 0; slot < 10; slot++)
+		if(!used[slot])
+			return slot;
+	return -1;
 }
 
 // Rendered basis of an instance (rows are the rotated X/Y/Z axes).
@@ -2135,7 +2274,15 @@ computeAttachedTransform(const ObjectInst *parent, const ObjectPawnProperties &p
 	rw::V3d *position, rw::Quat *rotation)
 {
 	rw::Matrix parentBasis = attachmentBasis(parent->m_rotation);
-	*position = add(parent->m_translation, basisApply(parentBasis, properties.attachOffset));
+	rw::V3d parentPosition = parent->m_translation;
+	if(properties.attachBone >= 1){
+		rw::Matrix bone;
+		if(playerBoneMatrix(parent, properties.attachBone, &bone)){
+			parentBasis = bone;
+			parentPosition = bone.pos;
+		}
+	}
+	*position = add(parentPosition, basisApply(parentBasis, properties.attachOffset));
 	rw::Quat offsetRotation = MakeObjectRotationDegrees(properties.attachRotation);
 	if(!properties.attachSyncRotation){
 		*rotation = offsetRotation;
@@ -2155,8 +2302,16 @@ computeAttachmentOffset(const ObjectInst *parent, const ObjectInst *child,
 	ObjectPawnProperties *properties)
 {
 	rw::Matrix parentBasis = attachmentBasis(parent->m_rotation);
+	rw::V3d parentPosition = parent->m_translation;
+	if(properties->attachBone >= 1){
+		rw::Matrix bone;
+		if(playerBoneMatrix(parent, properties->attachBone, &bone)){
+			parentBasis = bone;
+			parentPosition = bone.pos;
+		}
+	}
 	properties->attachOffset = basisApplyInverse(parentBasis,
-		sub(child->m_translation, parent->m_translation));
+		sub(child->m_translation, parentPosition));
 	if(!properties->attachSyncRotation){
 		properties->attachRotation = GetObjectRotationDegrees(child->m_rotation);
 		return;
@@ -2184,13 +2339,46 @@ attachmentWouldCycle(const ObjectInst *child, const ObjectInst *parent)
 bool
 AttachObjectInstance(ObjectInst *child, ObjectInst *parent, bool syncRotation)
 {
+	bool vehicleTarget = parent && parent->m_isVehicle;
+	bool playerTarget = IsPlayerAttachmentTarget(parent);
+	bool objectTarget = parent && !parent->m_isVehicle && GetSampElementKind(parent) == SAMP_ELEMENT_OBJECT;
 	if(child == nil || parent == nil || child == parent || child->m_isVehicle ||
-	   parent->m_isVehicle || attachmentWouldCycle(child, parent))
+	   (!vehicleTarget && !playerTarget && !objectTarget) ||
+	   (!vehicleTarget && !playerTarget && attachmentWouldCycle(child, parent)))
 		return false;
 	ObjectPawnProperties properties = *GetObjectPawnProperties(child);
 	properties.attachParent = parent->m_id;
-	properties.attachSyncRotation = syncRotation;
+	properties.attachBone = IsPlayerAttachmentTarget(parent) ? 2 : -1;
+	properties.attachSyncRotation = (properties.attachBone >= 1 || parent->m_isVehicle) ? true : syncRotation;
+	if(properties.attachBone >= 1){
+		properties.attachSkin = GetObjectPawnProperties(parent)->elementModel;
+		properties.attachSlot = nextPlayerAttachmentSlot(parent->m_id, properties.attachSkin, child);
+		if(properties.attachSlot < 0)
+			return false;
+	}
 	computeAttachmentOffset(parent, child, &properties);
+	SetObjectPawnProperties(child, properties);
+	return true;
+}
+
+bool
+AttachObjectToPlayer(ObjectInst *child, int previewSkin)
+{
+	if(child == nil || child->m_isDeleted || child->m_isVehicle ||
+	   GetSampElementKind(child) != SAMP_ELEMENT_OBJECT)
+		return false;
+	int slot = nextPlayerAttachmentSlot(PAWN_ATTACH_PLAYER, clamp(previewSkin, 0, 311), child);
+	if(slot < 0)
+		return false;
+	ObjectPawnProperties properties = *GetObjectPawnProperties(child);
+	properties.attachParent = PAWN_ATTACH_PLAYER;
+	properties.attachBone = 2;	// Head, a useful starting point for a new accessory.
+	properties.attachSlot = slot;
+	properties.attachOffset = { 0.0f, 0.0f, 0.0f };
+	properties.attachRotation = { 0.0f, 0.0f, 0.0f };
+	properties.attachScale = { 1.0f, 1.0f, 1.0f };
+	properties.attachSkin = clamp(previewSkin, 0, 311);
+	properties.attachSyncRotation = true;
 	SetObjectPawnProperties(child, properties);
 	return true;
 }
@@ -2198,7 +2386,7 @@ AttachObjectInstance(ObjectInst *child, ObjectInst *parent, bool syncRotation)
 void
 DetachObjectInstance(ObjectInst *child)
 {
-	if(child == nil || GetObjectPawnProperties(child)->attachParent < 0)
+	if(child == nil || GetObjectPawnProperties(child)->attachParent == PAWN_ATTACH_NONE)
 		return;
 	ObjectPawnProperties properties = *GetObjectPawnProperties(child);
 	properties.attachParent = -1;
@@ -2226,7 +2414,9 @@ UpdateObjectAttachments(void)
 		children.clear();
 		for(CPtrNode *p = instances.first; p; p = p->next){
 			ObjectInst *inst = (ObjectInst*)p->item;
-			if(inst->m_pawnProperties && inst->m_pawnProperties->attachParent >= 0)
+			if(inst->m_pawnProperties &&
+			   (inst->m_pawnProperties->attachParent >= 0 ||
+			    inst->m_pawnProperties->attachParent == PAWN_ATTACH_PLAYER))
 				children.push_back(inst);
 		}
 		gAttachmentListDirty = false;
@@ -2240,7 +2430,7 @@ UpdateObjectAttachments(void)
 		for(size_t i = 0; i < children.size(); i++){
 			ObjectInst *child = children[i];
 			ObjectPawnProperties *properties = child->m_pawnProperties;
-			if(properties == nil || properties->attachParent < 0 || child->m_isDeleted)
+			if(properties == nil || properties->attachParent == PAWN_ATTACH_NONE || child->m_isDeleted)
 				continue;
 			ObjectInst *parent = GetAttachParent(child);
 			if(parent == nil)
@@ -3089,6 +3279,160 @@ destroyInstanceRwObject(ObjectInst *inst, ObjectDef *obj)
 	}else
 		((rw::Clump*)inst->m_rwObject)->destroy();
 	inst->m_rwObject = nil;
+}
+
+ObjectInst*
+GetAttachmentWorkspacePlayerPreview(void)
+{
+	if(!gAttachmentWorkspacePlayerMode)
+		return nil;
+	int model = GetSampElementDisplayModel(SAMP_ELEMENT_CLASS, gAttachmentWorkspacePlayerSkin);
+	if(model < 0)
+		return nil;
+	if(gAttachmentPlayerPreview == nil){
+		gAttachmentPlayerPreview = new ObjectInst;
+		memset(gAttachmentPlayerPreview, 0, sizeof(*gAttachmentPlayerPreview));
+		gAttachmentPlayerPreview->m_id = 0;
+		gAttachmentPlayerPreview->m_lodId = -1;
+		gAttachmentPlayerPreview->m_translation = TheCamera.m_target;
+		gAttachmentPlayerPreview->m_rotation = { 0.0f, 0.0f, 0.0f, 1.0f };
+		gAttachmentPlayerPreview->m_objectId = model;
+		gAttachmentPlayerPreview->m_vehicleColor1 = -1;
+		gAttachmentPlayerPreview->m_vehicleColor2 = -1;
+		gAttachmentPlayerPreview->UpdateMatrix();
+	}else if(gAttachmentPlayerPreview->m_objectId != model){
+		destroyInstanceRwObject(gAttachmentPlayerPreview,
+			GetObjectDef(gAttachmentPlayerPreview->m_objectId));
+		gAttachmentPlayerPreview->m_objectId = model;
+		gAttachmentPlayerPreview->m_translation = TheCamera.m_target;
+		gAttachmentPlayerPreview->UpdateMatrix();
+	}
+	ObjectDef *obj = GetObjectDef(model);
+	if(obj && !obj->IsLoaded())
+		RequestObject(model);
+	if(obj && obj->IsLoaded() && gAttachmentPlayerPreview->m_rwObject == nil)
+		gAttachmentPlayerPreview->CreateRwObject();
+	return gAttachmentPlayerPreview;
+}
+
+ObjectInst*
+GetAttachmentWorkspaceTarget(void)
+{
+	return gAttachmentWorkspaceActive ? gAttachmentWorkspaceTarget : nil;
+}
+
+void
+OpenAttachmentWorkspace(ObjectInst *target, bool voidView)
+{
+	if(target == nil || target->m_isDeleted){
+		CloseAttachmentWorkspace();
+		return;
+	}
+	if(GetObjectPawnProperties(target)->attachParent == PAWN_ATTACH_PLAYER){
+		OpenPlayerAttachmentWorkspace(GetObjectPawnProperties(target)->attachSkin, voidView);
+		return;
+	}
+	gAttachmentWorkspaceActive = true;
+	gAttachmentWorkspaceVoid = voidView;
+	gAttachmentWorkspacePlayerMode = false;
+	gAttachmentWorkspaceTarget = target;
+	target->JumpTo();
+}
+
+void
+OpenPlayerAttachmentWorkspace(int skin, bool voidView)
+{
+	gAttachmentWorkspaceActive = true;
+	gAttachmentWorkspaceVoid = voidView;
+	gAttachmentWorkspacePlayerMode = true;
+	gAttachmentWorkspacePlayerSkin = clamp(skin, 0, 311);
+	gAttachmentWorkspacePlayerSkinSet = true;
+	gAttachmentWorkspaceTarget = GetAttachmentWorkspacePlayerPreview();
+	if(gAttachmentWorkspaceTarget){
+		gAttachmentWorkspaceTarget->JumpTo();
+		RequestObject(gAttachmentWorkspaceTarget->m_objectId);
+	}
+	UpdateObjectAttachments();
+}
+
+void
+CloseAttachmentWorkspace(void)
+{
+	gAttachmentWorkspaceActive = false;
+	gAttachmentWorkspaceVoid = false;
+	gAttachmentWorkspacePlayerMode = false;
+	gAttachmentWorkspaceTarget = nil;
+}
+
+bool
+IsAttachmentWorkspaceActive(void)
+{
+	return gAttachmentWorkspaceActive;
+}
+
+bool
+AttachmentWorkspaceHidesWorld(void)
+{
+	return gAttachmentWorkspaceActive && gAttachmentWorkspaceVoid;
+}
+
+void
+SetAttachmentWorkspaceVoid(bool voidView)
+{
+	if(gAttachmentWorkspaceActive)
+		gAttachmentWorkspaceVoid = voidView;
+}
+
+int
+GetAttachmentWorkspacePlayerSkin(void)
+{
+	if(gAttachmentWorkspacePlayerSkinSet)
+		return gAttachmentWorkspacePlayerSkin;
+	for(CPtrNode *p = instances.first; p; p = p->next){
+		ObjectInst *inst = (ObjectInst*)p->item;
+		const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+		if(!inst->m_isDeleted && properties->attachParent == PAWN_ATTACH_PLAYER)
+			return properties->attachSkin;
+	}
+	return 1;
+}
+
+void
+SetAttachmentWorkspacePlayerSkin(int skin)
+{
+	gAttachmentWorkspacePlayerSkin = clamp(skin, 0, 311);
+	gAttachmentWorkspacePlayerSkinSet = true;
+	if(gAttachmentWorkspacePlayerMode){
+		gAttachmentWorkspaceTarget = GetAttachmentWorkspacePlayerPreview();
+		if(gAttachmentWorkspaceTarget){
+			gAttachmentWorkspaceTarget->JumpTo();
+			RequestObject(gAttachmentWorkspaceTarget->m_objectId);
+		}
+	}
+	UpdateObjectAttachments();
+}
+
+bool
+AttachmentWorkspaceShowsInstance(const ObjectInst *inst)
+{
+	if(inst == nil)
+		return false;
+	const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+	if(!gAttachmentWorkspaceActive || !gAttachmentWorkspaceVoid)
+		return true;
+	if(properties->attachParent == PAWN_ATTACH_PLAYER)
+		return gAttachmentWorkspacePlayerMode;
+	if(inst == gAttachmentWorkspaceTarget)
+		return true;
+	for(int depth = 0; depth < 64; depth++){
+		ObjectInst *parent = GetAttachParent(inst);
+		if(parent == nil)
+			return false;
+		if(parent == gAttachmentWorkspaceTarget)
+			return true;
+		inst = parent;
+	}
+	return false;
 }
 
 // Swaps the model drawing a pickup, actor or player class. Elements have no
@@ -4242,7 +4586,8 @@ ReadPrefabEntries(const char *path, PrefabEntry *entries, int maxEntries, int *n
 				continue;
 			}
 			if(strcmp(type, "attach") == 0){
-				// attach <index> <parent index> <x y z> <rx ry rz> <sync>
+				// v3: attach <index> <parent index> <x y z> <rx ry rz> <sync>
+				// v4 adds bone, slot, scale, material colours and preview skin.
 				int parentIndex, sync;
 				float values[6];
 				bool valid = prefabNextToken(&cursor, token, sizeof(token)) &&
@@ -4256,13 +4601,29 @@ ReadPrefabEntries(const char *path, PrefabEntry *entries, int maxEntries, int *n
 				valid = valid && prefabNextToken(&cursor, token, sizeof(token)) &&
 					prefabParseIntToken(token, &sync);
 				if(!valid || objectIndex < 0 || objectIndex >= numEntries ||
-				   parentIndex < 0 || parentIndex >= numEntries || parentIndex == objectIndex)
+				   (parentIndex != PAWN_ATTACH_PLAYER &&
+				    (parentIndex < 0 || parentIndex >= numEntries || parentIndex == objectIndex)))
 					continue;
 				PrefabEntry *child = &entries[objectIndex];
 				child->attachParentIndex = parentIndex;
 				child->properties.attachOffset = { values[0], values[1], values[2] };
 				child->properties.attachRotation = { values[3], values[4], values[5] };
 				child->properties.attachSyncRotation = sync != 0;
+				if(prefabNextToken(&cursor, token, sizeof(token)))
+					prefabParseIntToken(token, &child->properties.attachBone);
+				if(prefabNextToken(&cursor, token, sizeof(token)))
+					prefabParseIntToken(token, &child->properties.attachSlot);
+				float scale[3] = { 1.0f, 1.0f, 1.0f };
+				for(int v = 0; v < 3; v++)
+					if(prefabNextToken(&cursor, token, sizeof(token)))
+						scale[v] = (float)atof(token);
+				child->properties.attachScale = { scale[0], scale[1], scale[2] };
+				if(prefabNextToken(&cursor, token, sizeof(token)))
+					child->properties.attachColor1 = (uint32)strtoul(token, nil, 0);
+				if(prefabNextToken(&cursor, token, sizeof(token)))
+					child->properties.attachColor2 = (uint32)strtoul(token, nil, 0);
+				if(prefabNextToken(&cursor, token, sizeof(token)))
+					prefabParseIntToken(token, &child->properties.attachSkin);
 				continue;
 			}
 			if(strcmp(type, "material") == 0){
@@ -6515,7 +6876,7 @@ ExportPrefabEx(const char *path, int origin, const char *tags)
 		return 0;
 	}
 
-	fprintf(f, "HAUMEA_PREFAB 3\n");
+	fprintf(f, "HAUMEA_PREFAB 4\n");
 	fprintf(f, "game %d\n", (int)params.map);
 	// Before count, where older readers skip what they don't know.
 	if(tags && tags[0]){
@@ -6704,14 +7065,21 @@ ExportPrefabEx(const char *path, int origin, const char *tags)
 		for(int j = 0; npcVehicle && j < numInsts; j++)
 			if(insts[j] == npcVehicle)
 				fprintf(f, "npcveh %d %d %d\n", i, j, inst->m_pawnProperties->npcSeat);
+		int parentIndex = -1;
 		ObjectInst *parent = GetAttachParent(inst);
-		for(int j = 0; parent && j < numInsts; j++)
-			if(insts[j] == parent)
-				fprintf(f, "attach %d %d %f %f %f %f %f %f %d\n", i, j,
-					properties->attachOffset.x, properties->attachOffset.y,
-					properties->attachOffset.z, properties->attachRotation.x,
-					properties->attachRotation.y, properties->attachRotation.z,
-					properties->attachSyncRotation ? 1 : 0);
+		if(properties->attachParent == PAWN_ATTACH_PLAYER)
+			parentIndex = PAWN_ATTACH_PLAYER;
+		else
+			for(int j = 0; parent && j < numInsts; j++)
+				if(insts[j] == parent){ parentIndex = j; break; }
+		if(parentIndex != -1)
+			fprintf(f, "attach %d %d %f %f %f %f %f %f %d %d %d %f %f %f 0x%08X 0x%08X %d\n", i, parentIndex,
+				properties->attachOffset.x, properties->attachOffset.y,
+				properties->attachOffset.z, properties->attachRotation.x,
+				properties->attachRotation.y, properties->attachRotation.z,
+				properties->attachSyncRotation ? 1 : 0, properties->attachBone, properties->attachSlot,
+				properties->attachScale.x, properties->attachScale.y, properties->attachScale.z,
+				properties->attachColor1, properties->attachColor2, properties->attachSkin);
 	}
 
 	fclose(f);
@@ -7509,6 +7877,9 @@ static void
 pawnWriteObjectCall(FILE *f, const ObjectInst *inst, PawnCodeFormat format,
 	const char *handle)
 {
+	// A SetPlayerAttachedObject entry is a model/slot call, not a CreateObject.
+	if(IsPlayerAttachedObject(inst))
+		return;
 	if(GetSampElementKind(inst) != SAMP_ELEMENT_OBJECT){
 		pawnWriteElementCall(f, inst, format, handle);
 		return;
@@ -7588,6 +7959,18 @@ pawnWriteObjectCall(FILE *f, const ObjectInst *inst, PawnCodeFormat format,
 		fputs(");", f);
 	}
 	pawnWriteTrailingTags(f, name, worldTag, properties);
+}
+
+static void
+pawnWritePlayerAttachedObject(FILE *f, const ObjectInst *inst, const char *playerVar)
+{
+	const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+	fprintf(f, "\tSetPlayerAttachedObject(%s, %d, %d, %d, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, 0x%08X, 0x%08X);\n",
+		playerVar, properties->attachSlot, PawnModelId(inst->m_objectId), properties->attachBone,
+		properties->attachOffset.x, properties->attachOffset.y, properties->attachOffset.z,
+		properties->attachRotation.x, properties->attachRotation.y, properties->attachRotation.z,
+		properties->attachScale.x, properties->attachScale.y, properties->attachScale.z,
+		properties->attachColor1, properties->attachColor2);
 }
 
 // The table behind <prefix>_AddSound and the code that plays each game
@@ -7949,11 +8332,26 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 	}
 
 	// Attachments whose parent is part of this export. Both objects need a
-	// variable, and the attach calls go last so every parent exists.
+	// variable, and the attach calls go last so every parent exists. Player
+	// bone slots do not create an object-pool handle.
 	std::unordered_map<const ObjectInst*, const ObjectInst*> attachParents;
+	std::vector<ObjectInst*> playerAttachments;
 	std::unordered_set<const ObjectInst*> exported(insts.begin(), insts.end());
 	for(size_t i = 0; i < insts.size(); i++){
-		ObjectInst *parent = insts[i]->m_isDeleted ? nil : GetAttachParent(insts[i]);
+		ObjectInst *inst = insts[i];
+		if(inst->m_isDeleted)
+			continue;
+		if(IsPlayerAttachedObject(inst)){
+			if(inst->m_pawnProperties->attachParent == PAWN_ATTACH_PLAYER){
+				playerAttachments.push_back(inst);
+				continue;
+			}
+			ObjectInst *parent = GetInstanceByID(inst->m_pawnProperties->attachParent);
+			if(parent && exported.count(parent))
+				playerAttachments.push_back(inst);
+			continue;
+		}
+		ObjectInst *parent = GetAttachParent(inst);
 		if(parent && exported.count(parent))
 			attachParents[insts[i]] = parent;
 	}
@@ -8002,9 +8400,9 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 				  properties->actorHealth != 100.0f)));
 			// Whether a later call uses the variable; a generated one is only
 			// made then, a hand-written one is kept anyway.
-			bool usedLater = (inst->m_isVehicle && (vehicleNeedsHandle(inst) || npcVehicles.count(inst))) ||
+			bool usedLater = (inst->m_isVehicle && (vehicleNeedsHandle(inst) || npcVehicles.count(inst) || needsHandle.count(inst))) ||
 				kind == SAMP_ELEMENT_GANGZONE || nativeActorExtras || kind == SAMP_ELEMENT_NPC ||
-				(kind == SAMP_ELEMENT_OBJECT && !inst->m_isVehicle &&
+				(kind == SAMP_ELEMENT_OBJECT && !inst->m_isVehicle && !IsPlayerAttachedObject(inst) &&
 				 (HasObjectMaterialOverrides(inst) || needsHandle.count(inst)));
 			char handle[128];
 			handle[0] = '\0';
@@ -8018,7 +8416,7 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 					// path points are written with their path
 			else if(properties->name[0] && usedHandles.count(properties->name) == 0)
 				strncpy(handle, properties->name, sizeof(handle)-1);
-			else if(inst->m_isVehicle && (vehicleNeedsHandle(inst) || npcVehicles.count(inst)))
+			else if(inst->m_isVehicle && (vehicleNeedsHandle(inst) || npcVehicles.count(inst) || needsHandle.count(inst)))
 				snprintf(handle, sizeof(handle), "%s_vehicle_%d", prefix, generatedHandles++);
 			else if(kind == SAMP_ELEMENT_GANGZONE)
 				snprintf(handle, sizeof(handle), "%s_zone_%d", prefix, generatedHandles++);
@@ -8026,7 +8424,7 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 				snprintf(handle, sizeof(handle), "%s_actor_%d", prefix, generatedHandles++);
 			else if(kind == SAMP_ELEMENT_NPC)
 				snprintf(handle, sizeof(handle), "%s_npc_%d", prefix, generatedHandles++);
-			else if(kind == SAMP_ELEMENT_OBJECT && !inst->m_isVehicle &&
+			else if(kind == SAMP_ELEMENT_OBJECT && !inst->m_isVehicle && !IsPlayerAttachedObject(inst) &&
 				(HasObjectMaterialOverrides(inst) || needsHandle.count(inst) || properties->name[0]))
 				snprintf(handle, sizeof(handle), "%s_obj_%d", prefix, generatedHandles++);
 			if(handle[0]){
@@ -8221,19 +8619,40 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 	}
 	if(!attachParents.empty()){
 		fputs("\n\t// ---- attachments ----\n", f);
-		const char *attachName = format == PAWN_CODE_STREAMER
-			? "AttachDynamicObjectToObject" : "AttachObjectToObject";
 		for(size_t i = 0; i < insts.size(); i++){
 			std::unordered_map<const ObjectInst*, const ObjectInst*>::iterator it =
 				attachParents.find(insts[i]);
 			if(it == attachParents.end())
 				continue;
 			const ObjectPawnProperties *properties = GetObjectPawnProperties(insts[i]);
-			fprintf(f, "\t%s(%s, %s, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %s);\n", attachName,
+			bool vehicle = it->second->m_isVehicle;
+			const char *attachName = vehicle ? (format == PAWN_CODE_STREAMER ?
+				"AttachDynamicObjectToVehicle" : "AttachObjectToVehicle") :
+				(format == PAWN_CODE_STREAMER ? "AttachDynamicObjectToObject" : "AttachObjectToObject");
+			fprintf(f, "\t%s(%s, %s, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f", attachName,
 				handles[it->first].c_str(), handles[it->second].c_str(),
 				properties->attachOffset.x, properties->attachOffset.y, properties->attachOffset.z,
 				properties->attachRotation.x, properties->attachRotation.y,
-				properties->attachRotation.z, properties->attachSyncRotation ? "true" : "false");
+				properties->attachRotation.z);
+			if(!vehicle)
+				fprintf(f, ", %s", properties->attachSyncRotation ? "true" : "false");
+			fputs(");\n", f);
+		}
+	}
+	if(!playerAttachments.empty()){
+		bool wroteNpc = false;
+		for(ObjectInst *inst : playerAttachments){
+			const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+			ObjectInst *parent = properties->attachParent >= 0 ?
+				GetInstanceByID(properties->attachParent) : nil;
+			if(parent == nil || GetSampElementKind(parent) != SAMP_ELEMENT_NPC ||
+			   handles.find(parent) == handles.end())
+				continue;
+			if(!wroteNpc){
+				fputs("\n\t// ---- NPC attached objects (open.mp) ----\n", f);
+				wroteNpc = true;
+			}
+			pawnWritePlayerAttachedObject(f, inst, handles[parent].c_str());
 		}
 	}
 	// NPCs get in their vehicles once both exist, before any recording starts.
@@ -8325,6 +8744,30 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 			fprintf(f, ", %s);\n", properties->npcPathReversed ? "true" : "false");
 	}
 	fprintf(f, "}\n");
+	bool playerAttachmentHelper = false;
+	for(ObjectInst *inst : playerAttachments){
+		const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+		ObjectInst *parent = properties->attachParent >= 0 ? GetInstanceByID(properties->attachParent) : nil;
+		if(parent == nil || GetSampElementKind(parent) == SAMP_ELEMENT_CLASS)
+			playerAttachmentHelper = true;
+	}
+	if(playerAttachmentHelper){
+		fprintf(f, "\n// Call %s_ApplyPlayerAttachments(playerid) from OnPlayerSpawn.\n"
+			"stock %s_ApplyPlayerAttachments(playerid)\n{\n", prefix, prefix);
+		for(ObjectInst *inst : playerAttachments){
+			const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+			ObjectInst *parent = properties->attachParent >= 0 ? GetInstanceByID(properties->attachParent) : nil;
+			if(parent && GetSampElementKind(parent) != SAMP_ELEMENT_CLASS)
+				continue;
+			if(parent){
+				fprintf(f, "\tif(GetPlayerSkin(playerid) == %d){\n", GetObjectPawnProperties(parent)->elementModel);
+				pawnWritePlayerAttachedObject(f, inst, "playerid");
+				fputs("\t}\n", f);
+			}else
+				pawnWritePlayerAttachedObject(f, inst, "playerid");
+		}
+		fputs("}\n", f);
+	}
 
 	if(hasPlayerElements){
 		fprintf(f, "\nstock %s_ShowForPlayer(playerid)\n{\n", prefix);
@@ -8536,9 +8979,13 @@ struct PawnElementSetterEntry
 
 struct PawnAttachImportEntry
 {
-	int child, parent;	// indices into the create entries
+	int child, parent;	// indices into the create entries; player uses PAWN_ATTACH_PLAYER
 	float x, y, z, rx, ry, rz;
 	bool syncRotation;
+	bool toVehicle;
+	int bone, slot;
+	rw::V3d scale;
+	uint32 color1, color2;
 };
 
 struct PawnRemoveEntry
@@ -9320,6 +9767,15 @@ pawnParseElementInt(const std::string &value, int *out)
 		{ "MAPICON_LOCAL", 0 }, { "MAPICON_GLOBAL", 1 },
 		{ "MAPICON_LOCAL_CHECKPOINT", 2 }, { "MAPICON_GLOBAL_CHECKPOINT", 3 },
 		{ "INVALID_PLAYER_ID", 0xFFFF }, { "INVALID_VEHICLE_ID", 0xFFFF },
+		{ "BONE_SPINE", 1 }, { "BONE_HEAD", 2 },
+		{ "BONE_LEFT_UPPER_ARM", 3 }, { "BONE_RIGHT_UPPER_ARM", 4 },
+		{ "BONE_LEFT_HAND", 5 }, { "BONE_RIGHT_HAND", 6 },
+		{ "BONE_LEFT_THIGH", 7 }, { "BONE_RIGHT_THIGH", 8 },
+		{ "BONE_LEFT_FOOT", 9 }, { "BONE_RIGHT_FOOT", 10 },
+		{ "BONE_RIGHT_CALF", 11 }, { "BONE_LEFT_CALF", 12 },
+		{ "BONE_LEFT_FOREARM", 13 }, { "BONE_RIGHT_FOREARM", 14 },
+		{ "BONE_LEFT_CLAVICLE", 15 }, { "BONE_RIGHT_CLAVICLE", 16 },
+		{ "BONE_NECK", 17 }, { "BONE_JAW", 18 },
 		{ "NO_TEAM", 255 },
 	};
 	for(size_t i = 0; i < sizeof(constants)/sizeof(constants[0]); i++)
@@ -9437,6 +9893,8 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 		PAWN_CALL_CREATE,
 		PAWN_CALL_CREATE_EX,
 		PAWN_CALL_ATTACH,
+		PAWN_CALL_ATTACH_VEHICLE,
+		PAWN_CALL_PLAYER_ATTACHED,
 		PAWN_CALL_VEHICLE_STATIC,
 		PAWN_CALL_VEHICLE_STATIC_EX,
 		PAWN_CALL_VEHICLE_DYNAMIC,
@@ -9504,6 +9962,10 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 		{ "SetDynamicObjectMaterial", 0, true, PAWN_CALL_MATERIAL },
 		{ "SetObjectMaterial", 0, false, PAWN_CALL_MATERIAL },
 		{ "RemoveBuildingForPlayer", 1, false, PAWN_CALL_REMOVE },
+		{ "AttachDynamicObjectToVehicle", 0, true, PAWN_CALL_ATTACH_VEHICLE },
+		{ "AttachPlayerObjectToVehicle", 1, false, PAWN_CALL_ATTACH_VEHICLE },
+		{ "AttachObjectToVehicle", 0, false, PAWN_CALL_ATTACH_VEHICLE },
+		{ "SetPlayerAttachedObject", 0, false, PAWN_CALL_PLAYER_ATTACHED },
 		{ "AttachPlayerObjectToObject", 1, false, PAWN_CALL_ATTACH },
 		{ "AttachDynamicObjectToObject", 0, true, PAWN_CALL_ATTACH },
 		{ "AttachObjectToObject", 0, false, PAWN_CALL_ATTACH },
@@ -9645,7 +10107,9 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 		if(call->kind == PAWN_CALL_ATTACH){
 			// AttachObjectToObject(obj, attachto, x, y, z, rx, ry, rz, sync = 1)
 			char child[64], parent[64];
-			PawnAttachImportEntry attach;
+			PawnAttachImportEntry attach = {};
+			attach.bone = -1;
+			attach.scale = { 1.0f, 1.0f, 1.0f };
 			int sync = 1;
 			bool valid = (int)args.size() >= offset + 8 &&
 				pawnParseToken(args[offset], child, sizeof(child)) &&
@@ -9666,6 +10130,78 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 			attach.child = handleEntries[child];
 			attach.parent = handleEntries[parent];
 			attach.syncRotation = sync != 0;
+			attachments.push_back(attach);
+			continue;
+		}
+		if(call->kind == PAWN_CALL_ATTACH_VEHICLE){
+			// AttachObjectToVehicle(obj, vehicle, x, y, z, rx, ry, rz)
+			char child[64], parent[64];
+			PawnAttachImportEntry attach = {};
+			attach.bone = -1;
+			attach.scale = { 1.0f, 1.0f, 1.0f };
+			bool valid = args.size() >= (size_t)offset + 8 &&
+				pawnParseToken(args[offset], child, sizeof(child)) &&
+				pawnParseToken(args[offset + 1], parent, sizeof(parent)) &&
+				pawnParseFloat(args[offset + 2], &attach.x) && pawnParseFloat(args[offset + 3], &attach.y) &&
+				pawnParseFloat(args[offset + 4], &attach.z) && pawnParseFloat(args[offset + 5], &attach.rx) &&
+				pawnParseFloat(args[offset + 6], &attach.ry) && pawnParseFloat(args[offset + 7], &attach.rz) &&
+				handleEntries.find(child) != handleEntries.end() &&
+				handleEntries.find(parent) != handleEntries.end() &&
+				entries[handleEntries[parent]].isVehicle;
+			if(!valid){
+				if(numSkipped) (*numSkipped)++;
+				continue;
+			}
+			attach.child = handleEntries[child];
+			attach.parent = handleEntries[parent];
+			attach.syncRotation = true;
+			attach.toVehicle = true;
+			attachments.push_back(attach);
+			continue;
+		}
+		if(call->kind == PAWN_CALL_PLAYER_ATTACHED){
+			// SetPlayerAttachedObject(playerid, slot, model, bone, offset, rotation, scale, colours)
+			PawnAttachImportEntry attach = {};
+			attach.bone = -1;
+			attach.scale = { 1.0f, 1.0f, 1.0f };
+			int slot, model, bone;
+			uint32 color1 = 0, color2 = 0;
+			bool valid = args.size() >= 13 && pawnParseElementInt(args[1], &slot) &&
+				pawnParseElementInt(args[2], &model) && pawnParseElementInt(args[3], &bone) &&
+				pawnParseFloat(args[4], &attach.x) && pawnParseFloat(args[5], &attach.y) &&
+				pawnParseFloat(args[6], &attach.z) && pawnParseFloat(args[7], &attach.rx) &&
+				pawnParseFloat(args[8], &attach.ry) && pawnParseFloat(args[9], &attach.rz) &&
+				pawnParseFloat(args[10], &attach.scale.x) && pawnParseFloat(args[11], &attach.scale.y) &&
+				pawnParseFloat(args[12], &attach.scale.z);
+			if(valid && args.size() >= 14)
+				valid = pawnParseMaterialColor(args[13], &color1);
+			if(valid && args.size() >= 15)
+				valid = pawnParseMaterialColor(args[14], &color2);
+			if(!valid || model < 0 || bone < 1 || bone > 18 || slot < 0 || slot > 9){
+				if(numSkipped) (*numSkipped)++;
+				continue;
+			}
+			PawnImportEntry entry = {};
+			entry.objectId = EditorModelId(model);
+			entry.interior = -1;
+			entry.world = 0;
+			entry.elementKind = SAMP_ELEMENT_OBJECT;
+			InitObjectPawnProperties(&entry.element);
+			attach.child = (int)entries.size();
+			attach.parent = PAWN_ATTACH_PLAYER;
+			attach.syncRotation = true;
+			attach.bone = bone;
+			attach.slot = slot;
+			attach.color1 = color1;
+			attach.color2 = color2;
+			attach.toVehicle = false;
+			char player[64];
+			if(pawnParseToken(args[0], player, sizeof(player))){
+				std::map<std::string, int>::const_iterator target = handleEntries.find(player);
+				if(target != handleEntries.end() && entries[target->second].elementKind == SAMP_ELEMENT_NPC)
+					attach.parent = target->second;
+			}
+			entries.push_back(entry);
 			attachments.push_back(attach);
 			continue;
 		}
@@ -11011,18 +11547,29 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 	for(size_t i = 0; i < attachments.size(); i++){
 		const PawnAttachImportEntry &attach = attachments[i];
 		ObjectInst *child = createdForEntry[attach.child];
-		ObjectInst *parent = createdForEntry[attach.parent];
-		if(child == nil || parent == nil || child == parent ||
-		   child->m_isVehicle || parent->m_isVehicle){
+		ObjectInst *parent = attach.parent >= 0 ? createdForEntry[attach.parent] : nil;
+		bool playerTarget = attach.parent == PAWN_ATTACH_PLAYER;
+		bool validParent = attach.toVehicle ? parent && parent->m_isVehicle :
+			playerTarget || (attach.bone >= 1 ? IsPlayerAttachmentTarget(parent) :
+				parent && !parent->m_isVehicle && GetSampElementKind(parent) == SAMP_ELEMENT_OBJECT);
+		if(child == nil || child->m_isVehicle || !validParent || parent == child){
 			skipped++;
 			report.unresolvedLinks++;
 			continue;
 		}
 		ObjectPawnProperties properties = *GetObjectPawnProperties(child);
-		properties.attachParent = parent->m_id;
+		properties.attachParent = playerTarget ? PAWN_ATTACH_PLAYER : parent->m_id;
 		properties.attachOffset = { attach.x, attach.y, attach.z };
 		properties.attachRotation = { attach.rx, attach.ry, attach.rz };
-		properties.attachSyncRotation = attach.syncRotation;
+		properties.attachSyncRotation = attach.toVehicle || attach.bone >= 1 ? true : attach.syncRotation;
+		properties.attachBone = attach.bone;
+		properties.attachSlot = attach.slot;
+		properties.attachScale = attach.scale;
+		properties.attachColor1 = attach.color1;
+		properties.attachColor2 = attach.color2;
+		properties.attachSkin = playerTarget ? 1 :
+			parent && GetSampElementKind(parent) == SAMP_ELEMENT_CLASS ?
+				GetObjectPawnProperties(parent)->elementModel : 0;
 		SetObjectPawnProperties(child, properties, false);
 	}
 	for(size_t i = 0; i < setters.size(); i++){
@@ -11382,7 +11929,9 @@ ImportPrefabAtEx(const char *path, rw::V3d spawnPos, float heading, const char *
 		   FindNpcByName(properties.npcName, created[i]))
 			MakeUniqueNpcName(properties.npcName, properties.npcName, sizeof(properties.npcName));
 		int parentIndex = entries[i].attachParentIndex;
-		if(parentIndex >= 0 && created[parentIndex] && !created[parentIndex]->m_isVehicle)
+		if(parentIndex == PAWN_ATTACH_PLAYER)
+			properties.attachParent = PAWN_ATTACH_PLAYER;
+		else if(parentIndex >= 0 && parentIndex < numEntries && created[parentIndex])
 			properties.attachParent = created[parentIndex]->m_id;
 		else
 			properties.attachParent = -1;

@@ -27,6 +27,12 @@ void writeProperties(Node &node, const ObjectPawnProperties &value)
 	write(node, "attachOffset", value.attachOffset);
 	write(node, "attachRotation", value.attachRotation);
 	write(node, "attachSyncRotation", value.attachSyncRotation);
+	write(node, "attachBone", value.attachBone);
+	write(node, "attachSlot", value.attachSlot);
+	write(node, "attachScale", value.attachScale);
+	write(node, "attachColor1", value.attachColor1);
+	write(node, "attachColor2", value.attachColor2);
+	write(node, "attachSkin", value.attachSkin);
 	write(node, "elementKind", value.elementKind);
 	write(node, "pickupType", value.pickupType);
 	write(node, "labelText", value.labelText);
@@ -111,6 +117,18 @@ bool readProperties(const Node &node, ObjectPawnProperties &value, std::string *
 	if (!read(node, "attachRotation", value.attachRotation, error))
 		return false;
 	if (!read(node, "attachSyncRotation", value.attachSyncRotation, error))
+		return false;
+	if (!read(node, "attachBone", value.attachBone, error))
+		return false;
+	if (!read(node, "attachSlot", value.attachSlot, error))
+		return false;
+	if (!read(node, "attachScale", value.attachScale, error))
+		return false;
+	if (!read(node, "attachColor1", value.attachColor1, error))
+		return false;
+	if (!read(node, "attachColor2", value.attachColor2, error))
+		return false;
+	if (!read(node, "attachSkin", value.attachSkin, error))
 		return false;
 	if (!read(node, "elementKind", value.elementKind, error))
 		return false;
@@ -401,6 +419,7 @@ struct Instance {
 	unsigned id = 0, parent = 0, vehicle = 0, lod = 0;
 	int model = 0, area = 0, kind = SAMP_ELEMENT_OBJECT;
 	bool isVehicle = false, deleted = false, world = false, hidden = false, sourceDegrees = false, radar = false;
+	bool playerTarget = false;
 	rw::V3d position = {0, 0, 0}, original = {0, 0, 0};
 	rw::Quat rotation = {0, 0, 0, 1}, sourceRotation = {0, 0, 0, 1}, originalRotation = {0, 0, 0, 1};
 	double degrees[3] = {0, 0, 0};
@@ -485,7 +504,10 @@ Node writeInstance(ObjectInst *inst, const std::string &handle)
 		write(node, "source-degrees", inst->m_sourceDegrees);
 		write(node, "source-rotation", inst->m_sourceRotation);
 	}
-	node.set("parent", documentId(GetInstanceByID(p.attachParent)));
+	if (p.attachParent == PAWN_ATTACH_PLAYER)
+		node.set("parent-type", "player");
+	else
+		node.set("parent", documentId(GetInstanceByID(p.attachParent)));
 	node.set("npc-vehicle", documentId(GetInstanceByID(p.npcVehicle)));
 	node.set("lod", documentId(inst->m_lod));
 	// Unchanged world geometry may only carry editor visibility. Its
@@ -531,6 +553,7 @@ bool readInstance(const Node &node, Instance &out, std::string *error)
 	    !read(node, "source-rotation", out.sourceRotation, error) || !read(node, "parent", out.parent, error) ||
 	    !read(node, "npc-vehicle", out.vehicle, error) || !read(node, "lod", out.lod, error))
 		return false;
+	out.playerTarget = node.get("parent-type") == "player";
 	out.handle = node.get("runtime-handle");
 	if (out.kind < SAMP_ELEMENT_OBJECT || out.kind > SAMP_ELEMENT_AREA || out.model < -30000 ||
 	    out.model >= NUMOBJECTDEFS ||
@@ -999,7 +1022,7 @@ bool ApplyMapXML(const Node &document, bool sameRevision, std::vector<ObjectInst
 		if (sameRevision) {
 			props = saved.properties;
 			// References belong to this XML document, not to a previous process.
-			props.attachParent = saved.parent ? 0 : -1;
+			props.attachParent = saved.playerTarget ? PAWN_ATTACH_PLAYER : saved.parent ? 0 : -1;
 			props.npcVehicle = saved.vehicle ? 0 : -1;
 			target->m_area = saved.area;
 			RestoreDocumentTransform(target, saved.position, saved.rotation, saved.deleted);
@@ -1037,7 +1060,7 @@ bool ApplyMapXML(const Node &document, bool sameRevision, std::vector<ObjectInst
 				continue;
 			ObjectPawnProperties props = saved.properties;
 			ObjectInst *parent = ref(saved.parent), *vehicle = ref(saved.vehicle);
-			props.attachParent = parent && parent != inst ? parent->m_id : -1;
+			props.attachParent = saved.playerTarget ? PAWN_ATTACH_PLAYER : parent && parent != inst ? parent->m_id : -1;
 			props.npcVehicle = vehicle ? vehicle->m_id : -1;
 			SetObjectPawnProperties(inst, props, false);
 			ObjectInst *lod = ref(saved.lod);

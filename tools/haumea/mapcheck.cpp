@@ -556,14 +556,56 @@ RunMapCheck(int pawnFormat, MapCheckResult *result, bool translated)
 		if(v.second.size() > 1)
 			c.add(MAPCHECK_ERROR, ELEMENTS, ids(v.second), tr(N_("%d elements share the variable name \"%s\": "
 				"the Pawn code won't compile.")), (int)v.second.size(), v.first.c_str());
+	std::vector<ObjectInst*> playerAttachmentsSeen;
 	for(CPtrNode *p = instances.first; p; p = p->next){
 		ObjectInst *inst = (ObjectInst*)p->item;
-		if(inst->m_isDeleted || inst->m_pawnProperties == nil || inst->m_pawnProperties->attachParent < 0)
+		if(inst->m_isDeleted || inst->m_pawnProperties == nil ||
+		   inst->m_pawnProperties->attachParent == PAWN_ATTACH_NONE)
 			continue;
-		ObjectInst *parent = GetInstanceByID(inst->m_pawnProperties->attachParent);
-		if(parent == nil || parent->m_isDeleted)
+		const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+		bool playerPreview = properties->attachParent == PAWN_ATTACH_PLAYER;
+		ObjectInst *parent = playerPreview ? nil : GetInstanceByID(properties->attachParent);
+		if(!playerPreview && (parent == nil || parent->m_isDeleted)){
 			c.add(MAPCHECK_ERROR, ELEMENTS, inst, tr(N_("%s is attached to an object that was deleted.")),
 				label(inst, name, sizeof(name)));
+			continue;
+		}
+		if(properties->attachBone >= 1){
+			if(!playerPreview && !IsPlayerAttachmentTarget(parent)){
+				c.add(MAPCHECK_ERROR, ELEMENTS, inst, tr(N_("%s uses a player bone attachment, but its target isn't a player or NPC.")),
+					label(inst, name, sizeof(name)));
+				continue;
+			}
+			int currentKind = playerPreview ? -1 : GetSampElementKind(parent);
+			int currentSkin = playerPreview ? properties->attachSkin : GetObjectPawnProperties(parent)->elementModel;
+			for(ObjectInst *previous : playerAttachmentsSeen){
+				const ObjectPawnProperties *old = GetObjectPawnProperties(previous);
+				if(old->attachSlot != properties->attachSlot)
+					continue;
+				bool oldGlobal = old->attachParent == PAWN_ATTACH_PLAYER;
+				ObjectInst *oldTarget = old->attachParent >= 0 ? GetInstanceByID(old->attachParent) : nil;
+				int oldKind = oldTarget ? GetSampElementKind(oldTarget) : -1;
+				int oldSkin = oldGlobal ? old->attachSkin : oldTarget ? GetObjectPawnProperties(oldTarget)->elementModel : -1;
+				bool samePlayer = playerPreview || oldGlobal || old->attachParent == properties->attachParent;
+				if(!samePlayer && (currentKind == SAMP_ELEMENT_CLASS || currentKind == SAMP_ELEMENT_NPC) &&
+				   (oldKind == SAMP_ELEMENT_CLASS || oldKind == SAMP_ELEMENT_NPC))
+					samePlayer = currentSkin == oldSkin &&
+						(currentKind == SAMP_ELEMENT_CLASS || oldKind == SAMP_ELEMENT_CLASS);
+				if(!samePlayer)
+					continue;
+				char currentLabel[128], previousLabel[128];
+				label(inst, currentLabel, sizeof(currentLabel));
+				label(previous, previousLabel, sizeof(previousLabel));
+				c.add(MAPCHECK_ERROR, ELEMENTS, inst, tr(N_("%s shares player attachment slot %d with %s.")),
+					currentLabel, properties->attachSlot, previousLabel);
+				c.add(MAPCHECK_ERROR, ELEMENTS, previous, tr(N_("%s shares player attachment slot %d with %s.")),
+					previousLabel, properties->attachSlot, currentLabel);
+			}
+			playerAttachmentsSeen.push_back(inst);
+		}else if(parent && !parent->m_isVehicle && GetSampElementKind(parent) != SAMP_ELEMENT_OBJECT){
+			c.add(MAPCHECK_ERROR, ELEMENTS, inst, tr(N_("%s is attached to a target that can't be used by Pawn.")),
+				label(inst, name, sizeof(name)));
+		}
 	}
 
 	// --- NPCs (open.mp) ---

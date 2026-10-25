@@ -624,6 +624,18 @@ RenderInst(ObjectInst *inst)
 	pDirect->setFlags(rw::Light::LIGHTATOMICS);
 }
 
+void
+RenderAttachmentWorkspacePreview(void)
+{
+	if(!IsAttachmentWorkspaceActive())
+		return;
+	ObjectInst *preview = GetAttachmentWorkspacePlayerPreview();
+	if(preview == nil || preview->m_rwObject == nil)
+		return;
+	preview->PreRender();
+	RenderInst(preview);
+}
+
 static void
 RenderTransparentInst(ObjectInst *inst)
 {
@@ -698,7 +710,8 @@ ScanInstList(CPtrList *list, void (*f)(ObjectInst *inst))
 	CPtrNode *p;
 	for(p = list->first; p; p = p->next){
 		ObjectInst *inst = (ObjectInst*)p->item;
-		if(inst->m_isDeleted || inst->m_editorHidden || PlayerViewHides(inst))
+		if(inst->m_isDeleted || inst->m_editorHidden || PlayerViewHides(inst) ||
+		   !AttachmentWorkspaceShowsInstance(inst))
 			continue;
 		f(inst);
 	}
@@ -1097,7 +1110,8 @@ RenderObjectOutlines(void)
 		points[k].clear();
 	for(CPtrNode *p = instances.first; p; p = p->next){
 		ObjectInst *inst = (ObjectInst*)p->item;
-		if(inst->m_isDeleted || inst->m_editorHidden || PlayerViewHides(inst) || inst->m_rwObject == nil ||
+		if(inst->m_isDeleted || inst->m_editorHidden || PlayerViewHides(inst) ||
+		   !AttachmentWorkspaceShowsInstance(inst) || inst->m_rwObject == nil ||
 		   InstUsesEditorIcon(inst))
 			continue;
 		if(inst->m_highlight == HIGHLIGHT_MATCH && points[OUTLINE_MATCH].size() < maxMapPoints)

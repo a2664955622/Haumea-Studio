@@ -3048,6 +3048,8 @@ uiMainmenu(void)
 				if(ImGui::MenuItem(TI(ICON_FA_PAINTBRUSH, "Texture Browser"), ShortcutLabel(SC_WINDOW_TEXTURES), showTextureBrowserWindow)) { showTextureBrowserWindow ^= 1; }
 				ImGui::EndMenu();
 			}
+			if(isSA() && ImGui::MenuItem(L("Player attachment workspace"), nil, IsAttachmentWorkspaceActive()))
+				OpenPlayerAttachmentWorkspace(GetAttachmentWorkspacePlayerSkin(), false);
 			if(isSA() && ImGui::BeginMenu(L("Game tools"))){
 				if(isSA() && ImGui::MenuItem(TI(ICON_FA_LOCATION_DOT, "Nodes (open.mp only)"), ShortcutLabel(SC_WINDOW_NODES), showNodesWindow)) { showNodesWindow ^= 1; }
 				if(isSA() && ImGui::MenuItem(TI(ICON_FA_GAMEPAD, "Test server"), nil, showTestServerWindow)) { showTestServerWindow ^= 1; }
@@ -9688,22 +9690,59 @@ uiObjectProperties(ObjectInst *inst, int part)
 		if(selected != inst)
 			other = selected;
 	}
-	if(parent){
-		ImGui::Text(_("Attached to %s"), uiObjectLabel(parent, label, sizeof(label)));
-		if(ImGui::SmallButton(_("Select parent"))){
-			ClearSelection();
-			parent->Select();
+	if(parent || (IsPlayerAttachedObject(inst) && edited.attachParent == PAWN_ATTACH_PLAYER)){
+		if(edited.attachParent == PAWN_ATTACH_PLAYER)
+			ImGui::Text(_("Attached to player preview (skin %d)"), edited.attachSkin);
+		else
+			ImGui::Text(_("Attached to %s"), uiObjectLabel(parent, label, sizeof(label)));
+		if(edited.attachParent != PAWN_ATTACH_PLAYER){
+			if(ImGui::SmallButton(_("Select parent"))){
+				ClearSelection();
+				parent->Select();
+			}
+			ImGui::SameLine();
 		}
-		ImGui::SameLine();
 		if(ImGui::SmallButton(_("Detach"))){
 			DetachObjectInstance(inst);
 			edited = *GetObjectPawnProperties(inst);
 		}
 		if(ImGui::DragFloat3(_("Offset"), &edited.attachOffset.x, 0.01f, 0.0f, 0.0f, "%.3f")) changed = true;
 		if(ImGui::DragFloat3(_("Rotation"), &edited.attachRotation.x, 0.5f, -360.0f, 360.0f, "%.2f")) changed = true;
-		if(ImGui::Checkbox(_("Sync rotation"), &edited.attachSyncRotation)) changed = true;
-		ImGui::SetItemTooltip(_("On: the object turns with its parent. Off: it keeps the rotation above\n"
-			"in world space (AttachObjectToObject's SyncRotation)."));
+		if(IsPlayerAttachedObject(inst)){
+			static const char *bones[] = {
+				N_("Spine"), N_("Head"), N_("Left upper arm"), N_("Right upper arm"),
+				N_("Left hand"), N_("Right hand"), N_("Left thigh"), N_("Right thigh"),
+				N_("Left foot"), N_("Right foot"), N_("Right calf"), N_("Left calf"),
+				N_("Left forearm"), N_("Right forearm"), N_("Left clavicle"),
+				N_("Right clavicle"), N_("Neck"), N_("Jaw")
+			};
+			int bone = clamp(edited.attachBone - 1, 0, 17);
+			if(UiCombo(_("Bone"), &bone, bones, 18)){
+				edited.attachBone = bone + 1;
+				changed = true;
+			}
+			int slot = edited.attachSlot;
+			if(ImGui::SliderInt(_("Player slot"), &slot, 0, 9)){
+				edited.attachSlot = slot;
+				changed = true;
+			}
+			if(ImGui::DragFloat3(_("Scale"), &edited.attachScale.x, 0.01f, 0.01f, 10.0f, "%.3f")) changed = true;
+			if(ImGui::InputScalar(_("Material colour 1"), ImGuiDataType_U32, &edited.attachColor1,
+				nil, nil, "0x%08X", ImGuiInputTextFlags_CharsHexadecimal)) changed = true;
+			if(ImGui::InputScalar(_("Material colour 2"), ImGuiDataType_U32, &edited.attachColor2,
+				nil, nil, "0x%08X", ImGuiInputTextFlags_CharsHexadecimal)) changed = true;
+			ImGui::SetItemTooltip(_("Optional material colours for the attached model."));
+		}else if(parent && !parent->m_isVehicle){
+			if(ImGui::Checkbox(_("Sync rotation"), &edited.attachSyncRotation)) changed = true;
+			ImGui::SetItemTooltip(_("On: the object turns with its parent. Off: it keeps the rotation above\n"
+				"in world space (AttachObjectToObject's SyncRotation)."));
+		}
+		if(ImGui::SmallButton(_("Edit in attachment workspace"))){
+			if(edited.attachParent == PAWN_ATTACH_PLAYER)
+				OpenPlayerAttachmentWorkspace(edited.attachSkin, false);
+			else
+				OpenAttachmentWorkspace(parent, false);
+		}
 		ImGui::TextDisabled(_("Moving this object updates the offset; moving the parent carries it along."));
 	}else if(edited.attachParent >= 0){
 		uiStatusLine(false, _("The parent was deleted, so this attachment is not exported."));
@@ -9711,16 +9750,33 @@ uiObjectProperties(ObjectInst *inst, int part)
 			DetachObjectInstance(inst);
 			edited = *GetObjectPawnProperties(inst);
 		}
-	}else if(numSelected == 2 && other && !other->m_isVehicle){
+	}else if(numSelected == 1){
+		if(ImGui::Button(_("Attach to player"))){
+			if(AttachObjectToPlayer(inst, GetAttachmentWorkspacePlayerSkin()))
+				OpenPlayerAttachmentWorkspace(GetAttachmentWorkspacePlayerSkin(), false);
+			else
+				Toast(TOAST_SPAWN, _("The player already has 10 attached objects."));
+		}
+		ImGui::SetItemTooltip(_("Creates a player bone attachment and opens its preview workspace."));
+	}else if(numSelected == 2 && other){
 		char otherLabel[128];
 		uiObjectLabel(other, otherLabel, sizeof(otherLabel));
 		char buttonLabel[192];
-		snprintf(buttonLabel, sizeof(buttonLabel), _("Attach this to %s"), otherLabel);
-		if(ImGui::Button(buttonLabel) && !AttachObjectInstance(inst, other))
-			Toast(TOAST_SPAWN, _("That would attach an object to itself"));
-		snprintf(buttonLabel, sizeof(buttonLabel), _("Attach %s to this"), otherLabel);
-		if(ImGui::Button(buttonLabel) && !AttachObjectInstance(other, inst))
-			Toast(TOAST_SPAWN, _("That would attach an object to itself"));
+		bool canAttachToOther = other->m_isVehicle || IsPlayerAttachmentTarget(other) ||
+			GetSampElementKind(other) == SAMP_ELEMENT_OBJECT;
+		bool otherCanBeChild = !other->m_isVehicle && GetSampElementKind(other) == SAMP_ELEMENT_OBJECT;
+		if(canAttachToOther){
+			snprintf(buttonLabel, sizeof(buttonLabel), _("Attach this to %s"), otherLabel);
+			if(ImGui::Button(buttonLabel) && !AttachObjectInstance(inst, other))
+				Toast(TOAST_SPAWN, _("Could not attach this object to that target."));
+		}
+		if(otherCanBeChild){
+			snprintf(buttonLabel, sizeof(buttonLabel), _("Attach %s to this"), otherLabel);
+			if(ImGui::Button(buttonLabel) && !AttachObjectInstance(other, inst))
+				Toast(TOAST_SPAWN, _("Could not attach this object to that target."));
+		}
+		if(!canAttachToOther && !otherCanBeChild)
+			ImGui::TextDisabled(_("Select an object, player, NPC or vehicle as the target."));
 		edited = *GetObjectPawnProperties(inst);
 	}else
 		ImGui::TextDisabled(_("Select two objects to attach them."));
@@ -9777,6 +9833,70 @@ uiInspectorSection(const char *label, ImGuiTreeNodeFlags flags = 0)
 	ImGui::PopStyleVar();
 	if(open) ImGui::Spacing();
 	return open;
+}
+
+static void
+uiAttachmentWorkspaceWindow(void)
+{
+	if(!IsAttachmentWorkspaceActive())
+		return;
+	bool open = true;
+	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 30.0f, 0.0f), ImGuiCond_FirstUseEver);
+	if(ImGui::Begin(LI(ICON_FA_LINK, "Attachment Workspace"), &open)){
+		bool voidView = AttachmentWorkspaceHidesWorld();
+		if(ImGui::Checkbox(_("Isolated void view"), &voidView))
+			SetAttachmentWorkspaceVoid(voidView);
+		ImGui::SetItemTooltip(_("Show only the target and its attachments against an empty background."));
+		ObjectInst *target = GetAttachmentWorkspaceTarget();
+		ObjectInst *player = GetAttachmentWorkspacePlayerPreview();
+		if(target && target->m_isDeleted)
+			target = nil;
+		if(player){
+			int skin = GetAttachmentWorkspacePlayerSkin();
+			if(ImGui::InputInt(_("Player skin"), &skin))
+				SetAttachmentWorkspacePlayerSkin(skin);
+			ImGui::SetItemTooltip(_("Preview skin used to position bone attachments."));
+		}else if(target){
+			char targetLabel[128];
+			ImGui::Text(_("Target: %s"), uiObjectLabel(target, targetLabel, sizeof(targetLabel)));
+		}else
+			ImGui::TextDisabled(_("No attachment target"));
+
+		if(ImGui::Button(_("Browse models")))
+			showBrowserWindow = true;
+		ImGui::SameLine();
+		int model = GetSpawnObjectId();
+		ObjectDef *modelDef = GetObjectDef(model);
+		bool canAddModel = target && modelDef && !modelDef->m_isVehicle &&
+			GetSpawnElementKind() == SAMP_ELEMENT_OBJECT;
+		if(ImGui::Button(_("Add selected model")) && canAddModel){
+			rw::Quat rotation = { 0.0f, 0.0f, 0.0f, 1.0f };
+			ObjectInst *child = SpawnDocumentInstance(model, target->m_translation, rotation);
+			if(child){
+				bool attached = player ? AttachObjectToPlayer(child, GetAttachmentWorkspacePlayerSkin()) :
+					AttachObjectInstance(child, target);
+				if(attached){
+					UpdateObjectAttachments();
+					ClearSelection();
+					child->Select();
+					UndoRecordPaste(&child, 1);
+				}else{
+					RestoreDocumentTransform(child, child->m_translation, child->m_rotation, true);
+					Toast(TOAST_SPAWN, _("Could not attach to the selected target."));
+				}
+			}
+		}
+		if(!canAddModel)
+			ImGui::SetItemTooltip(_("Choose an object model in the browser first."));
+		if(!player && target){
+			ImGui::Separator();
+			if(ImGui::Button(_("Focus target")))
+				target->JumpTo();
+		}
+	}
+	ImGui::End();
+	if(!open)
+		CloseAttachmentWorkspace();
 }
 
 static void
@@ -9918,7 +10038,7 @@ uiInstWindow(void)
 		   _("World & streaming###world")))
 			uiObjectProperties(inst, UI_PROPS_WORLD);
 		if(isObject && uiInspectorSection(L("Attachment"),
-		   properties->attachParent >= 0 ? ImGuiTreeNodeFlags_DefaultOpen : 0))
+		   properties->attachParent != PAWN_ATTACH_NONE ? ImGuiTreeNodeFlags_DefaultOpen : 0))
 			uiObjectProperties(inst, UI_PROPS_ATTACH);
 		if(isObject && uiInspectorSection(L("Materials"),
 		   HasObjectMaterialOverrides(inst) ? ImGuiTreeNodeFlags_DefaultOpen : 0))
@@ -13331,6 +13451,7 @@ gui(void)
 			showInstanceWindow = true;
 	}
 	if(mapPanels && showInstanceWindow) uiInstWindow();
+	if(mapPanels && IsAttachmentWorkspaceActive()) uiAttachmentWorkspaceWindow();
 
 	if(mapPanels && showEditorWindow) uiEditorWindow();
 

@@ -3376,6 +3376,7 @@ renderWorld(void)
 
 	rw::SetRenderState(rw::FOGENABLE, gEnableFog);
 	RenderOpaque();
+	RenderAttachmentWorkspacePreview();
 	if(gRenderWater)
 		WaterLevel::Render();
 	RenderTransparent();
@@ -3496,8 +3497,10 @@ Draw(void)
 	gEnableFog = gFogMode != FOG_OFF;
 
 	CPad::UpdatePads();
-	// TextDraw mode: no world, no camera moves, no map editing.
+	// TextDraw mode hides the world; the attachment workspace can render its
+	// isolated target and attached objects against the empty clear colour.
 	bool noWorld = TextDrawModeHidesWorld();
+	bool attachmentVoid = AttachmentWorkspaceHidesWorld();
 	bool noMapEditing = InTextDrawMode();
 	if(!noMapEditing){
 		updateRectSelectEarly();
@@ -3573,7 +3576,7 @@ Draw(void)
 	TestServerUpdate();
 	AnimUpdate(timeStep);
 	PlayerViewUpdate();
-	if(!noWorld)
+	if(!noWorld || attachmentVoid)
 		BuildRenderList();
 
 	// Has to be called for highlighting some objects
@@ -3588,8 +3591,13 @@ Draw(void)
 
 	DefinedState();
 	Scene.camera->clear(&clearcol, rw::Camera::CLEARIMAGE|rw::Camera::CLEARZ);
-	if(!noWorld)
+	if(!noWorld && !attachmentVoid)
 		renderWorld();
+	else if(attachmentVoid){
+		RenderOpaque();
+		RenderAttachmentWorkspacePreview();
+		RenderTransparent();
+	}
 	rw::SetRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);	// don't mess up GUI
 	TextDrawsAfterWorldRender();
 	AgentBridgeCaptureAfterWorldRender();
