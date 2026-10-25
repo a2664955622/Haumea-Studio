@@ -33,16 +33,19 @@ CPad::UpdatePads(void)
 		clickState = 1;
 		clickx = newMouseState.x;
 		clicky = newMouseState.y;
-	}else if(clickState == 1 && newMouseState.btns == 0){
-		if(newMouseState.x == clickx && newMouseState.y == clicky){
+	}else if(clickState == 1){
+		int dx = newMouseState.x - clickx, dy = newMouseState.y - clicky;
+		float tolerance = 6.0f*GetUiScale();
+		if(dx*dx + dy*dy > tolerance*tolerance){
+			CancelClick();
+		}else if(newMouseState.btns == 0){
 			clickState = 2;
 			// get bit of leftmost released button
 			clickbtn = oldMouseState.btns & ~(oldMouseState.btns-1);
 			// get button number (this could be one lookup, but meh)
 			static int logtab[] = { 0, 1, 2, 0, 3 };
 			clickbtn = logtab[clickbtn&7];
-		}else
-			clickState = 0;
+		}
 	}
 }
 

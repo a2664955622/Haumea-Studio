@@ -10,7 +10,9 @@
 // release ships next to the editor. A build run from the source tree finds
 // them a few folders up (bin/<platform>/Release/haumea).
 
-static const char *licenseFiles[] = { "LICENSE", "THIRD_PARTY_NOTICES.md", "fonts/material/LICENSE-Liberation.txt" };
+static const char *licenseFiles[] = {
+	"LICENSE", "THIRD_PARTY_NOTICES.md", "fonts/material/LICENSE-Liberation.txt", "fonts/LICENSE-NotoSansSC.txt"
+};
 static const int NUM_LICENSE_FILES = sizeof(licenseFiles)/sizeof(licenseFiles[0]);
 
 static bool

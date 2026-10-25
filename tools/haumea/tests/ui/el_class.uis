@@ -2,9 +2,13 @@
 open "$UI_FIXTURES/ui_floor.pwn"
 shortcut window_browser
 wait 5
-click_item 'Object Browser' 'SA-MP'
-wait 5
+click_item 'Object Browser' '##browser_source'
+wait 3
+click_item '*' 'Characters'
+wait 3
 click_item 'Object Browser' '##place Player class'
+wait 3
+click_item 'Object Browser' '##element_place'
 wait 3
 click_world 2000 -3000 4
 wait 5

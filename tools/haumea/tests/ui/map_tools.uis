@@ -1,5 +1,7 @@
 # Map tools: Array with its preview, then Apply (one undo step); Mirror the same way.
 open "$UI_FIXTURES/ui_map.pwn"
+shortcut window_tools
+wait 5
 click_object model=1271
 wait 5
 assert selected == 1

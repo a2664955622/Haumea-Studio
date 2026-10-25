@@ -35,6 +35,10 @@
 | Object Browser | 物体浏览器 |
 | world object / custom model | 世界物体 / 自定义模型 |
 | Tools / Preferences / Settings | 工具 / 首选项 / 设置 |
+| Characters / Paths / Markers | 角色 / 路径 / 标记 |
+| Text & audio / Model files | 文本与音频 / 模型文件 |
+| Theme / Dark / Light (theme) | 主题 / 深色 / 浅色 |
+| Performance / VSync / Distance fog | 性能 / 垂直同步 / 距离雾 |
 | View / Log / Window / Panel | 视图 / 日志 / 窗口 / 面板 |
 | Save / Save As / Open / Close | 保存 / 另存为 / 打开 / 关闭 |
 | Delete / Cancel / Apply / Reset | 删除 / 取消 / 应用 / 重置 |

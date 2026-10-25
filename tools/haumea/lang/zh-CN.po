@@ -1,5 +1,5 @@
-# Haumea Studio, Simplified Chinese (简体中文). Translated from the English
-# source strings; see docs/i18n/GLOSSARY.zh-CN.md.
+# Haumea Studio, Simplified Chinese (zh-CN).
+# See docs/i18n/GLOSSARY.zh-CN.md for terminology and conventions.
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -56,8 +56,20 @@ msgid "%-3s %-20s  %.1f, %.1f, %.1f  (%.1f deg)"
 msgstr "%-3s %-20s  %.1f, %.1f, %.1f  (%.1f 度)"
 
 #, c-format
+msgid "%-3s %-20s  Model ID %d -> %d"
+msgstr "%-3s %-20s  模型 ID %d -> %d"
+
+#, c-format
 msgid "%-3s %-20s  material override(s)"
 msgstr "%-3s %-20s  材质覆盖"
+
+#, c-format
+msgid "%.0f FPS"
+msgstr "%.0f FPS"
+
+#, c-format
+msgid "%.0f FPS  /  %.1f ms"
+msgstr "%.0f FPS  /  %.1f ms"
 
 #, c-format
 msgid "%.3f units | dX %.3f  dY %.3f  dZ %.3f"
@@ -288,8 +300,16 @@ msgid "%d player textdraws, over the limit of %d per player."
 msgstr "%d 个玩家 textdraw，超过每名玩家 %d 的上限。"
 
 #, c-format
+msgid "%d points"
+msgstr "%d 个点"
+
+#, c-format
 msgid "%d selected world object(s) will be replaced in the map."
 msgstr "%d 个选中的世界物体将在地图中被替换。"
+
+#, c-format
+msgid "%d selected · Drag gizmo to move or rotate · %s deletes."
+msgstr "已选中 %d 个 · 拖动 gizmo 移动或旋转 · %s 删除。"
 
 #, c-format
 msgid "%d selected, %d of this kind"
@@ -298,10 +318,6 @@ msgstr "%d 个已选中，%d 个为此类型"
 #, c-format
 msgid "%d selected: changes go to all of them."
 msgstr "%d 个已选中：更改将应用于全部。"
-
-#, c-format
-msgid "%d selected: drag the gizmo (%s move, %s rotate), %s drops to ground, %s focuses, %s duplicates, %s deletes. Settings are in Object Info (%s)."
-msgstr "%d 个已选中：拖动 gizmo（%s 移动，%s 旋转），%s 落到地面，%s 聚焦，%s 复制副本，%s 删除。设置在物体信息中（%s）。"
 
 #, c-format
 msgid "%d shown"
@@ -430,14 +446,6 @@ msgstr ""
 #, c-format
 msgid ""
 "%s\n"
-"Maps, custom models and the test server use this server folder."
-msgstr ""
-"%s\n"
-"地图、自定义模型和测试服务器都使用此服务器文件夹。"
-
-#, c-format
-msgid ""
-"%s\n"
 "Native code, %s text"
 msgstr ""
 "%s\n"
@@ -482,6 +490,10 @@ msgstr "%s  模型 %d"
 #, c-format
 msgid "%s (missing)"
 msgstr "%s（缺失）"
+
+#, c-format
+msgid "%s Browse · %s Map objects · %s Save · %s Shortcuts"
+msgstr "%s 浏览 · %s 地图物体 · %s 保存 · %s 快捷键"
 
 #, c-format
 msgid "%s The update installs the next time Haumea starts."
@@ -546,10 +558,6 @@ msgstr "%s 仅在区域 \"%s\" 内显示，但二者位于不同的 virtual worl
 #, c-format
 msgid "%s pastes objects exactly where they were copied."
 msgstr "%s 将物体粘贴到复制时的原位置。"
-
-#, c-format
-msgid "%s picks an object to place, %s lists what is in the map, click an object to select it, %s saves. %s lists every shortcut."
-msgstr "%s 选择要放置的物体，%s 列出地图中的内容，单击物体即可选中，%s 保存。%s 列出所有快捷键。"
 
 #, c-format
 msgid "%s plays driver recording %s but isn't driving a vehicle: open.mp reports it playing, yet the NPC never moves. Put it in a vehicle as the driver."
@@ -670,9 +678,6 @@ msgstr "（另有 %d 个已选中）"
 msgid "(deleted vehicle)"
 msgstr "（已删除的载具）"
 
-msgid "(missing)"
-msgstr "（缺失）"
-
 msgid "(no URL)"
 msgstr "（无 URL）"
 
@@ -691,9 +696,6 @@ msgstr "（无名称）"
 msgid "(none)"
 msgstr "（无）"
 
-msgid "(open)"
-msgstr "（打开）"
-
 msgid "(other file)"
 msgstr "（其他文件）"
 
@@ -702,10 +704,6 @@ msgstr "（超过 1024）"
 
 msgid "(pick one)"
 msgstr "（选择一个）"
-
-#, c-format
-msgid "(selection: %d)"
-msgstr "（选中：%d）"
 
 msgid "(unknown)"
 msgstr "（未知）"
@@ -798,13 +796,6 @@ msgstr "1 Aharoni"
 msgid "1 for a solid bar. Each segment is a textdraw."
 msgstr "1 表示实心条。每个分段都是一个 textdraw。"
 
-msgid "1.  Set your server folder: File > Workspace."
-msgstr "1.  设置你的服务器文件夹：文件 > Workspace。"
-
-#, c-format
-msgid "1.  Workspace: %s"
-msgstr "1.  Workspace：%s"
-
 msgid "10 - Unknown"
 msgstr "10 - 未知"
 
@@ -862,14 +853,6 @@ msgstr "2 Bank Gothic（大写）"
 msgid "2 columns"
 msgstr "2 列"
 
-#, c-format
-msgid ""
-"2.  Place objects from the Object Browser (%s); pickups, actors, sounds\n"
-"     and more are on its SA-MP tab."
-msgstr ""
-"2.  从物体浏览器放置物体（%s）；pickups、演员、音效等\n"
-"     都位于它的 SA-MP 标签页中。"
-
 msgid "20001 to 30000: the skin ID scripts use."
 msgstr "20001 到 30000：脚本使用的皮肤 ID。"
 
@@ -912,9 +895,6 @@ msgstr "3 x 3 网格"
 msgid "3-24 characters: letters, digits and [ ] ( ) $ @ . _ ="
 msgstr "3-24 个字符：字母、数字以及 [ ] ( ) $ @ . _ ="
 
-msgid "3.  NPCs: place an NPC and NPC path points there too."
-msgstr "3.  NPC：在那里也放置 NPC 和 NPC 路径点。"
-
 msgid "3D text label"
 msgstr "3D text label"
 
@@ -946,9 +926,6 @@ msgstr "4 Sprite"
 msgid "4 columns"
 msgstr "4 列"
 
-msgid "4.  Textdraws: Windows > TextDraws. They go in a file of their own."
-msgstr "4.  Textdraws：窗口 > TextDraws。它们会存放在单独的文件中。"
-
 msgid "5  Air (rotates and stops)"
 msgstr "5  空中（旋转并停止）"
 
@@ -958,10 +935,6 @@ msgstr "5 - 未知"
 msgid "5 Model preview"
 msgstr "5 模型预览"
 
-#, c-format
-msgid "5.  Test in game (%s) and Map check (%s) before you ship it."
-msgstr "5.  发布前先在游戏中测试 (%s)，并运行地图检查 (%s)。"
-
 msgid "6  Air (grows, shrinks, disappears)"
 msgstr "6  空中（生长、缩小、消失）"
 
@@ -970,10 +943,6 @@ msgstr "6 - 未知"
 
 msgid "6 columns"
 msgstr "6 列"
-
-#, c-format
-msgid "6.  %s saves the map."
-msgstr "6.  %s 保存地图。"
 
 msgid "7  Air (swings down and up)"
 msgstr "7  空中（向下再向上摆动）"
@@ -1043,9 +1012,6 @@ msgstr "每个玩家最多可见 1024 个 gang zone。请使用更大的格子�
 msgid "A polygon needs at least 3 corners."
 msgstr "多边形至少需要 3 个角。"
 
-msgid "A server folder with gamemodes, filterscripts and scriptfiles."
-msgstr "一个包含 gamemodes、filterscripts 和 scriptfiles 的服务器文件夹。"
-
 msgid "A texture contains"
 msgstr "一个贴图包含"
 
@@ -1058,9 +1024,6 @@ msgstr "一辆电车：没有车厢。"
 
 msgid "A vehicle colour, 0-255. -1 picks one at random when it spawns."
 msgstr "载具颜色，0-255。-1 表示生成时随机选择一个。"
-
-msgid "A workspace is the open.mp or SA-MP server you map for; its maps and models live there."
-msgstr "workspace 是你为其制作地图的 open.mp 或 SA-MP 服务器；它的地图和模型都存放在那里。"
 
 msgid "AK-47"
 msgstr "AK-47"
@@ -1098,11 +1061,17 @@ msgstr "添加"
 msgid "Add Custom Model (SA-MP 0.3.DL / open.mp)"
 msgstr "添加自定义模型 (SA-MP 0.3.DL / open.mp)"
 
+msgid "Add a marker to the radar."
+msgstr "在雷达上添加标记。"
+
 msgid "Add a pin at the object's collision-box centre. For an embedded doorway, pick its two edges and use Midpoint."
 msgstr "在物体的碰撞盒中心添加 pin。对于嵌在建筑里的门，选择它的两条边并使用中点。"
 
 msgid "Add a pin on a surface. Drag its head to move it; drag its base ring to measure. Both ends snap to objects."
 msgstr "在表面上添加 pin。拖动其头部可移动它；拖动其底部圆环可测量。两端都会吸附到物体。"
+
+msgid "Add a player spawn point."
+msgstr "添加玩家出生点。"
 
 msgid "Add a text, box, sprite or model preview and drag it on the screen."
 msgstr "添加文本、方框、sprite 或模型预览，并在屏幕上拖动它。"
@@ -1122,6 +1091,9 @@ msgstr "添加或移除收藏"
 msgid "Add points"
 msgstr "添加点"
 
+msgid "Add text in the 3D world."
+msgstr "在 3D 世界中添加文本。"
+
 msgid "Add the shape"
 msgstr "添加形状"
 
@@ -1133,9 +1105,6 @@ msgstr "添加到收藏夹"
 
 msgid "Add to server"
 msgstr "添加到服务器"
-
-msgid "AddPlayerClass: a spawn point with a skin and weapons"
-msgstr "AddPlayerClass：一个带有皮肤和武器的出生点"
 
 msgid "AddVehicleComponent. Only parts SA-MP accepts on this model are listed."
 msgstr "AddVehicleComponent。仅列出 SA-MP 在此模型上接受的部件。"
@@ -1176,6 +1145,9 @@ msgstr "调整 FOV 缩放"
 
 msgid "Adrenaline"
 msgstr "肾上腺素"
+
+msgid "Advanced"
+msgstr "高级"
 
 #, c-format
 msgid "After a crash or an error: the version, system and graphics card, where in Haumea's code it happened and the last lines of its log, with your folders, user name and map names left out. With the daily ping on, the install ID too. Reports not sent are deleted after %d days."
@@ -1320,9 +1292,6 @@ msgid ""
 msgstr ""
 "一块画板：独立的界面，在 Pawn 中通过\n"
 "<prefix>_Show<Board>(playerid) 和 _Hide<Board>(playerid) 显示和隐藏。右键点击查看更多。"
-
-msgid "An audio stream or game sound players hear near this place"
-msgstr "玩家在此处附近能听到的音频流或游戏声音"
 
 msgid "An existing TXD is shared when its contents match; name conflicts are rejected."
 msgstr "内容匹配时会共享现有的 TXD；名称冲突会被拒绝。"
@@ -1554,6 +1523,9 @@ msgstr "背景"
 msgid "Background music"
 msgstr "背景音乐"
 
+msgid "Background windows run at up to 30 FPS."
+msgstr "窗口在后台时帧率上限为 30 FPS。"
+
 msgid "Bandit wheel start"
 msgstr "Bandit 车轮启动"
 
@@ -1604,6 +1576,9 @@ msgstr "摩托车和船只学校的成绩音乐"
 
 msgid "Blast door sliding"
 msgstr "防爆门滑动"
+
+msgid "Blends distant objects into the horizon to soften the stream cutoff."
+msgstr "让远处物体逐渐融入地平线，减轻流送边界的突现感。"
 
 msgid "Bling"
 msgstr "Bling"
@@ -1742,6 +1717,12 @@ msgstr ""
 
 msgid "Brush mode"
 msgstr "笔刷模式"
+
+msgid "Brush with this object"
+msgstr "使用此物体绘制"
+
+msgid "Build an NPC path, one point at a time."
+msgstr "逐点创建 NPC 路径。"
 
 msgid "Building"
 msgstr "建筑"
@@ -1897,6 +1878,9 @@ msgstr "Pawn 导出的更改"
 msgid "Channel"
 msgstr "频道"
 
+msgid "Characters"
+msgstr "角色"
+
 msgid "Chat"
 msgstr "聊天"
 
@@ -1935,11 +1919,20 @@ msgstr "同一场竞速的 checkpoint 按顺序互相指向。"
 msgid "Choose COL..."
 msgstr "选择 COL..."
 
+msgid "Choose Characters, Markers, Text & audio or Zones in the browser."
+msgstr "在浏览器中选择角色、标记、文本与音频或区域。"
+
 msgid "Choose DFF..."
 msgstr "选择 DFF..."
 
 msgid "Choose Material Texture"
 msgstr "选择材质贴图"
+
+msgid "Choose Paths in the browser, then place the points of a route."
+msgstr "在浏览器中选择路径，然后放置路线上的点。"
+
+msgid "Choose Place, then click the world. Double-click a tile also works."
+msgstr "选择放置，然后点击世界。也可双击缩略图。"
 
 msgid "Choose TXD..."
 msgstr "选择 TXD..."
@@ -1950,8 +1943,17 @@ msgstr "选择一个 TXD，预览其中的贴图，然后点击一张将其分�
 msgid "Choose a separate script file. Saving the map regenerates its Pawn file."
 msgstr "选择一个单独的脚本文件。保存地图时会重新生成其 Pawn 文件。"
 
+msgid "Choose a workspace to get started."
+msgstr "选择 workspace 以开始。"
+
 msgid "Choose an image"
 msgstr "选择图片"
+
+msgid "Choose an object, then click the world to place it."
+msgstr "选择物体，然后点击世界进行放置。"
+
+msgid "Choose or create a workspace."
+msgstr "选择或创建 workspace。"
 
 msgid "Choose the GTA San Andreas folder"
 msgstr "选择 GTA San Andreas 文件夹"
@@ -2046,20 +2048,15 @@ msgstr ""
 "在世界中点击以在此路径末尾添加点。\n"
 "Shift+点击可连续放置。"
 
-#, c-format
-msgid ""
-"Click in the world to place it (%s to stop).\n"
-"Double-clicking a tile does the same."
-msgstr ""
-"在世界中点击以放置它 (%s 停止)。\n"
-"双击图块效果相同。"
-
 msgid ""
 "Click in the world to place it. Q/E (or , and .) and the wheel turn it, Shift\n"
 "in smaller steps; Shift+click keeps placing; Esc stops."
 msgstr ""
 "在世界中点击以放置它。Q/E（或 , 和 .）与滚轮旋转它，Shift 为更小步长；\n"
 "Shift+点击可连续放置；Esc 停止。"
+
+msgid "Click in the world. Esc stops."
+msgstr "点击世界进行放置。Esc 停止。"
 
 msgid "Click nodes to select them; W moves the selected node."
 msgstr "点击节点以选中它们；W 移动所选节点。"
@@ -2077,12 +2074,23 @@ msgstr ""
 "点击一个节点，再点击另一个，即可连接它们。\n"
 "点击两个已连接的节点则会断开连接。右键或 Esc 停止。"
 
+#, c-format
+msgid "Click or drag to paint · %s stops."
+msgstr "点击或拖动进行绘制 · %s 停止。"
+
 msgid ""
 "Click points in the world one after another.\n"
 "Right-click or Esc stops."
 msgstr ""
 "在世界中逐个点击放置点。\n"
 "右键或 Esc 停止。"
+
+msgid ""
+"Click selects the group. Click the arrow to fold it; right-click to rename.\n"
+"Double-click a member to edit it alone; Esc selects the whole group."
+msgstr ""
+"点击选中该组。点击箭头折叠；右键重命名。\n"
+"双击成员可单独编辑；Esc 选中整个组。"
 
 #, c-format
 msgid "Click something to edit it in Object Info (%s). %s stops placing."
@@ -2109,6 +2117,10 @@ msgstr "点击穿透已锁定项"
 msgid "Click to place the pin. Esc cancels."
 msgstr "点击放置图钉。Esc 取消。"
 
+#, c-format
+msgid "Click to place · Shift+click repeats · %s stops."
+msgstr "点击放置 · Shift+点击重复放置 · %s 停止。"
+
 msgid "Click to place. Q/E or the wheel turn it, Esc stops."
 msgstr "点击放置。Q/E 或滚轮旋转它，Esc 停止。"
 
@@ -2117,9 +2129,6 @@ msgstr "点击选中它，双击前往该处。"
 
 msgid "Click to select it."
 msgstr "点击选中它。"
-
-msgid "Click to select the group, on the arrow to fold it. Right-click to rename."
-msgstr "点击选中该组，点击箭头可折叠它。右键重命名。"
 
 msgid "Click to show the zones in the 3D view. The radar (Windows > Show Radar) always shows them."
 msgstr "点击以在 3D 视图中显示这些区域。雷达（窗口 > 显示雷达）始终会显示它们。"
@@ -2212,7 +2221,7 @@ msgstr "上下文"
 msgid "Continue"
 msgstr "继续"
 
-msgid "Continue without a workspace"
+msgid "Continue without workspace"
 msgstr "不使用 workspace 继续"
 
 msgid "Continuous buzz"
@@ -2461,20 +2470,11 @@ msgstr "碰撞声 C"
 msgid "Crash and error reports"
 msgstr "崩溃与错误报告"
 
+msgid "Create a workspace folder."
+msgstr "创建 workspace 文件夹。"
+
 msgid "Create workspace"
 msgstr "创建 workspace"
-
-msgid "Create3DTextLabel / CreateDynamic3DTextLabel"
-msgstr "Create3DTextLabel / CreateDynamic3DTextLabel"
-
-msgid "CreateActor / CreateDynamicActor: a ped that stands or plays an animation"
-msgstr "CreateActor / CreateDynamicActor: 站立或播放动画的 ped"
-
-msgid "CreateDynamicCP / CreateDynamicRaceCP: a checkpoint, or a race of them"
-msgstr "CreateDynamicCP / CreateDynamicRaceCP: 一个 checkpoint，或由多个 checkpoint 组成的竞速"
-
-msgid "CreateDynamicCuboid and the other shapes: items limited to it are shown only to players inside"
-msgstr "CreateDynamicCuboid 和其他形状: 限定在该区域内的元素只对区域内的玩家显示"
 
 msgid ""
 "CreateObject DrawDistance / streamer drawdistance. 0 uses the default\n"
@@ -2482,9 +2482,6 @@ msgid ""
 msgstr ""
 "CreateObject 的 DrawDistance / streamer 的 drawdistance。0 使用默认值\n"
 "（原生为模型自身的距离，streamer 则为 STREAMER_OBJECT_DD）。"
-
-msgid "CreatePickup / CreateDynamicPickup"
-msgstr "CreatePickup / CreateDynamicPickup"
 
 msgid "CreatePlayerGangZone is an open.mp native; SA-MP 0.3.7 has no per-player zones."
 msgstr "CreatePlayerGangZone 是 open.mp 的 native；SA-MP 0.3.7 没有玩家专属的 gang zone。"
@@ -2560,6 +2557,9 @@ msgstr "DFF 和 TXD 为必填。"
 
 msgid "Damageable"
 msgstr "可破坏"
+
+msgid "Dark"
+msgstr "深色"
 
 msgid "Date disco"
 msgstr "约会：迪斯科"
@@ -2705,6 +2705,9 @@ msgstr "忽略"
 msgid "Distance"
 msgstr "距离"
 
+msgid "Distance fog"
+msgstr "距离雾"
+
 msgid "Distribute"
 msgstr "分布"
 
@@ -2749,9 +2752,6 @@ msgstr "点大小"
 
 msgid "Dots"
 msgstr "点"
-
-msgid "Double-click to place again."
-msgstr "双击可再次放置。"
 
 msgid "Down"
 msgstr "向下"
@@ -2801,6 +2801,10 @@ msgstr "拖动以移动端点"
 msgid "Drag to move pin"
 msgstr "拖动以移动图钉"
 
+#, c-format
+msgid "Drag to move · drag a corner to resize · %s stops."
+msgstr "拖动以移动 · 拖动角点调整大小 · %s 停止。"
+
 msgid "Drag to move, wheel to zoom, double-click to fly there."
 msgstr "拖动移动，滚轮缩放，双击飞往该处。"
 
@@ -2838,8 +2842,8 @@ msgid "Draw distance %.0f"
 msgstr "绘制距离 %.0f"
 
 #, c-format
-msgid "Draw distance %.0f  |  LOD %s"
-msgstr "绘制距离 %.0f  |  LOD %s"
+msgid "Draw distance %.0f  ·  LOD %s"
+msgstr "绘制距离 %.0f  ·  LOD %s"
 
 msgid "Draw distance (m)"
 msgstr "绘制距离 (m)"
@@ -2859,19 +2863,6 @@ msgstr ""
 
 msgid "Draws the footprints' edge cells in their own colour."
 msgstr "用专属颜色绘制占地面积的边缘格子。"
-
-msgid ""
-"Draws the map's elements the way the client would from the camera:\n"
-"native objects within their draw distance, streamer objects within their stream\n"
-"and draw distance (300 m by default, the nearest 1000), vehicles and actors within\n"
-"200 m, and only what is in the virtual world below and the interior on the menu bar.\n"
-"Selected objects stay visible. Nothing is saved."
-msgstr ""
-"按客户端在相机处的视角绘制地图元素：\n"
-"原生物体在各自绘制距离内，streamer 物体在各自流送\n"
-"与绘制距离内（默认 300 m，取最近的 1000 个），载具和演员在\n"
-"200 m 内，且只绘制下方虚拟世界与菜单栏所选内部中的内容。\n"
-"已选中物体保持可见。不会保存任何内容。"
 
 msgid ""
 "Draws the screen at the player's resolution and scales that to the canvas, so\n"
@@ -2949,8 +2940,8 @@ msgstr "每个点代表一个 textdraw：SA-MP 允许全局 2048 个、每个玩
 msgid "Edit"
 msgstr "编辑"
 
-msgid "Edit Pawn code. Ctrl+S saves the script; Ctrl+F searches."
-msgstr "编辑 Pawn 代码。Ctrl+S 保存脚本；Ctrl+F 搜索。"
+msgid "Edit Pawn · Ctrl+S saves · Ctrl+F searches."
+msgstr "编辑 Pawn · Ctrl+S 保存 · Ctrl+F 搜索。"
 
 msgid "Edit all selected"
 msgstr "编辑所有选中项"
@@ -2960,10 +2951,6 @@ msgstr "编辑该文件夹中已有的 NODES*.DAT 文件。"
 
 msgid "Edit the parts on their own"
 msgstr "单独编辑各部分"
-
-#, c-format
-msgid "Editing %s: drag a textdraw to move it, its corner to resize it. %s saves the textdraws, %s goes back to the map."
-msgstr "正在编辑 %s：拖动 textdraw 可移动它，拖动其角点可调整大小。%s 保存 textdraw，%s 返回地图。"
 
 #, c-format
 msgid "Editing: %s"
@@ -2977,6 +2964,9 @@ msgstr "编辑器 Discord"
 
 msgid "Editor list"
 msgstr "编辑器列表"
+
+msgid "Editor panels"
+msgstr "编辑器面板"
 
 msgid "Electricity"
 msgstr "电力"
@@ -3110,6 +3100,9 @@ msgstr "已导出 %d 个 TXD 到 %s"
 #, c-format
 msgid "Exported %d TXD(s) to %s (some skipped)"
 msgstr "已导出 %d 个 TXD 到 %s（部分跳过）"
+
+msgid "Extensions"
+msgstr "扩展"
 
 msgid "Exterior model"
 msgstr "外部模型"
@@ -3284,6 +3277,9 @@ msgstr "在“物体浏览器 > 自定义模型”中找到它，像普通物体
 msgid "Find objects by model or TXD"
 msgstr "按模型或 TXD 查找物体"
 
+msgid "Find similar models"
+msgstr "查找相似模型"
+
 msgid "Fire"
 msgstr "火焰"
 
@@ -3361,14 +3357,14 @@ msgstr "聚焦所选物体"
 msgid "Focus the camera on the selection"
 msgstr "将相机聚焦到所选物体"
 
-msgid "Fog"
-msgstr "雾"
-
 msgid "Folder"
 msgstr "文件夹"
 
 msgid "Folder for NODES*.DAT (a server's scriptfiles/NPCs/nodes)"
 msgstr "NODES*.DAT 所在的文件夹（服务器的 scriptfiles/NPCs/nodes）"
+
+msgid "Folder missing"
+msgstr "文件夹不存在"
 
 msgid "Folder with the server's .rec files; empty: the workspace's npcmodes/recordings"
 msgstr "存放服务器 .rec 文件的文件夹；留空则为 workspace 的 npcmodes/recordings"
@@ -3383,12 +3379,8 @@ msgstr "跟随"
 msgid "Follow a path"
 msgstr "沿路径行进"
 
-msgid ""
-"Follow ground\n"
-"Dragged objects stay on the ground surface."
-msgstr ""
-"跟随地面\n"
-"拖动的物体会停在地表上。"
+msgid "Follow ground"
+msgstr "贴合地面"
 
 msgid "Follow slope"
 msgstr "跟随坡度"
@@ -3436,6 +3428,9 @@ msgstr "对于布局和预设：画板上的参考线会先被移除。"
 #, c-format
 msgid "Frame %d  %.1f km/h  Health %.0f  Armour %.0f  Weapon %d"
 msgstr "帧 %d  %.1f km/h  生命值 %.0f  护甲 %.0f  武器 %d"
+
+msgid "Frame rate"
+msgstr "帧率"
 
 msgid "Free endpoint"
 msgstr "自由端点"
@@ -3507,11 +3502,11 @@ msgstr "GTA 世界"
 msgid "GTA world object"
 msgstr "GTA 世界物体"
 
-msgid "Game"
-msgstr "游戏"
-
 msgid "Game HUD"
 msgstr "游戏 HUD"
+
+msgid "Game folder"
+msgstr "游戏文件夹"
 
 msgid "Game nodes"
 msgstr "游戏节点"
@@ -3526,12 +3521,8 @@ msgstr ""
 "仅限游戏声音：-1 表示在所有世界播放。\n"
 "内部 ID 在“位置”下设置。"
 
-msgid ""
-"Game: as thick as in game, which on a clear day starts 10 m out.\n"
-"Light: only towards the end of the world draw distance."
-msgstr ""
-"游戏：与游戏内一样浓，晴天时从 10 m 外开始。\n"
-"轻度：仅在世界绘制距离的末端附近。"
+msgid "Game tools"
+msgstr "游戏工具"
 
 msgid "Gang (Ballas)"
 msgstr "帮派（Ballas）"
@@ -3557,9 +3548,6 @@ msgstr "Gang zone %.0f x %.0f"
 
 msgid "Gang zones"
 msgstr "Gang zones"
-
-msgid "GangZoneCreate: a coloured square on the radar"
-msgstr "GangZoneCreate：雷达上的彩色方块"
 
 msgid "Gap"
 msgstr "间距"
@@ -3869,6 +3857,9 @@ msgstr "隐藏仅用于编辑：被隐藏的物体仍留在地图中，并照常
 msgid "High blip"
 msgstr "高音哔声"
 
+msgid "Higher distances show more objects and use more GPU and memory."
+msgstr "距离越大，显示的物体越多，GPU 和内存占用也越高。"
+
 msgid "Higher surfaces are lighter, in a few steps."
 msgstr "较高的表面显示得更亮，分为数级。"
 
@@ -3892,6 +3883,12 @@ msgstr "拖动时按住 Alt 可自由放置面板。"
 
 msgid "Hold Shift while dragging the gizmo to move in fixed steps."
 msgstr "拖动 Gizmo 时按住 Shift 可按固定步长移动。"
+
+msgid "Hold Shift while moving with the magnet on."
+msgstr "开启磁吸后，移动时按住 Shift。"
+
+msgid "Hold Shift while rotating with the magnet on."
+msgstr "开启磁吸后，旋转时按住 Shift。"
 
 msgid ""
 "Hold it and drag to look, and fly with W/A/S/D (Q/E down and up) while it's held;\n"
@@ -3936,14 +3933,6 @@ msgstr "房屋"
 msgid "Hover over any field below for a description of what it does in-game"
 msgstr "将鼠标悬停在下方任意字段上，即可查看它在游戏中的作用"
 
-#, c-format
-msgid ""
-"How close another object has to be for object snap (%s, the\n"
-"crosshair button on the toolbar) to line them up."
-msgstr ""
-"另一个物体需要靠近到什么程度，物体吸附（%s，工具栏上的\n"
-"准星按钮）才会将它们对齐。"
-
 msgid "How close the NPC has to get before it heads for the next point."
 msgstr "NPC 需要多接近当前点，才会前往下一个点。"
 
@@ -3953,25 +3942,8 @@ msgstr "如何……"
 msgid "How far each copy moves from the one before, in metres."
 msgstr "每个副本相对前一个副本移动的距离，单位为米。"
 
-msgid ""
-"How far each model shows before its low-detail version, as a\n"
-"multiple of the game's distance."
-msgstr ""
-"每个模型在切换到低细节版本之前能显示的距离，\n"
-"以游戏距离的倍数计。"
-
 msgid "How far the arrow keys move the selection; Shift moves ten times as far."
 msgstr "方向键移动所选物体的距离；Shift 移动十倍距离。"
-
-msgid "How far the game's buildings show. Player view keeps the game's."
-msgstr "游戏内建筑物的显示距离。玩家视角保持游戏原值。"
-
-msgid ""
-"How far your map's objects show, whatever their model's draw distance,\n"
-"and never less far than the world. Player view keeps the game's."
-msgstr ""
-"你地图中物体的显示距离，无论其模型的绘制距离如何，\n"
-"且绝不会低于世界值。玩家视角保持游戏原值。"
 
 msgid "How long it plays; 0 plays until stopped."
 msgstr "播放时长；0 表示一直播放直到停止。"
@@ -3999,8 +3971,8 @@ msgid "ID"
 msgstr "ID"
 
 #, c-format
-msgid "ID %d  |  TXD %s"
-msgstr "ID %d  |  TXD %s"
+msgid "ID %d"
+msgstr "ID %d"
 
 #, c-format
 msgid "ID %d is already a game model"
@@ -4240,9 +4212,6 @@ msgstr "当玩家走进该距离内时就会播放。"
 msgid "It runs one way with an angle over 180 and the other way up to 180. Dragging slides it along the track (hold Alt to move it freely)."
 msgstr "角度大于 180 时它朝一个方向行驶，不超过 180 时朝另一个方向。拖动会让它沿轨道滑动（按住 Alt 可自由移动）。"
 
-msgid "Its SA-MP tab has pickups, labels, actors, gang zones, sounds and more."
-msgstr "它的 SA-MP 标签页里有 pickup、标签、演员、gang zone、声音等更多内容。"
-
 msgid "Its player name, shown over its head and in the player list."
 msgstr "它的玩家名称，显示在其头顶和玩家列表中。"
 
@@ -4258,6 +4227,9 @@ msgstr "跳转到"
 msgid "Katana"
 msgstr "武士刀"
 
+msgid "Keep dragged objects on the ground surface."
+msgstr "让拖动的物体保持贴合地面。"
+
 msgid "Keep original"
 msgstr "保留原始"
 
@@ -4266,10 +4238,6 @@ msgstr "继续放置"
 
 msgid "Keep the newest line in view"
 msgstr "让最新一行保持在视野中"
-
-#, c-format
-msgid "Keep the workspace and map as they are (%s)."
-msgstr "保持 workspace 和地图原样 (%s)。"
 
 msgid "Keep them read-only"
 msgstr "将它们保持为只读"
@@ -4413,7 +4381,7 @@ msgid "Lift bell"
 msgstr "电梯铃"
 
 msgid "Light"
-msgstr "轻"
+msgstr "浅色"
 
 msgid "Light (red dot)"
 msgstr "灯（红点）"
@@ -4424,11 +4392,20 @@ msgstr "灯光光晕"
 msgid "Lights"
 msgstr "灯"
 
+msgid "Limit frame rate"
+msgstr "限制帧率"
+
+msgid "Limit streamed elements to an area."
+msgstr "将流送元素限制在某个区域内。"
+
 msgid "Limits"
 msgstr "上限"
 
 msgid "Line"
 msgstr "线条"
+
+msgid "Line up edges and faces with nearby objects while moving."
+msgstr "移动时将边缘和表面与附近物体对齐。"
 
 msgid "Line width"
 msgstr "线条宽度"
@@ -4638,10 +4615,6 @@ msgstr "地图检查"
 msgid "Map Objects"
 msgstr "地图物体"
 
-#, c-format
-msgid "Map Objects (%s): everything placed in this map."
-msgstr "地图物体 (%s)：此地图中放置的所有内容。"
-
 msgid "Map changed. Refresh from map to generate its latest code."
 msgstr "地图已更改。请从地图刷新以生成其最新代码。"
 
@@ -4660,8 +4633,8 @@ msgstr "测试前地图检查：%s。%s 可打开列表。"
 msgid "Map code"
 msgstr "地图代码"
 
-msgid "Map draw distance"
-msgstr "地图绘制距离"
+msgid "Map elements"
+msgstr "地图元素"
 
 msgid "Map icon"
 msgstr "Map icon"
@@ -4673,9 +4646,6 @@ msgstr "Map icon %d  %s"
 msgid "Map icons"
 msgstr "Map icons"
 
-msgid "Map objects"
-msgstr "地图物体"
-
 msgid "Map: place a marker"
 msgstr "地图：放置标记"
 
@@ -4684,10 +4654,6 @@ msgstr "地图：移除标记"
 
 msgid "Maps"
 msgstr "地图"
-
-#, c-format
-msgid "Maps in %s"
-msgstr "%s 中的地图"
 
 msgid "Maps open once the game folder is loaded."
 msgstr "游戏文件夹加载完成后即可打开地图。"
@@ -4698,8 +4664,14 @@ msgstr "Marco's Bistro 音乐 (0.3.7-R2)"
 msgid "Margins"
 msgstr "边距"
 
+msgid "Mark a coloured area on the radar."
+msgstr "在雷达上标记彩色区域。"
+
 msgid "Marker (colour)"
 msgstr "标记（颜色）"
+
+msgid "Markers"
+msgstr "标记"
 
 msgid ""
 "Marks this node as a highway node.\n"
@@ -4721,6 +4693,12 @@ msgstr ""
 
 msgid "Match"
 msgstr "匹配"
+
+msgid "Match the object's angle to the ground slope. Enable Follow ground in More on the toolbar."
+msgstr "使物体角度与地面坡度一致。在工具栏的更多选项中启用贴合地面。"
+
+msgid "Matches the display refresh rate to reduce tearing. Turn off for uncapped FPS."
+msgstr "与显示器刷新率同步以减少画面撕裂。关闭后可解除 FPS 限制。"
 
 msgid "Material"
 msgstr "材质"
@@ -4846,10 +4824,6 @@ msgid "Model %d does not exist, so SA-MP ignores the whole call (color too)."
 msgstr "模型 %d 不存在，因此 SA-MP 会忽略整个调用（颜色也一样）。"
 
 #, c-format
-msgid "Model %d is not loaded"
-msgstr "模型 %d 未加载"
-
-#, c-format
 msgid "Model %d is not loaded; the pickup is drawn as model %d."
 msgstr "模型 %d 未加载；该 pickup 会以模型 %d 绘制。"
 
@@ -4869,11 +4843,21 @@ msgstr "模型 0：SA-MP 的纯白 \"blanktex\"；TXD 和贴图名称会被忽�
 msgid "Model ID"
 msgstr "模型 ID"
 
+#, c-format
+msgid "Model ID changes: %d"
+msgstr "模型 ID 更改：%d"
+
+msgid "Model IDs can't be changed for objects linked to an LOD or outside the active map."
+msgstr "无法更改与 LOD 关联或不属于当前地图的物体的模型 ID。"
+
 msgid "Model IDs: 1337, 19353-19355"
 msgstr "模型 ID：1337, 19353-19355"
 
 msgid "Model details"
 msgstr "模型详情"
+
+msgid "Model files"
+msgstr "模型文件"
 
 #, c-format
 msgid "Model name %s already exists. Change the model name first."
@@ -4908,8 +4892,14 @@ msgstr "钱袋"
 msgid "More"
 msgstr "更多"
 
+msgid "More actions"
+msgstr "更多操作"
+
 msgid "More bands blend more smoothly. Each band is a textdraw."
 msgstr "色带越多，过渡越平滑。每个色带都是一个 textdraw。"
+
+msgid "More display and snapping options"
+msgstr "更多显示和吸附选项"
 
 msgid "Motor, stopping"
 msgstr "发动机停止"
@@ -5035,12 +5025,6 @@ msgstr "NPC 路径点"
 msgid "NPC paths"
 msgstr "NPC 路径"
 
-msgid "NPC_AddPointToPath: click point after point; NPCs walk the path"
-msgstr "NPC_AddPointToPath：逐点点击；NPC 会沿路径行走"
-
-msgid "NPC_Create + NPC_Spawn: a bot player"
-msgstr "NPC_Create + NPC_Spawn：一个机器人玩家"
-
 msgid "NPC_MoveByPath: once spawned, the NPC moves along this path once."
 msgstr "NPC_MoveByPath：生成后，NPC 会沿此路径移动一次。"
 
@@ -5093,9 +5077,6 @@ msgstr "Namaka 未更新：%s"
 
 msgid "Name"
 msgstr "名称"
-
-msgid "Name a race to place race checkpoints that point at each other."
-msgstr "为竞速命名，即可放置互相指向的 race checkpoint。"
 
 msgid "Name or ID"
 msgstr "名称或 ID"
@@ -5175,9 +5156,6 @@ msgstr "新建地图"
 msgid "New artboard"
 msgstr "新建画板"
 
-msgid "New checkpoints go on the end of this race."
-msgstr "新的 checkpoint 会添加到此竞速的末尾。"
-
 msgid ""
 "New features before everyone else, and sometimes new bugs.\n"
 "You get the newest of Beta and Production."
@@ -5197,11 +5175,11 @@ msgstr "新建地图"
 msgid "New objects sit on the ground under the cursor."
 msgstr "新物体位于光标下方的地面上。"
 
-msgid "New objects sit on top of the object under the cursor."
-msgstr "新物体位于光标下方物体的顶部。"
+msgid "New objects sit on the object under the cursor."
+msgstr "新物体放置在光标下的物体表面。"
 
-msgid "New points go on the end of this path."
-msgstr "新路径点会添加到此路径的末尾。"
+msgid "New path"
+msgstr "新建路径"
 
 msgid "New script"
 msgstr "新建脚本"
@@ -5212,8 +5190,8 @@ msgstr "新建 textdraw 文件"
 msgid "New textdraws"
 msgstr "新建 textdraw"
 
-msgid "New workspace..."
-msgstr "新建 workspace..."
+msgid "New workspace"
+msgstr "新建 workspace"
 
 msgid "New!"
 msgstr "新！"
@@ -5266,9 +5244,6 @@ msgstr "无淡出"
 msgid "No Python 3.10 or newer found."
 msgstr "未找到 Python 3.10 或更新版本。"
 
-msgid "No SA-MP client: SA-MP's own objects won't show."
-msgstr "没有 SA-MP 客户端：SA-MP 自身的物体不会显示。"
-
 msgid "No URL yet."
 msgstr "尚无 URL。"
 
@@ -5287,8 +5262,8 @@ msgstr "没有需要导出 Pawn 的更改。"
 msgid "No collision"
 msgstr "无碰撞"
 
-msgid "No dynamic areas: place one from the SA-MP tab."
-msgstr "没有动态区域：请从 SA-MP 标签页放置一个。"
+msgid "No dynamic areas. Choose Zones in the browser to add one."
+msgstr "没有动态区域。在浏览器中选择区域以添加。"
 
 msgid "No exportable objects found"
 msgstr "未找到可导出的物体"
@@ -5334,8 +5309,8 @@ msgstr "未选择物体"
 msgid "No parts fit this model."
 msgstr "没有适合此模型的部件。"
 
-msgid "No points yet: place NPC path points from the SA-MP tab."
-msgstr "尚无路径点：请从 SA-MP 标签页放置 NPC 路径点。"
+msgid "No points yet. Choose Paths in the browser to add them."
+msgstr "还没有路径点。在浏览器中选择路径以添加。"
 
 msgid "No prefabs yet: select objects and use File > Export > Selection as Prefab."
 msgstr "暂无 prefab：选择物体并使用 文件 > 导出 > 将所选物体存为 Prefab。"
@@ -5346,9 +5321,8 @@ msgstr "暂无预设：为右侧的筛选器命名并保存。"
 msgid "No preview"
 msgstr "无预览"
 
-#, c-format
-msgid "No recent maps in %s yet."
-msgstr "%s 中暂无最近的地图。"
+msgid "No recent maps"
+msgstr "没有最近使用的地图"
 
 msgid "No reciprocal link found (one-way connection)."
 msgstr "未找到反向链接（单向连接）。"
@@ -5385,9 +5359,6 @@ msgstr "无 workspace"
 
 msgid "No workspace: maps open and save wherever you choose."
 msgstr "无 workspace：地图可在你选择的任意位置打开和保存。"
-
-msgid "No workspaces yet: make one or open a server folder."
-msgstr "还没有 workspace：请新建一个或打开服务器文件夹。"
 
 msgid "Node area grid"
 msgstr "节点区域网格"
@@ -5465,10 +5436,6 @@ msgstr "备注"
 
 msgid "Notes"
 msgstr "备注"
-
-#, c-format
-msgid "Nothing copied yet: select objects and press %s"
-msgstr "尚未复制：选择物体并按 %s"
 
 msgid "Nothing matches."
 msgstr "没有匹配项。"
@@ -5558,13 +5525,12 @@ msgstr "物体信息"
 msgid "Object anchor"
 msgstr "物体锚点"
 
+msgid "Object snap"
+msgstr "物体吸附"
+
 #, c-format
-msgid ""
-"Object snap (%s)\n"
-"While moving, line up edges and faces with nearby objects."
-msgstr ""
-"物体吸附 (%s)\n"
-"移动时，将边缘和面与附近物体对齐。"
+msgid "Object snap (%s) uses this distance."
+msgstr "物体吸附（%s）使用此距离。"
 
 msgid "Object snap mode disabled"
 msgstr "物体吸附模式已关闭"
@@ -5587,9 +5553,6 @@ msgstr ""
 
 msgid "Objects the game only shows by day or by night are always drawn."
 msgstr "游戏只在白天或夜晚显示的物体总是会被绘制。"
-
-msgid "Objects you place show up here. Search above, or start with a category:"
-msgstr "你放置的物体会显示在这里。在上方搜索，或从某个类别开始："
 
 msgid "Off"
 msgstr "关"
@@ -5651,6 +5614,9 @@ msgstr "Namaka 安装后，Haumea 会从下一次启动开始监听它。"
 
 msgid "One colour"
 msgstr "单色"
+
+msgid "One distance for all objects, independent of model, weather and time of day."
+msgstr "所有物体使用相同距离，不受模型、天气和时间影响。"
 
 msgid "One message per line; {RRGGBB} changes the colour."
 msgstr "每行一条消息；{RRGGBB} 更改颜色。"
@@ -5714,17 +5680,23 @@ msgstr ""
 msgid "Open a Pawn map"
 msgstr "打开 Pawn 地图"
 
+msgid "Open a map in this workspace and it will appear here."
+msgstr "打开此 workspace 中的地图后，它会显示在这里。"
+
 msgid "Open a map..."
 msgstr "打开地图..."
 
 msgid "Open a textdraw file"
 msgstr "打开 textdraw 文件"
 
-msgid "Open folder as workspace..."
-msgstr "将文件夹作为 workspace 打开..."
+msgid "Open folder..."
+msgstr "打开文件夹…"
 
 msgid "Open fonts folder"
 msgstr "打开字体文件夹"
+
+msgid "Open last workspace at startup"
+msgstr "启动时打开上次的 workspace"
 
 msgid "Open map"
 msgstr "打开地图"
@@ -5737,9 +5709,6 @@ msgstr "打开脚本..."
 
 msgid "Open the folder"
 msgstr "打开该文件夹"
-
-msgid "Open the last workspace automatically"
-msgstr "自动打开上次使用的 workspace"
 
 msgid "Open the log"
 msgstr "打开日志"
@@ -5816,18 +5785,6 @@ msgstr "地图物体描边"
 msgid "Outline map objects (%s)"
 msgstr "地图物体描边 (%s)"
 
-#, c-format
-msgid ""
-"Outline map objects (%s)\n"
-"Draws the edges of everything in this map, so invisible\n"
-"and see-through objects can be found.\n"
-"Right-click for selection outlines."
-msgstr ""
-"地图物体描边 (%s)\n"
-"绘制此地图中所有物体的边缘，以便找到\n"
-"隐形和半透明物体。\n"
-"右键点击显示选择描边。"
-
 msgid "Outline selected and hovered objects"
 msgstr "描边所选物体和悬停物体"
 
@@ -5851,23 +5808,12 @@ msgstr "第 %d 页，共 %d 页（%d 个模型）"
 msgid "Paint continuously using spacing/delay settings"
 msgstr "按间距/延迟设置连续绘制"
 
-msgid ""
-"Paint copies onto surfaces: click for one, drag to paint.\n"
-"Spacing and alignment are in the Tools window."
-msgstr ""
-"将副本绘制到表面上：单击放置一个，拖动进行绘制。\n"
-"间距和对齐设置在“工具”窗口中。"
-
 msgid "Paint selected object on surface"
 msgstr "在表面上绘制所选物体"
 
 #, c-format
 msgid "Painted %d x %s"
 msgstr "已绘制 %d 个 %s"
-
-#, c-format
-msgid "Painting %s: click or drag on a surface. %s stops."
-msgstr "正在绘制 %s：在表面上单击或拖动。%s 停止。"
 
 #, c-format
 msgid "Painting: %s"
@@ -5901,6 +5847,9 @@ msgstr "平移相机"
 msgid "Pan or orbit camera while brushing"
 msgstr "绘制时平移或环绕相机"
 
+msgid "Panel layout"
+msgstr "面板布局"
+
 msgid "Panel under the mouse"
 msgstr "鼠标下方的面板"
 
@@ -5922,10 +5871,6 @@ msgstr "粘贴"
 
 msgid "Paste a position: x, y, z (an angle after it is fine) or a SetPlayerPos line."
 msgstr "粘贴位置：x, y, z（后面跟一个角度也可以），或一行 SetPlayerPos 代码。"
-
-#, c-format
-msgid "Paste copied objects in front of the camera (%s)."
-msgstr "将复制的物体粘贴到相机前方 (%s)。"
 
 msgid "Paste in Place"
 msgstr "原位粘贴"
@@ -5964,6 +5909,9 @@ msgstr "路径宽度"
 #, c-format
 msgid "Path: %s"
 msgstr "路径：%s"
+
+msgid "Paths"
+msgstr "路径"
 
 msgid "Pause"
 msgstr "暂停"
@@ -6028,6 +5976,9 @@ msgstr "每玩家 (CreatePlayerTextDraw)"
 msgid "Per-player zones"
 msgstr "每玩家区域"
 
+msgid "Performance"
+msgstr "性能"
+
 msgid "Pick a .pwn, .db, .map or .ipl file"
 msgstr "选择一个 .pwn、.db、.map 或 .ipl 文件"
 
@@ -6043,8 +5994,8 @@ msgstr "选择一个库"
 msgid "Pick a path, or type a new name and place its points."
 msgstr "选择一个路径，或输入新名称并放置其各个点。"
 
-msgid "Pick a workspace to see its maps."
-msgstr "选择一个 workspace 以查看其地图。"
+msgid "Pick an object, then click in the world to place it."
+msgstr "选择物体，然后点击世界进行放置。"
 
 msgid "Pick endpoint"
 msgstr "选取终点"
@@ -6067,6 +6018,9 @@ msgstr ""
 
 msgid "Pick two different points for the ruler."
 msgstr "请为标尺选取两个不同的点。"
+
+msgid "Pick up where you left off."
+msgstr "继续上次的工作。"
 
 msgid "Picked points"
 msgstr "已选取的点"
@@ -6109,8 +6063,20 @@ msgstr "像素级精确"
 msgid "Place"
 msgstr "放置"
 
+msgid "Place a character with a skin and animation."
+msgstr "放置角色并设置皮肤和动画。"
+
+msgid "Place a checkpoint or add it to a race."
+msgstr "放置 checkpoint 或将其添加到竞速路线。"
+
+msgid "Place an NPC that can move and interact."
+msgstr "放置可移动和交互的 NPC。"
+
 msgid "Place an NPC, then in Object Info > NPC > Movement pick \"Follow a path\"."
 msgstr "先放置一个 NPC，然后在“物体信息 > NPC > 移动”中选择“跟随路径”。"
+
+msgid "Place an item players can collect."
+msgstr "放置玩家可拾取的物品。"
 
 msgid "Place mode"
 msgstr "放置模式"
@@ -6130,25 +6096,18 @@ msgstr "放置所选物体"
 msgid "Place the pin halfway between the two picked points, for example the edges of a doorway."
 msgstr "将图钉放在两个已选点的正中间，例如门洞两侧的边缘之间。"
 
-msgid "Place, then click in the world. Esc stops."
-msgstr "点击“放置”，然后在世界中单击。Esc 停止。"
-
 #, c-format
 msgid "Placed %s"
 msgstr "已放置 %s"
+
+msgid "Placement"
+msgstr "放置"
 
 msgid "Places"
 msgstr "地点"
 
 msgid "Places the objects of a prefab file (.haumea) in this map."
 msgstr "将 Prefab 文件 (.haumea) 中的物体放置到此地图中。"
-
-msgid "Placing"
-msgstr "放置中"
-
-#, c-format
-msgid "Placing %s: click to place, Shift+click to keep going. Right-click or %s stops."
-msgstr "正在放置 %s：单击放置，Shift+单击可继续。右键或 %s 停止。"
 
 msgid "Plain"
 msgstr "纯色"
@@ -6161,6 +6120,9 @@ msgstr "播放"
 
 msgid "Play a recording"
 msgstr "播放录制"
+
+msgid "Play a sound or audio stream near this point."
+msgstr "在此点附近播放声音或音频流。"
 
 msgid "PlayAudioStreamForPlayer. Started for each player in _ShowForPlayer."
 msgstr "PlayAudioStreamForPlayer。在 _ShowForPlayer 中为每个玩家开始播放。"
@@ -6197,9 +6159,6 @@ msgstr "玩家屏幕"
 
 msgid "PlayerPlaySound. Any ID from the game's data/AudioEvents.txt works."
 msgstr "PlayerPlaySound。游戏 data/AudioEvents.txt 中的任意 ID 均可使用。"
-
-msgid "Players"
-msgstr "玩家"
 
 msgid "Players can click it while SelectTextDraw is on (OnPlayerClickTextDraw)."
 msgstr "在 SelectTextDraw 开启期间，玩家可以点击它 (OnPlayerClickTextDraw)。"
@@ -6364,6 +6323,13 @@ msgstr "预览移动"
 msgid "Preview movement walks it in the viewport; the map saves NPC_MoveByPath."
 msgstr "预览移动会让它在视口中行走；地图保存的是 NPC_MoveByPath。"
 
+msgid ""
+"Previews virtual worlds, interiors, areas and client object limits.\n"
+"All elements keep the stream distance set in Performance. Nothing is saved."
+msgstr ""
+"预览 virtual world、内部、区域和客户端物体上限。\n"
+"所有元素均使用性能设置中的流送距离。不会保存任何内容。"
+
 msgid "Previous"
 msgstr "上一个"
 
@@ -6445,13 +6411,6 @@ msgstr "将每个物体放到该线下方的地面上。"
 
 msgid "Puts the NPC in a vehicle as its driver."
 msgstr "将 NPC 放入一辆载具并作为其驾驶员。"
-
-msgid ""
-"Puts the Object Browser, Object Info, Map Objects and Tools\n"
-"back in their default places along the screen edges."
-msgstr ""
-"将物体浏览器、物体信息、地图物体和工具\n"
-"恢复到屏幕边缘的默认位置。"
 
 msgid "Python"
 msgstr "Python"
@@ -6593,8 +6552,14 @@ msgstr "就绪"
 msgid "Ready: %s"
 msgstr "就绪：%s"
 
+msgid "Recent maps"
+msgstr "最近的地图"
+
 msgid "Recent textdraw files"
 msgstr "最近的 textdraw 文件"
+
+msgid "Recent workspaces"
+msgstr "最近的 workspace"
 
 msgid "Recently placed"
 msgstr "最近放置"
@@ -6695,8 +6660,8 @@ msgstr "从收藏夹移除"
 msgid "Remove from favourites"
 msgstr "从收藏夹移除"
 
-msgid "Remove from the list (the folder stays)"
-msgstr "从列表中移除（文件夹保留）"
+msgid "Remove from recent"
+msgstr "从最近列表中移除"
 
 msgid "Remove last"
 msgstr "移除最后一个"
@@ -6832,6 +6797,15 @@ msgstr "恢复默认相机 FOV（70°）。"
 
 msgid "Restored"
 msgstr "已恢复"
+
+msgid "Restores the browser on the left and Object Info on the right."
+msgstr "恢复左侧浏览器和右侧物体信息面板。"
+
+msgid "Return to the editor."
+msgstr "返回编辑器。"
+
+msgid "Review"
+msgstr "检查"
 
 msgid "Right"
 msgstr "右侧"
@@ -7021,8 +6995,8 @@ msgstr "SA-MP 0.3.DL 与 open.mp 客户端会下载自定义模型。"
 msgid "SA-MP chat"
 msgstr "SA-MP 聊天"
 
-msgid "SA-MP elements"
-msgstr "SA-MP 元素"
+msgid "SA-MP client not found"
+msgstr "未找到 SA-MP 客户端"
 
 msgid "SA-MP ignores material text calls with empty text."
 msgstr "SA-MP 会忽略文本为空的材质文本调用。"
@@ -7033,14 +7007,14 @@ msgstr "SA-MP 会拒绝 32 个字符及更长的字体名称。"
 msgid "SA-MP shows zone names with EnableZoneNames, the clock with TogglePlayerClock."
 msgstr "SA-MP 通过 EnableZoneNames 显示区域名称，通过 TogglePlayerClock 显示时钟。"
 
-msgid "SA-MP tab: Place NPC path points, clicking one point after another."
-msgstr "SA-MP 标签页：放置 NPC 路径点，逐个点击。"
-
 msgid "SA-MP textures only"
 msgstr "仅 SA-MP 贴图"
 
 msgid "SA-MP's defaults"
 msgstr "SA-MP 的默认值"
+
+msgid "SA-MP's own objects won't show without its client files."
+msgstr "缺少 SA-MP 客户端文件时，无法显示其自带物体。"
 
 msgid "SELECT"
 msgstr "SELECT"
@@ -7073,22 +7047,6 @@ msgstr "保存"
 #, c-format
 msgid "Save %d selected as a prefab"
 msgstr "将选中的 %d 个物体保存为 prefab"
-
-#, c-format
-msgid ""
-"Save (%s)\n"
-"Everything is saved."
-msgstr ""
-"保存 (%s)\n"
-"所有内容均已保存。"
-
-#, c-format
-msgid ""
-"Save (%s)\n"
-"The map has unsaved changes."
-msgstr ""
-"保存 (%s)\n"
-"地图有未保存的更改。"
 
 msgid "Save As..."
 msgstr "另存为..."
@@ -7253,12 +7211,6 @@ msgstr "搜索"
 msgid "Search TXDs"
 msgstr "搜索 TXD"
 
-msgid "Search favourites   (Ctrl+F)"
-msgstr "搜索收藏夹   (Ctrl+F)"
-
-msgid "Search name, ID or IDs (1337, 19000-19100)   (Ctrl+F)"
-msgstr "搜索名称、ID 或多个 ID (1337, 19000-19100)   (Ctrl+F)"
-
 msgid "Search name, model, ID, kind, variable"
 msgstr "搜索名称、模型、ID、类型、变量"
 
@@ -7354,9 +7306,6 @@ msgstr "选择路径的点"
 
 msgid "Select them"
 msgstr "选中它们"
-
-msgid "Select them all, to edit them together in Object Info."
-msgstr "全部选中，以便在物体信息中一起编辑。"
 
 msgid "Select two objects to attach them."
 msgstr "选择两个物体以将其附加。"
@@ -7458,9 +7407,6 @@ msgstr "将 X、Y、Z 旋转设为零。"
 msgid "Set a workspace (File > Workspace) to save prefabs with the server."
 msgstr "请先设置 workspace（文件 > Workspace），才能随服务器保存 prefab。"
 
-msgid "SetPlayerMapIcon / CreateDynamicMapIcon"
-msgstr "SetPlayerMapIcon / CreateDynamicMapIcon"
-
 msgid "SetVehicleNumberPlate, up to 32 characters. Empty keeps the game's plate."
 msgstr "SetVehicleNumberPlate，最多 32 个字符。留空则保留游戏默认车牌。"
 
@@ -7556,6 +7502,9 @@ msgstr "显示参考线："
 
 msgid "Show material indexes"
 msgstr "显示材质索引"
+
+msgid "Show object edges, including invisible and see-through objects."
+msgstr "显示物体边缘，包括不可见和透明物体。"
 
 msgid "Show or hide the group in the editor"
 msgstr "在编辑器中显示或隐藏该组"
@@ -7662,9 +7611,6 @@ msgstr "皮肤"
 
 msgid "Skip"
 msgstr "跳过"
-
-msgid "Skip this screen at start. File > Switch Workspace shows it again."
-msgstr "启动时跳过此界面。文件 > 切换 Workspace 会再次显示它。"
 
 msgid "Skip this version"
 msgstr "跳过此版本"
@@ -7875,6 +7821,9 @@ msgstr "起点"
 msgid "Start the route at the NPC"
 msgstr "从该 NPC 处开始路线"
 
+msgid "Start with a category."
+msgstr "先选择类别。"
+
 msgid "Starting"
 msgstr "正在启动"
 
@@ -7896,6 +7845,9 @@ msgstr "每次点击后仍保持放置状态，就像 Shift+单击一样。"
 
 msgid "Step"
 msgstr "步长"
+
+msgid "Step snapping"
+msgstr "步进吸附"
 
 #, c-format
 msgid ""
@@ -8016,6 +7968,9 @@ msgstr "Sweet"
 msgid "Switch Workspace..."
 msgstr "切换 Workspace..."
 
+msgid "Switch between tiles and list. Right-click for tile size."
+msgstr "切换缩略图和列表视图。右键调整缩略图大小。"
+
 msgid "Switch local / world axes"
 msgstr "切换局部 / 世界坐标轴"
 
@@ -8037,6 +7992,10 @@ msgstr "TXD"
 #, c-format
 msgid "TXD \"%s\" was not found; the original texture stays."
 msgstr "未找到 TXD \"%s\"；保留原贴图。"
+
+#, c-format
+msgid "TXD %s"
+msgstr "TXD %s"
 
 msgid "TXD contains"
 msgstr "TXD 包含"
@@ -8087,14 +8046,6 @@ msgid "Test in game"
 msgstr "游戏内测试"
 
 #, c-format
-msgid ""
-"Test in game (%s)\n"
-"Runs the map on a private open.mp test server."
-msgstr ""
-"游戏内测试 (%s)\n"
-"在私有的 open.mp 测试服务器上运行该地图。"
-
-#, c-format
 msgid "Test in game (%s) runs the map on a private open.mp server."
 msgstr "游戏内测试 (%s) 会在私有的 open.mp 服务器上运行该地图。"
 
@@ -8124,6 +8075,9 @@ msgstr "在游戏中测试该地图"
 
 msgid "Text"
 msgstr "文本"
+
+msgid "Text & audio"
+msgstr "文本与音频"
 
 msgid "Text color"
 msgstr "文本颜色"
@@ -8323,9 +8277,6 @@ msgstr "它放置时的朝向。"
 msgid "The installer stopped (exit code %d)."
 msgstr "安装程序已停止（退出代码 %d）。"
 
-msgid "The interior you see and place new objects in. 0 is outside."
-msgstr "你在其中查看和放置新物体的内部。0 表示外部。"
-
 msgid "The last checkpoint: Finish (or Air finish) shows a flag."
 msgstr "最后一个 checkpoint：Finish（或 Air finish）会显示旗帜。"
 
@@ -8349,9 +8300,6 @@ msgstr "中间，位于底部：它会立在你点击的地面上。"
 #, c-format
 msgid "The mirror's %s coordinate."
 msgstr "镜像的 %s 坐标。"
-
-msgid "The model of new pickups."
-msgstr "新 pickup 的模型。"
 
 msgid "The model's length, so the pieces just touch."
 msgstr "模型的长度，使各段刚好相接。"
@@ -8390,14 +8338,6 @@ msgstr "各副本环绕的中心点（一条垂直轴）。"
 msgid "The saved file's first lines say which functions to call."
 msgstr "保存文件的前几行说明了要调用哪些函数。"
 
-#, c-format
-msgid ""
-"The selected object is in interior %d. Change it under Position\n"
-"in Object Info."
-msgstr ""
-"所选物体位于内部 %d。请在物体信息的\n"
-"位置下更改。"
-
 msgid "The selection contains read-only reference objects."
 msgstr "所选物体包含只读的参考物体。"
 
@@ -8407,13 +8347,6 @@ msgid ""
 msgstr ""
 "服务器最多创建 1024 个 gang zone。请使用更大的格子、更少的颜色，\n"
 "或改用流送区域。"
-
-msgid ""
-"The skin of new actors, player classes and NPCs.\n"
-"Skins are also in the Objects tab's Skins category."
-msgstr ""
-"新演员、玩家类别和 NPC 的皮肤。\n"
-"皮肤也在物体标签页的 Skins 分类中。"
 
 msgid "The sprites it is made of"
 msgstr "构成它的 sprite"
@@ -8454,6 +8387,9 @@ msgstr "workspace 的 prefab 会共享给为该服务器做图的所有人。"
 
 msgid "The workspace's prefabs folder"
 msgstr "workspace 的 prefab 文件夹"
+
+msgid "Theme"
+msgstr "主题"
 
 msgid "Then click on an image layer on the canvas (Esc stops)."
 msgstr "然后在画布上点击一个图像图层（Esc 停止）。"
@@ -8517,9 +8453,6 @@ msgid ""
 msgstr ""
 "此连接横穿马路。\n"
 "行人会先左右观察再从这里横穿。"
-
-msgid "This map is empty. Maps are saved as Pawn (.pwn) files."
-msgstr "此地图是空的。地图会保存为 Pawn (.pwn) 文件。"
 
 #, c-format
 msgid "This model has %d materials; SA-MP can only change the first %d."
@@ -8747,6 +8680,9 @@ msgstr "界面缩放"
 msgid "URL"
 msgstr "URL"
 
+msgid "Uncapped"
+msgstr "不限帧率"
+
 msgid ""
 "Unchanged world objects are not saved in the map. Once you move,\n"
 "rotate, retexture or delete one, the map removes the original with\n"
@@ -8905,6 +8841,9 @@ msgstr "用户指南"
 msgid "Using provided COL: %s"
 msgstr "使用提供的 COL：%s"
 
+msgid "VSync"
+msgstr "垂直同步"
+
 msgid "Value"
 msgstr "值"
 
@@ -8981,6 +8920,9 @@ msgstr "查看报告"
 
 msgid "Viewer camera (longer draw distance)"
 msgstr "观察相机（更长的绘制距离）"
+
+msgid "Viewport"
+msgstr "视口"
 
 msgid "Virtual world"
 msgstr "Virtual world"
@@ -9159,13 +9101,6 @@ msgstr ""
 msgid "While Namaka works in the editor, a line over the 3D view says what it is doing."
 msgstr "Namaka 在编辑器中工作时，3D 视图上方会有一行文字说明它正在做什么。"
 
-msgid ""
-"While dragging on the ground, turn the object to match the slope.\n"
-"Following the ground is the mountain button on the toolbar."
-msgstr ""
-"在地面上拖动时，旋转物体以匹配坡度。\n"
-"工具栏上的山峰按钮就是“贴合地面”。"
-
 msgid "White square"
 msgstr "白色方块"
 
@@ -9208,13 +9143,6 @@ msgstr "启用物体吸附 (N) 后，移动物体时其边缘或中心会吸附�
 msgid "With or without a far version"
 msgstr "带或不带远景版本"
 
-msgid ""
-"With the magnet on the toolbar, hold Shift while dragging to move\n"
-"and rotate in these steps."
-msgstr ""
-"使用工具栏上的磁铁时，拖动的同时按住 Shift 可按这些步长\n"
-"移动和旋转。"
-
 msgid "Woozie"
 msgstr "Woozie"
 
@@ -9233,17 +9161,11 @@ msgstr "Workspace 设置..."
 msgid "Workspace..."
 msgstr "Workspace..."
 
-msgid "Workspaces"
-msgstr "Workspaces"
-
 msgid "World"
 msgstr "世界"
 
 msgid "World & streaming"
 msgstr "世界与流送"
-
-msgid "World draw distance"
-msgstr "世界绘制距离"
 
 msgid "World object: it stays unchanged and is omitted from Pawn export. If you move, rotate, delete, or edit its materials, export removes the original per player and creates the scripted replacement."
 msgstr "世界物体：它保持不变，且不会包含在 Pawn 导出中。如果你移动、旋转、删除或编辑它的材质，导出会按玩家移除原物体，并创建脚本化的替代物体。"
@@ -9340,6 +9262,9 @@ msgstr ""
 
 msgid "Your gamemode includes it and calls _CreateTextDraws and _ShowTextDraws(playerid)."
 msgstr "你的 gamemode 会包含它，并调用 _CreateTextDraws 和 _ShowTextDraws(playerid)。"
+
+msgid "Your maps"
+msgstr "你的地图"
 
 msgid "Your textdraw changes are lost if you don't save them."
 msgstr "如果不保存，你对 textdraw 的更改将会丢失。"
@@ -9649,9 +9574,6 @@ msgstr "游戏文件夹中没有 samp.exe，也没有 open.mp 启动器"
 msgid "no such model"
 msgstr "没有此模型"
 
-msgid "no workspace"
-msgstr "无 workspace"
-
 msgid "nodes must be inside the map (-3000 to 3000)"
 msgstr "节点必须位于地图内（-3000 到 3000）"
 
@@ -9853,9 +9775,6 @@ msgstr "那是游戏自带的数据；请选择某个服务器的 scriptfiles/NP
 msgid "the DFF isn't a model file"
 msgstr "该 DFF 不是模型文件"
 
-msgid "the all-in-one editor for open.mp and SA-MP"
-msgstr "面向 open.mp 和 SA-MP 的一体化编辑器"
-
 msgid "the area has no room for more links"
 msgstr "该区域没有空间容纳更多连接"
 
@@ -9949,8 +9868,8 @@ msgid "{RRGGBB} switches color (opaque) for the following text. Enter starts a n
 msgstr "{RRGGBB} 为后续文本切换颜色（不透明）。Enter 开始新的一行。"
 
 #, c-format
-msgid "|  0.3.DL custom models in this workspace: %d"
-msgstr "|  此 workspace 中的 0.3.DL 自定义模型：%d"
+msgid "|  Custom models: %d"
+msgstr "|  自定义模型：%d"
 
 msgid "~n~ new line, ~r~ ~g~ ~b~ ~y~ ~p~ ~w~ ~l~ colours, ~h~ lighter, _ blank"
 msgstr "~n~ 换行，~r~ ~g~ ~b~ ~y~ ~p~ ~w~ ~l~ 颜色，~h~ 更亮，_ 空格"

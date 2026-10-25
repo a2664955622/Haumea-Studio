@@ -113,41 +113,20 @@ AddToRenderList(ObjectInst *inst, float dist)
 static void
 AddToLodRenderList(ObjectInst *inst, float dist)
 {
-	// Highlighted objects are always visible
-	if(!inst->m_selected && (inst->m_highlight == HIGHLIGHT_NONE || inst->m_highlight == HIGHLIGHT_MATCH)){
-		InstDist e;
-		e.inst = inst;
-		e.dist = dist;
-		lodList.push_back(e);
-	}else
-		AddToRenderList(inst, dist);
+	// Selection must still resolve HD/LOD
+	// coverage. Bypassing this queue drew the selected building's LOD on top.
+	InstDist e;
+	e.inst = inst;
+	e.dist = dist;
+	lodList.push_back(e);
 }
 
-// Past its draw distance. Player view keeps the game's: the model's (for the
-// map's elements Player view decides). The editor's view shows the game's
-// buildings to the World draw distance and the map's own objects to the Map
-// draw distance whatever their model's, while at least a pixel or so tall.
+// One hard range for every model, including selected objects. Individual
+// IDE distances, weather, altitude and projected size never shorten it.
 static bool
-beyondDrawDistance(ObjectInst *inst, ObjectDef *obj, float camdist)
+beyondDrawDistance(float camdist)
 {
-	float model = obj->GetLargestDrawDist()*TheCamera.m_LODmult;
-	if(gPlayerView)
-		return camdist >= model;
-	// The game's buildings with a LOD keep its distances, so the LOD takes
-	// over. The rest (an interior's papers and pens, small street props) the
-	// game shows only a few metres away: the editor shows them as it does the
-	// map's own objects, so they can be seen and box-selected from a step back.
-	bool lodLinked = inst->m_lod != nil || inst->m_numChildren > 0;
-	if(!IsUserMapObject(inst) && lodLinked)
-		return camdist >= model || camdist >= gWorldDrawDistance;
-	if(camdist >= (IsUserMapObject(inst) ? GetMapDrawDistance() : gWorldDrawDistance))
-		return true;
-	if(camdist < model || obj->m_colModel == nil)
-		return false;
-	// Projected radius in pixels.
-	float pixels = obj->m_colModel->boundingSphere.radius/camdist *
-		sk::globals.height*0.5f/TheCamera.m_rwcam->viewWindow.y;
-	return pixels < 1.5f;
+	return camdist >= gStreamDistance;
 }
 
 // Don't assume there are LODs, just draw if below draw distance
@@ -161,8 +140,11 @@ SetupVisibilitySimple(ObjectInst *inst, float *distout)
 
 	obj = GetObjectDef(inst->m_objectId);
 	if(obj == nil) return VIS_INVISIBLE;
+	camdist = TheCamera.distanceTo(inst->m_translation);
+	if(beyondDrawDistance(camdist))
+		return VIS_INVISIBLE;
 
-	// Highlighted objects are always visible
+	// Selection bypasses area/time filters, but keeps the common distance limit
 	if(!inst->m_selected && (inst->m_highlight == HIGHLIGHT_NONE || inst->m_highlight == HIGHLIGHT_MATCH)){
 		if(!gNoAreaCull && inst->m_area != currentArea && inst->m_area != 13)
 			return VIS_INVISIBLE;
@@ -172,14 +154,12 @@ SetupVisibilitySimple(ObjectInst *inst, float *distout)
 		if(obj->m_isHidden)
 			return VIS_INVISIBLE;
 
-		camdist = TheCamera.distanceTo(inst->m_translation);
-		if(beyondDrawDistance(inst, obj, camdist))
-			return VIS_INVISIBLE;
 
 		if(!gNoTimeCull && obj->m_isTimed && !IsHourInRange(obj->m_timeOn, obj->m_timeOff))
 			return VIS_INVISIBLE;
 	}else
 		camdist = TheCamera.distanceTo(inst->m_translation);
+	*distout = camdist;
 
 	if(!obj->IsLoaded())
 		return VIS_STREAMME;
@@ -194,7 +174,7 @@ SetupVisibilitySimple(ObjectInst *inst, float *distout)
 			return VIS_INVISIBLE;	// this shouldn't happen
 
 	if(obj->m_type == ObjectDef::ATOMIC){
-		atm = obj->GetAtomicForDist(camdist);
+		atm = obj->GetAtomicForDist(0.0f);
 		if(atm == nil)	// this shouldn't happen but it does (in xbox III)
 			return VIS_INVISIBLE;
 		instatm = (rw::Atomic*)inst->m_rwObject;
@@ -215,8 +195,11 @@ SetupVisibilityIII(ObjectInst *inst, float *distout)
 
 	obj = GetObjectDef(inst->m_objectId);
 	if(obj == nil) return VIS_INVISIBLE;
+	camdist = TheCamera.distanceTo(inst->m_translation);
+	if(beyondDrawDistance(camdist))
+		return VIS_INVISIBLE;
 
-	// Highlighted objects are always visible
+	// Selection bypasses area/time filters, but keeps the common distance limit
 	if(!inst->m_selected && (inst->m_highlight == HIGHLIGHT_NONE || inst->m_highlight == HIGHLIGHT_MATCH)){
 		if(!gNoAreaCull && inst->m_area != currentArea && inst->m_area != 13)
 			return VIS_INVISIBLE;
@@ -226,17 +209,15 @@ SetupVisibilityIII(ObjectInst *inst, float *distout)
 		if(obj->m_isHidden)
 			return VIS_INVISIBLE;
 
-		camdist = TheCamera.distanceTo(inst->m_translation);
-		if(beyondDrawDistance(inst, obj, camdist))
-			return VIS_INVISIBLE;
-		if(camdist < obj->m_minDrawDist*TheCamera.m_LODmult)
-			if(hdobj == nil || hdobj->IsLoaded())
+		if(inst->m_isBigBuilding && hdobj)
+			if(hdobj->IsLoaded())
 				return VIS_INVISIBLE;
 
 		if(!gNoTimeCull && obj->m_isTimed && !IsHourInRange(obj->m_timeOn, obj->m_timeOff))
 			return VIS_INVISIBLE;
 	}else
 		camdist = TheCamera.distanceTo(inst->m_translation);
+	*distout = camdist;
 
 	if(!obj->IsLoaded())
 		return VIS_STREAMME;
@@ -251,7 +232,7 @@ SetupVisibilityIII(ObjectInst *inst, float *distout)
 			return VIS_INVISIBLE;	// this shouldn't happen
 
 	if(obj->m_type == ObjectDef::ATOMIC){
-		atm = obj->GetAtomicForDist(camdist);
+		atm = obj->GetAtomicForDist(0.0f);
 		if(atm == nil)	// this shouldn't happen but it does (in xbox III)
 			return VIS_INVISIBLE;
 		instatm = (rw::Atomic*)inst->m_rwObject;
@@ -272,10 +253,12 @@ SetupVisibilitySA(ObjectInst *inst, float camdist)
 
 	obj = GetObjectDef(inst->m_objectId);
 	if(obj == nil) return VIS_INVISIBLE;
+	camdist = TheCamera.distanceTo(inst->m_translation);
+	if(beyondDrawDistance(camdist))
+		return VIS_INVISIBLE;
 	lodinst = inst->m_lod;
 
-	// Highlighted objects are always visible, and the player view decides
-	// itself for the map's elements.
+	// Selection and player view can bypass area/time filters. The range is shared.
 	if(!inst->m_selected && (inst->m_highlight == HIGHLIGHT_NONE || inst->m_highlight == HIGHLIGHT_MATCH) && !PlayerViewShows(inst)){
 		if(!gNoAreaCull && inst->m_area != currentArea && inst->m_area != 13)
 			return VIS_INVISIBLE;
@@ -283,8 +266,6 @@ SetupVisibilitySA(ObjectInst *inst, float camdist)
 		if(obj->m_isHidden)
 			return VIS_INVISIBLE;
 
-		if(beyondDrawDistance(inst, obj, camdist))
-			return VIS_INVISIBLE;
 
 		if(!gNoTimeCull && obj->m_isTimed && !IsHourInRange(obj->m_timeOn, obj->m_timeOff))
 			return VIS_INVISIBLE;
@@ -301,7 +282,7 @@ SetupVisibilitySA(ObjectInst *inst, float camdist)
 			return VIS_INVISIBLE;	// this shouldn't happen
 
 	if(obj->m_type == ObjectDef::ATOMIC){
-		atm = obj->GetAtomicForDist(camdist);
+		atm = obj->GetAtomicForDist(0.0f);
 		if(atm == nil)	// this shouldn't happen but it does (in xbox III)
 			return VIS_INVISIBLE;
 		instatm = (rw::Atomic*)inst->m_rwObject;
@@ -313,12 +294,11 @@ SetupVisibilitySA(ObjectInst *inst, float camdist)
 	if(!inst->IsOnScreen())
 		ret = VIS_CULLED;	// we want to render but we're culled
 
-	if(lodinst == nil)
+	if(lodinst == nil || ret != VIS_VISIBLE)
 		return ret;
 
 	// Only visible HD children should suppress the fallback LOD.
-	if(ret == VIS_VISIBLE)
-		lodinst->m_numChildrenRendered++;
+	lodinst->m_numChildrenRendered++;
 	if(lodinst->m_numChildren > 1){
 		AddToLodRenderList(inst, camdist);
 		return VIS_INVISIBLE;
@@ -344,14 +324,9 @@ SetupBigBuildingVisibilitySA(ObjectInst *inst, float *distout)
 		if(lodinst)
 			lodinst->m_numChildrenRendered++;
 
-		if(inst->m_numChildren > 1)
-			// might still have to render this LOD,
-			// if not all children are rendered
-			// We actually don't test for frustum culling here...TODO?
-			AddToLodRenderList(inst, camdist);
-		else
-			// otherwise...???
-			inst->m_numChildrenRendered = 0;
+		// Defer every fallback until all of its children have been scanned.
+		// Keep the count until ProcessLodList, including single-child LODs.
+		AddToLodRenderList(inst, camdist);
 		return VIS_INVISIBLE;
 	}else{
 		// No child wants to be rendered (yet?)
@@ -359,16 +334,11 @@ SetupBigBuildingVisibilitySA(ObjectInst *inst, float *distout)
 
 		v = SetupVisibilitySA(inst, camdist);
 
-		if(v == VIS_VISIBLE && inst->m_numChildren > 1){
-			// we're visible AND have multiple children,
-			// so we might have to render
+		if(v == VIS_VISIBLE && inst->m_numChildren > 0){
+			// Children may be visited later in the big-building scan.
 			AddToLodRenderList(inst, camdist);
 			return VIS_INVISIBLE;
 		}
-		// But what if we're a super LOD and our child
-		// just hasn't been visited yet?
-		// Maybe that isn't allowed?
-		// With v == 1 and m_numChildren == 1 how is this correct?
 		return v;
 	}
 }
@@ -384,50 +354,26 @@ SetupHdVisibilitySA(ObjectInst *inst, float *distout)
 static void
 ProcessLodList(void)
 {
-	int i;
-	ObjectInst *inst;//, *superlod;
-
-	// I don't understand SA's code of this function...
-	// So this one doesn't make perfect sense either.
-
-	int numLods = (int)lodList.size();
-	for(i = 0; i < numLods; i++){
-		inst = lodList[i].inst;
-		if(inst == nil) continue;
-		if(inst->m_numChildren > 0 && inst->m_numChildrenRendered == inst->m_numChildren){
-			// all children can be drawn, so don't draw the LOD
-			inst->m_numChildrenRendered = 0;
-			lodList[i].inst = nil;
-		}else{
-			// not all children are drawn
-
-			// We don't have the RW object yet, in case we didn't call the visbility function
-			if(inst->m_rwObject == nil)
-				inst->CreateRwObject();
-
-			//superlod = inst->m_lod;
-			//if(superlod){
-			//}
-		}
-//		printf("%d %s %d %d\n", i, GetObjectDef(inst->m_objectId)->m_name,
-//			inst->m_numChildren, inst->m_numChildrenRendered);
+	// Resolve coverage before drawing any queued LOD. A visible detailed
+	// child also covers its ancestors; this must not depend on sector order.
+	for(const InstDist &entry : lodList){
+		if(entry.inst->m_numChildrenRendered == 0)
+			continue;
+		ObjectInst *parent = entry.inst->m_lod;
+		for(int depth = 0; parent && depth < 32; depth++, parent = parent->m_lod)
+			parent->m_numChildrenRendered = max((int)parent->m_numChildrenRendered, 1);
 	}
-
-	// I don't get this, do we really want to hide superlods with this?
-//	for(i = 0; i < numLods; i++){
-//		inst = lodList[i];
-//		if(inst == nil) continue;
-//		// what's this exactly?
-//		if(inst->m_numChildrenRendered > 0){
-//			inst->m_numChildrenRendered = 0;
-//			lodList[i] = 0;
-//		}
-//	}
-
-	for(i = 0; i < numLods; i++){
-		inst = lodList[i].inst;
-		if(inst == nil) continue;
-		AddToRenderList(inst, lodList[i].dist);
+	for(const InstDist &entry : lodList){
+		ObjectInst *inst = entry.inst;
+		// As in SA's ProcessLodRenderLists, don't overlay a coarse LOD on
+		// any of its visible detailed children. Frustum-culled children do
+		// not count, and unloaded children leave their fallback available.
+		if(inst->m_numChildrenRendered > 0)
+			continue;
+		if(inst->m_rwObject == nil && inst->CreateRwObject() == nil)
+			continue;
+		if(inst->IsOnScreen())
+			AddToRenderList(inst, entry.dist);
 	}
 }
 

@@ -2,16 +2,24 @@
 open "$UI_FIXTURES/ui_floor.pwn"
 shortcut window_browser
 wait 5
-click_item 'Object Browser' 'SA-MP'
-wait 5
-click_item 'Object Browser' '##place NPC path point'
+click_item 'Object Browser' '##browser_source'
+wait 3
+click_item '*' 'Paths'
+wait 3
+click_item 'Object Browser' '##element_place'
 wait 3
 click_world 1997 -3000 4 shift
 wait 5
 click_world 2000 -3003 4
 wait 5
 key Esc
+click_item 'Object Browser' '##browser_source'
+wait 3
+click_item '*' 'Characters'
+wait 3
 click_item 'Object Browser' '##place NPC'
+wait 3
+click_item 'Object Browser' '##element_place'
 wait 3
 click_world 2003 -3000 4
 wait 5
@@ -20,6 +28,8 @@ assert objects == 4
 shortcut window_object_info
 wait 5
 set_item 'Object Info' 'Name' "guard" tab
+wait 3
+click_item 'Object Info' 'Movement'
 wait 3
 scroll_until 'Object Info' 'Does'
 click_item 'Object Info' 'Does'

@@ -2,6 +2,21 @@
 
 ## Unreleased: Changes since 1.0.0.242 beta
 
+### Editor interface and performance
+
+- Simplify the toolbar, welcome screen and Object Info, with dark and light themes,
+  dockable panels, visible virtual world and interior fields, and an FPS indicator.
+- Browse by feature: Objects, Characters, Paths, Markers, Text & audio, Zones,
+  Prefabs, Favourites and Model files. Character and path tools have a setup panel
+  before placement; Keep placing repeats placement until Esc.
+- Change an object's model ID in Object Info, with undo and redo.
+- Set one preview stream distance for every object in Preferences → Performance,
+  independent of model, weather and time. Distance fog softens the cutoff;
+  VSync and an optional frame limit control presentation and FPS.
+- Add Simplified Chinese, bundle its Noto Sans SC font, and update Chinese and
+  Portuguese translations for the redesigned controls.
+- Make right-click menus tolerate small cursor movements without starting camera look.
+
 ### Installation and workspaces
 
 - Install Haumea with the Windows or Linux installer, or the unsigned Apple Silicon DMG.

@@ -376,10 +376,6 @@ msgstr "%s: trens só são criados com AddStaticVehicle(Ex); o CreateVehicle do 
 msgid "(%d tools)"
 msgstr "(%d ferramentas)"
 
-#: tools/haumea/startscreen.cpp:405
-msgid "(missing)"
-msgstr "(sumiu)"
-
 #: tools/haumea/mapcheck.cpp:619 tools/haumea/mapcheck.cpp:650
 msgid "(no name)"
 msgstr "(sem nome)"
@@ -387,10 +383,6 @@ msgstr "(sem nome)"
 #: tools/haumea/rec.cpp:759 tools/haumea/rec.cpp:761
 msgid "(none)"
 msgstr "(nenhum)"
-
-#: tools/haumea/startscreen.cpp:408
-msgid "(open)"
-msgstr "(aberto)"
 
 #: tools/haumea/mapcheck.cpp:720 tools/haumea/mapcheck.cpp:812
 msgid "(unnamed)"
@@ -423,14 +415,6 @@ msgstr "Uma gravação de motorista: o NPC precisa estar em um veículo"
 #: tools/haumea/startscreen.cpp:335
 msgid "A name can't have / \\ : * ? \" < > |"
 msgstr "Um nome não pode ter / \\ : * ? \" < > |"
-
-#: tools/haumea/startscreen.cpp:316
-msgid "A server folder with gamemodes, filterscripts and scriptfiles."
-msgstr "Uma pasta de servidor com gamemodes, filterscripts e scriptfiles."
-
-#: tools/haumea/startscreen.cpp:519
-msgid "A workspace is the open.mp or SA-MP server you map for; its maps and models live there."
-msgstr "Um workspace é o servidor open.mp ou SA-MP para o qual você mapeia; os mapas e modelos dele ficam lá."
 
 #: tools/haumea/crashreports.cpp:1391
 #, c-format
@@ -561,10 +545,6 @@ msgstr "Conectar um assistente de IA"
 #: tools/haumea/startscreen.cpp:565
 msgid "Continue"
 msgstr "Continuar"
-
-#: tools/haumea/startscreen.cpp:573
-msgid "Continue without a workspace"
-msgstr "Continuar sem workspace"
 
 #: tools/haumea/namaka.cpp:824
 msgid "Copied the claude mcp add command"
@@ -905,11 +885,6 @@ msgstr "Isolar a seleção (ocultar todo o resto)"
 msgid "It installs the next time Haumea starts."
 msgstr "É instalada na próxima vez que o Haumea abrir."
 
-#: tools/haumea/startscreen.cpp:586
-#, c-format
-msgid "Keep the workspace and map as they are (%s)."
-msgstr "Manter o workspace e o mapa como estão (%s)."
-
 #: tools/haumea/shortcuts.cpp:86
 msgid "Keyboard Shortcuts"
 msgstr "Atalhos de teclado"
@@ -998,11 +973,6 @@ msgstr "Objetos do mapa"
 msgid "Maps"
 msgstr "Mapas"
 
-#: tools/haumea/startscreen.cpp:550
-#, c-format
-msgid "Maps in %s"
-msgstr "Mapas em %s"
-
 #: tools/haumea/startscreen.cpp:468
 msgid "Maps open once the game folder is loaded."
 msgstr "Os mapas abrem depois que a pasta do jogo for carregada."
@@ -1066,10 +1036,6 @@ msgstr "Novidades antes de todo mundo, e às vezes bugs novos.\nVocê recebe a m
 msgid "New map"
 msgstr "Novo mapa"
 
-#: tools/haumea/startscreen.cpp:365
-msgid "New workspace..."
-msgstr "Novo workspace..."
-
 #: tools/haumea/rec.cpp:775
 msgid "No .rec files in this folder"
 msgstr "Nenhum arquivo .rec nesta pasta"
@@ -1077,15 +1043,6 @@ msgstr "Nenhum arquivo .rec nesta pasta"
 #: tools/haumea/namaka.cpp:729
 msgid "No Python 3.10 or newer found."
 msgstr "Nenhum Python 3.10 ou mais novo encontrado."
-
-#: tools/haumea/startscreen.cpp:289
-msgid "No SA-MP client: SA-MP's own objects won't show."
-msgstr "Sem cliente SA-MP: os objetos próprios do SA-MP não vão aparecer."
-
-#: tools/haumea/startscreen.cpp:466
-#, c-format
-msgid "No recent maps in %s yet."
-msgstr "Ainda não há mapas recentes em %s."
 
 #: tools/haumea/telemetry.cpp:473
 msgid "No thanks"
@@ -1098,10 +1055,6 @@ msgstr "Sem workspace"
 #: tools/haumea/workspace.cpp:455
 msgid "No workspace: maps open and save wherever you choose."
 msgstr "Sem workspace: os mapas abrem e são salvos onde você escolher."
-
-#: tools/haumea/startscreen.cpp:381
-msgid "No workspaces yet: make one or open a server folder."
-msgstr "Nenhum workspace ainda: crie um ou abra uma pasta de servidor."
 
 #: tools/haumea/shortcuts.cpp:85
 msgid "Nodes (open.mp)"
@@ -1156,10 +1109,6 @@ msgstr "Depois que o Namaka for instalado, o Haumea o escuta a partir da próxim
 msgid "Open a Pawn map"
 msgstr "Abrir um mapa Pawn"
 
-#: tools/haumea/startscreen.cpp:368
-msgid "Open folder as workspace..."
-msgstr "Abrir pasta como workspace..."
-
 #: tools/haumea/startscreen.cpp:566
 msgid "Open map"
 msgstr "Abrir mapa"
@@ -1167,10 +1116,6 @@ msgstr "Abrir mapa"
 #: tools/haumea/startscreen.cpp:427
 msgid "Open the folder"
 msgstr "Abrir a pasta"
-
-#: tools/haumea/startscreen.cpp:591
-msgid "Open the last workspace automatically"
-msgstr "Abrir o último workspace automaticamente"
 
 #: tools/haumea/namaka.cpp:781
 msgid "Open the log"
@@ -1213,10 +1158,6 @@ msgstr "O caminho \"%s\" (%d ponto(s)) não é seguido por nenhum NPC."
 #: tools/haumea/rec.cpp:810
 msgid "Pause"
 msgstr "Pausar"
-
-#: tools/haumea/startscreen.cpp:464
-msgid "Pick a workspace to see its maps."
-msgstr "Escolha um workspace para ver os mapas dele."
 
 #: tools/haumea/rec.cpp:775
 msgid "Pick the recordings folder first"
@@ -1338,10 +1279,6 @@ msgstr "Página da versão"
 #: tools/haumea/rec.cpp:791
 msgid "Reload"
 msgstr "Recarregar"
-
-#: tools/haumea/startscreen.cpp:434
-msgid "Remove from the list (the folder stays)"
-msgstr "Remover da lista (a pasta fica)"
 
 #: tools/haumea/shortcuts.cpp:44
 msgid "Rename the selected object's variable (Map Objects)"
@@ -1493,10 +1430,6 @@ msgstr "Sirene"
 #: tools/haumea/startscreen.cpp:584
 msgid "Skip"
 msgstr "Pular"
-
-#: tools/haumea/startscreen.cpp:593
-msgid "Skip this screen at start. File > Switch Workspace shows it again."
-msgstr "Pular esta tela ao abrir. Arquivo > Trocar de workspace a mostra de novo."
 
 #: tools/haumea/updater.cpp:862
 msgid "Skip this version"
@@ -1800,10 +1733,6 @@ msgstr "Janelas"
 msgid "Workspace (server folder)"
 msgstr "Workspace (pasta do servidor)"
 
-#: tools/haumea/startscreen.cpp:543
-msgid "Workspaces"
-msgstr "Workspaces"
-
 #: tools/haumea/telemetry.cpp:470
 msgid "Yes, send it"
 msgstr "Sim, enviar"
@@ -1882,10 +1811,6 @@ msgstr "o texto passa do limite de 800 caracteres."
 msgid "map icons"
 msgstr "map icons"
 
-#: tools/haumea/startscreen.cpp:587
-msgid "no workspace"
-msgstr "sem workspace"
-
 #: tools/haumea/rec.cpp:736
 msgid "npcmodes/recordings folder"
 msgstr "pasta npcmodes/recordings"
@@ -1906,10 +1831,6 @@ msgstr "pickups"
 msgid "player classes"
 msgstr "classes de jogador"
 
-#: tools/haumea/startscreen.cpp:518
-msgid "the all-in-one editor for open.mp and SA-MP"
-msgstr "o editor tudo-em-um para open.mp e SA-MP"
-
 #: tools/haumea/startscreen.cpp:133
 msgid "today"
 msgstr "hoje"
@@ -1917,11 +1838,6 @@ msgstr "hoje"
 #: tools/haumea/startscreen.cpp:134
 msgid "yesterday"
 msgstr "ontem"
-
-#: tools/haumea/startscreen.cpp:296
-#, c-format
-msgid "|  0.3.DL custom models in this workspace: %d"
-msgstr "|  Modelos personalizados 0.3.DL neste workspace: %d"
 
 #: tools/haumea/agentbridge.cpp
 msgid "arranging objects"

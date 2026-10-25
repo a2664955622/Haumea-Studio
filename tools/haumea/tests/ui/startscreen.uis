@@ -10,7 +10,7 @@ wait 3
 click_item '*' 'Switch Workspace...'
 wait 5
 assert window "Welcome to Haumea Studio"
-click_item 'Welcome to Haumea Studio' 'New workspace...'
+click_item 'Welcome to Haumea Studio' 'New workspace'
 wait 3
 set_item 'Welcome to Haumea Studio' '##parent' "."
 wait 3
@@ -24,3 +24,12 @@ click_item 'Welcome to Haumea Studio' 'Open map'
 wait 10
 assert no_window "Welcome to Haumea Studio"
 assert objects == 4
+# Map cards also open directly on double-click.
+click_item '*' 'File'
+wait 3
+click_item '*' 'Switch Workspace...'
+wait 5
+click_item 'Welcome to Haumea Studio' '##ui_map.pwn'
+click_item 'Welcome to Haumea Studio' '##ui_map.pwn'
+wait 5
+assert no_window "Welcome to Haumea Studio"

@@ -26,6 +26,7 @@
 #include <GLFW/glfw3.h>
 #endif
 #include <chrono>
+#include <thread>
 #include <limits.h>
 #include <algorithm>
 #include <stdlib.h>
@@ -92,15 +93,11 @@ bool gRenderWater = true;
 bool gRenderPostFX = true;
 bool gEnableFog = true;
 int gFogMode = FOG_LIGHT;
-float gWorldDrawDistance = 1000.0f;
-float gMapDrawDistance = 2000.0f;
+float gStreamDistance = 1000.0f;
+bool gVSync = false;
+int gFrameLimit = 0;
 bool gFocusMyMap;
 
-float
-GetMapDrawDistance(void)
-{
-	return max(gMapDrawDistance, gWorldDrawDistance);
-}
 bool gEnableTimecycleBoxes = true;
 bool gUseBlurAmb = gRenderPostFX;
 bool gOverrideBlurAmb = true;
@@ -1980,7 +1977,10 @@ handleTool(void)
 	if(CoordinatePinHandleViewport()) return;
 	// Don't process viewport clicks when ImGui wants the mouse
 	ImGuiIO &io = ImGui::GetIO();
-	if(io.WantCaptureMouse || gGizmoHovered || gGizmoUsing || gRectSelectActive)
+	// The gizmo reserves left clicks; a stationary right-click still opens
+	// the object's menu, including when it is already selected.
+	bool gizmoContextClick = gGizmoHovered && CPad::IsMButtonClicked(3);
+	if(((io.WantCaptureMouse || gGizmoHovered) && !gizmoContextClick) || gGizmoUsing || gRectSelectActive)
 		return;
 
 	// Prefab placement mode intercepts all clicks
@@ -2017,8 +2017,8 @@ handleTool(void)
 		if(CPad::IsMButtonClicked(1)){
 			rw::V3d pos = GetPlacementPosition();
 			SpawnPlaceObject(pos);
-			// Shift+click = keep placing, plain click = single place
-			if(!CPad::IsKeyDown(KEY_LSHIFT) && !CPad::IsKeyDown(KEY_RSHIFT))
+			// Shift+click or Keep placing = stay in placement mode.
+			if(!gPlaceRepeat && !CPad::IsKeyDown(KEY_LSHIFT) && !CPad::IsKeyDown(KEY_RSHIFT))
 				gPlaceMode = false;
 			return;
 		}
@@ -3460,6 +3460,7 @@ renderWorld(void)
 void
 Draw(void)
 {
+	const auto frameStart = std::chrono::steady_clock::now();
 	static rw::RGBA clearcol = { 0x80, 0x80, 0x80, 0xFF };
 
 	SyncEditorWindowSize();
@@ -3486,24 +3487,13 @@ Draw(void)
 
 	UpdateDayNightBalance();
 
-	// Player view keeps the game's far clip; the editor's view reaches the
-	// View settings' distances. Fog ends where the view does: Game fog starts
-	// where the game's does (10 m on a clear midday), Light only well out.
-	float farPlane = max(Timecycle::currentColours.farClp, 500.0f);
-	float world = Timecycle::currentColours.farClp;
-	if(!gPlayerView){
-		farPlane = GetMapDrawDistance();
-		world = gWorldDrawDistance;
-	}
-	float fogStart = Timecycle::currentColours.fogSt;
-	if(gFogMode == FOG_LIGHT)
-		fogStart = max(fogStart, world*0.6f);
-	fogStart = min(fogStart, farPlane*0.95f);
+	// Fade the outer half of the common range into the horizon. Fog follows
+	// the distance slider, independent of weather, model and local zones.
+	TheCamera.m_rwcam->setFarPlane(gStreamDistance);
+	TheCamera.m_rwcam->fogPlane = gStreamDistance*0.5f;
+	TheCamera.m_rwcam_viewer->setFarPlane(gStreamDistance);
+	TheCamera.m_rwcam_viewer->fogPlane = gStreamDistance*0.5f;
 	gEnableFog = gFogMode != FOG_OFF;
-	TheCamera.m_rwcam->setFarPlane(farPlane);
-	TheCamera.m_rwcam->fogPlane = fogStart;
-	TheCamera.m_rwcam_viewer->setFarPlane(5000.0f);
-	TheCamera.m_rwcam_viewer->fogPlane = fogStart;
 
 	CPad::UpdatePads();
 	// TextDraw mode: no world, no camera moves, no map editing.
@@ -3611,10 +3601,14 @@ Draw(void)
 	AgentBridgeCaptureAfterUiRender();
 
 	Scene.camera->endUpdate();
-	Scene.camera->showRaster(rw::Raster::FLIPWAITVSYNCH);
+	Scene.camera->showRaster(gVSync ? rw::Raster::FLIPWAITVSYNCH : 0);
 #if defined(_WIN32) && defined(RW_D3D9)
 	RenderDetachedEditorWindows();
 #endif
+	if(gFrameLimit > 0){
+		auto budget = std::chrono::duration<double>(1.0/gFrameLimit);
+		std::this_thread::sleep_until(frameStart + std::chrono::duration_cast<std::chrono::steady_clock::duration>(budget));
+	}
 	frameCounter++;
 }
 

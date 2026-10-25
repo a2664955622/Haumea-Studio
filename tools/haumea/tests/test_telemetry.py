@@ -196,7 +196,7 @@ class TelemetryTests(unittest.TestCase):
         self.addCleanup(server.close)
         script = ('wait 10\n'
                   "assert item '*' 'Yes, send it'\n"
-                  "click_item '*' 'Continue without a workspace'\n"
+                  "click_item '*' 'Continue without workspace'\n"
                   'wait 20\n')
         self.run_editor(server.url, script, start_screen=True)
         self.assertEqual(server.bodies, [])

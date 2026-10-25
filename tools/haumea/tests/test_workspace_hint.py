@@ -35,7 +35,7 @@ class WorkspaceHintTests(unittest.TestCase):
             try:
                 play('''assert window 'TextDrawsNew'
 assert window 'CodeNew'
-assert work_area_top < 30
+assert work_area_top < 90
 click_item 'TextDrawsNew' 'DismissTextDrawsHint'
 wait 3
 assert no_window 'TextDrawsNew'

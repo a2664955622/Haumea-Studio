@@ -47,6 +47,9 @@
 // One command per line ('#' starts a comment; quote arguments with spaces):
 //   assert work_area_top < 30    viewport height reserved above the workspace
 //   assert item_count "Code" == 1 visible controls with this label
+//   assert rendered.map_model 3555 == 1  visible map instances of a model
+//   assert rendered.lod_overlaps == 0    visible LODs covering visible children
+//   assert render_far_clip < 1000        current weather/editor far clip
 //   wait N                      frames
 //   wait_until <assert>         up to 600 frames
 //   key Ctrl+Shift+H            press and release a chord
@@ -56,11 +59,11 @@
 //   click [X Y] [left|right|middle]
 //   drag X1 Y1 X2 Y2 [frames]
 //   wheel N
-//   click_object N|model=M [right]  a map object, where it is on screen
+//   click_object N|model=M [right] [jitter]  a map object, where it is on screen
 //   camera X Y Z TX TY TZ / mark_camera
 //   click_item 'Window' 'Label' [N] [right]   '*' for any window; N: the Nth match, -1 the last
 //   hover_item 'Window' 'Label'
-//   set_item 'Window' 'Label' "text" [N] [tab] types into a field ('Colour/##X' = red)
+//   set_item 'Window' 'Label' "text" [N] [tab] [ctrl] types into a field ('Colour/##X' = red)
 //   close_popup                         clicks the empty end of the menu bar
 //   reopen                              opens the map file again
 //   click_world X Y Z [shift|right]    looks at a world point and clicks it
@@ -94,6 +97,8 @@ struct UiItem {
 };
 static std::vector<UiItem> gItems, gPrevItems;
 static std::map<ImGuiID, size_t> gItemIndex;
+// Tabs report their labels before ItemAdd; keep those labels for the later hook.
+static std::map<ImGuiID, std::string> gItemLabels;
 
 static std::string
 visibleTitle(const char *name)
@@ -127,6 +132,11 @@ ImGuiTestEngineHook_ItemAdd(ImGuiContext *ctx, ImGuiID id, const ImRect &bb, con
 		item.windowName = w->Name;
 		item.rootWindowName = w->RootWindow ? w->RootWindow->Name : w->Name;
 	}
+	auto label = gItemLabels.find(id);
+	if(label != gItemLabels.end()){
+		item.rawLabel = label->second;
+		item.label = visibleTitle(item.rawLabel.c_str());
+	}
 	gItemIndex[id] = gItems.size();
 	gItems.push_back(item);
 }
@@ -136,6 +146,7 @@ ImGuiTestEngineHook_ItemInfo(ImGuiContext*, ImGuiID id, const char *label, ImGui
 {
 	if(!gActive || label == nil)
 		return;
+	gItemLabels[id] = label;
 	std::map<ImGuiID, size_t>::iterator it = gItemIndex.find(id);
 	if(it != gItemIndex.end()){
 		gItems[it->second].label = visibleTitle(label);
@@ -158,10 +169,21 @@ ImGuiTestEngine_FindItemDebugLabel(ImGuiContext*, ImGuiID)
 static std::string
 plainLabel(const std::string &s)
 {
-	// Icon glyphs, "+" and similar marks before the words.
+	// Font Awesome uses private-use characters. Other UTF-8 characters can
+	// be the words themselves (Chinese, or an accented first letter).
 	size_t i = 0;
-	while(i < s.size() && ((unsigned char)s[i] >= 0x80 || !isalnum((unsigned char)s[i])))
-		i++;
+	while(i < s.size()){
+		unsigned char ch = (unsigned char)s[i];
+		if(ch < 0x80){
+			if(isalnum(ch)) break;
+			i++;
+		}else{
+			unsigned int cp;
+			int length = ImTextCharFromUtf8(&cp, s.c_str() + i, s.c_str() + s.size());
+			if(length <= 0 || cp < 0xE000 || cp > 0xF8FF) break;
+			i += length;
+		}
+	}
 	return s.substr(i);
 }
 
@@ -295,8 +317,13 @@ findItem(const std::string &window, const std::string &label, int nth)
 				return &it;
 			continue;
 		}
-		if(nameMatches(it.rawLabel, label, false))
-			return &it;
+		if(nameMatches(it.rawLabel, label, false)){
+			// Window diagnostics cover the whole panel. Prefer its dock tab
+			// (or another actual control) when a script clicks a panel's name.
+			if(it.id != ImHashStr(it.windowName.c_str()))
+				return &it;
+			contains = &it;
+		}
 		if(!contains && nameMatches(it.rawLabel, label, true))
 			contains = &it;
 	}
@@ -693,7 +720,12 @@ windowOpen(const std::string &title)
 	ImGuiContext &g = *GImGui;
 	for(int i = 0; i < g.Windows.Size; i++){
 		ImGuiWindow *w = g.Windows[i];
-		if(w->WasActive && !w->Hidden && nameMatches(w->Name, title, false))
+		// A panel in an inactive dock tab is still open.
+		bool open = !w->Hidden;
+#ifdef IMGUI_HAS_DOCK
+		open |= w->DockIsActive;
+#endif
+		if(w->WasActive && open && nameMatches(w->Name, title, false))
 			return true;
 	}
 	return false;
@@ -766,6 +798,65 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 	bool result;
 	if(keycastAssert(what, arg(1), why, &result))
 		return result;
+	if(what == "placing"){
+		why = gPlaceMode ? "placing" : "not placing";
+		return compare(gPlaceMode ? 1 : 0, arg(1), atof(arg(2).c_str()));
+	}
+	if(what == "fog_enabled"){
+		why = gEnableFog ? "fog enabled" : "fog disabled";
+		return compare(gEnableFog ? 1 : 0, arg(1), atof(arg(2).c_str()));
+	}
+	if(what == "missing_catalog_glyphs"){
+		std::vector<unsigned int> codepoints;
+		I18nCatalogCodepoints(codepoints);
+		ImFont *font = ImGui::GetIO().Fonts->Fonts[0];
+#if IMGUI_VERSION_NUM >= 19200
+		ImFontBaked *baked = font->GetFontBaked(font->LegacySize);
+#else
+		ImFont *baked = font;
+#endif
+		int count = 0;
+		for(unsigned int cp : codepoints){
+			if(cp >= 0x20 && baked->FindGlyphNoFallback((ImWchar)cp) == nil){
+				say("  missing catalog glyph U+%04X", cp);
+				count++;
+			}
+		}
+		why = "missing catalog glyphs: " + std::to_string(count);
+		return compare(count, arg(1), atof(arg(2).c_str()));
+	}
+	if(what == "frame_limit" || what == "vsync" || what == "render_fog_start"){
+		double value = what == "frame_limit" ? gFrameLimit : what == "vsync" ? (gVSync ? 1 : 0) : TheCamera.m_rwcam->fogPlane;
+		why = what + " is " + std::to_string(value);
+		return compare(value, arg(1), atof(arg(2).c_str()));
+	}
+	if(what == "render_far_clip"){
+		float distance = TheCamera.m_rwcam->farPlane;
+		why = "render far clip is " + std::to_string(distance);
+		return compare(distance, arg(1), atof(arg(2).c_str()));
+	}
+	if(what == "rendered.map_model" || what == "rendered.lod_overlaps"){
+		std::set<ObjectInst*> visible;
+		ForEachVisibleInst([](ObjectInst *inst, void *data){
+			((std::set<ObjectInst*>*)data)->insert(inst);
+		}, &visible);
+		int count = 0;
+		if(what == "rendered.map_model"){
+			int model = atoi(arg(1).c_str());
+			for(ObjectInst *inst : visible)
+				if(IsUserMapObject(inst) && PawnModelId(inst->m_objectId) == model)
+					count++;
+			why = "visible map instances of model " + arg(1) + ": " + std::to_string(count);
+			return compare(count, arg(2), atof(arg(3).c_str()));
+		}
+		for(ObjectInst *inst : visible){
+			ObjectInst *parent = inst->m_lod;
+			for(int depth = 0; parent && depth < 32; depth++, parent = parent->m_lod)
+				if(visible.count(parent)) count++;
+		}
+		why = "visible LOD overlaps: " + std::to_string(count);
+		return compare(count, arg(1), atof(arg(2).c_str()));
+	}
 	if(what == "objects" || what == "selected" || what == "textdraws" || what == "textdraw_zoom" || what == "radar_zones" ||
 	   what == "selected.model" || what == "selected.x" || what == "selected.y" || what == "selected.z"){
 		double v = 0;
@@ -1215,17 +1306,22 @@ nextCommand(void)
 			s.window = a[1];
 			s.label = a[2];
 			s.nth = 1;
-			bool tab = false;
+			bool tab = false, ctrl = false;
 			for(size_t k = 4; k < a.size(); k++){
 				if(a[k] == "tab") tab = true;
+				else if(a[k] == "ctrl") ctrl = true;
 				else if(isdigit((unsigned char)a[k][0])) s.nth = atoi(a[k].c_str());
 			}
 			gSteps.push_back(s);
 			addStep(Step::NOP);
+			if(ctrl) addStep(Step::KEYDOWN, 0, 0, sk::KEY_LCTRL);
 			addStep(Step::DOWN, 0, 0, 1);
 			addStep(Step::UP, 0, 0, 1);
-			addStep(Step::DOWN, 0, 0, 1);
-			addStep(Step::UP, 0, 0, 1);
+			if(ctrl) addStep(Step::KEYUP, 0, 0, sk::KEY_LCTRL);
+			else{
+				addStep(Step::DOWN, 0, 0, 1);
+				addStep(Step::UP, 0, 0, 1);
+			}
 			addStep(Step::NOP);
 			addStep(Step::NOP);
 			addChord({ sk::KEY_LCTRL, 'A' });
@@ -1295,6 +1391,10 @@ nextCommand(void)
 			addStep(Step::MOVE, (int)screen.x, (int)screen.y);
 			addStep(Step::NOP);
 			addStep(Step::DOWN, 0, 0, bit);
+			if(a.size() > 3 && a[3] == "jitter"){
+				addStep(Step::MOVE, (int)screen.x + 3, (int)screen.y + 2);
+				addStep(Step::NOP);
+			}
 			addStep(Step::UP, 0, 0, bit);
 			addStep(Step::NOP);
 			return;
@@ -1518,6 +1618,7 @@ UiScriptTick(void)
 	gPrevItems.swap(gItems);
 	gItems.clear();
 	gItemIndex.clear();
+	gItemLabels.clear();
 	gFrame++;
 	if(gFrame < 30)
 		return;	// let the first frames settle

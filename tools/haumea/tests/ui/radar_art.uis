@@ -2,6 +2,8 @@
 # as one undo step, then streamed per-player zones saved and reopened into
 # the layer again (no gang zone elements in the map).
 open "$UI_FIXTURES/ui_radar.pwn"
+shortcut window_tools
+wait 5
 wait 10
 assert objects == 6
 assert radar_zones == 0

@@ -6,9 +6,21 @@ assert objects == 4
 shortcut window_browser
 wait 5
 assert window "Object Browser"
-click_item 'Object Browser' 'Prefabs'
+click_item 'Object Browser' '##browser_source'
+wait 3
+click_item '*' 'Prefabs'
 wait 5
-click_item 'Object Browser' 'List'
+click_item 'Object Browser' '##browser_source'
+wait 3
+click_item '*' 'Objects'
+wait 3
+click_item 'Object Browser' '##browser_view' right
+wait 3
+click_item '*' 'List'
+close_popup
+click_item 'Object Browser' '##browser_source'
+wait 3
+click_item '*' 'Prefabs'
 wait 3
 assert item 'Object Browser' 'Bus stop  (3)'
 

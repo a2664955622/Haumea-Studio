@@ -4,7 +4,7 @@
 wait 30
 assert window "Welcome to Haumea Studio"
 assert objects == 0
-click_item 'Welcome to Haumea Studio' 'New workspace...'
+click_item 'Welcome to Haumea Studio' 'New workspace'
 wait 3
 set_item 'Welcome to Haumea Studio' '##parent' "."
 wait 3
@@ -19,7 +19,9 @@ assert objects == 0
 # Place a crate from the Object Browser
 shortcut window_browser
 wait 5
-click_item 'Object Browser' 'Objects'
+click_item 'Object Browser' '##browser_source'
+wait 3
+click_item '*' 'Objects'
 wait 3
 click_item 'Object Browser' '##search_objects'
 type "1271"

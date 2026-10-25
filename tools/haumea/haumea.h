@@ -92,6 +92,11 @@ void panic(const char *fmt, ...);
 void debug(const char *fmt, ...);
 void log(const char *fmt, ...);
 void SetupStyle(void);
+enum { UI_THEME_DARK, UI_THEME_LIGHT };
+enum { UI_COLOR_SUCCESS, UI_COLOR_WARNING, UI_COLOR_ERROR, UI_COLOR_INFO };
+int GetUiTheme(void);
+void SetUiTheme(int theme);
+ImVec4 UiSemanticColor(int color);
 void SetupFonts(void);
 bool GetEditorRootDirectory(char *dir, size_t size);
 bool GetGameRootDirectory(char *dir, size_t size);
@@ -183,14 +188,13 @@ extern bool gRenderBackground;
 extern bool gRenderWater;
 extern bool gRenderPostFX;
 extern bool gEnableFog;	// follows gFogMode
-// View settings: how far the editor's view reaches outside Player view (which
-// keeps the game's distances), and its fog.
+// One preview distance for every object; map export properties stay separate.
 enum { FOG_GAME, FOG_LIGHT, FOG_OFF };
 extern int gFogMode;
-extern float gWorldDrawDistance;	// the game's buildings, 50-3000 m
-extern float gMapDrawDistance;	// the map's own objects, never short of the world
-extern bool gFocusMyMap;	// dims the game's buildings
-float GetMapDrawDistance(void);
+extern float gStreamDistance;
+extern bool gVSync;
+extern int gFrameLimit; // zero is unlimited
+extern bool gFocusMyMap;
 bool IsUserMapObject(ObjectInst *inst);
 extern bool gEnableTimecycleBoxes;
 extern bool gUseBlurAmb;
@@ -699,6 +703,7 @@ enum UndoType {
 	UNDO_MATERIAL,
 	UNDO_PROPERTIES,
 	UNDO_VEHICLE,
+	UNDO_MODEL_ID,
 	UNDO_NODES,
 	UNDO_RADAR_ART,	// the radar art layers (radarart.cpp)
 };
@@ -763,6 +768,7 @@ struct UndoAction {
 	// For a vehicle edit (colours, plate, paintjob, parts)
 	VehicleState oldVehicle;
 	VehicleState newVehicle;
+	int oldModelId, newModelId;
 	// For a Nodes tool edit: the areas it changed (SAPaths' own copies)
 	std::vector<int> nodeAreas;
 	std::vector<std::shared_ptr<void>> nodesBefore;
@@ -779,6 +785,7 @@ void UndoRecordTransformBatch(UndoTransform *transforms, int num);
 void UndoRecordMaterial(ObjectInst *inst, int slot, const ObjectMaterialOverride &oldMaterial);
 void UndoRecordProperties(ObjectInst *inst, const ObjectPawnProperties &oldProperties);
 void UndoRecordVehicle(ObjectInst *inst, const VehicleState &before);	// after is the vehicle now
+void UndoRecordModelId(ObjectInst *inst, int oldModelId);
 int GetUndoPosition(void);	// undo steps recorded so far, for tests
 bool MapHasUndoHistory(void);	// any step to undo or redo since the map was opened
 void UndoRecordNodes(const std::vector<int> &areas, const std::vector<std::shared_ptr<void>> &before,
@@ -926,6 +933,8 @@ extern bool gPawnEditMode;
 extern bool gPawnWorldDeleteMode;
 bool IsPawnObjectSelectable(ObjectInst *inst);
 bool IsPawnObjectEditable(ObjectInst *inst);
+bool CanChangeInstanceModelId(ObjectInst *inst);
+bool ChangeInstanceModelId(ObjectInst *inst, int editorModelId, bool recordUndo = true);
 bool PawnObjectNeedsExport(const ObjectInst *inst);
 void SetPawnEditMode(bool enabled);
 void SetPawnWorldDeleteMode(bool enabled);
@@ -1026,6 +1035,7 @@ enum DiffFlags {
 	DIFF_RESTORED = 16,
 	DIFF_MATERIAL = 32,
 	DIFF_PROPERTIES = 64,
+	DIFF_MODEL = 128,
 };
 int GetInstanceDiffFlags(ObjectInst *inst);
 float GetQuaternionSimilarity(const rw::Quat &a, const rw::Quat &b);
@@ -1036,6 +1046,7 @@ bool LogicalPathEquals(const char *a, const char *b);
 
 // Object Spawner
 extern bool gPlaceMode;
+extern bool gPlaceRepeat;
 void InitLodLookup(void);
 void SpawnPlaceObject(rw::V3d position, const rw::Quat *orientation = nil);
 int SpawnPlaceObjectNoUndo(rw::V3d position, const rw::Quat *orientation,
@@ -1294,6 +1305,7 @@ struct ObjectInst
 	// get the full rotation, so only instances read from or saved to an IPL.
 	bool m_iplRotation;
 	int m_objectId;
+	int m_savedObjectId;
 	int m_area;
 
 	void *m_rwObject;

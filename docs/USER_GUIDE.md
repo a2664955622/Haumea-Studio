@@ -25,16 +25,16 @@ To install Haumea, see [Install](../README.md#install). Haumea opens on the **st
 - **Workspaces** you used, newest first, with when you last opened them. **Pin** (the star) keeps
   one at the top; the folder button opens it in your file manager, and × takes it off the list (the
   folder stays). **New workspace** makes a server folder with `gamemodes`, `filterscripts` and
-  `scriptfiles`; **Open folder as workspace** uses one you already have.
+  `scriptfiles`; **Open folder...** uses one you already have.
 - **Maps** in the selected workspace that you opened before, with a picture of each. Double-click
   one, or select it and press **Open map**. **Open workspace** opens it with a new map.
 - **GTA San Andreas**: the game folder, with the SA-MP client version found there and the
   workspace's 0.3.DL custom models. A new game folder loads after a restart.
-- **Continue without a workspace**, or **Skip** to keep what is open.
+- **Continue without workspace**, or **Skip** to keep what is open.
 
 The first start asks for the game folder here before anything loads. Type each path or use
-**Browse...** (on Linux that needs `zenity` or `kdialog`). Tick **Open the last workspace
-automatically** to skip the screen; **File → Switch Workspace** shows it again. Both folders can
+**Browse...** (on Linux that needs `zenity` or `kdialog`). Tick **Open last workspace at startup**
+to skip the screen; **File → Switch Workspace** shows it again. Both folders can
 also be changed in **File → Workspace** or **Preferences → Workspace**. The window title shows
 the workspace.
 
@@ -54,21 +54,27 @@ Choose **Map**, **TextDraws** or **Code** in the top bar to switch editors. Your
 textdraw file and code document stay open while you switch. **Windows** contains the panels
 and utilities for the editor.
 
+**Preferences → General → Theme** chooses the dark or light interface. Panels keep
+their docking support; **Windows → Panel layout → Reset Panel Layout** restores
+the browser on the left and Object Info on the right. The toolbar shows the active
+virtual world and interior, and the status bar shows FPS.
+
 The yellow **New!** balloons introduce TextDraws and Code. Opening an editor or dismissing
 its balloon clears that hint, including after a restart.
 
 ## Moving around
 
-Hold the right mouse button in the 3D view to look around, and while it's held fly with
+Hold and drag the right mouse button in the 3D view to look around, and while it's held fly with
 `W`/`A`/`S`/`D` (`Shift` faster, `Alt` slower). The cursor hides while you look and comes
 back where it was. Middle-drag pans and the wheel zooms. The look button can be changed in
 **Preferences → Camera**.
 
-How far you see is set in the **View** window (**Windows → View**): **World draw distance**
-for the game's buildings, **Map draw distance** for your map's own objects (they show that
-far whatever their model's draw distance), and **Fog** (Game is as thick as in game, Light
-only far out). **Focus my map** dims the game's buildings. Player view (`P`) always uses the
-game's distances.
+**Preferences → Performance → Stream distance** sets one range from 50 to 5,000 metres
+for all objects, including Player view (`P`). Model settings, weather and time of day
+do not shorten it. **Distance fog** blends the outer half of that range into the horizon.
+**VSync** matches the display refresh rate; turn it off for uncapped FPS, or enable
+**Limit frame rate** to choose a cap. Windows in the background run at up to 30 FPS.
+The map's exported stream and draw distances keep their own values.
 
 ## Placing objects
 
@@ -76,7 +82,8 @@ game's distances.
    a range (`1337, 19000-19100`). Every model, the game's and SA-MP's, is filed in a
    category by what the game's own files say about it (its name, IDE file, collision
    size), and **Favourites** keeps the ones you use often.
-2. Click **Place**, then click in the world. `Esc` stops placing.
+2. Click **Place**, then click in the world. **Keep placing** repeats without returning
+   to the browser; holding `Shift` while clicking also repeats. `Esc` stops placing.
 3. Click an object to select it. Drag the gizmo to move it (`W`) or rotate it (`E`), or type
    exact values in **Object Info** (`Ctrl+2`). `G` drops it to the ground, `F` focuses the
    camera on it, and `Ctrl+D` duplicates it.
@@ -104,32 +111,39 @@ own settings, then position. World & streaming, attachment, materials (textures,
 and text) and group & note follow, closed until you need them. Select several objects to
 change a field on all of them at once.
 
-## SA-MP elements
+For an object in the active map, edit **Model ID** in Object Info to replace its
+model, with undo and redo. Objects linked to an LOD cannot change model this way.
 
-The browser's **SA-MP** tab places everything else a server map needs:
+## Characters, paths and other map elements
 
-| Players | World |
+Use the feature dropdown at the top of the Object Browser:
+
+| Feature | Elements |
 | --- | --- |
-| Actors, player classes (spawn points) | Pickups, 3D text labels, gang zones |
-| NPCs and NPC path points (open.mp only) | Map icons, sound places, checkpoints (streamer only) |
+| Characters | Actors, player classes (spawn points), NPCs (open.mp only) |
+| Paths | NPC path points (open.mp only) |
+| Markers | Pickups, map icons, checkpoints (streamer only) |
+| Text & audio | 3D text labels and sound places |
+| Zones | Gang zones and dynamic areas |
+
+Choose a type, configure its skin, path or other options in the setup panel,
+then click **Place** and click in the world. Choosing a type alone does not start
+placement. Each character type remembers its own skin choice.
 
 Players never see 3D text labels, gang zones, map icons, sound places and path points as
 objects, so the editor shows each as a small coloured icon (a T, a speaker, a pin, a square,
 a node) that keeps its size on screen; click it to select it.
 
-Each row shows how many the map has; click the count to select them all. Elements are saved
-as native or streamer calls (`CreateActor`, `CreateDynamicPickup`, ...) and read back from
+Elements are saved as native or streamer calls (`CreateActor`, `CreateDynamicPickup`, ...) and read back from
 existing scripts. Gang zones and native map icons are shown to a player by the map's
 `_ShowForPlayer(playerid)` function.
 
 A **sound place** plays an audio stream (a URL) or a game sound (picked from a list) to players
 who come within its radius.
 
-<img src="images/samp-elements.png" alt="The SA-MP tab" width="360">
-
 ## NPCs (open.mp only)
 
-open.mp NPCs are bot players. Place one from the SA-MP tab, then set its name, skin, weapon,
+open.mp NPCs are bot players. Place one from **Characters**, then set its name, skin, weapon,
 health and armour in Object Info. Under **Movement** pick what it does:
 
 - **Follow a path**: place NPC path points first, clicking one after another, then pick the

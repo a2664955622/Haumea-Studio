@@ -40,6 +40,8 @@ key Escape
 wait 3
 click_item '*' 'Windows'
 wait 3
+click_item '*' 'Review'
+wait 3
 click_item '*' 'Log'
 wait 5
 assert item '*' 'Copy'
