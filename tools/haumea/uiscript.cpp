@@ -792,6 +792,8 @@ keycastAssert(const std::string &what, const std::string &text, std::string &why
 // assert keycast_contains "text"   (and keycast_lacks: what the pressed-keys overlay shows now)
 // assert file_contains <path> "text"   (and file_lacks)
 // assert window "Title"     / no_window "Title"
+// assert window_docked|window_x|window_y|window_width|window_height "Title" <op> N
+// assert textdraw_canvas_right <op> N
 // assert item 'Window' 'Label'   / no_item
 // assert hidden|player_view_hidden|fov|ui_scale|camera_moved <op> N   (camera_moved: metres since mark_camera)
 // assert camera_target.x|y|z <op> N   (the point the camera looks at)
@@ -1113,6 +1115,25 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		why = "last toast: " + gLastToast;
 		return gLastToast.find(arg(1)) != std::string::npos;
 	}
+	if(what == "textdraw_canvas_right"){
+		float right = TextDrawCanvasToScreen(640.0f, false, false);
+		why = "textdraw_canvas_right is " + std::to_string(right);
+		return compare(right, arg(1), atof(arg(2).c_str()));
+	}
+	if(what == "window_docked" || what == "window_x" || what == "window_y" || what == "window_width" || what == "window_height"){
+		for(ImGuiWindow *window : GImGui->Windows){
+			if(!window->WasActive || ((window->Flags & ImGuiWindowFlags_ChildWindow) && !window->DockIsActive) ||
+			   (arg(1) != window->Name && !nameMatches(window->Name, arg(1), false))) continue;
+			double value = what == "window_docked" ? window->DockIsActive :
+				what == "window_x" ? window->Pos.x : what == "window_y" ? window->Pos.y :
+				what == "window_width" ? window->Size.x : window->Size.y;
+			snprintf(buf, sizeof(buf), "%s '%s' is %.1f", what.c_str(), arg(1).c_str(), value);
+			why = buf;
+			return compare(value, arg(2), atof(arg(3).c_str()));
+		}
+		why = "no such active window: " + arg(1);
+		return false;
+	}
 	if(what == "clipped_items"){
 		// clipped_items <op> <n>: labelled items on screen whose box runs past the
 		// side of their window (a label that grew, in a language with longer words).
@@ -1298,6 +1319,22 @@ nextCommand(void)
 			addStep(Step::DOWN, 0, 0, 1);
 			for(int f = 1; f <= frames; f++)
 				addStep(Step::MOVE, x1 + (x2 - x1) * f / frames, y1 + (y2 - y1) * f / frames);
+			addStep(Step::UP, 0, 0, 1);
+			addStep(Step::NOP);
+			return;
+		}else if(cmd == "drag_window" && a.size() >= 4){
+			ImGuiWindow *window = nil;
+			for(ImGuiWindow *candidate : GImGui->Windows)
+				if(candidate->WasActive && (!(candidate->Flags & ImGuiWindowFlags_ChildWindow) || candidate->DockIsActive) &&
+				   (a[1] == candidate->Name || nameMatches(candidate->Name, a[1], false))) window = candidate;
+			if(!window){ say("line %d: FAIL no window '%s'", (int)gLine, a[1].c_str()); gFails++; continue; }
+			ImRect title = window->DockIsActive ? window->DC.DockTabItemRect : window->TitleBarRect();
+			int x = (int)title.GetCenter().x, y = (int)title.GetCenter().y;
+			int dx = atoi(a[2].c_str()), dy = atoi(a[3].c_str());
+			addStep(Step::MOVE, x, y);
+			addStep(Step::DOWN, 0, 0, 1);
+			for(int f = 1; f <= 20; f++) addStep(Step::MOVE, x + dx * f / 20, y + dy * f / 20);
+			for(int f = 0; f < 5; f++) addStep(Step::NOP);
 			addStep(Step::UP, 0, 0, 1);
 			addStep(Step::NOP);
 			return;

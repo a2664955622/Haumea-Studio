@@ -249,13 +249,20 @@ A map saved by an earlier build may still hold textdraws. Opening it offers **Mo
 separate file** (`<map>_textdraws.pwn`); save the map afterwards to take them out of it. If you
 keep them in the map, they show on the canvas but are read-only and are saved back unchanged.
 
-![The TextDraw designer](images/textdraws.png)
+The editor opens docked to the right with its own saved layout. Drag its tab to move or
+undock it. **Canvas** in the top bar holds screen shape, background, HUD, grid, snapping,
+rulers and guides. **Compare** opens **Screen previews**, a window you can move, resize or
+dock. **…** in the file toolbar contains **Save As**, recent files and the code target.
+Use **Content**, **Layout** and **Style** for the selection; **Code settings** contains its
+Pawn variable and scope, and **Arrange** contains grouping and alignment tools.
+
+![The TextDraw designer](images/textdraw-editor.png)
 
 ### Server TXD sprites (0.3.DL)
 
 1. Open the **server folder as your workspace**. Its artwork folder can contain subfolders,
    such as `models/txd`; Haumea lists their `.txd` files too.
-2. In **TextDraws**, add or select a **Sprite**, then open **Sprite TXD → Server TXDs**.
+2. In **TextDraws**, add or select a **Sprite**, then open **Browse sprites… → Sprite TXD → Server TXDs**.
    Choose the server's TXD. Use **Refresh** if you added files while the editor was open.
 3. Check **Model ID**. Haumea fills it from recognized `AddSimpleModel` registrations.
    If your gamemode builds registrations through variables or helper functions, enter the

@@ -3,6 +3,8 @@
 open "$UI_FIXTURES/ui_map.pwn"
 click_item '*' 'TextDraws'
 wait 8
+click_item '*' 'Canvas'
+wait 3
 click_item '*' '##guides'
 wait 3
 click_item '' '4 columns'

@@ -1541,10 +1541,6 @@ msgstr "Texto"
 msgid "Text size"
 msgstr "Tamanho do texto"
 
-#: tools/haumea/textdraws_ui.cpp:1240
-msgid "TextDraw mode"
-msgstr "Modo textdraw"
-
 #: tools/haumea/textdraws_ui.cpp:1360
 msgid "TextDraws"
 msgstr "TextDraws"
@@ -2379,10 +2375,6 @@ msgstr "O formato da tela do jogador. Os textdraws esticam com ele; o chat não.
 #: tools/haumea/textdraws_ui.cpp
 msgid "Compare"
 msgstr "Comparar"
-
-#: tools/haumea/textdraws_ui.cpp
-msgid "Small views of this board at 4:3, 16:9 and 21:9 in the corner."
-msgstr "Vistas pequenas desta prancheta em 4:3, 16:9 e 21:9 no canto."
 
 #: tools/haumea/textdraws_ui.cpp
 msgid "Grid"

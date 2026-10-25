@@ -122,6 +122,7 @@ bool InTextDrawMode(void);
 bool TextDrawModeHidesWorld(void);	// false for the frame the still frame is taken in
 void EnterTextDrawMode(void);
 void ExitTextDrawMode(void);
+void DrawTextDrawsToolbar(void);
 void DrawTextDrawsWindow(void);
 float TextDrawCanvasToScreen(float at, bool vertical, bool ruler);	// for UI scripts
 float TextDrawCanvasZoom(void);	// 1 when it fits

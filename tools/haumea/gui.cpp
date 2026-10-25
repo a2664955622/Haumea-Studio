@@ -3140,14 +3140,16 @@ uiMainmenu(void)
 static void
 uiCommandBar(void)
 {
-	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12.0f, 9.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12.0f, InTextDrawMode() ? 4.0f : 9.0f));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 6.0f));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.0f, 6.0f));
 	ImGui::BeginViewportSideBar("##EditorCommands", ImGui::GetMainViewport(), ImGuiDir_Up,
-		ImGui::GetFrameHeight() + 12.0f, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_MenuBar |
+		ImGui::GetFrameHeight() + (InTextDrawMode() ? 4.0f : 12.0f), ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_MenuBar |
 		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking);
 	if(ImGui::BeginMenuBar()){
 		uiWorkspaceNavigation();
+		if(InTextDrawMode())
+			DrawTextDrawsToolbar();
 		if(!InTextDrawMode() && !InPawnIdeMode()){
 			uiToolbar();
 			ImGui::Dummy(ImVec2(ImGui::GetFontSize() * 0.7f, 0));
@@ -7473,11 +7475,30 @@ uiBuildDefaultDockLayout(ImGuiID dockspace)
 static void
 uiDockSpace(void)
 {
-	ImGuiID dockspace = ImHashStr("HaumeaDockSpace");
-	if(gResetPanelLayout || ImGui::DockBuilderGetNode(dockspace) == nil)
-		uiBuildDefaultDockLayout(dockspace);
-	ImGui::DockSpaceOverViewport(dockspace, ImGui::GetMainViewport(),
-		ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoDockingOverCentralNode);
+	ImGuiID map = ImHashStr("HaumeaDockSpace");
+	ImGuiID textdraws = ImHashStr("HaumeaTextDrawDockSpace");
+	bool editingTextDraws = InTextDrawMode();
+	if(!editingTextDraws && (gResetPanelLayout || ImGui::DockBuilderGetNode(map) == nil))
+		uiBuildDefaultDockLayout(map);
+	if(editingTextDraws && (gResetPanelLayout || ImGui::DockBuilderGetNode(textdraws) == nil)){
+		ImGuiViewportP *viewport = (ImGuiViewportP*)ImGui::GetMainViewport();
+		ImRect work = viewport->GetBuildWorkRect();
+		ImGui::DockBuilderRemoveNode(textdraws);
+		ImGui::DockBuilderAddNode(textdraws, ImGuiDockNodeFlags_DockSpace);
+		ImGui::DockBuilderSetNodePos(textdraws, work.Min);
+		ImGui::DockBuilderSetNodeSize(textdraws, work.GetSize());
+		ImGuiID center = textdraws;
+		float side = clamp(350.0f * GetUiScale() / work.GetWidth(), 0.22f, 0.42f);
+		ImGuiID right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, side, nil, &center);
+		ImGui::DockBuilderDockWindow("###textdraws", right);
+		ImGui::DockBuilderFinish(textdraws);
+	}
+	ImGuiDockNodeFlags flags = ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoDockingOverCentralNode;
+	ImGuiID active = editingTextDraws ? textdraws : map;
+	ImGuiID hidden = editingTextDraws ? map : textdraws;
+	if(ImGui::DockBuilderGetNode(hidden))
+		ImGui::DockSpace(hidden, ImVec2(0, 0), ImGuiDockNodeFlags_KeepAliveOnly);
+	ImGui::DockSpaceOverViewport(active, ImGui::GetMainViewport(), flags);
 }
 
 static void

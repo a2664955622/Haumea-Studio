@@ -39,6 +39,8 @@ set_item 'TextDraws' 'Border' 4
 wait 5
 assert textdraws == 14
 # One shape on its own aligns to the screen, as one.
+click_item 'TextDraws' 'Arrange'
+wait 3
 click_item 'TextDraws' '##align0'
 wait 5
 assert textdraws == 14

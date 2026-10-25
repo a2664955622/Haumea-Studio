@@ -1,0 +1,86 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+"""Narrow docks and saved TextDraw layouts, using real UI input."""
+import unittest
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import test_i18n as harness
+
+
+@unittest.skipUnless(harness.BINARY and harness.XVFB, 'needs the editor and Xvfb')
+class TextDrawLayoutTests(unittest.TestCase):
+    editor = harness.EditorTests.editor
+
+    def test_narrow_dock_in_bundled_languages(self):
+        # Dear ImGui 1.91.6+ uses CRC32C for its saved node IDs.
+        root = 0xffffffff
+        for byte in b'HaumeaTextDrawDockSpace':
+            root ^= byte
+            for _ in range(8):
+                root = (root >> 1) ^ (0x82f63b78 if root & 1 else 0)
+        root ^= 0xffffffff
+        ini = f'''[Window][###textdraws]
+Pos=1000,52
+Size=280,720
+Collapsed=0
+DockId=0x00000002,0
+
+[Docking][Data]
+DockSpace ID=0x{root:08X} Pos=0,52 Size=1280,724 Split=X
+  DockNode ID=0x00000001 Parent=0x{root:08X} SizeRef=998,724 CentralNode=1
+  DockNode ID=0x00000002 Parent=0x{root:08X} SizeRef=280,724
+'''
+        script = '''open "$UI_FIXTURES/ui_map.pwn"
+click_item '*' 'TextDraws'
+wait 8
+assert window_docked 'TextDraws' == 1
+assert window_width 'TextDraws' < 300
+assert textdraw_canvas_right < 1000
+assert clipped_items == 0
+click_item 'TextDraws' 'Text'
+wait 5
+set_item 'TextDraws' '###Text' 'Narrow inspector' tab
+wait 5
+assert textdraws == 1
+assert clipped_items == 0
+click_item 'TextDraws' 'Layout'
+wait 3
+assert clipped_items == 0
+click_item 'TextDraws' 'Style'
+wait 3
+assert clipped_items == 0
+click_item 'TextDraws' 'Arrange'
+wait 3
+assert clipped_items == 0
+click_item 'TextDraws' 'Arrange'
+click_item 'TextDraws' 'Content'
+wait 3
+scroll_until 'TextDraws' 'Code settings'
+click_item 'TextDraws' 'Code settings'
+wait 3
+assert clipped_items == 0
+click_item '*' 'Map'
+wait 3
+click_item '*' 'TextDraws'
+wait 3
+assert window_docked 'TextDraws' == 1
+assert window_width 'TextDraws' < 300
+exit
+'''
+        for language in ('en', 'pt-BR', 'zh-CN'):
+            with self.subTest(language=language):
+                out, _, _ = self.editor(script, ini=ini, savesettings=f'''settings_version 8
+language {language}
+show_browser_window 0
+show_instance_window 0
+show_code_hint 0
+show_textdraws_hint 0
+''')
+                # A second process must restore the user's dock, rather than rebuild the default.
+                self.editor('''click_item '*' 'TextDraws'
+wait 5
+assert window_docked 'TextDraws' == 1
+assert window_width 'TextDraws' < 300
+exit
+''', ini=out, savesettings=f'settings_version 8\nlanguage {language}\nshow_textdraws_hint 0\nshow_code_hint 0\n')

@@ -18,6 +18,8 @@ wait 10
 assert item '*' '##search'
 close_popup
 wait 3
+click_item '*' 'Canvas'
+wait 3
 click_item '*' 'Place'
 wait 3
 click_item '*' 'Grove Street'

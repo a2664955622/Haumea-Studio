@@ -209,7 +209,15 @@ Um mapa salvo por uma versão anterior ainda pode ter textdraws. Ao abri-lo, o H
 tirá-los dele. Se você os mantiver no mapa, eles aparecem na tela mas são somente leitura e são
 salvos de volta sem mudanças.
 
-![O editor de TextDraws](images/textdraws.png)
+O painel abre encaixado à direita, com seu próprio layout salvo. Arraste a aba para movê-lo
+ou desencaixá-lo. **Tela** na barra superior reúne formato da tela, fundo, HUD, grade,
+alinhamento, réguas e guias. **Comparar** abre **Prévias de tela**, uma janela que pode ser
+movida, redimensionada ou encaixada. **…** na barra de arquivos contém **Salvar como**,
+arquivos recentes e o servidor de destino do código. Use as abas de conteúdo, layout e
+estilo para editar a seleção; **Opções de código** contém variável e escopo do Pawn, e
+**Organizar** reúne agrupamento e alinhamento.
+
+![O editor de TextDraws](images/textdraw-editor.png)
 
 ### Códigos de cor dos TextDraws
 

@@ -1431,6 +1431,9 @@ msgstr "Ao redor de Y"
 msgid "Around Z"
 msgstr "Ao redor de Z"
 
+msgid "Arrange"
+msgstr "Organizar"
+
 msgid "Array"
 msgstr "Matriz"
 
@@ -1763,6 +1766,9 @@ msgstr "Procurar precisa do zenity ou do kdialog: digite ou cole o caminho da pa
 msgid "Browse objects"
 msgstr "Procurar objetos"
 
+msgid "Browse sprites..."
+msgstr "Explorar sprites..."
+
 msgid "Browse textures..."
 msgstr "Procurar texturas..."
 
@@ -1870,6 +1876,9 @@ msgstr "Cancelar"
 
 msgid "Cane"
 msgstr "Bengala"
+
+msgid "Canvas"
+msgstr "Tela"
 
 msgid "Car horn"
 msgstr "Buzina de carro"
@@ -2233,6 +2242,9 @@ msgstr "Código"
 
 msgid "Code Glass"
 msgstr "Vidro de código"
+
+msgid "Code settings"
+msgstr "Opções de código"
 
 msgid "Code target"
 msgstr "Alvo do código"
@@ -3348,6 +3360,9 @@ msgstr "Arquivo > Workspace: escolha a pasta do seu servidor SA-MP ou open.mp."
 
 msgid "File dialogs need zenity or kdialog. Install one (sudo apt install zenity) or type the path."
 msgstr "As caixas de diálogo de arquivo precisam do zenity ou do kdialog. Instale um (sudo apt install zenity) ou digite o caminho."
+
+msgid "File options"
+msgstr "Opções do arquivo"
 
 msgid "Files"
 msgstr "Arquivos"
@@ -5940,6 +5955,9 @@ msgstr "Abrir o último workspace ao iniciar"
 msgid "Open map"
 msgstr "Abrir mapa"
 
+msgid "Open movable previews at 4:3, 16:9 and 21:9. Dock them beside the canvas to compare."
+msgstr "Abre prévias móveis em 4:3, 16:9 e 21:9. Encaixe-as ao lado da tela para comparar."
+
 msgid "Open script"
 msgstr "Abrir script"
 
@@ -7529,6 +7547,9 @@ msgstr "Escola"
 msgid "Scope"
 msgstr "Buscar em"
 
+msgid "Screen previews"
+msgstr "Prévias de tela"
+
 msgid "Script file"
 msgstr "Arquivo de script"
 
@@ -8011,9 +8032,6 @@ msgstr "Voo mais lento"
 msgid "Small (under 2 m)"
 msgstr "Pequeno (menos de 2 m)"
 
-msgid "Small views of this board at 4:3, 16:9 and 21:9 in the corner."
-msgstr "Vistas pequenas desta prancheta em 4:3, 16:9 e 21:9 no canto."
-
 msgid "Smaller interface (like Ctrl+wheel)"
 msgstr "Interface menor (como Ctrl+roda)"
 
@@ -8472,9 +8490,6 @@ msgstr "O TextDraw %s tem %s, que o Windows-1252 (o que os clientes SA-MP e open
 #, c-format
 msgid "TextDraw %s: %s"
 msgstr "TextDraw %s: %s"
-
-msgid "TextDraw mode"
-msgstr "Modo textdraw"
 
 msgid "TextDraw mode: edit the textdraw file on a canvas instead of the world."
 msgstr "Modo TextDraw: edite o arquivo de textdraws em uma tela em vez do mundo."
