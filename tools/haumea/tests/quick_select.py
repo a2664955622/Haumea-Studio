@@ -54,7 +54,7 @@ SOURCES = {
 	'texbrowser.cpp': ['texture_browser', 'texture_studio_list', 'materials'],
 	'materialtext.cpp': ['materials', 'material_font', 'texture_browser', 'roundtrip'],
 	'custommodels.cpp': ['custom_model', 'showcase', 'roundtrip'],
-	'objectinst.cpp': ['roundtrip', 'xml_pins', 'xml_merge', 'showcase', 'import_export', 'materials', 'material_indexes', 'el_vehicle', 'el_npc'],
+	'objectinst.cpp': ['roundtrip', 'xml_pins', 'xml_merge', 'showcase', 'import_export', 'materials', 'material_indexes', 'el_vehicle', 'el_npc', 'attachment_workspace', 'geometry_texture_clones'],
 	'mapimport.cpp': ['import_export', 'roundtrip'],
 	'tstudio.cpp': ['import_export', 'texture_studio_list'],
 	'encoding.cpp': ['roundtrip', 'import_export'],

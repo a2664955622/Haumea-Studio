@@ -24,13 +24,16 @@ Init(void)
 	int ptxd = FindTxdSlot("particle");
 	TxdMakeCurrent(ptxd);
 	gpCloudTex[0] = rw::Texture::read("cloud1", nil);
-	gpCloudTex[1] = rw::Texture::read("cloud2", nil);
-	gpCloudTex[2] = rw::Texture::read("cloud3", nil);
 	if(params.timecycle == GAME_SA){
+		// SA reuses cloud1 and does not use the III/VC highlight texture.
 		gpCloudTex[1] = gpCloudTex[0];
 		gpCloudTex[2] = gpCloudTex[0];
+		gpCloudTex[3] = nil;
+	}else{
+		gpCloudTex[1] = rw::Texture::read("cloud2", nil);
+		gpCloudTex[2] = rw::Texture::read("cloud3", nil);
+		gpCloudTex[3] = rw::Texture::read("cloudhilit", nil);
 	}
-	gpCloudTex[3] = rw::Texture::read("cloudhilit", nil);
 	gpCloudTex[4] = rw::Texture::read("cloudmasked", nil);
 	TxdPop();
 

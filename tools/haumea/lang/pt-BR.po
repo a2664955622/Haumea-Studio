@@ -1473,12 +1473,22 @@ msgstr "No máximo uma vez por dia: um ID de instalação aleatório, a versão 
 msgid "Attach %s to this"
 msgstr "Anexar %s a este"
 
+msgid "Attach selected objects"
+msgstr "Anexar objetos selecionados"
+
+msgid "Attach selected to target"
+msgstr "Anexar selecionados ao alvo"
+
 #, c-format
 msgid "Attach this to %s"
 msgstr "Anexar este a %s"
 
-msgid "Attach to player"
-msgstr "Anexar ao jogador"
+msgid "Attach to target"
+msgstr "Anexar ao alvo"
+
+#, c-format
+msgid "Attached %d object(s) to the selected target."
+msgstr "%d objeto(s) anexado(s) ao alvo selecionado."
 
 #, c-format
 msgid "Attached to %s"
@@ -1493,6 +1503,9 @@ msgstr "Anexo"
 
 msgid "Attachment Workspace"
 msgstr "Área de trabalho de anexos"
+
+msgid "Attachment target selection cancelled."
+msgstr "Seleção do alvo de anexo cancelada."
 
 msgid "Audio stream"
 msgstr "Audio stream"
@@ -1545,6 +1558,9 @@ msgstr "Eixo"
 
 msgid "BRUSH"
 msgstr "PINCEL"
+
+msgid "Back"
+msgstr "Trás"
 
 msgid "Back and forth"
 msgstr "Ida e volta"
@@ -1667,6 +1683,9 @@ msgstr "Bomba"
 
 msgid "Bone"
 msgstr "Osso"
+
+msgid "Bone and scale apply to ped/NPC targets."
+msgstr "Osso e escala se aplicam a alvos ped/NPC."
 
 msgid "Border"
 msgstr "Borda"
@@ -1865,6 +1884,9 @@ msgstr "Não foi possível ligar: %s"
 msgid "Cancel"
 msgstr "Cancelar"
 
+msgid "Cancel target selection"
+msgstr "Cancelar seleção do alvo"
+
 msgid "Cane"
 msgstr "Bengala"
 
@@ -1897,6 +1919,9 @@ msgstr "Centro (meio)"
 
 msgid "Center Parent"
 msgstr "Centralizar objeto pai"
+
+msgid "Center the target and fit it in view."
+msgstr "Centraliza o alvo e ajusta seu tamanho à visualização."
 
 msgid "Centre"
 msgstr "Centro"
@@ -2010,6 +2035,9 @@ msgstr "Escolha um arquivo de script separado. Salvar o mapa gera novamente o ar
 msgid "Choose a workspace to get started."
 msgstr "Escolha uma área de trabalho para começar."
 
+msgid "Choose an attachment"
+msgstr "Escolha um anexo"
+
 msgid "Choose an image"
 msgstr "Escolha uma imagem"
 
@@ -2027,6 +2055,9 @@ msgstr "Escolha a pasta do GTA San Andreas"
 
 msgid "Choose the GTA San Andreas folder."
 msgstr "Escolha a pasta do GTA San Andreas."
+
+msgid "Choose the ped bone. Its coloured axes are marked in the viewport."
+msgstr "Escolha o osso do ped. Seus eixos coloridos aparecem na visualização."
 
 msgid "Choose the server TXD for this model ID."
 msgstr "Escolha o TXD do servidor para este ID de modelo."
@@ -2081,6 +2112,9 @@ msgstr "Clique numa tecla para mudá-la e pressione a nova tecla com Ctrl, Shift
 
 msgid "Click a node to link it"
 msgstr "Clique num nó para ligá-lo"
+
+msgid "Click a ped, NPC, vehicle, or object in the viewport. Esc or right-click cancels."
+msgstr "Clique em um ped, NPC, veículo ou objeto na visualização. Esc ou o botão direito cancela."
 
 msgid "Click a textdraw, or drag a box round several. Alt+click picks the one under it."
 msgstr "Clique num textdraw, ou arraste uma caixa em volta de vários. Alt+clique pega o de baixo."
@@ -2573,9 +2607,6 @@ msgstr ""
 
 msgid "CreatePlayerGangZone is an open.mp native; SA-MP 0.3.7 has no per-player zones."
 msgstr "CreatePlayerGangZone é uma native do open.mp; o SA-MP 0.3.7 não tem zonas por jogador."
-
-msgid "Creates a player bone attachment and opens its preview workspace."
-msgstr "Cria um acessório preso a um osso do jogador e abre a área de prévia."
 
 msgid "Crosses Road"
 msgstr "Cruza a rua"
@@ -3484,9 +3515,6 @@ msgstr "Destacar meu mapa"
 msgid "Focus on Selection"
 msgstr "Focar na seleção"
 
-msgid "Focus target"
-msgstr "Focar alvo"
-
 msgid "Focus the camera on the selection"
 msgstr "Focar a câmera na seleção"
 
@@ -3598,6 +3626,9 @@ msgstr "Das texturas"
 
 msgid "From the workspace's models/artconfig.txt."
 msgstr "Do models/artconfig.txt do workspace."
+
+msgid "Front"
+msgstr "Frente"
 
 msgid "Front passenger"
 msgstr "Passageiro da frente"
@@ -4353,12 +4384,12 @@ msgstr "Isolar seleção"
 msgid "Isolate the selection (hide everything else)"
 msgstr "Isolar a seleção (ocultar todo o resto)"
 
+msgid "Isolate view"
+msgstr "Isolar visualização"
+
 #, c-format
 msgid "Isolated the selection, %d other instance(s) hidden | %s: show all"
 msgstr "Seleção isolada, %d outra(s) instância(s) oculta(s) | %s: mostrar todas"
-
-msgid "Isolated void view"
-msgstr "Visualização isolada no vazio"
 
 msgid "It goes into the workspace's models folder and artconfig.txt."
 msgstr "Ele vai para a pasta models do workspace e para o artconfig.txt."
@@ -4496,6 +4527,9 @@ msgstr "Deixar de fora o que está debaixo d'água"
 
 msgid "Leave place, prefab, brush, path or TextDraw mode"
 msgstr "Sair do modo de colocar, prefab, pincel, caminho ou TextDraw"
+
+msgid "Leave the isolated attachment view and restore the map camera."
+msgstr "Sai da visualização isolada de anexos e restaura a câmera do mapa."
 
 msgid "Left"
 msgstr "Esquerda"
@@ -5462,8 +5496,8 @@ msgstr "Sem escrita de Z"
 msgid "No animation libraries found (anim/ped.ifp, anim/anim.img)."
 msgstr "Nenhuma biblioteca de animação encontrada (anim/ped.ifp, anim/anim.img)."
 
-msgid "No attachment target"
-msgstr "Nenhum alvo de anexo"
+msgid "No attached objects"
+msgstr "Nenhum objeto anexado"
 
 msgid "No autosaves yet"
 msgstr "Nenhum salvamento automático ainda"
@@ -6348,6 +6382,9 @@ msgstr "%s colocado"
 msgid "Placement"
 msgstr "Colocação"
 
+msgid "Placement settings"
+msgstr "Configurações de colocação"
+
 msgid "Places"
 msgstr "Lugares"
 
@@ -6380,9 +6417,6 @@ msgstr "Velocidade no jogo (4.1 é a normal). O editor toca na velocidade normal
 
 msgid "Player"
 msgstr "Jogador"
-
-msgid "Player attachment workspace"
-msgstr "Área de trabalho de acessórios do jogador"
 
 msgid "Player class"
 msgstr "Classe de jogador"
@@ -7092,6 +7126,9 @@ msgstr "Restaurados"
 msgid "Restores the browser on the left and Object Info on the right."
 msgstr "Restaura o navegador à esquerda e as informações do objeto à direita."
 
+msgid "Return to map"
+msgstr "Voltar ao mapa"
+
 msgid "Return to the editor."
 msgstr "Voltar ao editor."
 
@@ -7591,6 +7628,9 @@ msgstr "Selecione um nó na janela Nós (Janelas > Nós) antes."
 msgid "Select a parent with attached objects, or one of its children."
 msgstr "Selecione um pai com objetos vinculados ou um de seus filhos."
 
+msgid "Select a ped, NPC, or vehicle in the map."
+msgstr "Selecione um ped, NPC ou veículo no mapa."
+
 msgid "Select a streamed SA path node in the viewport to begin editing."
 msgstr "Selecione um nó de caminho do SA na viewport para começar a editar."
 
@@ -7616,11 +7656,17 @@ msgstr "Selecionar todo(a) %s do mapa, para editá-los juntos."
 msgid "Select object"
 msgstr "Selecionar objeto"
 
+msgid "Select objects in the map, then attach them to this target without moving them."
+msgstr "Selecione objetos no mapa e anexe-os a este alvo sem movê-los."
+
 msgid "Select objects to apply textures to them."
 msgstr "Selecione objetos para aplicar texturas neles."
 
 msgid "Select objects to apply the texture to"
 msgstr "Selecione objetos para aplicar a textura"
+
+msgid "Select one or more objects to attach first."
+msgstr "Selecione primeiro um ou mais objetos para anexar."
 
 msgid "Select parent"
 msgstr "Selecionar pai"
@@ -7633,9 +7679,6 @@ msgstr "Selecionar os pontos do caminho"
 
 msgid "Select them"
 msgstr "Selecioná-los"
-
-msgid "Select two objects to attach them."
-msgstr "Selecione dois objetos para anexá-los."
 
 msgid "Select vehicle"
 msgstr "Selecionar veículo"
@@ -8375,6 +8418,9 @@ msgstr "Alvo"
 msgid "Target Node"
 msgstr "Nó de destino"
 
+msgid "Target picking failed. Click again or cancel."
+msgstr "Não foi possível selecionar o alvo. Clique novamente ou cancele."
+
 #, c-format
 msgid "Target: %s"
 msgstr "Alvo: %s"
@@ -8516,6 +8562,9 @@ msgstr "Essa pasta não existe."
 
 msgid "That has no x, y and z in it."
 msgstr "Isso não tem x, y e z."
+
+msgid "That target can't accept the selected objects. Click another target or cancel."
+msgstr "Esse alvo não aceita os objetos selecionados. Clique em outro alvo ou cancele."
 
 msgid "That's the game's own data. Pick a server's scriptfiles/NPCs/nodes."
 msgstr "Esses são os dados do próprio jogo. Escolha a scriptfiles/NPCs/nodes de um servidor."
@@ -8670,9 +8719,6 @@ msgstr "O pai foi excluído, então este anexo não é exportado."
 
 msgid "The path's Pawn variable. NPCs follow it by this name."
 msgstr "A variável Pawn do caminho. Os NPCs o seguem por este nome."
-
-msgid "The player already has 10 attached objects."
-msgstr "O jogador já tem 10 objetos anexados."
 
 msgid "The player's screen (the same one the chat and outlines use)."
 msgstr "A tela do jogador (a mesma que o chat e os contornos usam)."
@@ -8910,6 +8956,9 @@ msgstr "Tolerância"
 
 msgid "Tools"
 msgstr "Ferramentas"
+
+msgid "Top"
+msgstr "Superior"
 
 msgid "Top edges"
 msgstr "Bordas de cima"
@@ -9157,6 +9206,9 @@ msgstr "As atualizações para esta plataforma são baixadas na página da vers�
 
 msgid "Use"
 msgstr "Usar"
+
+msgid "Use Attach selected to target or select two objects to attach them."
+msgstr "Use Anexar selecionados ao alvo ou selecione dois objetos para anexá-los."
 
 msgid "Use a vehicle..."
 msgstr "Usar um veículo..."

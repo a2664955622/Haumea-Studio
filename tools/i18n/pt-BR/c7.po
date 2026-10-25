@@ -3217,10 +3217,6 @@ msgstr "Selecionar os pontos do caminho"
 msgid "Select them"
 msgstr "Selecioná-los"
 
-#: tools/haumea/gui.cpp:9318
-msgid "Select two objects to attach them."
-msgstr "Selecione dois objetos para anexá-los."
-
 #: tools/haumea/gui.cpp:8404
 msgid "Select vehicle"
 msgstr "Selecionar veículo"

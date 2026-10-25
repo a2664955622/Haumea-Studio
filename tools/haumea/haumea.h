@@ -1008,21 +1008,39 @@ bool SampElementTakesArea(int kind);
 void ApplyInstanceAnimation(ObjectInst *inst);	// from its actor/NPC properties
 ObjectInst *FindObjectByPawnName(const char *name, const ObjectInst *except = nil);
 // Attaches keeping the child's current world transform; false on a cycle.
-bool AttachObjectInstance(ObjectInst *child, ObjectInst *parent, bool syncRotation = true);
+bool AttachObjectInstance(ObjectInst *child, ObjectInst *parent, bool syncRotation = true,
+	int playerBone = 2, const rw::V3d *playerScale = nil, bool recordUndo = true);
 void DetachObjectInstance(ObjectInst *child);
 ObjectInst *GetAttachParent(const ObjectInst *inst);
+bool BeginAttachmentTargetPick(void);
+bool AttachmentTargetPickActive(void);
+void CancelAttachmentTargetPick(void);
+int CompleteAttachmentTargetPick(ObjectInst *target);
+void GetAttachmentTargetPickOptions(int *bone, rw::V3d *scale);
+void SetAttachmentTargetPickOptions(int bone, const rw::V3d &scale);
+bool GetAttachmentPlayerBoneTransform(const ObjectInst *parent, int bone, rw::Matrix *matrix);
 bool RebaseObjectAttachment(ObjectInst *child);
 enum { PAWN_ATTACH_PLAYER = -2, PAWN_ATTACH_NONE = -1 };
 bool IsPlayerAttachmentTarget(const ObjectInst *inst);
 bool IsPlayerAttachedObject(const ObjectInst *inst);
-bool AttachObjectToPlayer(ObjectInst *child, int previewSkin = 1);
+bool AttachObjectToPlayer(ObjectInst *child, int previewSkin = 1, bool recordUndo = true);
 bool IsAttachmentWorkspaceActive(void);
 bool AttachmentWorkspaceHidesWorld(void);
 bool AttachmentWorkspaceShowsInstance(const ObjectInst *inst);
+enum AttachmentWorkspaceCameraView {
+	ATTACHMENT_VIEW_FOCUS,
+	ATTACHMENT_VIEW_FRONT,
+	ATTACHMENT_VIEW_BACK,
+	ATTACHMENT_VIEW_LEFT,
+	ATTACHMENT_VIEW_RIGHT,
+	ATTACHMENT_VIEW_TOP
+};
 void OpenAttachmentWorkspace(ObjectInst *target, bool voidView);
 void OpenPlayerAttachmentWorkspace(int skin, bool voidView);
 void CloseAttachmentWorkspace(void);
 void SetAttachmentWorkspaceVoid(bool voidView);
+void SetAttachmentWorkspaceCameraView(int view);
+void UpdateAttachmentWorkspace(void);
 void SetAttachmentWorkspacePlayerSkin(int skin);
 int GetAttachmentWorkspacePlayerSkin(void);
 ObjectInst *GetAttachmentWorkspacePlayerPreview(void);
@@ -1843,6 +1861,8 @@ void BuildRenderList(void);
 void RenderOpaque(void);
 void RenderTransparent(void);
 void RenderEverything(void);
+void RenderAttachmentWorkspaceGrid(void);
+void RenderAttachmentBoneMarker(void);
 void RenderAttachmentWorkspacePreview(void);
 bool IntersectRayColModelDetailed(const Ray &ray, ObjectInst *inst, rw::V3d *hitPos, rw::V3d *hitNormal);
 ObjectInst *GetVisibleInstUnderRay(const Ray &ray, rw::V3d *hitPos = nil, float *hitT = nil);

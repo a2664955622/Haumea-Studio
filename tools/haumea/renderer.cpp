@@ -583,7 +583,9 @@ RenderInst(ObjectInst *inst)
 		SetRenderState(rw::CULLMODE, rw::CULLNONE);
 	}
 
-	pDirect->setFlags(0);
+	// The isolated attachment view uses a simple preview rig so models stay
+	// readable without the map's sky and surrounding world lighting.
+	pDirect->setFlags(AttachmentWorkspaceHidesWorld() ? rw::Light::LIGHTATOMICS : 0);
 	gta::colourCode.red = inst->m_id & 0xFF;
 	gta::colourCode.green = inst->m_id>>8 & 0xFF;
 	gta::colourCode.blue = inst->m_id>>16 & 0xFF;
@@ -622,6 +624,62 @@ RenderInst(ObjectInst *inst)
 	if(obj->m_noBackfaceCulling)
 		SetRenderState(rw::CULLMODE, cull);
 	pDirect->setFlags(rw::Light::LIGHTATOMICS);
+}
+
+void
+RenderAttachmentWorkspaceGrid(void)
+{
+	if(!AttachmentWorkspaceHidesWorld())
+		return;
+	ObjectInst *target = GetAttachmentWorkspaceTarget();
+	if(target == nil || target->m_isDeleted)
+		return;
+
+	float range = max(10.0f, min(40.0f, TheCamera.distanceToTarget() * 1.25f));
+	int steps = (int)ceilf(range);
+	rw::V3d origin = target->m_translation;
+	float gridZ = origin.z;
+	ObjectDef *obj = GetObjectDef(target->m_objectId);
+	if(obj && obj->m_colModel){
+		const CBox &box = obj->m_colModel->boundingBox;
+		gridZ = 1.0e30f;
+		for(int x = 0; x < 2; x++)
+			for(int y = 0; y < 2; y++)
+				for(int z = 0; z < 2; z++){
+					rw::V3d corner = {
+						x ? box.max.x : box.min.x,
+						y ? box.max.y : box.min.y,
+						z ? box.max.z : box.min.z
+					};
+					rw::V3d::transformPoints(&corner, &corner, 1, &target->m_matrix);
+					gridZ = min(gridZ, corner.z);
+				}
+		gridZ -= 0.03f;
+	}
+	rw::RGBA grid = { 65, 72, 82, 255 };
+	rw::RGBA xAxis = { 110, 78, 70, 255 };
+	rw::RGBA yAxis = { 70, 100, 78, 255 };
+	rw::V3d gridPoints[324];
+	int numGridPoints = 0;
+	for(int i = -steps; i <= steps; i++){
+		if(i == 0)
+			continue;
+		float offset = (float)i;
+		gridPoints[numGridPoints++] = { origin.x - range, origin.y + offset, gridZ };
+		gridPoints[numGridPoints++] = { origin.x + range, origin.y + offset, gridZ };
+		gridPoints[numGridPoints++] = { origin.x + offset, origin.y - range, gridZ };
+		gridPoints[numGridPoints++] = { origin.x + offset, origin.y + range, gridZ };
+	}
+	SetRenderState(rw::CULLMODE, rw::CULLNONE);
+	rw::SetRenderState(rw::FOGENABLE, 0);
+	rw::SetRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
+	RenderLinesNow(gridPoints, numGridPoints, grid);
+	rw::V3d axes[] = {
+		{ origin.x - range, origin.y, gridZ }, { origin.x + range, origin.y, gridZ },
+		{ origin.x, origin.y - range, gridZ }, { origin.x, origin.y + range, gridZ }
+	};
+	RenderLinesNow(axes, 2, xAxis);
+	RenderLinesNow(axes + 2, 2, yAxis);
 }
 
 void
@@ -792,7 +850,8 @@ RenderOpaque(void)
 {
 	SetRenderState(rw::ALPHATESTREF, params.alphaRef);
 
-	SetRenderState(rw::CULLMODE, gDoBackfaceCulling ? rw::CULLBACK : rw::CULLNONE);
+	SetRenderState(rw::CULLMODE, AttachmentWorkspaceHidesWorld() || !gDoBackfaceCulling ?
+		rw::CULLNONE : rw::CULLBACK);
 	int i, numVisibleInsts = (int)visibleInsts.size();
 	for(i = 0; i < numVisibleInsts; i++)
 		RenderInst(visibleInsts[i]);
@@ -801,7 +860,8 @@ RenderOpaque(void)
 void
 RenderTransparent(void)
 {
-	SetRenderState(rw::CULLMODE, gDoBackfaceCulling ? rw::CULLBACK : rw::CULLNONE);
+	SetRenderState(rw::CULLMODE, AttachmentWorkspaceHidesWorld() || !gDoBackfaceCulling ?
+		rw::CULLNONE : rw::CULLBACK);
 	std::sort(sortedInsts.begin(), sortedInsts.end(), [](const InstDist &a, const InstDist &b) {
 		return a.dist < b.dist;
 	});
@@ -816,6 +876,68 @@ RenderTransparent(void)
 		RenderElementIcons();
 		RenderRadarArtLayers();
 	}
+}
+
+void
+RenderAttachmentBoneMarker(void)
+{
+	ObjectInst *parent = nil;
+	int boneId = 2;
+	if(AttachmentTargetPickActive()){
+		if(ImGui::GetIO().WantCaptureMouse)
+			return;
+		Ray ray;
+		ray.start = TheCamera.m_position;
+		ray.dir = normalize(TheCamera.m_mouseDir);
+		parent = GetVisibleInstUnderRay(ray);
+		if(!IsPlayerAttachmentTarget(parent))
+			return;
+		GetAttachmentTargetPickOptions(&boneId, nil);
+	}else{
+		ObjectInst *child = nil;
+		for(CPtrNode *p = selection.first; p; p = p->next){
+			ObjectInst *inst = (ObjectInst*)p->item;
+			if(inst && !inst->m_isDeleted && IsPlayerAttachedObject(inst)){
+				child = inst;
+				break;
+			}
+		}
+		if(child){
+			parent = GetAttachParent(child);
+			boneId = GetObjectPawnProperties(child)->attachBone;
+		}else{
+			parent = GetAttachmentWorkspaceTarget();
+			GetAttachmentTargetPickOptions(&boneId, nil);
+		}
+	}
+	rw::Matrix bone;
+	if(parent == nil || !GetAttachmentPlayerBoneTransform(parent, boneId, &bone))
+		return;
+
+	float length = max(0.16f, min(0.55f, TheCamera.distanceToTarget() * 0.014f));
+	rw::V3d points[] = {
+		bone.pos, add(bone.pos, scale(bone.right, length)),
+		bone.pos, add(bone.pos, scale(bone.up, length)),
+		bone.pos, add(bone.pos, scale(bone.at, length))
+	};
+	rw::RGBA red = { 255, 80, 70, 255 };
+	rw::RGBA green = { 85, 255, 100, 255 };
+	rw::RGBA blue = { 75, 145, 255, 255 };
+	uint32 oldZTest = rw::GetRenderState(rw::ZTESTENABLE);
+	uint32 oldFog = rw::GetRenderState(rw::FOGENABLE);
+	uint32 oldCull = rw::GetRenderState(rw::CULLMODE);
+	uint32 oldAlphaFunc = rw::GetRenderState(rw::ALPHATESTFUNC);
+	SetRenderState(rw::ZTESTENABLE, 0);
+	SetRenderState(rw::FOGENABLE, 0);
+	SetRenderState(rw::CULLMODE, rw::CULLNONE);
+	SetRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
+	RenderLinesNow(points, 2, red);
+	RenderLinesNow(points + 2, 2, green);
+	RenderLinesNow(points + 4, 2, blue);
+	SetRenderState(rw::ZTESTENABLE, oldZTest);
+	SetRenderState(rw::FOGENABLE, oldFog);
+	SetRenderState(rw::CULLMODE, oldCull);
+	SetRenderState(rw::ALPHATESTFUNC, oldAlphaFunc);
 }
 
 void

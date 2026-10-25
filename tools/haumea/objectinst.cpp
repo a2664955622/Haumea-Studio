@@ -932,6 +932,64 @@ InitObjectMaterialOverride(ObjectMaterialOverride *material, int sourceModel)
 static void copyMaterialUVAnimationState(rw::Material *dst,
 	const rw::Material *src);
 
+// A geometry round trip recreates temporary materials before the live
+// materials are cloned below. Its texture names must never be resolved through
+// the current map TXD or image files. Keep those temporary handles private;
+// the final material clones retain the original textures and plugin state.
+static std::vector<rw::Texture*> *gGeometryReadTextures;
+
+static rw::Texture*
+findGeometryReadTexture(const char *name)
+{
+	if(name == nil || gGeometryReadTextures == nil)
+		return nil;
+	for(rw::Texture *texture : *gGeometryReadTextures)
+		if(rw::strncmp_ci(texture->name, name, sizeof(texture->name)) == 0)
+			return texture;
+	rw::Texture *texture = rw::Texture::create(nil);
+	if(texture){
+		strncpy(texture->name, name, sizeof(texture->name));
+		gGeometryReadTextures->push_back(texture);
+	}
+	return texture;
+}
+
+static rw::Texture*
+skipGeometryReadImage(const char*, const char*)
+{
+	return nil;
+}
+
+class ScopedGeometryTextureReads
+{
+	rw::TexDictionary *previousDictionary;
+	rw::Texture *(*previousFind)(const char*);
+	rw::Texture *(*previousRead)(const char*, const char*);
+	std::vector<rw::Texture*> *previousTextures;
+	std::vector<rw::Texture*> textures;
+public:
+	ScopedGeometryTextureReads()
+	{
+		previousDictionary = rw::TexDictionary::getCurrent();
+		previousFind = rw::Texture::findCB;
+		previousRead = rw::Texture::readCB;
+		previousTextures = gGeometryReadTextures;
+		gGeometryReadTextures = &textures;
+		rw::TexDictionary::setCurrent(nil);
+		rw::Texture::findCB = findGeometryReadTexture;
+		rw::Texture::readCB = skipGeometryReadImage;
+	}
+	~ScopedGeometryTextureReads()
+	{
+		rw::Texture::findCB = previousFind;
+		rw::Texture::readCB = previousRead;
+		rw::TexDictionary::setCurrent(previousDictionary);
+		gGeometryReadTextures = previousTextures;
+		for(rw::Texture *texture : textures)
+			texture->destroy();
+	}
+};
+
 static rw::Geometry*
 cloneGeometryForMaterial(rw::Geometry *source)
 {
@@ -966,7 +1024,11 @@ cloneGeometryForMaterial(rw::Geometry *source)
 	if(!written)
 		return nil;
 	stream.seek(12, 0);
-	rw::Geometry *geometry = rw::Geometry::streamRead(&stream);
+	rw::Geometry *geometry;
+	{
+		ScopedGeometryTextureReads textureReads;
+		geometry = rw::Geometry::streamRead(&stream);
+	}
 	if(geometry == nil)
 		return nil;
 
@@ -1499,6 +1561,18 @@ static int gAttachmentWorkspacePlayerSkin = 1;
 static bool gAttachmentWorkspacePlayerSkinSet;
 static ObjectInst *gAttachmentWorkspaceTarget;
 static ObjectInst *gAttachmentPlayerPreview;
+static bool gAttachmentTargetPickActive;
+static std::vector<ObjectInst*> gAttachmentTargetPickChildren;
+static int gAttachmentTargetPickBone = 2;
+static rw::V3d gAttachmentTargetPickScale = { 1.0f, 1.0f, 1.0f };
+static bool gAttachmentWorkspaceCameraSaved;
+static rw::V3d gAttachmentWorkspaceSavedCameraPosition;
+static rw::V3d gAttachmentWorkspaceSavedCameraTarget;
+static rw::V3d gAttachmentWorkspaceSavedCameraUp;
+static rw::V3d gAttachmentWorkspaceSavedCameraLocalUp;
+static float gAttachmentWorkspaceSavedCameraFov;
+static bool gAttachmentWorkspaceNeedsFocus;
+static int gAttachmentWorkspacePendingCameraView = ATTACHMENT_VIEW_FOCUS;
 static void setInstanceElementModel(ObjectInst *inst, int modelId);
 static void applyInstanceModelId(ObjectInst *inst, int editorModelId);
 static void destroyInstanceRwObject(ObjectInst *inst, ObjectDef *obj);
@@ -2209,6 +2283,12 @@ playerBoneMatrix(const ObjectInst *parent, int sampBone, rw::Matrix *matrix)
 	return true;
 }
 
+bool
+GetAttachmentPlayerBoneTransform(const ObjectInst *parent, int bone, rw::Matrix *matrix)
+{
+	return playerBoneMatrix(parent, bone, matrix);
+}
+
 static int
 nextPlayerAttachmentSlot(int32 parentId, int skin, const ObjectInst *except)
 {
@@ -2338,7 +2418,8 @@ attachmentWouldCycle(const ObjectInst *child, const ObjectInst *parent)
 }
 
 bool
-AttachObjectInstance(ObjectInst *child, ObjectInst *parent, bool syncRotation)
+AttachObjectInstance(ObjectInst *child, ObjectInst *parent, bool syncRotation,
+	int playerBone, const rw::V3d *playerScale, bool recordUndo)
 {
 	bool vehicleTarget = parent && parent->m_isVehicle;
 	bool playerTarget = IsPlayerAttachmentTarget(parent);
@@ -2349,17 +2430,104 @@ AttachObjectInstance(ObjectInst *child, ObjectInst *parent, bool syncRotation)
 		return false;
 	ObjectPawnProperties properties = *GetObjectPawnProperties(child);
 	properties.attachParent = parent->m_id;
-	properties.attachBone = IsPlayerAttachmentTarget(parent) ? 2 : -1;
+	properties.attachBone = IsPlayerAttachmentTarget(parent) ?
+		(playerBone >= 1 && playerBone <= 18 ? playerBone : 2) : -1;
 	properties.attachSyncRotation = (properties.attachBone >= 1 || parent->m_isVehicle) ? true : syncRotation;
 	if(properties.attachBone >= 1){
+		if(playerScale)
+			properties.attachScale = *playerScale;
 		properties.attachSkin = GetObjectPawnProperties(parent)->elementModel;
 		properties.attachSlot = nextPlayerAttachmentSlot(parent->m_id, properties.attachSkin, child);
 		if(properties.attachSlot < 0)
 			return false;
 	}
 	computeAttachmentOffset(parent, child, &properties);
-	SetObjectPawnProperties(child, properties);
+	SetObjectPawnProperties(child, properties, recordUndo);
 	return true;
+}
+
+bool
+AttachmentTargetPickActive(void)
+{
+	return gAttachmentTargetPickActive;
+}
+
+bool
+BeginAttachmentTargetPick(void)
+{
+	gAttachmentTargetPickChildren.clear();
+	for(CPtrNode *p = selection.first; p; p = p->next){
+		ObjectInst *inst = (ObjectInst*)p->item;
+		if(inst && !inst->m_isDeleted && !inst->m_isVehicle &&
+		   GetSampElementKind(inst) == SAMP_ELEMENT_OBJECT && IsPawnObjectEditable(inst))
+			gAttachmentTargetPickChildren.push_back(inst);
+	}
+	if(gAttachmentTargetPickChildren.empty()){
+		gAttachmentTargetPickActive = false;
+		Toast(TOAST_SELECTION, _("Select one or more objects to attach first."));
+		return false;
+	}
+	const ObjectPawnProperties *properties = GetObjectPawnProperties(gAttachmentTargetPickChildren.front());
+	gAttachmentTargetPickBone = properties->attachBone >= 1 && properties->attachBone <= 18 ?
+		properties->attachBone : 2;
+	gAttachmentTargetPickScale = properties->attachScale;
+	// The direct viewport picker works with the real map targets. Close the
+	// optional preview workspace so its synthetic player never appears beside
+	// the NPC or vehicle being picked.
+	CloseAttachmentWorkspace();
+	gAttachmentTargetPickActive = true;
+	Toast(TOAST_SELECTION,
+		_("Click a ped, NPC, vehicle, or object in the viewport. Esc or right-click cancels."));
+	return true;
+}
+
+void
+GetAttachmentTargetPickOptions(int *bone, rw::V3d *scale)
+{
+	if(bone) *bone = gAttachmentTargetPickBone;
+	if(scale) *scale = gAttachmentTargetPickScale;
+}
+
+void
+SetAttachmentTargetPickOptions(int bone, const rw::V3d &scale)
+{
+	gAttachmentTargetPickBone = clamp(bone, 1, 18);
+	gAttachmentTargetPickScale = {
+		std::isfinite(scale.x) ? clamp(scale.x, 0.01f, 50.0f) : 1.0f,
+		std::isfinite(scale.y) ? clamp(scale.y, 0.01f, 50.0f) : 1.0f,
+		std::isfinite(scale.z) ? clamp(scale.z, 0.01f, 50.0f) : 1.0f
+	};
+}
+
+void
+CancelAttachmentTargetPick(void)
+{
+	gAttachmentTargetPickActive = false;
+	gAttachmentTargetPickChildren.clear();
+}
+
+int
+CompleteAttachmentTargetPick(ObjectInst *target)
+{
+	if(!gAttachmentTargetPickActive || target == nil || target->m_isDeleted)
+		return 0;
+	bool validTarget = target->m_isVehicle || IsPlayerAttachmentTarget(target) ||
+		GetSampElementKind(target) == SAMP_ELEMENT_OBJECT;
+	if(!validTarget)
+		return 0;
+
+	int attached = 0;
+	for(ObjectInst *child : gAttachmentTargetPickChildren)
+		if(child && !child->m_isDeleted && child != target &&
+		   AttachObjectInstance(child, target, true, gAttachmentTargetPickBone, &gAttachmentTargetPickScale))
+			attached++;
+	if(attached == 0)
+		return 0;
+
+	CancelAttachmentTargetPick();
+	UpdateObjectAttachments();
+	OpenAttachmentWorkspace(target, false);
+	return attached;
 }
 
 bool
@@ -2379,7 +2547,7 @@ RebaseObjectAttachment(ObjectInst *child)
 }
 
 bool
-AttachObjectToPlayer(ObjectInst *child, int previewSkin)
+AttachObjectToPlayer(ObjectInst *child, int previewSkin, bool recordUndo)
 {
 	if(child == nil || child->m_isDeleted || child->m_isVehicle ||
 	   GetSampElementKind(child) != SAMP_ELEMENT_OBJECT)
@@ -2396,7 +2564,7 @@ AttachObjectToPlayer(ObjectInst *child, int previewSkin)
 	properties.attachScale = { 1.0f, 1.0f, 1.0f };
 	properties.attachSkin = clamp(previewSkin, 0, 311);
 	properties.attachSyncRotation = true;
-	SetObjectPawnProperties(child, properties);
+	SetObjectPawnProperties(child, properties, recordUndo);
 	return true;
 }
 
@@ -2920,6 +3088,11 @@ ObjectInst::Select(void)
 	m_selected = true;
 	m_selectSeq = ++selectSeq;
 	selection.InsertItem(this);
+	if(isSA()){
+		ObjectInst *target = m_isVehicle || IsPlayerAttachmentTarget(this) ? this : GetAttachParent(this);
+		if(target && (target->m_isVehicle || IsPlayerAttachmentTarget(target)))
+			OpenAttachmentWorkspace(target, AttachmentWorkspaceHidesWorld());
+	}
 }
 
 void
@@ -3353,47 +3526,156 @@ GetAttachmentWorkspaceTarget(void)
 	return gAttachmentWorkspaceActive ? gAttachmentWorkspaceTarget : nil;
 }
 
+static void
+saveAttachmentWorkspaceCamera(void)
+{
+	if(gAttachmentWorkspaceCameraSaved)
+		return;
+	gAttachmentWorkspaceSavedCameraPosition = TheCamera.m_position;
+	gAttachmentWorkspaceSavedCameraTarget = TheCamera.m_target;
+	gAttachmentWorkspaceSavedCameraUp = TheCamera.m_up;
+	gAttachmentWorkspaceSavedCameraLocalUp = TheCamera.m_localup;
+	gAttachmentWorkspaceSavedCameraFov = TheCamera.m_fov;
+	gAttachmentWorkspaceCameraSaved = true;
+}
+
+static void
+restoreAttachmentWorkspaceCamera(void)
+{
+	if(!gAttachmentWorkspaceCameraSaved)
+		return;
+	TheCamera.m_position = gAttachmentWorkspaceSavedCameraPosition;
+	TheCamera.m_target = gAttachmentWorkspaceSavedCameraTarget;
+	TheCamera.m_up = gAttachmentWorkspaceSavedCameraUp;
+	TheCamera.m_localup = gAttachmentWorkspaceSavedCameraLocalUp;
+	TheCamera.m_fov = gAttachmentWorkspaceSavedCameraFov;
+	TheCamera.update();
+	gAttachmentWorkspaceCameraSaved = false;
+	gAttachmentWorkspaceNeedsFocus = false;
+}
+
+static bool
+focusAttachmentWorkspaceTarget(int view)
+{
+	ObjectInst *target = GetAttachmentWorkspacePlayerPreview();
+	if(target == nil)
+		target = gAttachmentWorkspaceTarget;
+	if(target == nil || target->m_isDeleted)
+		return false;
+
+	ObjectDef *obj = GetObjectDef(target->m_objectId);
+	if(obj == nil)
+		return false;
+	if(!obj->IsLoaded()){
+		RequestObject(target->m_objectId);
+		return false;
+	}
+
+	rw::V3d center = target->m_translation;
+	float radius = obj->m_isPed ? 1.0f : 2.0f;
+	if(obj->m_colModel){
+		const CSphere &sphere = obj->m_colModel->boundingSphere;
+		rw::V3d::transformPoints(&center, &sphere.center, 1, &target->m_matrix);
+		float scaleX = length(target->m_matrix.right);
+		float scaleY = length(target->m_matrix.up);
+		float scaleZ = length(target->m_matrix.at);
+		radius = sphere.radius * max(scaleX, max(scaleY, scaleZ));
+	}
+	if(!std::isfinite(radius) || radius < 0.25f)
+		radius = 1.0f;
+
+	TheCamera.setTarget(center);
+	float distance = max(TheCamera.minDistToSphere(radius * 1.15f), radius * 1.5f);
+	TheCamera.setDistanceFromTarget(distance);
+	const float d = TheCamera.distanceToTarget();
+	// GTA models face local +Y; local +X is the model's right side.
+	rw::V3d forward = normalize(target->m_matrix.up);
+	rw::V3d right = normalize(target->m_matrix.right);
+	rw::V3d up = normalize(target->m_matrix.at);
+	switch(view){
+	case ATTACHMENT_VIEW_FRONT:
+		TheCamera.m_up = TheCamera.m_localup = up;
+		TheCamera.m_position = add(center, scale(forward, d));
+		break;
+	case ATTACHMENT_VIEW_BACK:
+		TheCamera.m_up = TheCamera.m_localup = up;
+		TheCamera.m_position = sub(center, scale(forward, d));
+		break;
+	case ATTACHMENT_VIEW_LEFT:
+		TheCamera.m_up = TheCamera.m_localup = up;
+		TheCamera.m_position = sub(center, scale(right, d));
+		break;
+	case ATTACHMENT_VIEW_RIGHT:
+		TheCamera.m_up = TheCamera.m_localup = up;
+		TheCamera.m_position = add(center, scale(right, d));
+		break;
+	case ATTACHMENT_VIEW_TOP:
+		TheCamera.m_up = TheCamera.m_localup = { 0.0f, 1.0f, 0.0f };
+		TheCamera.m_position = { center.x, center.y, center.z + d };
+		break;
+	default:
+		break;
+	}
+	TheCamera.update();
+	return true;
+}
+
 void
 OpenAttachmentWorkspace(ObjectInst *target, bool voidView)
 {
-	if(target == nil || target->m_isDeleted){
+	if(target && target->m_isDeleted){
 		CloseAttachmentWorkspace();
 		return;
 	}
-	if(GetObjectPawnProperties(target)->attachParent == PAWN_ATTACH_PLAYER){
+	if(target && GetObjectPawnProperties(target)->attachParent == PAWN_ATTACH_PLAYER){
 		OpenPlayerAttachmentWorkspace(GetObjectPawnProperties(target)->attachSkin, voidView);
 		return;
 	}
+	CancelAttachmentTargetPick();
+	if(gAttachmentWorkspaceActive && !gAttachmentWorkspacePlayerMode && gAttachmentWorkspaceTarget == target){
+		SetAttachmentWorkspaceVoid(voidView && target != nil);
+		return;
+	}
+	if(gAttachmentWorkspaceVoid)
+		restoreAttachmentWorkspaceCamera();
 	gAttachmentWorkspaceActive = true;
-	gAttachmentWorkspaceVoid = voidView;
+	gAttachmentWorkspaceVoid = false;
 	gAttachmentWorkspacePlayerMode = false;
 	gAttachmentWorkspaceTarget = target;
-	target->JumpTo();
+	gAttachmentWorkspaceNeedsFocus = false;
+	if(voidView && target)
+		SetAttachmentWorkspaceVoid(true);
 }
 
 void
 OpenPlayerAttachmentWorkspace(int skin, bool voidView)
 {
+	if(gAttachmentWorkspaceVoid)
+		restoreAttachmentWorkspaceCamera();
 	gAttachmentWorkspaceActive = true;
-	gAttachmentWorkspaceVoid = voidView;
+	gAttachmentWorkspaceVoid = false;
 	gAttachmentWorkspacePlayerMode = true;
 	gAttachmentWorkspacePlayerSkin = clamp(skin, 0, 311);
 	gAttachmentWorkspacePlayerSkinSet = true;
 	gAttachmentWorkspaceTarget = GetAttachmentWorkspacePlayerPreview();
 	if(gAttachmentWorkspaceTarget){
-		gAttachmentWorkspaceTarget->JumpTo();
 		RequestObject(gAttachmentWorkspaceTarget->m_objectId);
 	}
+	gAttachmentWorkspaceNeedsFocus = false;
+	if(voidView)
+		SetAttachmentWorkspaceVoid(true);
 	UpdateObjectAttachments();
 }
 
 void
 CloseAttachmentWorkspace(void)
 {
+	restoreAttachmentWorkspaceCamera();
 	gAttachmentWorkspaceActive = false;
 	gAttachmentWorkspaceVoid = false;
 	gAttachmentWorkspacePlayerMode = false;
 	gAttachmentWorkspaceTarget = nil;
+	gAttachmentWorkspaceNeedsFocus = false;
 }
 
 bool
@@ -3411,8 +3693,47 @@ AttachmentWorkspaceHidesWorld(void)
 void
 SetAttachmentWorkspaceVoid(bool voidView)
 {
-	if(gAttachmentWorkspaceActive)
-		gAttachmentWorkspaceVoid = voidView;
+	if(!gAttachmentWorkspaceActive || gAttachmentWorkspaceVoid == voidView)
+		return;
+	if(voidView){
+		saveAttachmentWorkspaceCamera();
+		gAttachmentWorkspaceVoid = true;
+		gAttachmentWorkspaceNeedsFocus = true;
+		gAttachmentWorkspacePendingCameraView = ATTACHMENT_VIEW_FOCUS;
+	}else{
+		gAttachmentWorkspaceVoid = false;
+		restoreAttachmentWorkspaceCamera();
+	}
+}
+
+void
+SetAttachmentWorkspaceCameraView(int view)
+{
+	if(!gAttachmentWorkspaceActive || view < ATTACHMENT_VIEW_FOCUS || view > ATTACHMENT_VIEW_TOP)
+		return;
+	gAttachmentWorkspacePendingCameraView = view;
+	gAttachmentWorkspaceNeedsFocus = true;
+}
+
+void
+UpdateAttachmentWorkspace(void)
+{
+	if(!gAttachmentWorkspaceActive)
+		return;
+	if(gAttachmentWorkspaceTarget && gAttachmentWorkspaceTarget->m_isDeleted){
+		CloseAttachmentWorkspace();
+		return;
+	}
+	if(gAttachmentWorkspacePlayerMode)
+		gAttachmentWorkspaceTarget = GetAttachmentWorkspacePlayerPreview();
+	if(gAttachmentWorkspaceTarget && !gAttachmentWorkspaceTarget->m_isDeleted){
+		ObjectDef *obj = GetObjectDef(gAttachmentWorkspaceTarget->m_objectId);
+		if(obj && !obj->IsLoaded())
+			RequestObject(gAttachmentWorkspaceTarget->m_objectId);
+	}
+	if(gAttachmentWorkspaceNeedsFocus &&
+	   focusAttachmentWorkspaceTarget(gAttachmentWorkspacePendingCameraView))
+		gAttachmentWorkspaceNeedsFocus = false;
 }
 
 int
@@ -3437,8 +3758,11 @@ SetAttachmentWorkspacePlayerSkin(int skin)
 	if(gAttachmentWorkspacePlayerMode){
 		gAttachmentWorkspaceTarget = GetAttachmentWorkspacePlayerPreview();
 		if(gAttachmentWorkspaceTarget){
-			gAttachmentWorkspaceTarget->JumpTo();
 			RequestObject(gAttachmentWorkspaceTarget->m_objectId);
+		}
+		if(gAttachmentWorkspaceVoid){
+			gAttachmentWorkspaceNeedsFocus = true;
+			gAttachmentWorkspacePendingCameraView = ATTACHMENT_VIEW_FOCUS;
 		}
 	}
 	UpdateObjectAttachments();

@@ -1804,6 +1804,11 @@ handleBrushTool(void)
 static void
 updateRectSelectEarly(void)
 {
+	if(AttachmentTargetPickActive()){
+		gRectSelectActive = false;
+		sRectSelectDragging = false;
+		return;
+	}
 	if(CoordinatePinOwnsMouse() || LayoutPathsOwnsMouse()){
 		gRectSelectActive = false;
 		sRectSelectDragging = false;
@@ -1907,6 +1912,11 @@ rectSelectHighlightInst(ObjectInst *inst, void *data)
 static void
 handleRectSelect(void)
 {
+	if(AttachmentTargetPickActive()){
+		gRectSelectActive = false;
+		sRectSelectDragging = false;
+		return;
+	}
 	if(CoordinatePinOwnsMouse() || LayoutPathsOwnsMouse()){
 		gRectSelectActive = false;
 		sRectSelectDragging = false;
@@ -1992,6 +2002,28 @@ handleRectSelect(void)
 void
 handleTool(void)
 {
+	if(AttachmentTargetPickActive()){
+		ImGuiIO &io = ImGui::GetIO();
+		if(!io.WantCaptureMouse){
+			if(CPad::IsMButtonClicked(3) || CPad::IsMButtonClicked(2) || ShortcutPressed(SC_CANCEL)){
+				CancelAttachmentTargetPick();
+				Toast(TOAST_SELECTION, _("Attachment target selection cancelled."));
+			}else if(CPad::IsMButtonClicked(1)){
+				int32 code = pick();
+				if(code < 0){
+					Toast(TOAST_SELECTION, _("Target picking failed. Click again or cancel."));
+				}else{
+					int attached = CompleteAttachmentTargetPick(GetInstanceByID(code));
+					if(attached > 0)
+						Toast(TOAST_SPAWN, _("Attached %d object(s) to the selected target."), attached);
+					else
+						Toast(TOAST_SELECTION,
+							_("That target can't accept the selected objects. Click another target or cancel."));
+				}
+			}
+		}
+		return;
+	}
 	if(LayoutPathsHandleViewport()) return;
 	if(CoordinatePinHandleViewport()) return;
 	// Don't process viewport clicks when ImGui wants the mouse
@@ -3065,6 +3097,7 @@ dogizmo(void)
 {
 	gGizmoHovered = false;
 	gGizmoUsing = false;
+	if(AttachmentTargetPickActive()) return;
 	if(LayoutPathsGizmo()) return;
 	if(CoordinatePinOwnsMouse()) return;
 
@@ -3402,8 +3435,10 @@ renderWorld(void)
 	RenderOpaque();
 	RenderAttachmentWorkspacePreview();
 	if(gRenderWater)
-		WaterLevel::Render();
+		if(!AttachmentWorkspaceHidesWorld())
+			WaterLevel::Render();
 	RenderTransparent();
+	RenderAttachmentBoneMarker();
 	if(gRenderLightEffects)
 		Effects::RenderLights();
 
@@ -3591,6 +3626,7 @@ Draw(void)
 	}
 
 	LoadAllRequestedObjects();
+	UpdateAttachmentWorkspace();
 	// Attached objects follow last frame's edits before the scene is listed.
 	UpdateObjectAttachments();
 	// .rec playback poses its elements for this frame.
@@ -3618,9 +3654,20 @@ Draw(void)
 	if(!noWorld && !attachmentVoid)
 		renderWorld();
 	else if(attachmentVoid){
+		rw::RGBAf oldAmbient = pAmbient->color;
+		rw::RGBAf oldDirect = pDirect->color;
+		uint32 oldDirectFlags = pDirect->getFlags();
+		pAmbient->setColor(0.72f, 0.72f, 0.72f);
+		pDirect->setColor(0.52f, 0.52f, 0.52f);
+		pDirect->setFlags(rw::Light::LIGHTATOMICS);
 		RenderOpaque();
 		RenderAttachmentWorkspacePreview();
 		RenderTransparent();
+		RenderAttachmentBoneMarker();
+		RenderAttachmentWorkspaceGrid();
+		pDirect->setFlags(oldDirectFlags);
+		pDirect->setColor(oldDirect.red, oldDirect.green, oldDirect.blue);
+		pAmbient->setColor(oldAmbient.red, oldAmbient.green, oldAmbient.blue);
 	}
 	rw::SetRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);	// don't mess up GUI
 	TextDrawsAfterWorldRender();

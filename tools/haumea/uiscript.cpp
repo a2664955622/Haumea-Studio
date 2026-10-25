@@ -782,6 +782,124 @@ keycastAssert(const std::string &what, const std::string &text, std::string &why
 	return true;
 }
 
+// Exercise the same geometry-copy path used by animated skins and per-instance
+// vehicle materials under an unrelated scene dictionary. This catches lookups
+// and disk reads that the final material replacement would otherwise hide.
+rw::Geometry *CloneInstanceGeometry(rw::Geometry *source);
+static rw::Texture *(*gCloneProbeFind)(const char *name);
+static rw::Texture *(*gCloneProbeRead)(const char *name, const char *mask);
+static int gCloneProbeFinds, gCloneProbeReads;
+
+static rw::Texture*
+cloneProbeFind(const char *name)
+{
+	gCloneProbeFinds++;
+	return gCloneProbeFind(name);
+}
+
+static rw::Texture*
+cloneProbeRead(const char *name, const char *mask)
+{
+	gCloneProbeReads++;
+	return gCloneProbeRead(name, mask);
+}
+
+static std::vector<rw::Texture*>
+geometryTextures(rw::Geometry *geometry)
+{
+	std::vector<rw::Texture*> textures;
+	auto add = [&](rw::Texture *texture){ if(texture) textures.push_back(texture); };
+	for(int i = 0; i < geometry->matList.numMaterials; i++){
+		rw::Material *material = geometry->matList.materials[i];
+		if(material == nil) continue;
+		add(material->texture);
+		rw::MatFX *fx = rw::MatFX::get(material);
+		if(fx == nil) continue;
+		for(int j = 0; j < 2; j++)
+			switch(fx->fx[j].type){
+			case rw::MatFX::BUMPMAP: add(fx->fx[j].bump.bumpedTex); add(fx->fx[j].bump.tex); break;
+			case rw::MatFX::ENVMAP: add(fx->fx[j].env.tex); break;
+			case rw::MatFX::DUAL: add(fx->fx[j].dual.tex); break;
+			}
+	}
+	return textures;
+}
+
+static bool
+checkGeometryCloneTextures(ObjectInst *inst, std::string &why)
+{
+	ObjectDef *def = inst ? GetObjectDef(inst->m_objectId) : nil;
+	if(def == nil || inst->m_rwObject == nil){ why = "no selected rendered model"; return false; }
+	std::vector<rw::Geometry*> geometries;
+	if(def->m_type == ObjectDef::ATOMIC)
+		geometries.push_back(((rw::Atomic*)inst->m_rwObject)->geometry);
+	else if(def->m_type == ObjectDef::CLUMP){
+		rw::Clump *clump = (rw::Clump*)inst->m_rwObject;
+		FORLIST(lnk, clump->atomics)
+			geometries.push_back(rw::Atomic::fromClump(lnk)->geometry);
+	}
+	int checked = 0;
+	for(rw::Geometry *source : geometries){
+		if(source == nil) continue;
+		std::vector<rw::Texture*> textures = geometryTextures(source);
+		if(textures.empty()) continue;
+		std::vector<int32> refs;
+		std::vector<rw::TexDictionary*> dictionaries;
+		for(rw::Texture *texture : textures){
+			refs.push_back(texture->refCount);
+			dictionaries.push_back(texture->dict);
+		}
+		rw::TexDictionary *previous = rw::TexDictionary::getCurrent();
+		rw::TexDictionary *decoy = rw::TexDictionary::create();
+		rw::Texture *sentinel = rw::Texture::create(nil);
+		strcpy(sentinel->name, "__clone_scene_probe__");
+		decoy->add(sentinel);
+		rw::TexDictionary::setCurrent(decoy);
+		bool ok = true;
+		for(int pass = 0; pass < 2 && ok; pass++){
+			if(pass == 1){
+				// Also protect the source from same-name textures in the scene.
+				rw::Texture *collision = rw::Texture::create(nil);
+				memcpy(collision->name, textures.front()->name, sizeof(collision->name));
+				decoy->add(collision);
+			}
+			int count = decoy->count(), allocated = rw::Texture::numAllocated;
+			uint32 flags = source->flags;
+			gCloneProbeFind = rw::Texture::findCB;
+			gCloneProbeRead = rw::Texture::readCB;
+			gCloneProbeFinds = gCloneProbeReads = 0;
+			rw::Texture::findCB = cloneProbeFind;
+			rw::Texture::readCB = cloneProbeRead;
+			rw::Geometry *copy = CloneInstanceGeometry(source);
+			bool restored = rw::Texture::findCB == cloneProbeFind && rw::Texture::readCB == cloneProbeRead;
+			rw::Texture::findCB = gCloneProbeFind;
+			rw::Texture::readCB = gCloneProbeRead;
+			bool sameTextures = copy && geometryTextures(copy) == textures;
+			bool sameShape = copy && copy->numVertices == source->numVertices && copy->numTriangles == source->numTriangles;
+			if(copy) copy->destroy();
+			bool sameOwners = true;
+			for(size_t i = 0; i < textures.size(); i++)
+				if(textures[i]->refCount != refs[i] || textures[i]->dict != dictionaries[i]) sameOwners = false;
+			ok = sameTextures && sameShape && sameOwners && restored && source->flags == flags &&
+				rw::TexDictionary::getCurrent() == decoy && decoy->count() == count &&
+				rw::Texture::numAllocated == allocated && gCloneProbeFinds == 0 && gCloneProbeReads == 0;
+			if(!ok){
+				char message[256];
+				snprintf(message, sizeof(message),
+					"geometry %d pass %d: %d scene lookups, %d disk reads, dictionary %d -> %d, textures preserved %d, owners preserved %d",
+					checked, pass, gCloneProbeFinds, gCloneProbeReads, count, decoy->count(), sameTextures, sameOwners);
+				why = message;
+			}
+		}
+		rw::TexDictionary::setCurrent(previous);
+		decoy->destroy();
+		if(!ok) return false;
+		checked++;
+	}
+	why = std::to_string(checked) + " textured geometries cloned without scene lookups, disk reads or texture changes";
+	return checked > 0;
+}
+
 // assert objects|selected|textdraws|textdraw_zoom|radar_zones <op> N
 // assert selected.model|selected.x|selected.y|selected.z <op> N
 // assert selected.texture <slot> "name"
@@ -794,6 +912,7 @@ keycastAssert(const std::string &what, const std::string &text, std::string &why
 // assert item 'Window' 'Label'   / no_item
 // assert hidden|player_view_hidden|fov|ui_scale|camera_moved <op> N   (camera_moved: metres since mark_camera)
 // assert camera_target.x|y|z <op> N   (the point the camera looks at)
+// assert camera_position.x|y|z <op> N
 // assert train.cars|train.off_track|train.N.x|y|z|model <op> N   (the selected engine's train in game)
 // assert drawn_rotation N|selected RX RY RZ   (the map's Nth object, from 0, is drawn as CreateObject rotates it)
 static bool
@@ -808,6 +927,8 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 	ObjectInst *sel = selection.first ? (ObjectInst*)selection.first->item : nil;
 	char buf[256];
 	bool result;
+	if(what == "geometry_clone_textures")
+		return checkGeometryCloneTextures(sel, why);
 	if(keycastAssert(what, arg(1), why, &result))
 		return result;
 	if(what == "placing"){
@@ -984,7 +1105,8 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 	}
 	if(what == "hidden" || what == "player_view_hidden" || what == "fov" || what == "ui_scale" ||
 	   what == "camera_moved" || what == "camera_target.x" || what == "camera_target.y" ||
-	   what == "camera_target.z"){
+	   what == "camera_target.z" || what == "camera_position.x" || what == "camera_position.y" ||
+	   what == "camera_position.z"){
 		double v = 0;
 		if(what == "hidden"){
 			v = CountHiddenInstances();
@@ -997,6 +1119,9 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		else if(what == "camera_target.x") v = TheCamera.m_target.x;
 		else if(what == "camera_target.y") v = TheCamera.m_target.y;
 		else if(what == "camera_target.z") v = TheCamera.m_target.z;
+		else if(what == "camera_position.x") v = TheCamera.m_position.x;
+		else if(what == "camera_position.y") v = TheCamera.m_position.y;
+		else if(what == "camera_position.z") v = TheCamera.m_position.z;
 		else v = rw::length(rw::sub(TheCamera.m_position, gMarkedCamera));
 		snprintf(buf, sizeof(buf), "%s is %g", what.c_str(), v);
 		why = buf;

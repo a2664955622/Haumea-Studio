@@ -10,14 +10,14 @@ msgstr "%s usa um acessório preso a um osso do jogador, mas o alvo não é joga
 msgid "Add selected model"
 msgstr "Adicionar modelo selecionado"
 
-msgid "Attach to player"
-msgstr "Anexar ao jogador"
-
 msgid "Attached to player preview (skin %d)"
 msgstr "Anexado à prévia do jogador (skin %d)"
 
 msgid "Attachment Workspace"
 msgstr "Área de trabalho de anexos"
+
+msgid "Back"
+msgstr "Trás"
 
 msgid "Bone"
 msgstr "Osso"
@@ -34,20 +34,17 @@ msgstr "Não foi possível anexar este objeto a esse alvo."
 msgid "Could not attach to the selected target."
 msgstr "Não foi possível anexar ao alvo selecionado."
 
-msgid "Creates a player bone attachment and opens its preview workspace."
-msgstr "Cria um acessório preso a um osso do jogador e abre a área de prévia."
-
 msgid "Edit in attachment workspace"
 msgstr "Editar na área de trabalho de anexos"
 
-msgid "Focus target"
-msgstr "Focar alvo"
+msgid "Front"
+msgstr "Frente"
 
 msgid "Head"
 msgstr "Cabeça"
 
-msgid "Isolated void view"
-msgstr "Visualização isolada no vazio"
+msgid "Isolate view"
+msgstr "Isolar visualização"
 
 msgid "Jaw"
 msgstr "Mandíbula"
@@ -82,14 +79,14 @@ msgstr "Cor do material 2"
 msgid "Neck"
 msgstr "Pescoço"
 
-msgid "No attachment target"
-msgstr "Nenhum alvo de anexo"
+msgid "Center the target and fit it in view."
+msgstr "Centraliza o alvo e ajusta seu tamanho à visualização."
+
+msgid "Leave the isolated attachment view and restore the map camera."
+msgstr "Sai da visualização isolada de anexos e restaura a câmera do mapa."
 
 msgid "Optional material colours for the attached model."
 msgstr "Cores opcionais para o material do modelo anexado."
-
-msgid "Player attachment workspace"
-msgstr "Área de trabalho de acessórios do jogador"
 
 msgid "Player skin"
 msgstr "Skin do jogador"
@@ -121,6 +118,9 @@ msgstr "Coxa direita"
 msgid "Right upper arm"
 msgstr "Braço direito"
 
+msgid "Return to map"
+msgstr "Voltar ao mapa"
+
 msgid "Scale"
 msgstr "Escala"
 
@@ -136,5 +136,59 @@ msgstr "Coluna"
 msgid "Target: %s"
 msgstr "Alvo: %s"
 
-msgid "The player already has 10 attached objects."
-msgstr "O jogador já tem 10 objetos anexados."
+msgid "Top"
+msgstr "Superior"
+
+msgid "Attach selected to target"
+msgstr "Anexar selecionados ao alvo"
+
+msgid "Attach to target"
+msgstr "Anexar ao alvo"
+
+msgid "Attached %d object(s) to the selected target."
+msgstr "%d objeto(s) anexado(s) ao alvo selecionado."
+
+msgid "Attachment target selection cancelled."
+msgstr "Seleção do alvo de anexo cancelada."
+
+msgid "Cancel target selection"
+msgstr "Cancelar seleção do alvo"
+
+msgid "Bone and scale apply to ped/NPC targets."
+msgstr "Osso e escala se aplicam a alvos ped/NPC."
+
+msgid "Choose the ped bone. Its coloured axes are marked in the viewport."
+msgstr "Escolha o osso do ped. Seus eixos coloridos aparecem na visualização."
+
+msgid "Click a ped, NPC, vehicle, or object in the viewport. Esc or right-click cancels."
+msgstr "Clique em um ped, NPC, veículo ou objeto na visualização. Esc ou o botão direito cancela."
+
+msgid "Select one or more objects to attach first."
+msgstr "Selecione primeiro um ou mais objetos para anexar."
+
+msgid "Target picking failed. Click again or cancel."
+msgstr "Não foi possível selecionar o alvo. Clique novamente ou cancele."
+
+msgid "That target can't accept the selected objects. Click another target or cancel."
+msgstr "Esse alvo não aceita os objetos selecionados. Clique em outro alvo ou cancele."
+
+msgid "Use Attach selected to target or select two objects to attach them."
+msgstr "Use Anexar selecionados ao alvo ou selecione dois objetos para anexá-los."
+
+msgid "Attach selected objects"
+msgstr "Anexar objetos selecionados"
+
+msgid "Select a ped, NPC, or vehicle in the map."
+msgstr "Selecione um ped, NPC ou veículo no mapa."
+
+msgid "Select objects in the map, then attach them to this target without moving them."
+msgstr "Selecione objetos no mapa e anexe-os a este alvo sem movê-los."
+
+msgid "Choose an attachment"
+msgstr "Escolha um anexo"
+
+msgid "No attached objects"
+msgstr "Nenhum objeto anexado"
+
+msgid "Placement settings"
+msgstr "Configurações de colocação"

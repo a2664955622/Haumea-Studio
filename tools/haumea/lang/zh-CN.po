@@ -7501,9 +7501,6 @@ msgstr "选择路径的点"
 msgid "Select them"
 msgstr "选中它们"
 
-msgid "Select two objects to attach them."
-msgstr "选择两个物体以将其附加。"
-
 msgid "Select vehicle"
 msgstr "选择载具"
 
@@ -10107,9 +10104,6 @@ msgstr "%s 使用了玩家骨骼附件，但目标不是玩家或 NPC。"
 msgid "Add selected model"
 msgstr "添加所选模型"
 
-msgid "Attach to player"
-msgstr "附加到玩家"
-
 #, c-format
 msgid "Attached to player preview (skin %d)"
 msgstr "已附加到玩家预览（皮肤 %d）"
@@ -10132,20 +10126,11 @@ msgstr "无法将此物体附加到该目标。"
 msgid "Could not attach to the selected target."
 msgstr "无法附加到所选目标。"
 
-msgid "Creates a player bone attachment and opens its preview workspace."
-msgstr "创建玩家骨骼附件并打开其预览工作区。"
-
 msgid "Edit in attachment workspace"
 msgstr "在附件工作区中编辑"
 
-msgid "Focus target"
-msgstr "聚焦目标"
-
 msgid "Head"
 msgstr "头部"
-
-msgid "Isolated void view"
-msgstr "独立空场景视图"
 
 msgid "Jaw"
 msgstr "下颌"
@@ -10180,14 +10165,8 @@ msgstr "材质颜色 2"
 msgid "Neck"
 msgstr "颈部"
 
-msgid "No attachment target"
-msgstr "没有附件目标"
-
 msgid "Optional material colours for the attached model."
 msgstr "附加模型的可选材质颜色。"
-
-msgid "Player attachment workspace"
-msgstr "玩家附件工作区"
 
 msgid "Player skin"
 msgstr "玩家皮肤"
@@ -10235,5 +10214,78 @@ msgstr "脊柱"
 msgid "Target: %s"
 msgstr "目标：%s"
 
-msgid "The player already has 10 attached objects."
-msgstr "玩家已经附加了 10 个物体。"
+msgid "Attach selected objects"
+msgstr "附加选中的物体"
+
+msgid "Attach selected to target"
+msgstr "将选中物体附加到目标"
+
+msgid "Attach to target"
+msgstr "附加到目标"
+
+#, c-format
+msgid "Attached %d object(s) to the selected target."
+msgstr "已将 %d 个物体附加到所选目标。"
+
+msgid "Attachment target selection cancelled."
+msgstr "已取消选择附加目标。"
+
+msgid "Back"
+msgstr "后视图"
+
+msgid "Bone and scale apply to ped/NPC targets."
+msgstr "骨骼和缩放适用于行人/NPC目标。"
+
+msgid "Cancel target selection"
+msgstr "取消选择目标"
+
+msgid "Center the target and fit it in view."
+msgstr "将目标居中并调整至适合视图的大小。"
+
+msgid "Choose the ped bone. Its coloured axes are marked in the viewport."
+msgstr "选择行人骨骼。视口中以彩色坐标轴标记所选骨骼。"
+
+msgid "Click a ped, NPC, vehicle, or object in the viewport. Esc or right-click cancels."
+msgstr "在视口中单击行人、NPC、车辆或物体。按 Esc 或单击右键取消。"
+
+msgid "Front"
+msgstr "前视图"
+
+msgid "Isolate view"
+msgstr "隔离视图"
+
+msgid "Leave the isolated attachment view and restore the map camera."
+msgstr "退出附加物隔离视图并恢复地图相机。"
+
+msgid "Return to map"
+msgstr "返回地图"
+
+msgid "Select a ped, NPC, or vehicle in the map."
+msgstr "在地图中选择行人、NPC或车辆。"
+
+msgid "Select objects in the map, then attach them to this target without moving them."
+msgstr "在地图中选择物体，然后将其附加到此目标并保持当前位置。"
+
+msgid "Select one or more objects to attach first."
+msgstr "请先选择一个或多个要附加的物体。"
+
+msgid "Target picking failed. Click again or cancel."
+msgstr "目标拾取失败。请再次单击或取消。"
+
+msgid "That target can't accept the selected objects. Click another target or cancel."
+msgstr "无法将所选物体附加到此目标。请选择其他目标或取消。"
+
+msgid "Top"
+msgstr "顶视图"
+
+msgid "Use Attach selected to target or select two objects to attach them."
+msgstr "使用“将选中物体附加到目标”，或选择两个物体进行附加。"
+
+msgid "Choose an attachment"
+msgstr "选择附加物"
+
+msgid "No attached objects"
+msgstr "没有附加的物体"
+
+msgid "Placement settings"
+msgstr "放置设置"

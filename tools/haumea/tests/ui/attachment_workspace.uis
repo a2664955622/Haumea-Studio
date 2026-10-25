@@ -1,0 +1,170 @@
+# Clicking a real NPC opens placement choices; real attachments have live editing controls.
+open "$UI_FIXTURES/ui_attachment_targets.pwn"
+assert objects == 5
+click_object model=7
+wait 5
+assert selected.model == 7
+assert window 'Attachment Workspace'
+assert item 'Attachment Workspace' 'Bone'
+assert item 'Attachment Workspace' 'Scale/#0'
+assert no_item 'Attachment Workspace' 'Offset/#0'
+assert no_item 'Attachment Workspace' 'Rotation/#0'
+assert no_item 'Attachment Workspace' 'Player skin'
+assert item_count 'Attachment' == 0
+# A heading-zero ped faces +Y. Each named view must show that side.
+click_item 'Attachment Workspace' 'Front'
+wait 4
+assert camera_position.y > -2999.9
+click_item 'Attachment Workspace' 'Back'
+wait 4
+assert camera_position.y < -3000.1
+click_item 'Attachment Workspace' 'Left'
+wait 4
+assert camera_position.x < 1999.9
+click_item 'Attachment Workspace' 'Right'
+wait 4
+assert camera_position.x > 2000.1
+click_item 'Attachment Workspace' 'Top'
+wait 4
+assert camera_position.z > 5.1
+# Choose the body part and size before attaching an already placed object.
+click_item 'Attachment Workspace' 'Bone'
+wait 3
+click_item '*' 'Right hand'
+set_item 'Attachment Workspace' 'Scale/#0' '1.5' ctrl tab
+set_item 'Attachment Workspace' 'Scale/#1' '0.8' ctrl tab
+set_item 'Attachment Workspace' 'Scale/#2' '2.0' ctrl tab
+click_object model=1271
+wait 4
+click_item 'Attachment Workspace' 'Attach selected objects'
+wait 5
+assert selected.model == 1271
+assert selected.x > 2002.99
+assert selected.x < 2003.01
+assert selected.y > -3000.01
+assert selected.y < -2999.99
+assert selected.z > 5.99
+assert selected.z < 6.01
+assert pawn_contains 'SetPlayerAttachedObject(walker, 0, 1271, 6,'
+assert pawn_contains '1.500000, 0.800000, 2.000000, 0x00000000, 0x00000000'
+# The attached object's settings are editable in the workspace itself.
+assert item 'Attachment Workspace' 'Player slot'
+set_item 'Attachment Workspace' 'Offset/#0' '0.25' ctrl tab
+wait 4
+assert pawn_contains '1271, 6, 0.250000,'
+# Selecting the host keeps editing its real attachment, without a fake entry.
+set_item 'Attachment Workspace' 'Offset/#0' '5.0' ctrl tab
+click_object model=7
+wait 5
+assert selected.model == 7
+assert item 'Attachment Workspace' 'Attachment'
+assert item 'Attachment Workspace' 'Offset/#0'
+assert item 'Attachment Workspace' 'Rotation/#0'
+set_item 'Attachment Workspace' 'Offset/#0' '0.5' ctrl tab
+wait 4
+assert pawn_contains '1271, 6, 0.500000,'
+assert selected.x > 1999.99
+assert selected.x < 2000.01
+set_item 'Attachment Workspace' 'Offset/#0' '0.25' ctrl tab
+click_item 'Attachment Workspace' 'Attachment'
+wait 3
+assert no_item '*' 'New attachment'
+close_popup
+wait 3
+# New browser models are attached using the current bone and scale.
+click_item 'Attachment Workspace' 'Browse models'
+wait 5
+click_item 'Object Browser' '##browser_source'
+wait 3
+click_item '*' 'Objects'
+wait 3
+set_item 'Object Browser' '##search_objects' '1238'
+wait 5
+click_item 'Object Browser' '##tile'
+wait 3
+move 1100 650
+shortcut window_browser
+wait 3
+click_item 'Attachment Workspace' 'Add selected model'
+wait 5
+assert objects == 6
+assert selected.model == 1238
+assert pawn_contains 'SetPlayerAttachedObject(walker, 1, 1238, 6, 0.250000,'
+# Creating an attachment is one undo step.
+move 1100 650
+shortcut undo
+wait 5
+assert objects == 5
+shortcut redo
+wait 5
+assert objects == 6
+assert pawn_contains 'SetPlayerAttachedObject(walker, 1, 1238, 6, 0.250000,'
+# Clicking a vehicle retargets the same window and exposes vehicle controls.
+click_object model=411
+wait 5
+assert window 'Attachment Workspace'
+assert no_item 'Attachment Workspace' 'Player skin'
+assert no_item 'Attachment Workspace' 'Bone'
+assert no_item 'Attachment Workspace' 'Scale/#0'
+assert no_item 'Attachment Workspace' 'Offset/#0'
+assert no_item 'Attachment Workspace' 'Rotation/#0'
+click_object model=1337
+wait 4
+click_item 'Attachment Workspace' 'Attach selected objects'
+wait 5
+assert selected.x > 2012.99
+assert selected.x < 2013.01
+assert pawn_contains 'AttachObjectToVehicle('
+assert item 'Attachment Workspace' 'Offset/#0'
+assert item 'Attachment Workspace' 'Rotation/#0'
+# Clicking a different player ped retargets the window again, without a dummy.
+click_object model=101
+wait 5
+assert selected.model == 101
+assert item 'Attachment Workspace' 'Bone'
+assert item 'Attachment Workspace' 'Scale/#0'
+assert no_item 'Attachment Workspace' 'Player skin'
+# This player class faces west (90 degrees); views follow the target heading.
+click_item 'Attachment Workspace' 'Front'
+wait 4
+assert camera_position.x < 2019.9
+click_item 'Attachment Workspace' 'Back'
+wait 4
+assert camera_position.x > 2020.1
+click_item 'Attachment Workspace' 'Left'
+wait 4
+assert camera_position.y < -3000.1
+click_item 'Attachment Workspace' 'Right'
+wait 4
+assert camera_position.y > -2999.9
+click_item 'Attachment Workspace' 'Top'
+wait 4
+assert camera_position.z > 5.1
+mark_camera
+click_item 'Attachment Workspace' 'Isolate view'
+wait 10
+assert rendered.map_model 101 == 1
+assert rendered.map_model 7 == 0
+assert rendered.map_model 411 == 0
+assert item 'Attachment Workspace' 'Return to map'
+click_item 'Attachment Workspace' 'Return to map'
+wait 5
+assert camera_moved < 0.01
+assert item 'Attachment Workspace' 'Isolate view'
+assert objects == 6
+# Save/reopen keeps both player and vehicle attachments and a usable target picker.
+move 1100 650
+key Ctrl+S
+wait 5
+reopen
+wait 8
+assert objects == 6
+assert pawn_contains 'SetPlayerAttachedObject(walker, 0, 1271, 6, 0.250000,'
+assert pawn_contains '1.500000, 0.800000, 2.000000, 0x00000000, 0x00000000'
+assert pawn_contains 'AttachObjectToVehicle('
+click_object model=7
+wait 5
+assert window 'Attachment Workspace'
+assert item 'Attachment Workspace' 'Bone'
+assert item 'Attachment Workspace' 'Scale/#0'
+assert no_item 'Attachment Workspace' 'Player skin'
