@@ -1961,6 +1961,9 @@ msgstr "选择 GTA San Andreas 文件夹"
 msgid "Choose the GTA San Andreas folder."
 msgstr "选择 GTA San Andreas 文件夹。"
 
+msgid "Choose the server TXD for this model ID."
+msgstr "为此模型 ID 选择服务器 TXD。"
+
 msgid "Choose the server folder..."
 msgstr "选择服务器文件夹..."
 
@@ -2157,6 +2160,9 @@ msgstr "代码"
 
 msgid "Code Glass"
 msgstr "Code Glass"
+
+msgid "Code target"
+msgstr "代码目标"
 
 msgid "Collision"
 msgstr "碰撞"
@@ -3006,6 +3012,9 @@ msgstr ""
 msgid "Enter model IDs separated by commas, spaces or ranges."
 msgstr "输入模型 ID，以逗号、空格或范围分隔。"
 
+msgid "Enter the registered model ID before choosing a texture."
+msgstr "选择纹理前，请输入已注册的模型 ID。"
+
 msgid "Errors"
 msgstr "错误"
 
@@ -3560,6 +3569,9 @@ msgstr "车库门开启"
 
 msgid "General"
 msgstr "常规"
+
+msgid "Generated Pawn code targets only the selected server."
+msgstr "生成的 Pawn 代码仅适用于所选服务器。"
 
 msgid "Get out"
 msgstr "下车"
@@ -5327,6 +5339,9 @@ msgstr "没有最近使用的地图"
 msgid "No reciprocal link found (one-way connection)."
 msgstr "未找到反向链接（单向连接）。"
 
+msgid "No server TXDs found."
+msgstr "未找到服务器 TXD。"
+
 msgid "No shadows"
 msgstr "无阴影"
 
@@ -5685,6 +5700,9 @@ msgstr "打开此 workspace 中的地图后，它会显示在这里。"
 
 msgid "Open a map..."
 msgstr "打开地图..."
+
+msgid "Open a server workspace to browse its textures."
+msgstr "打开服务器工作区以浏览其纹理。"
 
 msgid "Open a textdraw file"
 msgstr "打开 textdraw 文件"
@@ -6622,6 +6640,9 @@ msgstr "参考物体 — 仅当前打开的 IPL 可编辑。"
 msgid "Reference: %.2f x %.2f x %.2f units"
 msgstr "参考：%.2f x %.2f x %.2f 单位"
 
+msgid "Refresh"
+msgstr "刷新"
+
 msgid "Refresh from map"
 msgstr "从地图刷新"
 
@@ -7381,6 +7402,9 @@ msgstr "由于每日 ping 已开启，报告也会连同你的安装 ID 一起�
 
 msgid "Server"
 msgstr "服务器"
+
+msgid "Server TXDs"
+msgstr "服务器 TXD"
 
 msgid "Server folder"
 msgstr "服务器文件夹"
@@ -8248,13 +8272,6 @@ msgstr "显示在 textdraw 下方的游戏 HUD，位置与 SA-MP 中的显示一
 msgid "The game's NODES*.DAT files couldn't be loaded."
 msgstr "无法加载游戏自带的 NODES*.DAT 文件。"
 
-msgid ""
-"The game's TXDs, and the custom models' of the open map (AddSimpleModel):\n"
-"those are mdl-<id> (mdl-2018 for -2018), for players on 0.3.DL or open.mp."
-msgstr ""
-"游戏自带的 TXD，以及打开地图中自定义模型的 TXD (AddSimpleModel)：\n"
-"它们是 mdl-<id>（-2018 模型为 mdl-2018），供使用 0.3.DL 或 open.mp 的玩家使用。"
-
 msgid "The game's path nodes. open.mp NPCs follow them with NPC_PlayNode."
 msgstr "游戏自带的路径节点。open.mp NPC 通过 NPC_PlayNode 沿它们行进。"
 
@@ -8315,9 +8332,6 @@ msgstr ""
 "绘制的物体：所有脚本物体、所选物体或某个组。\n"
 "载具、SA-MP 元素和未更改的世界物体不包括在内。"
 
-msgid "The open map has no custom model with that ID."
-msgstr "打开的地图没有该 ID 的自定义模型。"
-
 msgid "The parent was deleted, so this attachment is not exported."
 msgstr "父物体已被删除，因此不会导出此附件。"
 
@@ -8335,6 +8349,9 @@ msgstr "各副本环绕的中心点（一条垂直轴）。"
 
 msgid "The saved file's first lines say which functions to call."
 msgstr "保存文件的前几行说明了要调用哪些函数。"
+
+msgid "The selected server TXD could not be loaded."
+msgstr "无法加载所选的服务器 TXD。"
 
 msgid "The selection contains read-only reference objects."
 msgstr "所选物体包含只读的参考物体。"
@@ -8822,6 +8839,9 @@ msgstr "使用所选吸附增量"
 
 msgid "Use the first selected object's model."
 msgstr "使用第一个所选物体的模型。"
+
+msgid "Use the model ID registered by AddSimpleModel on your server (-1000 to -30000)."
+msgstr "使用服务器通过 AddSimpleModel 注册的模型 ID（-1000 至 -30000）。"
 
 msgid "Use the selected node"
 msgstr "使用所选节点"

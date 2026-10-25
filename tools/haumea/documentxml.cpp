@@ -347,6 +347,7 @@ void writeTextDraw(Node &node, const TextDraw &value)
 	write(node, "group", value.group);
 	write(node, "board", value.board);
 	write(node, "shape", value.shape);
+	if(!value.serverTxd.empty()) write(node, "serverTxd", value.serverTxd);
 }
 bool readTextDraw(const Node &node, TextDraw &value, std::string *error)
 {
@@ -411,6 +412,8 @@ bool readTextDraw(const Node &node, TextDraw &value, std::string *error)
 	if (!read(node, "board", value.board, error))
 		return false;
 	if (!read(node, "shape", value.shape, error))
+		return false;
+	if (!read(node, "serverTxd", value.serverTxd, error))
 		return false;
 	return true;
 }
@@ -800,6 +803,8 @@ bool ReadTextDrawXML(const Node &document, bool sameRevision, std::vector<TextDr
 					td.group = saved.group;
 					td.board = saved.board;
 					td.shape = saved.shape;
+					if(td.text.substr(0, td.text.find(':')) == saved.text.substr(0, saved.text.find(':')))
+						td.serverTxd = saved.serverTxd;
 					break;
 				}
 		for (size_t i = 0; i < snapshot.size(); i++)

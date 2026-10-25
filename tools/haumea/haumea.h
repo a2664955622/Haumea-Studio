@@ -48,6 +48,11 @@ const char *GetCustomModelTxdPath(int txdSlot);
 // editor's own slot names (~custom0...) only keep them apart from stock TXDs.
 const char *GetCustomModelTxdName(int txdSlot);
 int FindCustomModelTxdSlot(const char *name);
+// Server artwork TXDs can be browsed without importing or placing a 3D model.
+void ListServerTextureFiles(std::vector<std::string> &files);
+int LoadServerTextureTxd(const std::string &relativePath);
+int ServerTextureModelId(const std::string &relativePath); // 0 if no literal registration was found
+std::string ServerTexturePathForModel(int pawnId);
 bool MapUsesCustomModels(void);
 void SetupCustomModelCollision(struct ObjectDef *obj, rw::Clump *clump);
 void OpenAddCustomModelDialog(const char *droppedPath);	// nil, or a dropped DFF/TXD

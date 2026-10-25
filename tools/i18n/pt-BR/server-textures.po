@@ -1,0 +1,28 @@
+# Server artwork and TextDraw sprites.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Choose the server TXD for this model ID."
+msgstr "Escolha o TXD do servidor para este ID de modelo."
+
+msgid "Enter the registered model ID before choosing a texture."
+msgstr "Informe o ID do modelo registrado antes de escolher uma textura."
+
+msgid "No server TXDs found."
+msgstr "Nenhum TXD encontrado no servidor."
+
+msgid "Open a server workspace to browse its textures."
+msgstr "Abra um workspace de servidor para ver suas texturas."
+
+msgid "Refresh"
+msgstr "Atualizar"
+
+msgid "Server TXDs"
+msgstr "TXDs do servidor"
+
+msgid "The selected server TXD could not be loaded."
+msgstr "Não foi possível carregar o TXD do servidor selecionado."
+
+msgid "Use the model ID registered by AddSimpleModel on your server (-1000 to -30000)."
+msgstr "Use o ID do modelo registrado por AddSimpleModel no seu servidor (-1000 a -30000)."

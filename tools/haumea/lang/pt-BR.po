@@ -1995,6 +1995,9 @@ msgstr "Escolha a pasta do GTA San Andreas"
 msgid "Choose the GTA San Andreas folder."
 msgstr "Escolha a pasta do GTA San Andreas."
 
+msgid "Choose the server TXD for this model ID."
+msgstr "Escolha o TXD do servidor para este ID de modelo."
+
 msgid "Choose the server folder..."
 msgstr "Escolher a pasta do servidor..."
 
@@ -3054,6 +3057,9 @@ msgstr ""
 
 msgid "Enter model IDs separated by commas, spaces or ranges."
 msgstr "Informe IDs de modelos separados por vírgulas, espaços ou intervalos."
+
+msgid "Enter the registered model ID before choosing a texture."
+msgstr "Informe o ID do modelo registrado antes de escolher uma textura."
 
 msgid "Errors"
 msgstr "Erros"
@@ -5424,6 +5430,9 @@ msgstr "Nenhum mapa recente"
 msgid "No reciprocal link found (one-way connection)."
 msgstr "Nenhuma ligação recíproca encontrada (conexão de mão única)."
 
+msgid "No server TXDs found."
+msgstr "Nenhum TXD encontrado no servidor."
+
 msgid "No shadows"
 msgstr "Sem sombras"
 
@@ -5782,6 +5791,9 @@ msgstr "Abra um mapa nesta área de trabalho para que ele apareça aqui."
 
 msgid "Open a map..."
 msgstr "Abrir um mapa..."
+
+msgid "Open a server workspace to browse its textures."
+msgstr "Abra um workspace de servidor para ver suas texturas."
 
 msgid "Open a textdraw file"
 msgstr "Abrir um arquivo de textdraws"
@@ -6734,6 +6746,9 @@ msgstr "Objeto de referência — só o IPL aberto pode ser editado."
 msgid "Reference: %.2f x %.2f x %.2f units"
 msgstr "Referência: %.2f x %.2f x %.2f unidades"
 
+msgid "Refresh"
+msgstr "Atualizar"
+
 msgid "Refresh from map"
 msgstr "Atualizar a partir do mapa"
 
@@ -7520,6 +7535,9 @@ msgstr "Enviado com o seu ID de instalação também, já que o ping diário est
 
 msgid "Server"
 msgstr "Servidor"
+
+msgid "Server TXDs"
+msgstr "TXDs do servidor"
 
 msgid "Server folder"
 msgstr "Pasta do servidor"
@@ -8396,13 +8414,6 @@ msgstr "O HUD do jogo sob os textdraws, onde o SA-MP o mostra, para conferir que
 msgid "The game's NODES*.DAT files couldn't be loaded."
 msgstr "Não foi possível carregar os arquivos NODES*.DAT do jogo."
 
-msgid ""
-"The game's TXDs, and the custom models' of the open map (AddSimpleModel):\n"
-"those are mdl-<id> (mdl-2018 for -2018), for players on 0.3.DL or open.mp."
-msgstr ""
-"Os TXDs do jogo e os dos modelos personalizados do mapa aberto (AddSimpleModel):\n"
-"esses são mdl-<id> (mdl-2018 para -2018), para jogadores no 0.3.DL ou open.mp."
-
 msgid "The game's path nodes. open.mp NPCs follow them with NPC_PlayNode."
 msgstr "Os nós de caminho do jogo. NPCs do open.mp os seguem com NPC_PlayNode."
 
@@ -8463,9 +8474,6 @@ msgstr ""
 "Os objetos desenhados: todo objeto do script, a seleção ou um grupo.\n"
 "Veículos, elementos SA-MP e objetos do mundo sem mudanças ficam de fora."
 
-msgid "The open map has no custom model with that ID."
-msgstr "O mapa aberto não tem modelo personalizado com esse ID."
-
 msgid "The parent was deleted, so this attachment is not exported."
 msgstr "O pai foi excluído, então este anexo não é exportado."
 
@@ -8486,6 +8494,9 @@ msgstr "O ponto em volta do qual as cópias vão (um eixo vertical)."
 
 msgid "The saved file's first lines say which functions to call."
 msgstr "As primeiras linhas do arquivo salvo dizem quais funções chamar."
+
+msgid "The selected server TXD could not be loaded."
+msgstr "Não foi possível carregar o TXD do servidor selecionado."
 
 msgid "The selection contains read-only reference objects."
 msgstr "A seleção contém objetos de referência que não podem ser editados."
@@ -8973,6 +8984,9 @@ msgstr "Usar o incremento de encaixe selecionado"
 
 msgid "Use the first selected object's model."
 msgstr "Usar o modelo do primeiro objeto selecionado."
+
+msgid "Use the model ID registered by AddSimpleModel on your server (-1000 to -30000)."
+msgstr "Use o ID do modelo registrado por AddSimpleModel no seu servidor (-1000 a -30000)."
 
 msgid "Use the selected node"
 msgstr "Usar o nó selecionado"

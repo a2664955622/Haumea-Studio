@@ -724,13 +724,24 @@ spriteTxdSlot(const std::string &name)
 }
 
 static rw::Texture*
-spriteTexture(const std::string &text)
+spriteTexture(const std::string &text, const char *serverTxd = nil)
 {
 	size_t colon = text.find(':');
 	if(colon == std::string::npos)
 		return nil;
-	int slot = spriteTxdSlot(text.substr(0, colon));
+	std::string dictionary = text.substr(0, colon);
+	int slot = -1;
+	if(serverTxd && serverTxd[0] && rw::strncmp_ci(dictionary.c_str(), "mdl-", 4) == 0)
+		slot = LoadServerTextureTxd(serverTxd);
+	if(slot < 0) slot = spriteTxdSlot(dictionary);
 	return slot >= 0 ? FindTextureInTxd(slot, text.substr(colon + 1).c_str()) : nil;
+}
+
+bool
+TextDrawSpriteTextureAvailable(const TextDraw &td)
+{
+	rw::Texture *texture = td.font == TD_FONT_SPRITE ? spriteTexture(td.text, td.serverTxd.c_str()) : nil;
+	return texture && texture->raster;
 }
 
 static void
@@ -1156,7 +1167,7 @@ drawTextDraw(ImDrawList *dl, const Canvas &cv, const TextDraw &td)
 	}
 	if(td.font == TD_FONT_SPRITE){
 		// A negative width or height mirrors it, as in game (e.g. LD_DRV:tvcorn's four corners).
-		rw::Texture *tex = spriteTexture(td.text);
+		rw::Texture *tex = spriteTexture(td.text, td.serverTxd.c_str());
 		ImVec2 uv0(x1 < x0 ? 1.0f : 0.0f, y1 < y0 ? 1.0f : 0.0f), uv1(1.0f - uv0.x, 1.0f - uv0.y);
 		if(x1 < x0) std::swap(x0, x1);
 		if(y1 < y0) std::swap(y0, y1);
@@ -3861,36 +3872,76 @@ toggleFavSprite(const std::string &sprite)
 	SaveEditorSettings();
 }
 
-// The TXDs SA-MP can draw from, searched by name; a texture filter; and
-// favourites (right-click a sprite) gathered in their own list at the top.
+// A favourite may refer to a dynamically registered server model. Reuse the
+// document's TXD binding so choosing it does not lose the preview source.
+static std::string
+favouriteServerTxd(const std::string &sprite)
+{
+	size_t colon = sprite.find(':');
+	if(colon == std::string::npos || rw::strncmp_ci(sprite.c_str(), "mdl-", 4) != 0) return "";
+	std::string dictionary = sprite.substr(0, colon);
+	for(const TextDraw &td : GetTextDraws())
+		if(!td.serverTxd.empty() && rw::strcmp_ci(td.text.substr(0, td.text.find(':')).c_str(), dictionary.c_str()) == 0)
+			return td.serverTxd;
+	return ServerTexturePathForModel(-atoi(dictionary.c_str()+4));
+}
+
+// TXDs from the server's configured artwork folder and the installed game.
 static void
 spritePicker(TextDraw &td)
 {
-	static std::string txdName;
+	static std::string txdName, serverFile, lastText, lastFile, lastVariable;
+	static int modelId;
+	static bool initialized;
 	static const std::string FAVOURITES = "\x01" "favourites";
-	if(txdName.empty()){
+	static std::string listedRoot;
+	static std::vector<std::string> serverFiles;
+	std::string root = GetCustomModelsDir() ? GetCustomModelsDir() : "";
+	if(listedRoot != root){
+		listedRoot = root;
+		ListServerTextureFiles(serverFiles);
+		initialized = false;
+	}
+	if(!initialized || lastVariable != td.name || lastText != td.text || lastFile != td.serverTxd){
+		initialized = true;
 		size_t colon = td.text.find(':');
 		txdName = colon == std::string::npos ? "LD_BEAT" : td.text.substr(0, colon);
+		modelId = rw::strncmp_ci(txdName.c_str(), "mdl-", 4) == 0 ? -atoi(txdName.c_str()+4) : 0;
+		serverFile = td.serverTxd.empty() ? ServerTexturePathForModel(modelId) : td.serverTxd;
 	}
 	std::vector<std::string> txds;
 	listSpriteTxds(txds);
-	std::string shown = txdName == FAVOURITES ? std::string(ICON_FA_STAR " ") + _("Favourites") : txdName;
+	std::string shown = txdName == FAVOURITES ? std::string(ICON_FA_STAR " ") + _("Favourites") :
+		!serverFile.empty() ? serverFile : txdName;
 	if(ImGui::BeginCombo(L("Sprite TXD"), shown.c_str(), ImGuiComboFlags_HeightLarge)){
-		static char txdFilter[64];
+		static char txdFilter[128];
 		if(ImGui::IsWindowAppearing()){
 			txdFilter[0] = '\0';
 			ImGui::SetKeyboardFocusHere();
 		}
 		ImGui::SetNextItemWidth(-FLT_MIN);
 		ImGui::InputTextWithHint("##txd_filter", _("Search TXDs"), txdFilter, sizeof(txdFilter));
-		if(ImGui::Selectable((std::string(ICON_FA_STAR " ") + _("Favourites")).c_str(), txdName == FAVOURITES))
-			txdName = FAVOURITES;
+		if(ImGui::Selectable((std::string(ICON_FA_STAR " ") + _("Favourites")).c_str(), txdName == FAVOURITES)){
+			txdName = FAVOURITES; serverFile.clear(); modelId = 0;
+		}
 		std::string want = lowered(txdFilter);
-		// The open map's custom models first: their TXDs as mdl-<id>.
+		ImGui::SeparatorText(_("Server TXDs"));
+		if(ImGui::SmallButton(L("Refresh"))) ListServerTextureFiles(serverFiles);
+		if(root.empty()) ImGui::TextWrapped(_("Open a server workspace to browse its textures."));
+		else ImGui::SetItemTooltip("%s", root.c_str());
+		for(const std::string &file : serverFiles){
+			if(!want.empty() && lowered(file).find(want) == std::string::npos) continue;
+			if(ImGui::Selectable(file.c_str(), file == serverFile)){
+				serverFile = file;
+				modelId = ServerTextureModelId(file);
+				txdName = modelId ? "mdl" + std::to_string(modelId) : "";
+			}
+		}
+		if(!root.empty() && serverFiles.empty()) ImGui::TextDisabled(_("No server TXDs found."));
+		// Keep the ID entries too, for projects already using mdl-ID references.
 		std::vector<int> customs;
 		ListCustomSimpleModels(customs);
-		if(!customs.empty())
-			ImGui::SeparatorText(_("Custom models (0.3.DL)"));
+		if(!customs.empty()) ImGui::SeparatorText(_("Custom models (0.3.DL)"));
 		for(int id : customs){
 			char key[32], label[160];
 			snprintf(key, sizeof(key), "mdl%d", id);
@@ -3898,73 +3949,87 @@ spritePicker(TextDraw &td)
 			const char *file = obj && obj->m_txdSlot >= 0 ? GetCustomModelTxdName(obj->m_txdSlot) : "";
 			snprintf(label, sizeof(label), "%s  (%s)", key, file ? file : "");
 			if(want.empty() || lowered(label).find(want) != std::string::npos)
-				if(ImGui::Selectable(label, rw::strcmp_ci(key, txdName.c_str()) == 0))
-					txdName = key;
+				if(ImGui::Selectable(label, rw::strcmp_ci(key, txdName.c_str()) == 0)){
+					txdName = key; modelId = id; serverFile = ServerTexturePathForModel(id);
+				}
 		}
-		if(!customs.empty())
-			ImGui::SeparatorText(_("The game's"));
-		for(size_t i = 0; i < txds.size(); i++)
-			if(want.empty() || lowered(txds[i]).find(want) != std::string::npos)
-				if(ImGui::Selectable(txds[i].c_str(), rw::strcmp_ci(txds[i].c_str(), txdName.c_str()) == 0))
-					txdName = txds[i];
+		ImGui::SeparatorText(_("The game's"));
+		for(const std::string &name : txds)
+			if(want.empty() || lowered(name).find(want) != std::string::npos)
+				if(ImGui::Selectable(name.c_str(), rw::strcmp_ci(name.c_str(), txdName.c_str()) == 0)){
+					txdName = name; serverFile.clear(); modelId = 0;
+				}
 		ImGui::EndCombo();
 	}
-	ImGui::SetItemTooltip("%s", _("The game's TXDs, and the custom models' of the open map (AddSimpleModel):\n"
-		"those are mdl-<id> (mdl-2018 for -2018), for players on 0.3.DL or open.mp."));
-	if(customSpriteTxdSlot(txdName) != -2 || customSpriteTxdSlot(td.text.substr(0, td.text.find(':'))) != -2){
+	ImGui::SetItemTooltip("%s", root.empty() ? _("Open a server workspace to browse its textures.") : root.c_str());
+	bool server = !serverFile.empty() || rw::strncmp_ci(txdName.c_str(), "mdl-", 4) == 0;
+	bool validModel = modelId <= -1000 && modelId >= -30000;
+	if(server){
+		ImGui::SetNextItemWidth(ImGui::GetFontSize()*10.0f);
+		if(ImGui::InputInt(L("Model ID"), &modelId, 0, 0)){
+			validModel = modelId <= -1000 && modelId >= -30000;
+			if(validModel){
+				txdName = "mdl" + std::to_string(modelId);
+				if(!serverFile.empty() && td.serverTxd == serverFile && td.text.find(':') != std::string::npos){
+					td.text = txdName + td.text.substr(td.text.find(':'));
+					TextDrawsChanged();
+				}
+			}
+		}
+		ImGui::SetItemTooltip(_("Use the model ID registered by AddSimpleModel on your server (-1000 to -30000)."));
 		UiBadge("0.3.DL", _("A custom model's texture: players on 0.3.DL and open.mp download it;\n"
 			"0.3.7 players see nothing there."));
-		if(customSpriteTxdSlot(td.text.substr(0, td.text.find(':'))) == -1)
-			ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.3f, 1.0f), "%s", _("The open map has no custom model with that ID."));
+		if(!validModel) ImGui::TextWrapped(_("Enter the registered model ID before choosing a texture."));
+		if(serverFile.empty()) ImGui::TextWrapped(_("Choose the server TXD for this model ID."));
 	}
 	static char filter[64];
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	ImGui::InputTextWithHint("##sprite_filter", _("Search sprites in it"), filter, sizeof(filter));
 	std::string want = lowered(filter);
-	// The sprites to show: the TXD's, or the favourites.
 	std::vector<std::pair<std::string, rw::Texture*>> sprites;
 	if(txdName == FAVOURITES){
 		for(const std::string &f : gFavSprites)
-			sprites.push_back(std::make_pair(f, spriteTexture(f)));
+			sprites.push_back(std::make_pair(f, spriteTexture(f, favouriteServerTxd(f).c_str())));
 	}else{
-		int slot = spriteTxdSlot(txdName);
+		int slot = serverFile.empty() ? spriteTxdSlot(txdName) : LoadServerTextureTxd(serverFile);
 		int count = slot >= 0 ? GetTxdTextureCount(slot) : 0;
 		for(int i = 0; i < count; i++)
-			if(rw::Texture *tex = GetTxdTexture(slot, i))
-				sprites.push_back(std::make_pair(txdName + ":" + tex->name, tex));
+			if(rw::Texture *tex = GetTxdTexture(slot, i)) sprites.push_back(std::make_pair(
+				txdName.empty() ? tex->name : txdName + ":" + tex->name, tex));
+		if(!serverFile.empty() && slot < 0) ImGui::TextWrapped(_("The selected server TXD could not be loaded."));
 	}
-	ImGui::BeginChild("sprites", ImVec2(0, ImGui::GetFontSize() * 9.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY);
-	float cell = ImGui::GetFontSize() * 3.0f;
-	int perRow = std::max(1, (int)(gridWidth() / (cell + 4.0f))), shownCount = 0;
+	ImGui::BeginChild("sprites", ImVec2(0, ImGui::GetFontSize()*9.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY);
+	float cell = ImGui::GetFontSize()*3.0f;
+	int perRow = std::max(1, (int)(gridWidth()/(cell+4.0f))), shownCount = 0;
 	for(size_t i = 0; i < sprites.size(); i++){
 		const std::string &name = sprites[i].first;
-		if(!want.empty() && lowered(name).find(want) == std::string::npos)
-			continue;
-		if(shownCount++ % perRow)
-			ImGui::SameLine();
+		if(!want.empty() && lowered(name).find(want) == std::string::npos) continue;
+		if(shownCount++ % perRow) ImGui::SameLine();
 		ImGui::PushID((int)i);
 		bool fav = isFavSprite(name);
 		ImVec2 at = ImGui::GetCursorScreenPos();
+		ImGui::BeginDisabled(server && !validModel);
 		bool picked = sprites[i].second ? ImGui::ImageButton("##s", (ImTextureID)sprites[i].second, ImVec2(cell, cell)) :
-			ImGui::Button("?##s", ImVec2(cell + ImGui::GetStyle().FramePadding.x * 2.0f, cell + ImGui::GetStyle().FramePadding.y * 2.0f));
+			ImGui::Button("?##s", ImVec2(cell + ImGui::GetStyle().FramePadding.x*2.0f, cell + ImGui::GetStyle().FramePadding.y*2.0f));
 		if(picked){
+			std::string source = txdName == FAVOURITES ? favouriteServerTxd(name) : serverFile;
 			td.text = name;
+			td.serverTxd = source;
 			TextDrawsChanged();
 		}
-		if(fav)
-			ImGui::GetWindowDrawList()->AddText(ImVec2(at.x + 2.0f, at.y + 1.0f), IM_COL32(255, 210, 60, 255), ICON_FA_STAR);
+		if(fav) ImGui::GetWindowDrawList()->AddText(ImVec2(at.x+2.0f, at.y+1.0f), IM_COL32(255, 210, 60, 255), ICON_FA_STAR);
 		if(ImGui::BeginPopupContextItem()){
-			if(ImGui::MenuItem(fav ? L("Remove from favourites") : L("Add to favourites")))
-				toggleFavSprite(name);
+			if(ImGui::MenuItem(fav ? L("Remove from favourites") : L("Add to favourites"))) toggleFavSprite(name);
 			ImGui::EndPopup();
 		}
+		ImGui::EndDisabled();
 		ImGui::SetItemTooltip("%s%s", name.c_str(), fav ? "" : _("\nRight-click to keep it in Favourites"));
 		ImGui::PopID();
 	}
-	if(shownCount == 0)
-		ImGui::TextDisabled("%s", txdName == FAVOURITES ? _("No favourites yet: right-click a sprite to add it.") :
-			_("No sprites match."));
+	if(shownCount == 0) ImGui::TextDisabled("%s", txdName == FAVOURITES ?
+		_("No favourites yet: right-click a sprite to add it.") : _("No sprites match."));
 	ImGui::EndChild();
+	lastText = td.text; lastFile = td.serverTxd; lastVariable = td.name;
 }
 
 // Models for a model preview: objects, vehicles or skins by name or ID,
@@ -4127,7 +4192,9 @@ properties(void)
 				char buf[256];
 				snprintf(buf, sizeof(buf), "%s", td.text.c_str());
 				if(ImGui::InputText(L("Sprite"), buf, sizeof(buf))){
+					std::string before = td.text.substr(0, td.text.find(':'));
 					td.text = buf;
+					if(before != td.text.substr(0, td.text.find(':'))) td.serverTxd.clear();
 					changed = true;
 				}
 				spritePicker(td);

@@ -51,6 +51,9 @@ struct TextDraw
 	// A shape's settings, on each of the sprites it is made of, so it can be
 	// changed after it is added: "rounded x y w h ..." (textdraws_ui.cpp).
 	std::string shape;
+	// Preview source for a server sprite whose registration is built dynamically
+	// by Pawn. Relative to the server's artwork folder; Pawn still uses mdl-ID.
+	std::string serverTxd;
 };
 
 // A ruler guide on a board: a line at x (vertical) or y, saved with the file.
@@ -127,6 +130,7 @@ void DrawTextDrawsOverlay(void);	// the canvas
 // Each line's text colours as RRGGBBAA, after the ~colour~, ~h~ and ~n~
 // tokens (tests: --textdraw-colours).
 std::string DescribeTextDrawColours(const TextDraw &td);
+bool TextDrawSpriteTextureAvailable(const TextDraw &td);
 void TextDrawsBeforeWorldRender(void);	// model previews, offscreen
 void TextDrawsAfterWorldRender(void);	// takes the still frame
 bool TextDrawModeShortcut(int action);	// true when the mode handled it

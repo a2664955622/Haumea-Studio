@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "serverartwork.h"
 #include "i18n.h"
 #include "icons.h"
 #include "testserver.h"
@@ -555,7 +556,7 @@ tsSetup(const TsSource &source, TsNeeds *needs, std::string *error)
 	// Components: open.mp's own, then the ones the map needs.
 	std::vector<std::string> components(tsBaseComponents,
 		tsBaseComponents + sizeof(tsBaseComponents)/sizeof(tsBaseComponents[0]));
-	std::string customModels = workspace.empty() ? "" : tsJoin(workspace, "models");
+	std::string customModels = workspace.empty() ? "" : ServerArtworkDirectory(workspace);
 	needs->customModels = !customModels.empty() && tsIsFile(tsJoin(customModels, "artconfig.txt"));
 	if(needs->npcs){
 		components.push_back("NPCs");

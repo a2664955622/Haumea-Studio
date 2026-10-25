@@ -195,8 +195,10 @@ and Map Check notes a font that isn't installed at all.
 
 ## Custom models (SA-MP 0.3.DL and open.mp)
 
-**File → Import → Custom Model** puts a DFF and TXD in the workspace's `models` folder and
-`artconfig.txt`, so 0.3.DL and open.mp players download them. Custom models appear under
+**File → Import → Custom Model** puts a DFF and TXD in the workspace's server artwork folder and
+`artconfig.txt`, so 0.3.DL and open.mp players download them. Haumea reads `artwork.models_path`
+from open.mp's `config.json`, or `artpath` from SA-MP's `server.cfg`; the default is `models`.
+Custom models appear under
 **Custom models** in the browser and keep their negative IDs in the saved map.
 
 ## TextDraws
@@ -219,6 +221,27 @@ separate file** (`<map>_textdraws.pwn`); save the map afterwards to take them ou
 keep them in the map, they show on the canvas but are read-only and are saved back unchanged.
 
 ![The TextDraw designer](images/textdraws.png)
+
+### Server TXD sprites (0.3.DL)
+
+1. Open the **server folder as your workspace**. Its artwork folder can contain subfolders,
+   such as `models/txd`; Haumea lists their `.txd` files too.
+2. In **TextDraws**, add or select a **Sprite**, then open **Sprite TXD → Server TXDs**.
+   Choose the server's TXD. Use **Refresh** if you added files while the editor was open.
+3. Check **Model ID**. Haumea fills it from recognized `AddSimpleModel` registrations.
+   If your gamemode builds registrations through variables or helper functions, enter the
+   negative ID your server uses, such as `-2018`.
+4. Click a texture thumbnail, then save the textdraw file.
+
+For example, if the server registers `-2018` with `txd/interface.txd` and that TXD contains
+`logo`, the exported sprite is `mdl-2018:logo`. The name after the colon is the **texture inside
+the TXD**, without a file extension. The server must register that model ID and its TXD for
+players to download it. The sprite needs a 0.3.DL-compatible client.
+
+You can browse the server TXD directly without importing or placing a 3D model in Haumea.
+The `.xml` companion remembers the selected TXD path for previews, including when Haumea
+cannot read a dynamically built registration. Keep it beside the Pawn file when sharing the
+design, and open it with the same server workspace.
 
 ### TextDraw colour tokens
 
