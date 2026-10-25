@@ -6292,7 +6292,7 @@ uiVehicleSettings(ObjectInst *inst, std::vector<ObjectInst*> &selected, bool bat
 	char plate[VEHICLE_PLATE_LEN];
 	memcpy(plate, inst->m_vehiclePlate, sizeof(plate));
 	bool plateChanged = ImGui::InputTextWithHint(_("Number plate"), _("default"), plate, sizeof(plate));
-	ImGui::SetItemTooltip(_("SetVehicleNumberPlate, up to 32 characters. Empty keeps the game's plate."));
+	ImGui::SetItemTooltip(_("SetVehicleNumberPlate, up to 32 characters. Empty keeps the game's plate. GTA's preview displays the first 8 characters."));
 
 	// Parts: one per slot, only those that fit this model.
 	int changedSlot = -1, changedComponent = 0;
@@ -6369,8 +6369,11 @@ uiVehicleSettings(ObjectInst *inst, std::vector<ObjectInst*> &selected, bool bat
 			target->m_isDirty = true;
 			if(rebuild)
 				target->RefreshVehicleUpgrades();
-			else
+			else{
 				target->RefreshVehicleColors();
+				if(plateChanged)
+					target->RefreshVehiclePlate();
+			}
 			UndoRecordVehicle(target, before);
 		}
 		UndoEndGroup();

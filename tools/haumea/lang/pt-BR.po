@@ -7737,8 +7737,8 @@ msgstr "Define as rotações X, Y e Z como zero."
 msgid "Set a workspace (File > Workspace) to save prefabs with the server."
 msgstr "Defina um workspace (Arquivo > Workspace) para salvar prefabs com o servidor."
 
-msgid "SetVehicleNumberPlate, up to 32 characters. Empty keeps the game's plate."
-msgstr "SetVehicleNumberPlate, até 32 caracteres. Vazio mantém a placa do jogo."
+msgid "SetVehicleNumberPlate, up to 32 characters. Empty keeps the game's plate. GTA's preview displays the first 8 characters."
+msgstr "SetVehicleNumberPlate, até 32 caracteres. Vazio mantém a placa do jogo. A prévia do GTA exibe os primeiros 8 caracteres."
 
 #, c-format
 msgid "Sets the interior of all %d selected."

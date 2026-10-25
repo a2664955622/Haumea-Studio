@@ -2724,6 +2724,8 @@ ObjectInst::CreateRwObject(void)
 				SAPaths::PrepareEditorVehicleClump(clump, m_vehicleColor1,
 					m_vehicleColor2, &m_vehicleColorRoles, &m_numVehicleColorRoles);
 				ApplyEditorVehiclePaintjob(clump, m_objectId, m_vehiclePaintjob);
+				if(m_vehiclePlate[0])
+					ApplyEditorVehiclePlate(clump, m_vehiclePlate);
 			}
 		}
 	}
@@ -2751,6 +2753,18 @@ ObjectInst::RefreshVehicleUpgrades(void)
 	((rw::Clump*)m_rwObject)->destroy();
 	m_rwObject = nil;
 	CreateRwObject();
+}
+
+void
+ObjectInst::RefreshVehiclePlate(void)
+{
+	if(!m_isVehicle || m_rwObject == nil)
+		return;
+	if(m_vehiclePlate[0] == '\0'){
+		RefreshVehicleUpgrades();
+		return;
+	}
+	ApplyEditorVehiclePlate((rw::Clump*)m_rwObject, m_vehiclePlate);
 }
 
 void

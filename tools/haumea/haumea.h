@@ -72,6 +72,7 @@ bool IsVehicleComponentValid(int vehicleModel, int component);
 int GetVehicleComponentSlot(int component);	// -1 for none
 const char *GetVehicleComponentSlotName(int slot);
 int GetVehiclePaintjobCount(int vehicleModel);	// 0-3
+void ApplyEditorVehiclePlate(rw::Clump *clump, const char *plateText);
 void AddEditorVehicleComponents(rw::Clump *clump, const uint16 *mods);
 void ApplyEditorVehiclePaintjob(rw::Clump *clump, int vehicleModel, int paintjob);
 
@@ -1428,6 +1429,7 @@ struct ObjectInst
 	void refreshMaterialGeometry(void);
 	void RefreshVehicleColors(void);
 	void RefreshVehicleUpgrades(void);
+	void RefreshVehiclePlate(void);
 
 	void JumpTo(void);
 	void Select(void);

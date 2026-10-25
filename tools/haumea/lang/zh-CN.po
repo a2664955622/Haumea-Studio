@@ -7604,8 +7604,8 @@ msgstr "将 X、Y、Z 旋转设为零。"
 msgid "Set a workspace (File > Workspace) to save prefabs with the server."
 msgstr "请先设置 workspace（文件 > Workspace），才能随服务器保存 prefab。"
 
-msgid "SetVehicleNumberPlate, up to 32 characters. Empty keeps the game's plate."
-msgstr "SetVehicleNumberPlate，最多 32 个字符。留空则保留游戏默认车牌。"
+msgid "SetVehicleNumberPlate, up to 32 characters. Empty keeps the game's plate. GTA's preview displays the first 8 characters."
+msgstr "SetVehicleNumberPlate，最多 32 个字符。留空则保留游戏默认车牌。GTA 预览显示前 8 个字符。"
 
 #, c-format
 msgid "Sets the interior of all %d selected."
