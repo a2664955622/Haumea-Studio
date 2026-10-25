@@ -74,14 +74,29 @@ CCamera::Process(void)
 	if(gBrushMode && lookButton == 1)
 		lookButton = 3;
 	bool lookBlockedByTool = gRectSelectActive;
-	// Looking starts with a press in the view and lasts until the release, also
-	// across the gizmo or a panel; W/A/S/D fly only while it lasts.
-	static bool looking;
-	if(!CPad::IsMButtonDown(lookButton))
-		looking = false;
-	else if(CPad::IsMButtonJustDown(lookButton) && !gGizmoUsing && !lookBlockedByTool &&
-	        (gGizmoHovered ? lookButton != 1 : !io.WantCaptureMouse))
-		looking = true;	// on the gizmo too, unless it is the left button's
+	// Arm on press, then start looking only after a small drag or a fly key.
+	// Locking the cursor immediately made ordinary right-clicks unreliable.
+	static bool looking, lookArmed;
+	static int lookStartX, lookStartY;
+	if(!CPad::IsMButtonDown(lookButton)){
+		looking = lookArmed = false;
+	}else if(CPad::IsMButtonJustDown(lookButton)){
+		lookArmed = !gGizmoUsing && !lookBlockedByTool &&
+			(gGizmoHovered ? lookButton != 1 : !io.WantCaptureMouse);
+		lookStartX = CPad::newMouseState.x;
+		lookStartY = CPad::newMouseState.y;
+	}
+	if(lookArmed && !looking){
+		int dx = CPad::newMouseState.x - lookStartX, dy = CPad::newMouseState.y - lookStartY;
+		float tolerance = 6.0f*GetUiScale();
+		bool flyPressed = !CPad::IsCtrlDown() && !io.WantCaptureKeyboard && !io.WantTextInput &&
+			(CPad::IsKeyDown('W') || CPad::IsKeyDown('A') || CPad::IsKeyDown('S') ||
+			 CPad::IsKeyDown('D') || CPad::IsKeyDown('Q') || CPad::IsKeyDown('E'));
+		if(dx*dx + dy*dy > tolerance*tolerance || flyPressed){
+			looking = true;
+			CPad::CancelClick();
+		}
+	}
 	gCameraLooking = looking;
 	if(looking){
 		if(CPad::IsAltDown() && CPad::IsCtrlDown()){

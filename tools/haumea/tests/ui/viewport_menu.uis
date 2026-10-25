@@ -5,7 +5,7 @@ wait 5
 click_object model=1634
 wait 5
 assert selected == 1
-click_object model=19353 right
+click_object model=19353 right jitter
 wait 5
 assert selected == 1
 assert selected.texture 0 "white"

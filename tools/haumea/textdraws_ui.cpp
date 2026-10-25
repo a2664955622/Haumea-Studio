@@ -771,21 +771,32 @@ struct Canvas {
 	ImVec2 at(float cx, float cy) const { return ImVec2(x + cx * sx, y + cy * sy); }
 };
 
-// The free area between the docked panels, under the canvas toolbar.
-static float gToolbarHeight;	// measured when the toolbar is drawn
+// The current frame's reserved bars are authoritative when a workspace changes.
+// Viewport::WorkPos still describes the preceding frame during a mode switch.
 static void
-canvasArea(ImVec2 *pos, ImVec2 *size)
+textDrawWorkspaceArea(ImVec2 *pos, ImVec2 *size)
 {
-	ImGuiViewport *vp = ImGui::GetMainViewport();
-	*pos = vp->WorkPos;
-	*size = vp->WorkSize;
+	ImGuiViewportP *viewport = (ImGuiViewportP*)ImGui::GetMainViewport();
+	ImRect work = viewport->GetBuildWorkRect();
 #ifdef IMGUI_HAS_DOCK
 	ImGuiDockNode *central = ImGui::DockBuilderGetCentralNode(ImHashStr("HaumeaDockSpace"));
 	if(central && central->Size.x > 32.0f && central->Size.y > 32.0f){
-		*pos = central->Pos;
-		*size = central->Size;
+		ImRect center(central->Pos, ImVec2(central->Pos.x + central->Size.x, central->Pos.y + central->Size.y));
+		center.ClipWith(work);
+		if(center.GetWidth() > 32.0f && center.GetHeight() > 32.0f)
+			work = center;
 	}
 #endif
+	*pos = work.Min;
+	*size = work.GetSize();
+}
+
+// The free area between the docked panels, under the canvas toolbar.
+static float gToolbarHeight;
+static void
+canvasArea(ImVec2 *pos, ImVec2 *size)
+{
+	textDrawWorkspaceArea(pos, size);
 	pos->y += gToolbarHeight;
 	size->y = std::max(32.0f, size->y - gToolbarHeight);
 }
@@ -4965,15 +4976,8 @@ guidesButton(void)
 static void
 drawToolbar(void)
 {
-	ImGuiViewport *vp = ImGui::GetMainViewport();
-	ImVec2 pos = vp->WorkPos, size = vp->WorkSize;
-#ifdef IMGUI_HAS_DOCK
-	ImGuiDockNode *central = ImGui::DockBuilderGetCentralNode(ImHashStr("HaumeaDockSpace"));
-	if(central && central->Size.x > 32.0f && central->Size.y > 32.0f){
-		pos = central->Pos;
-		size = central->Size;
-	}
-#endif
+	ImVec2 pos, size;
+	textDrawWorkspaceArea(&pos, &size);
 	KeepNextEditorOverlayOnMainWindow();
 	ImGui::SetNextWindowPos(pos);
 	ImGui::SetNextWindowSize(ImVec2(size.x, 0.0f));
@@ -5031,7 +5035,7 @@ drawToolbar(void)
 		ImGui::SetItemTooltip("%s", _("The player's screen (the same one the chat and outlines use)."));
 	}
 	ImGui::SameLine();
-	ImGui::TextDisabled("|");
+	ImGui::Dummy(ImVec2(ImGui::GetStyle().ItemSpacing.x, 0));
 	ImGui::SameLine();
 	int background = gBackground;
 	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 7.0f);
@@ -5060,7 +5064,7 @@ drawToolbar(void)
 	ImGui::SameLine();
 	hudSettings();
 	ImGui::SameLine();
-	ImGui::TextDisabled("|");
+	ImGui::Dummy(ImVec2(ImGui::GetStyle().ItemSpacing.x, 0));
 	ImGui::SameLine();
 	if(ImGui::Checkbox(L("Grid"), &gGrid))
 		SaveEditorSettings();
@@ -5100,7 +5104,7 @@ drawToolbar(void)
 	ImGui::SetItemTooltip("%s", _("Clicks on a locked textdraw go to what is under it.\n"
 		"Alt+click picks the next one down under the cursor."));
 	ImGui::SameLine();
-	ImGui::TextDisabled("|");
+	ImGui::Dummy(ImVec2(ImGui::GetStyle().ItemSpacing.x, 0));
 	ImGui::SameLine();
 	if(ImGui::SmallButton("-##zoom")){ gZoom = std::max(0.25f, gZoom / 1.25f); }
 	ImGui::SameLine();
@@ -5670,6 +5674,13 @@ DrawTextDrawsWindow(void)
 	// ###textdraws, not LI(): the ID the window has always had, so saved layouts stay.
 	char title[64];
 	snprintf(title, sizeof(title), ICON_FA_FONT " %s###textdraws", _("TextDraws"));
+	ImGuiWindow *saved = ImGui::FindWindowByName(title);
+	if(saved && !saved->DockIsActive && saved->Viewport == ImGui::GetMainViewport()){
+		ImVec2 pos, size;
+		canvasArea(&pos, &size);
+		if(saved->Pos.y < pos.y)
+			ImGui::SetNextWindowPos(ImVec2(saved->Pos.x, pos.y), ImGuiCond_Always);
+	}
 	if(!ImGui::Begin(title, nil)){
 		ImGui::End();
 		return;

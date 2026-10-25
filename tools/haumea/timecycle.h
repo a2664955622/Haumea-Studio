@@ -35,6 +35,7 @@ namespace Timecycle
 		float lightMapIntensity;
 	};
 	extern ColourSet currentColours;
+	extern float currentLodDistMult;
 	extern rw::RGBAf currentFogColour;
 	extern rw::RGBA belowHorizonColour;
 

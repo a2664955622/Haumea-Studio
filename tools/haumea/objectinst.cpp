@@ -1485,6 +1485,7 @@ static void updateRwFrameForInst(ObjectInst *inst);
 
 static bool gAttachmentListDirty = true;
 static void setInstanceElementModel(ObjectInst *inst, int modelId);
+static void applyInstanceModelId(ObjectInst *inst, int editorModelId);
 
 void
 InitObjectPawnProperties(ObjectPawnProperties *properties)
@@ -2550,6 +2551,7 @@ ObjectInst::Init(FileObjectInstance *fi)
 {
 	m_editorDocumentId = 0;
 	m_objectId = fi->objectId;
+	m_savedObjectId = fi->objectId;
 	ObjectDef *obj = GetObjectDef(m_objectId);
 	m_isVehicle = obj && obj->m_isVehicle;
 	m_vehicleStatic = true;
@@ -2847,6 +2849,10 @@ ResetPawnMap(void)
 		inst->m_attachApplied = false;
 		if(!world)
 			continue;
+		if(inst->m_objectId != inst->m_savedObjectId){
+			applyInstanceModelId(inst, inst->m_savedObjectId);
+			changed++;
+		}
 		if(inst->m_isDeleted != inst->m_wasSavedDeleted){
 			setDeletedWithoutCascade(inst, inst->m_wasSavedDeleted);
 			changed++;
@@ -2933,6 +2939,7 @@ DeleteAllInstances(void)
 
 // Object Spawner state
 bool gPlaceMode;
+bool gPlaceRepeat;
 bool gPrefabPlaceMode;
 float gPrefabPlaceHeading;
 bool gPrefabPlaceRepeat;	// stay in placement after a click, as Shift does
@@ -3106,6 +3113,90 @@ setInstanceElementModel(ObjectInst *inst, int modelId)
 		InsertInstIntoSectors(inst);
 	else
 		outOfBoundsSector.buildings.InsertItem(inst);
+}
+
+bool
+CanChangeInstanceModelId(ObjectInst *inst)
+{
+	if(inst == nil || inst->m_isDeleted || inst->m_isVehicle ||
+	   GetSampElementKind(inst) != SAMP_ELEMENT_OBJECT || !IsInstInIplMapDocument(inst) ||
+	   inst->m_lodId >= 0 || inst->m_lod != nil)
+		return false;
+	for(CPtrNode *p = instances.first; p; p = p->next){
+		ObjectInst *other = (ObjectInst*)p->item;
+		if(other != inst && !other->m_isDeleted && instanceReferencesLod(other, inst))
+			return false;
+	}
+	return true;
+}
+
+static void
+applyInstanceModelId(ObjectInst *inst, int editorModelId)
+{
+	ObjectDef *old = GetObjectDef(inst->m_objectId);
+	ObjectDef *obj = GetObjectDef(editorModelId);
+	if(old == nil || obj == nil || inst->m_objectId == editorModelId)
+		return;
+	if(!obj->IsLoaded()){
+		RequestObject(editorModelId);
+		LoadAllRequestedObjects();
+	}
+
+	RemoveInstFromSectors(inst);
+	if(inst->m_animState){
+		delete (ObjectAnimState*)inst->m_animState;
+		inst->m_animState = nil;
+	}
+	inst->m_animTime = 0.0f;
+	destroyInstanceRwObject(inst, old);
+	// Material overrides are cleared in the same undo group as the model swap.
+	// The private geometry pointers belong to the old rendered object.
+	inst->m_materialGeometryApplied = false;
+	inst->m_materialBaseGeometry = nil;
+	inst->m_materialCustomGeometry = nil;
+	inst->m_objectId = editorModelId;
+	inst->m_isBigBuilding = false;
+	if(obj->m_isBigBuilding)
+		inst->SetupBigBuilding();
+	inst->UpdateMatrix();
+	inst->CreateRwObject();
+	inst->RefreshMaterialOverrides();
+	if(obj->m_colModel)
+		InsertInstIntoSectors(inst);
+	else{
+		CPtrList *list = inst->m_isBigBuilding ? &outOfBoundsSector.bigbuildings : &outOfBoundsSector.buildings;
+		list->InsertItem(inst);
+	}
+	StampChangeSeq(inst);
+	inst->m_isDirty = true;
+}
+
+bool
+ChangeInstanceModelId(ObjectInst *inst, int editorModelId, bool recordUndo)
+{
+	if(!CanChangeInstanceModelId(inst))
+		return false;
+	ObjectDef *obj = GetObjectDef(editorModelId);
+	if(obj == nil || obj->m_isVehicle)
+		return false;
+	int oldModelId = inst->m_objectId;
+	if(oldModelId == editorModelId)
+		return true;
+
+	if(recordUndo)
+		UndoBeginGroup();
+	if(recordUndo)
+		for(int slot = 0; slot < MAX_PAWN_MATERIALS; slot++){
+			const ObjectMaterialOverride *material = GetObjectMaterialOverride((const ObjectInst*)inst, slot);
+			if(material && (material->active || material->textEnabled))
+				ClearObjectMaterialOverride(inst, slot, true);
+		}
+	applyInstanceModelId(inst, editorModelId);
+	if(recordUndo){
+		UndoRecordModelId(inst, oldModelId);
+		UndoEndGroup();
+	}
+	return true;
 }
 
 void
@@ -3738,6 +3829,8 @@ GetInstanceDiffFlags(ObjectInst *inst)
 	int flags = 0;
 	if(!inst->m_isDeleted && inst->m_wasSavedDeleted)
 		flags |= DIFF_RESTORED;
+	if(inst->m_objectId != inst->m_savedObjectId)
+		flags |= DIFF_MODEL;
 	float dist = length(sub(inst->m_translation, inst->m_savedTranslation));
 	if(dist >= 0.001f)
 		flags |= DIFF_MOVED;
@@ -3766,7 +3859,7 @@ PawnObjectNeedsExport(const ObjectInst *inst)
 		return true;
 
 	int flags = GetInstanceDiffFlags((ObjectInst*)inst);
-	return (flags & (DIFF_DELETED | DIFF_MOVED | DIFF_ROTATED | DIFF_MATERIAL |
+	return (flags & (DIFF_DELETED | DIFF_MODEL | DIFF_MOVED | DIFF_ROTATED | DIFF_MATERIAL |
 		DIFF_PROPERTIES)) != 0;
 }
 
@@ -4455,7 +4548,7 @@ setObjectPreviewError(char *error, size_t errorSize, const char *message)
 // Centre and radius of a model's visible geometry. Collision spheres are often
 // much larger than the model, which left small or thin objects lost in previews.
 static bool
-previewGeometryBounds(rw::Atomic *atm, rw::Clump *clump, rw::V3d *center, float *radius)
+previewGeometryBounds(rw::Atomic *atm, rw::Clump *clump, rw::V3d *center, float *radius, bool preciseVertices = false)
 {
 	rw::V3d boundsMin = { 1e30f, 1e30f, 1e30f }, boundsMax = { -1e30f, -1e30f, -1e30f };
 	bool haveBounds = false;
@@ -4480,8 +4573,22 @@ previewGeometryBounds(rw::Atomic *atm, rw::Clump *clump, rw::V3d *center, float 
 		clump->getFrame()->transform(&ident, rw::COMBINEREPLACE);
 		FORLIST(lnk, clump->atomics){
 			rw::Atomic *part = rw::Atomic::fromClump(lnk);
-			if(part->geometry && part->geometry->numMorphTargets > 0)
-				addSphere(*part->getWorldBoundingSphere());
+			if(part->geometry && part->geometry->numMorphTargets > 0){
+				if(preciseVertices && part->geometry->morphTargets[0].vertices){
+					// A skin's sphere is deliberately generous for animation.
+					// Frame its actual posed vertices for a readable portrait.
+					const rw::Matrix *matrix = part->getFrame()->getLTM();
+					for(int i = 0; i < part->geometry->numVertices; i++){
+						rw::V3d point;
+						rw::V3d::transformPoints(&point, &part->geometry->morphTargets[0].vertices[i], 1, matrix);
+						boundsMin.x = min(boundsMin.x, point.x); boundsMax.x = max(boundsMax.x, point.x);
+						boundsMin.y = min(boundsMin.y, point.y); boundsMax.y = max(boundsMax.y, point.y);
+						boundsMin.z = min(boundsMin.z, point.z); boundsMax.z = max(boundsMax.z, point.z);
+						haveBounds = true;
+					}
+				}else
+					addSphere(*part->getWorldBoundingSphere());
+			}
 		}
 	}
 	if(!haveBounds)
@@ -4516,8 +4623,12 @@ paintPreviewVehicle(ObjectDef *obj, rw::Clump *clump, int colour1 = -1, int colo
 	rwFree(roles);
 }
 
-// Editor previews: a mid tone background so dark and light models both read.
-static const rw::RGBA kPreviewBackground = { 86, 92, 104, 255 };
+// Preview surfaces match the active theme (the RW camera texture is opaque).
+static rw::RGBA
+previewBackground(void)
+{
+	return GetUiTheme() == UI_THEME_LIGHT ? rw::RGBA{ 235, 239, 244, 255 } : rw::RGBA{ 31, 41, 48, 255 };
+}
 
 static bool
 renderObjectToRaster(int objectId, rw::Raster *colorRaster, rw::Raster *depthRaster,
@@ -4541,7 +4652,7 @@ renderObjectToRaster(int objectId, rw::Raster *colorRaster, rw::Raster *depthRas
 	rw::V3d target = { 0.0f, 0.0f, 0.0f };
 	float radius = 5.0f;
 	// Namaka's asset index was built from collision-framed PNG captures.
-	bool haveBounds = !pngOrientation && previewGeometryBounds(atm, clump, &target, &radius);
+	bool haveBounds = !pngOrientation && previewGeometryBounds(atm, clump, &target, &radius, obj->m_isPed);
 	if(!haveBounds && obj->m_colModel){
 		target = obj->m_colModel->boundingSphere.center;
 		radius = obj->m_colModel->boundingSphere.radius;
@@ -4586,7 +4697,7 @@ renderObjectToRaster(int objectId, rw::Raster *colorRaster, rw::Raster *depthRas
 
 	// Editor thumbnails use a mid tone so dark and light models both read;
 	// PNG captures keep the background Namaka's previews were made with.
-	rw::RGBA clearCol = pngOrientation ? rw::RGBA{ 34, 34, 34, 255 } : kPreviewBackground;
+	rw::RGBA clearCol = pngOrientation ? rw::RGBA{ 34, 34, 34, 255 } : previewBackground();
 	cam->clear(&clearCol, rw::Camera::CLEARIMAGE|rw::Camera::CLEARZ);
 	cam->beginUpdate();
 
@@ -5023,6 +5134,14 @@ rw::Texture*
 GetObjectThumbnailTexture(int objectId)
 {
 	initObjectThumbnailSlots();
+	static int thumbnailTheme = -1;
+	if(thumbnailTheme != GetUiTheme()){
+		thumbnailTheme = GetUiTheme();
+		for(int i = 0; i < OBJECT_THUMBNAIL_SLOTS; i++){
+			objectThumbnailSlots[i].ready = false;
+			objectThumbnailSlots[i].failed = false;
+		}
+	}
 	if(objectId < 0 || GetObjectDef(objectId) == nil)
 		return nil;
 
@@ -5094,6 +5213,14 @@ RenderRequestedObjectThumbnails(void)
 rw::Texture*
 GetPrefabThumbnailTexture(const char *path)
 {
+	static int thumbnailTheme = -1;
+	if(thumbnailTheme != GetUiTheme()){
+		thumbnailTheme = GetUiTheme();
+		for(int i = 0; i < PREFAB_THUMBNAIL_SLOTS; i++){
+			prefabThumbnailSlots[i].ready = false;
+			prefabThumbnailSlots[i].failed = false;
+		}
+	}
 	if(path == nil || path[0] == '\0')
 		return nil;
 
@@ -5244,7 +5371,7 @@ RenderPreviewObject(int objectId)
 	camFrame->matrix.lookAt(dir, up);
 	camFrame->updateObjects();
 
-	rw::RGBA clearCol = kPreviewBackground;
+	rw::RGBA clearCol = previewBackground();
 	cam->clear(&clearCol, rw::Camera::CLEARIMAGE|rw::Camera::CLEARZ);
 	cam->beginUpdate();
 
@@ -5370,6 +5497,7 @@ coalesceUndo(UndoAction *a)
 		switch(a->type){
 		case UNDO_PROPERTIES: top->newProperties = a->newProperties; return true;
 		case UNDO_VEHICLE: top->newVehicle = a->newVehicle; return true;
+		case UNDO_MODEL_ID: top->newModelId = a->newModelId; return true;
 		case UNDO_MATERIAL:
 			if(top->materialSlot != a->materialSlot)
 				continue;
@@ -5558,6 +5686,19 @@ UndoRecordVehicle(ObjectInst *inst, const VehicleState &before)
 }
 
 void
+UndoRecordModelId(ObjectInst *inst, int oldModelId)
+{
+	if(inst == nil)
+		return;
+	UndoAction a = {};
+	a.type = UNDO_MODEL_ID;
+	a.inst = inst;
+	a.oldModelId = oldModelId;
+	a.newModelId = inst->m_objectId;
+	pushUndo(&a);
+}
+
+void
 UndoRecordNodes(const std::vector<int> &areas, const std::vector<std::shared_ptr<void>> &before,
 	const std::vector<std::shared_ptr<void>> &after)
 {
@@ -5647,6 +5788,9 @@ undoStep(void)
 	case UNDO_VEHICLE:
 		SetVehicleState(a->inst, a->oldVehicle);
 		break;
+	case UNDO_MODEL_ID:
+		ChangeInstanceModelId(a->inst, a->oldModelId, false);
+		break;
 	case UNDO_NODES:
 		SAPaths::RestoreNodeAreas(a->nodeAreas, a->nodesBefore);
 		break;
@@ -5700,6 +5844,9 @@ redoStep(void)
 		break;
 	case UNDO_VEHICLE:
 		SetVehicleState(a->inst, a->newVehicle);
+		break;
+	case UNDO_MODEL_ID:
+		ChangeInstanceModelId(a->inst, a->newModelId, false);
 		break;
 	case UNDO_NODES:
 		SAPaths::RestoreNodeAreas(a->nodeAreas, a->nodesAfter);

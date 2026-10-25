@@ -1,0 +1,21 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Editor panels"
+msgstr "Painéis do editor"
+
+msgid "Game tools"
+msgstr "Ferramentas do jogo"
+
+msgid "Viewport"
+msgstr "Visão 3D"
+
+msgid "Review"
+msgstr "Revisão"
+
+msgid "Extensions"
+msgstr "Extensões"
+
+msgid "Panel layout"
+msgstr "Layout dos painéis"

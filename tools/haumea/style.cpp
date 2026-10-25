@@ -10,36 +10,81 @@
 ImFont *gCodeFont;
 ImFont *gTitleFont;	// large Inter for the splash screen title
 
-// Accent color — used for highlights, active elements, selection
-static const ImVec4 kAccent       = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);  // soft blue
-static const ImVec4 kAccentHover  = ImVec4(0.33f, 0.67f, 1.00f, 1.00f);
-static const ImVec4 kAccentActive = ImVec4(0.20f, 0.50f, 0.88f, 1.00f);
+// Accent colors — used for highlights, active elements and selection.
+static int gUiTheme = UI_THEME_DARK;
+static const ImVec4 kDarkAccent       = ImVec4(0.02f, 0.78f, 0.78f, 1.00f);
+static const ImVec4 kDarkAccentHover  = ImVec4(0.39f, 0.86f, 0.76f, 1.00f);
+static const ImVec4 kDarkAccentActive = ImVec4(0.20f, 0.64f, 0.56f, 1.00f);
+static const ImVec4 kLightAccent       = ImVec4(0.00f, 0.43f, 0.48f, 1.00f);
+static const ImVec4 kLightAccentHover  = ImVec4(0.04f, 0.34f, 0.31f, 1.00f);
+static const ImVec4 kLightAccentActive = ImVec4(0.06f, 0.31f, 0.29f, 1.00f);
+
+int
+GetUiTheme(void)
+{
+	return gUiTheme;
+}
+
+void
+SetUiTheme(int theme)
+{
+	gUiTheme = theme == UI_THEME_LIGHT ? UI_THEME_LIGHT : UI_THEME_DARK;
+	if(ImGui::GetCurrentContext() != nil)
+		SetupStyle();
+}
+
+ImVec4
+UiSemanticColor(int color)
+{
+	bool light = gUiTheme == UI_THEME_LIGHT;
+	switch(color){
+	case UI_COLOR_SUCCESS:
+		return light ? ImVec4(0.10f, 0.42f, 0.25f, 1.0f) : ImVec4(0.45f, 0.85f, 0.55f, 1.0f);
+	case UI_COLOR_WARNING:
+		return light ? ImVec4(0.53f, 0.34f, 0.00f, 1.0f) : ImVec4(1.00f, 0.78f, 0.25f, 1.0f);
+	case UI_COLOR_ERROR:
+		return light ? ImVec4(0.68f, 0.14f, 0.12f, 1.0f) : ImVec4(1.00f, 0.42f, 0.38f, 1.0f);
+	case UI_COLOR_INFO:
+		return light ? ImVec4(0.10f, 0.36f, 0.55f, 1.0f) : ImVec4(0.45f, 0.80f, 1.0f, 1.0f);
+	}
+	return ImGui::GetStyleColorVec4(ImGuiCol_Text);
+}
 
 void
 SetupStyle(void)
 {
 	ImGuiStyle &style = ImGui::GetStyle();
+	bool light = gUiTheme == UI_THEME_LIGHT;
+	if(light)
+		ImGui::StyleColorsLight(&style);
+	else
+		ImGui::StyleColorsDark(&style);
+	ImVec4 accent = light ? kLightAccent : kDarkAccent;
+	ImVec4 accentHover = light ? kLightAccentHover : kDarkAccentHover;
+	ImVec4 accentActive = light ? kLightAccentActive : kDarkAccentActive;
 
 	// ---- Geometry ----
-	style.WindowRounding    = 6.0f;
-	style.ChildRounding     = 4.0f;
-	style.FrameRounding     = 4.0f;
-	style.PopupRounding     = 4.0f;
-	style.ScrollbarRounding = 6.0f;
-	style.GrabRounding      = 3.0f;
+	style.WindowRounding    = 8.0f;
+	style.ChildRounding     = 6.0f;
+	style.FrameRounding     = 6.0f;
+	style.PopupRounding     = 6.0f;
+	style.ScrollbarRounding = 7.0f;
+	style.GrabRounding      = 4.0f;
 	style.TabRounding       = 4.0f;
 
-	style.WindowPadding     = ImVec2(10, 10);
-	style.FramePadding      = ImVec2(6, 4);
-	style.ItemSpacing       = ImVec2(8, 5);
+	style.WindowPadding     = ImVec2(16, 14);
+	style.FramePadding      = ImVec2(8, 5);
+	style.ItemSpacing       = ImVec2(8, 6);
 	style.ItemInnerSpacing  = ImVec2(6, 4);
-	style.ScrollbarSize     = 13.0f;
+	style.ScrollbarSize     = 12.0f;
 	style.GrabMinSize       = 10.0f;
-	style.WindowBorderSize  = 1.0f;
-	style.ChildBorderSize   = 1.0f;
+	style.WindowBorderSize  = 0.0f;
+	style.ChildBorderSize   = 0.0f;
 	style.PopupBorderSize   = 1.0f;
 	style.FrameBorderSize   = 0.0f;
 	style.TabBorderSize     = 0.0f;
+	style.TabBarBorderSize  = 0.0f;
+	style.TabBarOverlineSize = 0.0f;
 
 	style.WindowTitleAlign  = ImVec2(0.0f, 0.5f);
 
@@ -50,92 +95,99 @@ SetupStyle(void)
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 #endif
 	style.SeparatorTextAlign = ImVec2(0.0f, 0.5f);
+	style.SeparatorTextPadding = ImVec2(0.0f, 4.0f);
+	style.SeparatorTextBorderSize = 0.0f;
 
 	// ---- Colors ----
 	ImVec4 *c = style.Colors;
 
 	// Backgrounds
-	c[ImGuiCol_WindowBg]             = ImVec4(0.11f, 0.11f, 0.13f, 0.95f);
-	c[ImGuiCol_ChildBg]              = ImVec4(0.10f, 0.10f, 0.12f, 0.00f);
-	c[ImGuiCol_PopupBg]              = ImVec4(0.12f, 0.12f, 0.14f, 0.96f);
+	c[ImGuiCol_WindowBg]             = light ? ImVec4(0.96f, 0.97f, 0.98f, 1.00f) : ImVec4(0.075f, 0.095f, 0.115f, 1.00f);
+	c[ImGuiCol_ChildBg]              = light ? ImVec4(0.93f, 0.95f, 0.96f, 0.00f) : ImVec4(0.090f, 0.105f, 0.125f, 0.00f);
+	c[ImGuiCol_PopupBg]              = light ? ImVec4(0.99f, 0.995f, 1.00f, 1.00f) : ImVec4(0.105f, 0.122f, 0.145f, 0.98f);
 
 	// Borders
-	c[ImGuiCol_Border]               = ImVec4(0.22f, 0.22f, 0.26f, 0.60f);
+	c[ImGuiCol_Border]               = light ? ImVec4(0.70f, 0.76f, 0.77f, 0.85f) : ImVec4(0.24f, 0.29f, 0.33f, 0.45f);
 	c[ImGuiCol_BorderShadow]         = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
 
 	// Text
-	c[ImGuiCol_Text]                 = ImVec4(0.92f, 0.93f, 0.94f, 1.00f);
-	c[ImGuiCol_TextDisabled]         = ImVec4(0.50f, 0.50f, 0.54f, 1.00f);
+	c[ImGuiCol_Text]                 = light ? ImVec4(0.13f, 0.16f, 0.17f, 1.00f) : ImVec4(0.93f, 0.95f, 0.96f, 1.00f);
+	c[ImGuiCol_TextDisabled]         = light ? ImVec4(0.40f, 0.46f, 0.47f, 1.00f) : ImVec4(0.59f, 0.65f, 0.69f, 1.00f);
 
 	// Frames (input boxes, sliders, checkboxes)
-	c[ImGuiCol_FrameBg]              = ImVec4(0.16f, 0.16f, 0.19f, 1.00f);
-	c[ImGuiCol_FrameBgHovered]       = ImVec4(0.20f, 0.20f, 0.24f, 1.00f);
-	c[ImGuiCol_FrameBgActive]        = ImVec4(0.24f, 0.24f, 0.28f, 1.00f);
+	c[ImGuiCol_FrameBg]              = light ? ImVec4(0.88f, 0.91f, 0.92f, 1.00f) : ImVec4(0.13f, 0.15f, 0.18f, 1.00f);
+	c[ImGuiCol_FrameBgHovered]       = light ? ImVec4(0.83f, 0.88f, 0.89f, 1.00f) : ImVec4(0.18f, 0.21f, 0.24f, 1.00f);
+	c[ImGuiCol_FrameBgActive]        = light ? ImVec4(0.78f, 0.84f, 0.84f, 1.00f) : ImVec4(0.22f, 0.26f, 0.29f, 1.00f);
 
 	// Title bar
-	c[ImGuiCol_TitleBg]              = ImVec4(0.09f, 0.09f, 0.11f, 1.00f);
-	c[ImGuiCol_TitleBgActive]        = ImVec4(0.12f, 0.12f, 0.15f, 1.00f);
-	c[ImGuiCol_TitleBgCollapsed]     = ImVec4(0.09f, 0.09f, 0.11f, 0.60f);
+	c[ImGuiCol_TitleBg]              = light ? ImVec4(0.90f, 0.93f, 0.94f, 1.00f) : ImVec4(0.065f, 0.075f, 0.09f, 1.00f);
+	c[ImGuiCol_TitleBgActive]        = light ? ImVec4(0.86f, 0.91f, 0.91f, 1.00f) : ImVec4(0.10f, 0.13f, 0.15f, 1.00f);
+	c[ImGuiCol_TitleBgCollapsed]     = light ? ImVec4(0.90f, 0.93f, 0.94f, 0.70f) : ImVec4(0.065f, 0.075f, 0.09f, 0.70f);
 
 	// Menu bar
-	c[ImGuiCol_MenuBarBg]            = ImVec4(0.13f, 0.13f, 0.15f, 1.00f);
+	c[ImGuiCol_MenuBarBg]            = light ? ImVec4(0.91f, 0.94f, 0.95f, 1.00f) : ImVec4(0.09f, 0.105f, 0.125f, 1.00f);
 
 	// Scrollbar
-	c[ImGuiCol_ScrollbarBg]          = ImVec4(0.10f, 0.10f, 0.12f, 0.80f);
-	c[ImGuiCol_ScrollbarGrab]        = ImVec4(0.28f, 0.28f, 0.32f, 1.00f);
-	c[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.35f, 0.35f, 0.40f, 1.00f);
-	c[ImGuiCol_ScrollbarGrabActive]  = ImVec4(0.42f, 0.42f, 0.48f, 1.00f);
+	c[ImGuiCol_ScrollbarBg]          = light ? ImVec4(0.90f, 0.93f, 0.94f, 0.80f) : ImVec4(0.08f, 0.095f, 0.11f, 0.80f);
+	c[ImGuiCol_ScrollbarGrab]        = light ? ImVec4(0.68f, 0.73f, 0.74f, 1.00f) : ImVec4(0.24f, 0.29f, 0.32f, 1.00f);
+	c[ImGuiCol_ScrollbarGrabHovered] = light ? ImVec4(0.58f, 0.66f, 0.67f, 1.00f) : ImVec4(0.34f, 0.41f, 0.43f, 1.00f);
+	c[ImGuiCol_ScrollbarGrabActive]  = light ? ImVec4(0.45f, 0.60f, 0.59f, 1.00f) : ImVec4(0.42f, 0.52f, 0.51f, 1.00f);
 
 	// Checkbox / Radio mark
-	c[ImGuiCol_CheckMark]            = kAccent;
+	c[ImGuiCol_CheckMark]            = accent;
 
 	// Slider
-	c[ImGuiCol_SliderGrab]           = ImVec4(0.36f, 0.36f, 0.42f, 1.00f);
-	c[ImGuiCol_SliderGrabActive]     = kAccent;
+	c[ImGuiCol_SliderGrab]           = light ? ImVec4(0.50f, 0.58f, 0.59f, 1.00f) : ImVec4(0.37f, 0.46f, 0.48f, 1.00f);
+	c[ImGuiCol_SliderGrabActive]     = accent;
 
 	// Buttons
-	c[ImGuiCol_Button]               = ImVec4(0.18f, 0.18f, 0.22f, 1.00f);
-	c[ImGuiCol_ButtonHovered]        = ImVec4(0.26f, 0.26f, 0.32f, 1.00f);
-	c[ImGuiCol_ButtonActive]         = kAccentActive;
+	c[ImGuiCol_Button]               = light ? ImVec4(0.88f, 0.91f, 0.92f, 1.00f) : ImVec4(0.14f, 0.17f, 0.19f, 1.00f);
+	c[ImGuiCol_ButtonHovered]        = light ? ImVec4(0.81f, 0.87f, 0.88f, 1.00f) : ImVec4(0.20f, 0.25f, 0.27f, 1.00f);
+	c[ImGuiCol_ButtonActive]         = accentActive;
 
 	// Headers (collapsing headers, selectable, menu items)
-	c[ImGuiCol_Header]               = ImVec4(0.18f, 0.18f, 0.22f, 1.00f);
-	c[ImGuiCol_HeaderHovered]        = ImVec4(0.24f, 0.24f, 0.30f, 1.00f);
-	c[ImGuiCol_HeaderActive]         = kAccentActive;
+	c[ImGuiCol_Header]               = light ? ImVec4(0.85f, 0.90f, 0.90f, 1.00f) : ImVec4(0.14f, 0.18f, 0.19f, 1.00f);
+	c[ImGuiCol_HeaderHovered]        = light ? ImVec4(0.78f, 0.86f, 0.86f, 1.00f) : ImVec4(0.21f, 0.28f, 0.28f, 1.00f);
+	c[ImGuiCol_HeaderActive]         = accentActive;
 
 	// Separators
-	c[ImGuiCol_Separator]            = ImVec4(0.22f, 0.22f, 0.26f, 1.00f);
-	c[ImGuiCol_SeparatorHovered]     = kAccentHover;
-	c[ImGuiCol_SeparatorActive]      = kAccent;
+	c[ImGuiCol_Separator]            = light ? ImVec4(0.77f, 0.81f, 0.82f, 1.00f) : ImVec4(0.22f, 0.27f, 0.29f, 1.00f);
+	c[ImGuiCol_SeparatorHovered]     = accentHover;
+	c[ImGuiCol_SeparatorActive]      = accent;
 
 	// Resize grip
-	c[ImGuiCol_ResizeGrip]           = ImVec4(0.22f, 0.22f, 0.26f, 0.40f);
-	c[ImGuiCol_ResizeGripHovered]    = kAccentHover;
-	c[ImGuiCol_ResizeGripActive]     = kAccent;
+	c[ImGuiCol_ResizeGrip]           = light ? ImVec4(0.45f, 0.65f, 0.61f, 0.40f) : ImVec4(0.22f, 0.32f, 0.31f, 0.40f);
+	c[ImGuiCol_ResizeGripHovered]    = accentHover;
+	c[ImGuiCol_ResizeGripActive]     = accent;
 
 	// Tabs
-	c[ImGuiCol_Tab]                  = ImVec4(0.13f, 0.13f, 0.16f, 1.00f);
-	c[ImGuiCol_TabHovered]           = ImVec4(0.22f, 0.22f, 0.28f, 1.00f);
-	c[ImGuiCol_TabSelected]          = ImVec4(0.18f, 0.18f, 0.24f, 1.00f);
+	c[ImGuiCol_Tab]                  = light ? ImVec4(0.90f, 0.93f, 0.94f, 1.00f) : ImVec4(0.105f, 0.13f, 0.15f, 1.00f);
+	c[ImGuiCol_TabHovered]           = light ? ImVec4(0.82f, 0.89f, 0.89f, 1.00f) : ImVec4(0.18f, 0.24f, 0.25f, 1.00f);
+	c[ImGuiCol_TabSelected]          = light ? ImVec4(0.82f, 0.89f, 0.89f, 1.00f) : ImVec4(0.15f, 0.22f, 0.22f, 1.00f);
+
+	c[ImGuiCol_TabDimmed] = c[ImGuiCol_Tab];
+	c[ImGuiCol_TabDimmedSelected] = c[ImGuiCol_TabSelected];
+	c[ImGuiCol_TabSelectedOverline] = accent;
+	c[ImGuiCol_TabDimmedSelectedOverline] = accent;
 
 	// Table
-	c[ImGuiCol_TableHeaderBg]        = ImVec4(0.14f, 0.14f, 0.17f, 1.00f);
-	c[ImGuiCol_TableBorderStrong]    = ImVec4(0.22f, 0.22f, 0.26f, 1.00f);
-	c[ImGuiCol_TableBorderLight]     = ImVec4(0.18f, 0.18f, 0.22f, 1.00f);
+	c[ImGuiCol_TableHeaderBg]        = light ? ImVec4(0.90f, 0.93f, 0.94f, 1.00f) : ImVec4(0.11f, 0.14f, 0.16f, 1.00f);
+	c[ImGuiCol_TableBorderStrong]    = light ? ImVec4(0.75f, 0.80f, 0.81f, 1.00f) : ImVec4(0.22f, 0.27f, 0.29f, 1.00f);
+	c[ImGuiCol_TableBorderLight]     = light ? ImVec4(0.81f, 0.85f, 0.86f, 1.00f) : ImVec4(0.17f, 0.21f, 0.23f, 1.00f);
 	c[ImGuiCol_TableRowBg]           = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-	c[ImGuiCol_TableRowBgAlt]        = ImVec4(1.00f, 1.00f, 1.00f, 0.03f);
+	c[ImGuiCol_TableRowBgAlt]        = light ? ImVec4(0.0f, 0.0f, 0.0f, 0.025f) : ImVec4(1.00f, 1.00f, 1.00f, 0.03f);
 
 	// Selection / Drag-drop
-	c[ImGuiCol_TextSelectedBg]       = ImVec4(kAccent.x, kAccent.y, kAccent.z, 0.35f);
-	c[ImGuiCol_DragDropTarget]       = kAccent;
+	c[ImGuiCol_TextSelectedBg]       = ImVec4(accent.x, accent.y, accent.z, 0.25f);
+	c[ImGuiCol_DragDropTarget]       = accent;
 
 	// Nav highlight
-	c[ImGuiCol_NavHighlight]         = kAccent;
-	c[ImGuiCol_NavWindowingHighlight]= ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
-	c[ImGuiCol_NavWindowingDimBg]    = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
+	c[ImGuiCol_NavHighlight]         = accent;
+	c[ImGuiCol_NavWindowingHighlight]= light ? ImVec4(0.10f, 0.15f, 0.16f, 0.55f) : ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
+	c[ImGuiCol_NavWindowingDimBg]    = light ? ImVec4(0.20f, 0.24f, 0.25f, 0.14f) : ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
 
 	// Modal dimming
-	c[ImGuiCol_ModalWindowDimBg]     = ImVec4(0.00f, 0.00f, 0.00f, 0.55f);
+	c[ImGuiCol_ModalWindowDimBg]     = ImVec4(0.00f, 0.00f, 0.00f, light ? 0.32f : 0.55f);
 
 	// Keep ImGui geometry in GLFW logical coordinates. The camera raster and
 	// viewport map those positions to framebuffer pixels; scissor clips need

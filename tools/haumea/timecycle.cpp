@@ -140,6 +140,7 @@ Interpolate(ColourSet *dst, ColourSet *a, ColourSet *b, float fa, float fb)
 
 static ColourSet *timecycleData;
 ColourSet currentColours;
+float currentLodDistMult = 1.0f;
 rw::RGBAf currentFogColour;
 rw::RGBA belowHorizonColour;
 #define GetColourSet(h, w) timecycleData[(h)*params.numWeathers + (w)]
@@ -1083,7 +1084,8 @@ UpdateSA(void)
 			currentColours.postfx2 = tmp.postfx2;
 		}
 
-		// TODO: lod box, and also use the value somewhere
+		if(lodBox)
+			currentLodDistMult = 1.0f + (lodBox->lodDistMult - 1.0f)*clamp(lodAmt, 0.0f, 1.0f);
 
 		if(farBox1 && farBox1->farclp < currentColours.farClp)
 			currentColours.farClp = currentColours.farClp*(1.0f-farAmt1) + farBox1->farclp*farAmt1;
@@ -1104,6 +1106,7 @@ UpdateSA(void)
 void
 Update(void)
 {
+	currentLodDistMult = 1.0f;
 	if(params.timecycle == GAME_SA){
 		UpdateSA();
 		return;

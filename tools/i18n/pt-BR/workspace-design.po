@@ -1,0 +1,171 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Advanced"
+msgstr "Avançado"
+
+msgid "Restores the browser on the left and Object Info on the right."
+msgstr "Restaura o navegador à esquerda e as informações do objeto à direita."
+
+msgid "Step snapping"
+msgstr "Ajustar por incrementos"
+
+msgid "Choose an element, then click in the world. Esc stops."
+msgstr "Escolha um elemento e clique no mundo. Esc para encerrar."
+
+msgid "%.0f FPS"
+msgstr "%.0f FPS"
+
+msgid "Game draw distance"
+msgstr "Distância de visão do jogo"
+
+msgid "Uses San Andreas model distances and the weather's view range.\nTurn off for extended editor distances."
+msgstr "Usa as distâncias dos modelos de San Andreas e o alcance de visão do clima.\nDesative para ampliar as distâncias no editor."
+
+msgid "View range: %.0f m"
+msgstr "Alcance de visão: %.0f m"
+
+msgid "Performance"
+msgstr "Desempenho"
+
+msgid "Frame rate"
+msgstr "Taxa de quadros"
+
+msgid "VSync"
+msgstr "Sincronização vertical"
+
+msgid "Limit frame rate"
+msgstr "Limitar taxa de quadros"
+
+msgid "Uncapped"
+msgstr "Sem limite"
+
+msgid "%.0f FPS  /  %.1f ms"
+msgstr "%.0f FPS  /  %.1f ms"
+
+msgid "One distance for all objects, independent of model, weather and time of day."
+msgstr "Uma distância para todos os objetos, independentemente do modelo, clima e horário."
+
+msgid "Higher distances show more objects and use more GPU and memory."
+msgstr "Distâncias maiores exibem mais objetos e usam mais GPU e memória."
+
+msgid "Matches the display refresh rate to reduce tearing. Turn off for uncapped FPS."
+msgstr "Sincroniza com a taxa de atualização da tela. Desative para não limitar o FPS."
+
+msgid "Distance fog"
+msgstr "Névoa à distância"
+
+msgid "Softens the edge of the chosen stream distance."
+msgstr "Suaviza o limite da distância de streaming escolhida."
+
+msgid "Previews virtual worlds, interiors, areas and client object limits.\nAll elements keep the stream distance set in Performance. Nothing is saved."
+msgstr "Prévia dos mundos virtuais, interiores, áreas e limites de objetos do cliente.\nTodos os elementos usam a distância definida em Desempenho. Nada é salvo."
+
+msgid "Recent workspaces"
+msgstr "Áreas de trabalho recentes"
+
+msgid "Folder missing"
+msgstr "Pasta não encontrada"
+
+msgid "Remove from recent"
+msgstr "Remover dos recentes"
+
+msgid "No recent maps"
+msgstr "Nenhum mapa recente"
+
+msgid "Choose a workspace to get started."
+msgstr "Escolha uma área de trabalho para começar."
+
+msgid "Open a map in this workspace and it will appear here."
+msgstr "Abra um mapa nesta área de trabalho para que ele apareça aqui."
+
+msgid "Return to the editor."
+msgstr "Voltar ao editor."
+
+msgid "Pick up where you left off."
+msgstr "Continue de onde parou."
+
+msgid "Your maps"
+msgstr "Seus mapas"
+
+msgid "Recent maps"
+msgstr "Mapas recentes"
+
+msgid "Background windows run at up to 30 FPS."
+msgstr "Janelas em segundo plano usam até 30 FPS."
+
+msgid "Characters"
+msgstr "Personagens"
+
+msgid "Blends distant objects into the horizon to soften the stream cutoff."
+msgstr "Mistura objetos distantes com o horizonte para suavizar o limite de streaming."
+
+msgid "Place a character with a skin and animation."
+msgstr "Coloque um personagem com skin e animação."
+
+msgid "Add a player spawn point."
+msgstr "Adicione um ponto de surgimento de jogadores."
+
+msgid "Place an NPC that can move and interact."
+msgstr "Coloque um NPC que pode se mover e interagir."
+
+msgid "Build an NPC path, one point at a time."
+msgstr "Crie um caminho para NPCs, um ponto de cada vez."
+
+msgid "Place an item players can collect."
+msgstr "Coloque um item que os jogadores podem coletar."
+
+msgid "Add text in the 3D world."
+msgstr "Adicione texto ao mundo 3D."
+
+msgid "Mark a coloured area on the radar."
+msgstr "Marque uma área colorida no radar."
+
+msgid "Add a marker to the radar."
+msgstr "Adicione um marcador ao radar."
+
+msgid "Play a sound or audio stream near this point."
+msgstr "Reproduza um som ou áudio próximo deste ponto."
+
+msgid "Place a checkpoint or add it to a race."
+msgstr "Coloque um checkpoint ou adicione-o a uma corrida."
+
+msgid "Limit streamed elements to an area."
+msgstr "Limite os elementos transmitidos a uma área."
+
+msgid "Paths"
+msgstr "Caminhos"
+
+msgid "Markers"
+msgstr "Marcadores"
+
+msgid "Text & audio"
+msgstr "Texto e áudio"
+
+msgid "Model files"
+msgstr "Arquivos de modelos"
+
+msgid "%d points"
+msgstr "%d pontos"
+
+msgid "New path"
+msgstr "Novo caminho"
+
+msgid "Click in the world. Esc stops."
+msgstr "Clique no mundo. Esc para encerrar."
+
+msgid "Choose Characters, Markers, Text & audio or Zones in the browser."
+msgstr "Escolha Personagens, Marcadores, Texto e áudio ou Zonas no navegador."
+
+msgid "Choose Paths in the browser, then place the points of a route."
+msgstr "Escolha Caminhos no navegador e coloque os pontos de uma rota."
+
+msgid "No dynamic areas. Choose Zones in the browser to add one."
+msgstr "Nenhuma área dinâmica. Escolha Zonas no navegador para adicionar uma."
+
+msgid "No points yet. Choose Paths in the browser to add them."
+msgstr "Nenhum ponto ainda. Escolha Caminhos no navegador para adicioná-los."
+
+msgid "Map elements"
+msgstr "Elementos do mapa"
