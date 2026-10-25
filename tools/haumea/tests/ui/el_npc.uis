@@ -25,6 +25,12 @@ click_world 2003 -3000 4
 wait 5
 key Esc
 assert objects == 4
+# Close the automatic attachment panel before editing the host's properties.
+click_item '*' 'Windows'
+wait 3
+click_item '*' 'Attachment Workspace'
+wait 3
+assert no_window 'Attachment Workspace'
 shortcut window_object_info
 wait 5
 set_item 'Object Info' 'Name' "guard" tab

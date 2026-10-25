@@ -9868,6 +9868,10 @@ uiAttachmentWorkspaceWindow(void)
 	if(!IsAttachmentWorkspaceActive())
 		return;
 	bool open = true;
+	ImRect workArea = uiPanelWorkArea();
+	// Leave the docked model browser accessible when selecting a ped opens this window.
+	ImGui::SetNextWindowPos(ImVec2(workArea.Max.x - uiPanelGap(), workArea.Min.y + uiPanelGap()),
+		ImGuiCond_FirstUseEver, ImVec2(1.0f, 0.0f));
 	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 30.0f, 0.0f), ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSizeConstraints(ImVec2(ImGui::GetFontSize() * 24.0f, 0.0f),
 		ImVec2(ImGui::GetIO().DisplaySize.x, ImGui::GetIO().DisplaySize.y - 48.0f));
