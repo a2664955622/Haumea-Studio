@@ -22,7 +22,7 @@ static std::vector<TextDraw> gTextDraws;	// the textdraw file's
 static std::vector<TextDraw> gMapTextDraws;	// an old map's, saved back with it
 static std::string gFilePath;
 static PawnTextEncoding gFileEncoding = PAWN_TEXT_CP1252;
-static TextDrawCodeTarget gCodeTarget = TEXTDRAW_CODE_SAMP;
+static TextDrawCodeTarget gCodeTarget = TEXTDRAW_CODE_OPENMP;
 static unsigned int gChangeSeq, gSavedSeq;
 static bool gEditPending;	// changed since the last undo step was recorded
 static std::vector<std::vector<TextDraw>> gUndo, gRedo;
@@ -77,7 +77,7 @@ GetTextDrawCodeTarget(void)
 void
 SetTextDrawCodeTarget(TextDrawCodeTarget target)
 {
-	gCodeTarget = target == TEXTDRAW_CODE_OPENMP ? TEXTDRAW_CODE_OPENMP : TEXTDRAW_CODE_SAMP;
+	gCodeTarget = target == TEXTDRAW_CODE_SAMP ? TEXTDRAW_CODE_SAMP : TEXTDRAW_CODE_OPENMP;
 }
 
 void

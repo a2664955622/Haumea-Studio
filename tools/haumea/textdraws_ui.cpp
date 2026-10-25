@@ -232,7 +232,7 @@ bool
 LoadTextDrawSetting(const char *key, const char *value)
 {
 	if(strcmp(key, "textdraw_code_target") == 0){
-		int target = TEXTDRAW_CODE_SAMP;
+		int target = TEXTDRAW_CODE_OPENMP;
 		if(sscanf(value, "%d", &target) == 1 &&
 		   (target == TEXTDRAW_CODE_SAMP || target == TEXTDRAW_CODE_OPENMP))
 			SetTextDrawCodeTarget((TextDrawCodeTarget)target);

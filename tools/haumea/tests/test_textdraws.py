@@ -143,7 +143,7 @@ class TextDrawTests(unittest.TestCase):
                                      str(Path(tmp, 'map.pwn'))],
                                     cwd=tmp, env=env, capture_output=True, text=True)
             self.assertIn('pawn-roundtrip:', result.stdout, result.stdout[-2000:])
-            self.compile(tmp, GAMEMODE_WITH_FILE, ('SAMP037_INCLUDE',))
+            self.compile(tmp, GAMEMODE_WITH_FILE, ('OMP_INCLUDE',))
 
     def test_textdraws_round_trip(self):
         with tempfile.TemporaryDirectory() as tmp:
