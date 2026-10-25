@@ -2084,6 +2084,13 @@ msgstr ""
 "Clique pontos no mundo, um depois do outro.\n"
 "Botão direito ou Esc para."
 
+msgid ""
+"Click selects the group. Click the arrow to fold it; right-click to rename.\n"
+"Double-click a member to edit it alone; Esc selects the whole group."
+msgstr ""
+"Clique seleciona o grupo. Clique na seta para recolhê-lo; clique com o botão direito para renomear.\n"
+"Dê dois cliques em um membro para editá-lo sozinho; Esc seleciona o grupo inteiro."
+
 #, c-format
 msgid "Click something to edit it in Object Info (%s). %s stops placing."
 msgstr "Clique em algo para editá-lo em Informações do objeto (%s). %s para de colocar."
@@ -2117,9 +2124,6 @@ msgstr "Clique para selecionar, clique duas vezes para ir até lá."
 
 msgid "Click to select it."
 msgstr "Clique para selecionar."
-
-msgid "Click to select the group, on the arrow to fold it. Right-click to rename."
-msgstr "Clique para selecionar o grupo, na seta para recolhê-lo. Clique direito para renomear."
 
 msgid "Click to show the zones in the 3D view. The radar (Windows > Show Radar) always shows them."
 msgstr "Clique para mostrar as zonas na vista 3D. O radar (Janelas > Mostrar radar) sempre as mostra."

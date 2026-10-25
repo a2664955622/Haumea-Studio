@@ -68,7 +68,7 @@ SOURCES = {
 	'documentxml.cpp': ['roundtrip', 'xml_pins', 'xml_merge', 'radar_art', 'textdraws_guides', 'textdraws_boards'],
 	'editorxml.cpp': ['roundtrip', 'xml_pins', 'xml_merge'],
 	'textdraws.cpp': ['textdraws', 'textdraws_move', 'textdraws_lock', 'textdraws_boards', 'textdraws_shapes', 'textdraws_guides', 'roundtrip'],
-	'textdraws_ui.cpp': ['textdraws', 'textdraws_move', 'textdraws_lock', 'textdraws_boards', 'textdraws_tools', 'textdraws_shapes', 'textdraws_guides', 'custom_model'],
+	'textdraws_ui.cpp': ['textdraws', 'textdraws_move', 'textdraws_lock', 'textdraws_boards', 'textdraws_tools', 'textdraws_shapes', 'textdraws_guides', 'textdraws_layers', 'custom_model'],
 	'testserver.cpp': ['test_in_game', 'test_server'],
 	'childprocess.cpp': ['test_in_game', 'namaka'],
 	'namaka.cpp': ['namaka'],

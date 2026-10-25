@@ -2449,8 +2449,8 @@ msgid "Lock or unlock the group"
 msgstr "Travar ou destravar o grupo"
 
 #: tools/haumea/textdraws_ui.cpp
-msgid "Click to select the group, on the arrow to fold it. Right-click to rename."
-msgstr "Clique para selecionar o grupo, na seta para recolhê-lo. Clique direito para renomear."
+msgid "Click selects the group. Click the arrow to fold it; right-click to rename.\nDouble-click a member to edit it alone; Esc selects the whole group."
+msgstr "Clique seleciona o grupo. Clique na seta para recolhê-lo; clique com o botão direito para renomear.\nDê dois cliques em um membro para editá-lo sozinho; Esc seleciona o grupo inteiro."
 
 #: tools/haumea/textdraws_ui.cpp
 msgid "Shown in the editor (it is in the file either way)"

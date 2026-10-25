@@ -46,6 +46,10 @@ static float gNudge = 1.0f;	// the arrow keys' step; Shift ten times it
 static bool gClickThroughLocked = true;
 // Selection: gSel in file order; gSelected is the one the panel edits.
 static std::vector<int> gSel;
+// A row picked in Layers takes precedence over overlapping canvas hit boxes.
+static bool gLayerSelection;
+// Double-clicking a group enters it; its members can then be edited alone.
+static std::string gIsolatedGroup;
 // The artboard on the canvas, and boards made but still empty.
 static std::string gBoard;
 static std::vector<std::string> gEmptyBoards;
@@ -174,6 +178,8 @@ ExitTextDrawMode(void)
 {
 	gMode = false;
 	gStillPending = false;
+	gLayerSelection = false;
+	gIsolatedGroup.clear();
 	releaseStillFrame();
 }
 
@@ -1558,6 +1564,9 @@ isSelected(int i)
 static void
 selectOnly(int i)
 {
+	gLayerSelection = false;
+	if(i < 0)
+		gIsolatedGroup.clear();
 	gSel.clear();
 	if(i >= 0)
 		gSel.push_back(i);
@@ -1567,6 +1576,7 @@ selectOnly(int i)
 static void
 addToSelection(int i)
 {
+	gLayerSelection = false;
 	std::vector<int>::iterator it = std::lower_bound(gSel.begin(), gSel.end(), i);
 	if(it == gSel.end() || *it != i)
 		gSel.insert(it, i);
@@ -1576,6 +1586,7 @@ addToSelection(int i)
 static void
 toggleSelected(int i)
 {
+	gLayerSelection = false;
 	std::vector<int>::iterator it = std::lower_bound(gSel.begin(), gSel.end(), i);
 	if(it != gSel.end() && *it == i){
 		gSel.erase(it);
@@ -1597,6 +1608,16 @@ validateSelection(void)
 	gSel.swap(keep);
 	if(!isSelected(gSelected))
 		gSelected = gSel.empty() ? -1 : gSel.back();
+	if(!gIsolatedGroup.empty()){
+		bool exists = false;
+		for(const TextDraw &td : tds)
+			if(onBoard(td) && td.group == gIsolatedGroup){
+				exists = true;
+				break;
+			}
+		if(!exists)
+			gIsolatedGroup.clear();
+	}
 }
 
 void
@@ -1778,6 +1799,7 @@ static void
 groupSelected(const char *name)
 {
 	std::vector<TextDraw> &tds = GetTextDraws();
+	gIsolatedGroup.clear();
 	for(int i : gSel)
 		tds[i].group = name;
 	if(!gSel.empty())
@@ -1794,6 +1816,30 @@ selectGroup(const std::string &group, bool add)
 	for(int i = 0; i < (int)tds.size(); i++)
 		if(onBoard(tds[i]) && tds[i].group == group)
 			addToSelection(i);
+}
+
+// Shift adds a group; Ctrl toggles all of its members together.
+static void
+toggleGroupSelection(const std::string &group, int key)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	bool any = false, all = true;
+	for(int i = 0; i < (int)tds.size(); i++)
+		if(onBoard(tds[i]) && tds[i].group == group){
+			any = true;
+			all &= isSelected(i);
+		}
+	if(!any)
+		return;
+	if(all){
+		gSel.erase(std::remove_if(gSel.begin(), gSel.end(), [&](int i){ return onBoard(tds[i]) && tds[i].group == group; }), gSel.end());
+		if(!isSelected(gSelected))
+			gSelected = gSel.empty() ? -1 : gSel.back();
+	}else{
+		selectGroup(group, true);
+		if(isSelected(key))
+			gSelected = key;
+	}
 }
 
 static std::string
@@ -2207,6 +2253,8 @@ static void
 switchBoard(const std::string &board)
 {
 	gBoard = board;
+	gLayerSelection = false;
+	gIsolatedGroup.clear();
 	selectOnly(-1);
 }
 
@@ -2308,6 +2356,33 @@ textDrawsAt(const Canvas &cv, ImVec2 p, std::vector<int> &out)
 		if(p.x >= a.x && p.x <= b.x && p.y >= a.y && p.y <= b.y)
 			out.push_back(i);
 	}
+}
+
+// Prefer the layer the user picked in the list when several hit boxes overlap.
+// Locked layers still click through when that canvas option is on.
+static int
+layerHit(const std::vector<int> &under)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	if(!gLayerSelection)
+		return -1;
+	auto canPick = [&](int i){ return !tds[i].locked || !gClickThroughLocked; };
+	if(gSelected >= 0 && std::find(under.begin(), under.end(), gSelected) != under.end() && canPick(gSelected))
+		return gSelected;
+	for(int i : under)
+		if(isSelected(i) && canPick(i))
+			return i;
+	return -1;
+}
+
+static int
+topCanvasHit(const std::vector<int> &under)
+{
+	std::vector<TextDraw> &tds = GetTextDraws();
+	for(int i : under)
+		if(!tds[i].locked || !gClickThroughLocked)
+			return i;
+	return -1;
 }
 
 // Snaps the moved selection's edges and centre to the screen's, the grid's
@@ -3232,23 +3307,48 @@ DrawTextDrawsOverlay(void)
 		ImGui::Begin(id, nil, flags);
 		ImGui::InvisibleButton("hit", ImVec2(p1.x - p0.x, p1.y - p0.y));
 		if(ImGui::IsItemActivated() && !grabbed){
+			// Use the canvas stack order, even if another invisible hit window
+			// happened to receive this click. A row picked in Layers wins when
+			// that selected layer is under the pointer.
+			std::vector<int> under;
+			textDrawsAt(cv, io.MousePos, under);
+			int picked = topCanvasHit(under);
+			int preferred = io.KeyAlt ? -1 : layerHit(under);
+			if(preferred >= 0)
+				picked = preferred;
 			if(io.KeyAlt){
 				// Alt+click: the next one down under the cursor, for stacks.
-				std::vector<int> under;
-				textDrawsAt(cv, io.MousePos, under);
 				std::vector<int>::iterator it = std::find(under.begin(), under.end(), gSelected);
-				int next = under.empty() ? i : it == under.end() || it + 1 == under.end() ? under.front() : *(it + 1);
-				selectOnly(next);
-			}else{
-				if(io.KeyShift || io.KeyCtrl)
-					toggleSelected(i);
-				else if(!isSelected(i))
-					selectOnly(i);
-				else
-					gSelected = i;
-				if(isSelected(i))
-					startDrag();
+				picked = under.empty() ? i : it == under.end() || it + 1 == under.end() ? under.front() : *(it + 1);
 			}
+			if(picked < 0)
+				picked = i;
+			gLayerSelection = false;
+			TextDraw &target = tds[picked];
+			bool enterGroup = !target.group.empty() && target.group != gIsolatedGroup &&
+				ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+			if(enterGroup){
+				gIsolatedGroup = target.group;
+				selectOnly(picked);
+			}else{
+				if(!gIsolatedGroup.empty() && target.group != gIsolatedGroup)
+					gIsolatedGroup.clear();
+				if(!target.group.empty() && target.group != gIsolatedGroup){
+					if(io.KeyCtrl)
+						toggleGroupSelection(target.group, picked);
+					else{
+						selectGroup(target.group, io.KeyShift);
+						gSelected = picked;
+					}
+				}else if(io.KeyShift || io.KeyCtrl)
+					toggleSelected(picked);
+				else if(!isSelected(picked))
+					selectOnly(picked);
+				else
+					gSelected = picked;
+			}
+			if(!enterGroup && isSelected(picked))
+				startDrag();
 		}
 		if(ImGui::IsItemHovered() && !gDragging){
 			hovered = i;
@@ -3363,6 +3463,8 @@ DrawTextDrawsOverlay(void)
 		gMarquee = true;
 		gMarqueeAdd = io.KeyShift || io.KeyCtrl;
 		gMarqueeStart = m;
+		gLayerSelection = false;
+		gIsolatedGroup.clear();
 	}
 	// Over the textdraws too, which take the mouse for clicks and drags;
 	// not over the panels.
@@ -5004,7 +5106,11 @@ TextDrawModeShortcut(int action)
 	case SC_SAVE_MAP: saveOrAsk(); return true;
 	case SC_SAVE_MAP_AS: showFileDialog(true); return true;
 	case SC_CANCEL:
-		if(!gSel.empty())
+		if(!gIsolatedGroup.empty()){
+			std::string group = gIsolatedGroup;
+			gIsolatedGroup.clear();
+			selectGroup(group, false);
+		}else if(!gSel.empty())
 			selectOnly(-1);
 		else
 			ExitTextDrawMode();
@@ -5156,8 +5262,14 @@ static void
 rowMenu(int i)
 {
 	std::vector<TextDraw> &tds = GetTextDraws();
-	if(!isSelected(i))
-		selectOnly(i);
+	if(!isSelected(i)){
+		if(!tds[i].group.empty() && tds[i].group != gIsolatedGroup){
+			selectGroup(tds[i].group, false);
+			gSelected = i;
+		}else
+			selectOnly(i);
+	}
+	gLayerSelection = true;
 	if(ImGui::MenuItem(L("Duplicate"), ShortcutLabel(SC_DUPLICATE)))
 		appendCopies(selectedCopies(), 10.0f);
 	if(ImGui::MenuItem(L("Delete"), ShortcutLabel(SC_DELETE)))
@@ -5232,14 +5344,17 @@ layers(void)
 			for(int k = 0; k < (int)tds.size(); k++)
 				if(onBoard(tds[k]) && tds[k].group == td.group)
 					all &= isSelected(k);
-			if(ImGui::Selectable(header, all, ImGuiSelectableFlags_AllowOverlap)){
+			if(ImGui::Selectable(header, all, ImGuiSelectableFlags_AllowOverlap | ImGuiSelectableFlags_AllowDoubleClick)){
 				if(io.MousePos.x < ImGui::GetItemRectMin().x + ImGui::GetFontSize()){
 					if(isFolded) folded.erase(std::find(folded.begin(), folded.end(), td.group));
 					else folded.push_back(td.group);
-				}else
+				}else{
+					gIsolatedGroup.clear();
 					selectGroup(td.group, io.KeyShift || io.KeyCtrl);
+					gLayerSelection = true;
+				}
 			}
-			ImGui::SetItemTooltip("%s", _("Click to select the group, on the arrow to fold it. Right-click to rename."));
+			ImGui::SetItemTooltip("%s", _("Click selects the group. Click the arrow to fold it; right-click to rename.\nDouble-click a member to edit it alone; Esc selects the whole group."));
 			if(ImGui::BeginPopupContextItem("##group_menu")){
 				static char name[64];
 				if(ImGui::IsWindowAppearing())
@@ -5250,6 +5365,8 @@ layers(void)
 					for(TextDraw &t : tds)
 						if(t.group == from)
 							t.group = name;
+					if(gIsolatedGroup == from)
+						gIsolatedGroup = name;
 					std::replace(folded.begin(), folded.end(), from, std::string(name));
 					TextDrawsChanged();
 					ImGui::CloseCurrentPopup();
@@ -5259,6 +5376,8 @@ layers(void)
 					for(TextDraw &t : tds)
 						if(t.group == from)
 							t.group.clear();
+					if(gIsolatedGroup == from)
+						gIsolatedGroup.clear();
 					TextDrawsChanged();
 				}
 				ImGui::EndPopup();
@@ -5285,17 +5404,47 @@ layers(void)
 		}
 		ImGui::SameLine();
 		std::string label = layerLabel(td) + "##td" + std::to_string(i);
-		if(ImGui::Selectable(label.c_str(), isSelected(i), ImGuiSelectableFlags_AllowOverlap)){
-			if(io.KeyCtrl)
-				toggleSelected(i);
-			else if(io.KeyShift && gSelected >= 0){
-				int a = std::min(gSelected, i), b = std::max(gSelected, i);
-				for(int k = a; k <= b; k++)
-					if(onBoard(tds[k]))
-						addToSelection(k);
-				gSelected = i;
-			}else
+		if(ImGui::Selectable(label.c_str(), isSelected(i), ImGuiSelectableFlags_AllowOverlap | ImGuiSelectableFlags_AllowDoubleClick)){
+			bool doubleClick = ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+			if(!td.group.empty() && doubleClick && td.group != gIsolatedGroup){
+				gIsolatedGroup = td.group;
 				selectOnly(i);
+			}else if(!td.group.empty() && td.group == gIsolatedGroup){
+				if(io.KeyCtrl)
+					toggleSelected(i);
+				else if(io.KeyShift && gSelected >= 0){
+					int a = std::min(gSelected, i), b = std::max(gSelected, i);
+					for(int k = a; k <= b; k++)
+						if(onBoard(tds[k]) && tds[k].group == gIsolatedGroup)
+							addToSelection(k);
+					gSelected = i;
+				}else
+					selectOnly(i);
+			}else if(!td.group.empty()){
+				gIsolatedGroup.clear();
+				if(io.KeyCtrl)
+					toggleGroupSelection(td.group, i);
+				else if(io.KeyShift){
+					selectGroup(td.group, true);
+					gSelected = i;
+				}else{
+					selectGroup(td.group, false);
+					gSelected = i;
+				}
+			}else{
+				gIsolatedGroup.clear();
+				if(io.KeyCtrl)
+					toggleSelected(i);
+				else if(io.KeyShift && gSelected >= 0){
+					int a = std::min(gSelected, i), b = std::max(gSelected, i);
+					for(int k = a; k <= b; k++)
+						if(onBoard(tds[k]))
+							addToSelection(k);
+					gSelected = i;
+				}else
+					selectOnly(i);
+			}
+			gLayerSelection = true;
 		}
 		if(ImGui::BeginPopupContextItem("##row_menu")){
 			rowMenu(i);

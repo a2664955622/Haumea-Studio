@@ -1,0 +1,44 @@
+# A layer selected in the list wins over overlapping canvas hits. Groups move
+# together; double-click enters one so its members can be edited separately.
+open "$UI_FIXTURES/ui_map.pwn"
+click_item '*' 'TextDraws'
+wait 5
+click_item 'TextDraws' 'Text' 1
+wait 3
+click_item 'TextDraws' 'Text' 1
+wait 3
+assert textdraws == 2
+# Pick the lower layer from the list even though both hit boxes overlap.
+click_item 'TextDraws' 'text  Text' 2
+wait 2
+drag td:290 td:205 td:330 td:205 12
+wait 3
+assert textdraw.0.x > 300
+assert textdraw.1.x == 280
+# Group both layers, then move either one and keep the group together.
+click_item 'TextDraws' 'text  Text' 1
+hold Ctrl
+click_item 'TextDraws' 'text  Text' 2
+release Ctrl
+wait 2
+click_item 'TextDraws' 'Group'
+wait 3
+click_item 'TextDraws' 'text  Text' 1
+drag td:290 td:205 td:310 td:205 12
+wait 3
+assert textdraw.0.x > 335
+assert textdraw.1.x > 295
+# Double-click a member to isolate it, then Esc returns to the whole group.
+click_item 'TextDraws' 'text  Text' 1
+click td:310 td:205
+click td:310 td:205
+drag td:310 td:205 td:330 td:205 12
+wait 3
+assert textdraw.0.x > 335
+assert textdraw.1.x > 315
+key Escape
+wait 3
+drag td:350 td:205 td:360 td:205 12
+wait 3
+assert textdraw.0.x > 345
+assert textdraw.1.x > 325
