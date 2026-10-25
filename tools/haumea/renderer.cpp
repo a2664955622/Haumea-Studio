@@ -860,7 +860,7 @@ RenderCollision(ObjectInst *inst)
 	ObjectDef *obj = GetObjectDef(inst->m_objectId);
 	if(obj == nil) return;
 	if(obj->m_colModel)
-		RenderColModelWire(obj->m_colModel, &inst->m_matrix, obj->m_isBigBuilding);
+		RenderColModelWire(obj->m_colModel, &inst->m_matrix, !gRenderCollision || obj->m_isBigBuilding);
 	else
 		printf("object %s has no LOD\n", obj->m_name);
 }

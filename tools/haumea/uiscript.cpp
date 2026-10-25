@@ -2,6 +2,8 @@
 #include "haumea.h"
 #include "documentxml.h"
 #include "coordinatepin.h"
+#include "layoutpaths.h"
+#include "mapcleanup.h"
 #include "alignmentmath.h"
 #include "browserdiscovery.h"
 #include "crashreports.h"
@@ -601,6 +603,16 @@ coordinate(const std::string &s, bool vertical)
 		}
 		return -1000;
 	}
+	if(s.compare(0,5,"path:")==0){
+		int index=0,handle=0;
+		sscanf(s.c_str()+5,"%d:%d",&index,&handle);
+		ImVec2 point;
+		if(LayoutPathPointScreen(&point,index,handle)){
+			ImVec2 origin=ImGui::GetMainViewport()->Pos;
+			return (int)(vertical?point.y-origin.y:point.x-origin.x);
+		}
+		return -1000;
+	}
 	if(s.compare(0,4,"obj:") == 0){
 		int model, x, y, z;
 		if(sscanf(s.c_str(),"obj:%d:%d:%d:%d",&model,&x,&y,&z) == 4){
@@ -857,11 +869,12 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		why = "visible LOD overlaps: " + std::to_string(count);
 		return compare(count, arg(1), atof(arg(2).c_str()));
 	}
-	if(what == "objects" || what == "selected" || what == "textdraws" || what == "textdraw_zoom" || what == "radar_zones" ||
+	if(what == "objects" || what == "selected" || what == "selected_world" || what == "textdraws" || what == "textdraw_zoom" || what == "radar_zones" ||
 	   what == "selected.model" || what == "selected.x" || what == "selected.y" || what == "selected.z"){
 		double v = 0;
 		if(what == "objects") v = countObjects();
 		else if(what == "selected") v = countSelected();
+		else if(what == "selected_world"){for(CPtrNode *p=selection.first;p;p=p->next)if(IsPawnWorldObject((ObjectInst*)p->item))v++;}
 		else if(what == "textdraws") v = GetTextDraws().size();
 		else if(what == "textdraw_zoom") v = TextDrawCanvasZoom();
 		else if(what == "radar_zones") v = CountRadarArtZones();
@@ -1012,6 +1025,14 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		bool found=FindSelectionSnapDelta(objs,positions,{(float)atof(arg(1).c_str()),(float)atof(arg(2).c_str()),(float)atof(arg(3).c_str())},&correction);
 		why=found?"snap target found":"no snap target";
 		return compare(found,arg(4),atof(arg(5).c_str()));
+	}
+	if(what=="layout.count"||what=="layout.objects"||what=="layout.point_z"||what=="layout.matches"||what=="layout.upside_down"||what=="duplicates"||what=="view.bounds"||what=="gizmo.pivot"){
+		double value=what=="layout.count"?LayoutPathCount():what=="layout.objects"?LayoutPathObjectCount():
+			what=="layout.matches"?LayoutPathObjectsMatch():what=="layout.upside_down"?LayoutPathUpsideDownCount():
+			what=="layout.point_z"?LayoutPathPointHeight(atoi(arg(1).c_str())):what=="duplicates"?MapCleanupDuplicateCount():what=="view.bounds"?gRenderBounds:gGizmoPivot;
+		int offset=what=="layout.point_z"?1:0;
+		why=what+" is "+std::to_string(value);
+		return compare(value,arg(offset+1),atof(arg(offset+2).c_str()));
 	}
 	if(what.compare(0, 4, "pin.") == 0){
 		rw::V3d pin, end;

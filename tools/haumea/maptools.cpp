@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
 #include "coordinatepin.h"
+#include "layoutpaths.h"
+#include "mapcleanup.h"
 #include "alignmentmath.h"
 #include "i18n.h"
 #include "maptools.h"
@@ -122,6 +124,8 @@ groupCentre(const std::vector<ObjectInst*> &objs)
 	return scale(add(gmin, gmax), 0.5f);
 }
 
+rw::V3d MapToolsSelectionCentre() { return groupCentre(selectedObjects()); }
+
 // A world rotation of degrees around X, then Y, then Z.
 static rw::Quat
 worldRotation(const rw::V3d &degrees)
@@ -162,6 +166,39 @@ needSelection(const std::vector<ObjectInst*> &objs, int minimum, std::string *er
 		*error = minimum <= 1 ? N_("select something first") :
 			"select at least " + std::to_string(minimum) + " objects";
 	return false;
+}
+
+int MapToolsCenterParent(std::string *error)
+{
+	auto selected = selectedObjects();
+	if(!needSelection(selected, 1, error)) return -1;
+	ObjectInst *parent = selected[0];
+	for(int depth=0; depth<256 && GetAttachParent(parent); depth++) parent=GetAttachParent(parent);
+	std::vector<ObjectInst*> family = { parent }, direct;
+	for(CPtrNode *it=instances.first; it; it=it->next){
+		auto *o=(ObjectInst*)it->item;
+		if(o->m_isDeleted || o==parent) continue;
+		ObjectInst *ancestor=GetAttachParent(o);
+		if(ancestor==parent) direct.push_back(o);
+		for(int depth=0; ancestor && depth<256; depth++,ancestor=GetAttachParent(ancestor))
+			if(ancestor==parent){ family.push_back(o); break; }
+	}
+	if(direct.empty() || !IsPawnObjectEditable(parent)){
+		if(error) *error=N_("Select a parent with attached objects, or one of its children.");
+		return -1;
+	}
+	for(auto *o:family) if(!IsPawnObjectEditable(o)){
+		if(error) *error=N_("The attachment contains read-only objects.");
+		return -1;
+	}
+	rw::V3d centre=groupCentre(family);
+	UndoBeginGroup();
+	placeObject(parent,centre,parent->m_rotation);
+	// Children have not moved: recompute the direct children's offsets before
+	// UpdateObjectAttachments runs, preserving the whole descendant tree in world space.
+	for(auto *child:direct) RebaseObjectAttachment(child);
+	UndoEndGroup();
+	return (int)family.size();
 }
 
 static void
@@ -1070,6 +1107,33 @@ MapToolsPanel(void)
 	if(ImGui::CollapsingHeader(L("Coordinate pin"))){
 		CoordinatePinPanel();
 		if(CoordinatePinOwnsMouse()) gPicking = false;
+	}
+	if(ImGui::CollapsingHeader(L("Paths & curves"))){
+		ImGui::PushID("layout_paths");
+		LayoutPathsPanel();
+		ImGui::PopID();
+	}
+	if(ImGui::CollapsingHeader(L("Duplicate cleanup"))){
+		ImGui::PushID("duplicate_cleanup");
+		MapCleanupPanel();
+		ImGui::PopID();
+	}
+	if(ImGui::CollapsingHeader(L("Pivot"))){
+		ImGui::PushID("mapping_pivot");
+		const char *pivots[]={_("Active object"),_("Selection centre"),_("Individual origins"),_("Custom point")};
+		ImGui::Combo(L("Pivot mode"),&gGizmoPivot,pivots,4);
+		if(gGizmoPivot==GIZMO_PIVOT_CUSTOM){
+			ImGui::DragFloat3(L("Pivot position"),&gGizmoCustomPivot.x,.1f,-100000.f,100000.f,"%.3f");
+			if(ImGui::SmallButton(L("Selection centre"))) gGizmoCustomPivot=MapToolsSelectionCentre();
+			ImGui::SameLine();if(ImGui::SmallButton(L("Camera target"))) gGizmoCustomPivot=TheCamera.m_target;
+			rw::V3d pin;bool hasPin=CoordinatePinPosition(&pin);
+			ImGui::BeginDisabled(!hasPin);if(ImGui::SmallButton(L("Use active pin")))gGizmoCustomPivot=pin;ImGui::EndDisabled();
+		}
+		ImGui::BeginDisabled(objs.empty());
+		if(ImGui::Button(L("Center Parent"))){std::string error;reportResult(MapToolsCenterParent(&error),error,N_("Center Parent"));}
+		ImGui::EndDisabled();
+		ImGui::SetItemTooltip(_("Moves the attachment root to its family's bounding-box centre while keeping every child's world position and rotation."));
+		ImGui::PopID();
 	}
 	if(ImGui::CollapsingHeader(L("Array")))
 		arraySection(objs);

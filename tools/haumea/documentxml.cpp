@@ -3,6 +3,7 @@
 #include "documentxml.h"
 #include "xmlfields.h"
 #include "coordinatepin.h"
+#include "layoutpaths.h"
 #include "encoding.h"
 #include "radarart.h"
 #include "textdraws.h"
@@ -758,6 +759,7 @@ void CaptureMapXMLExport(const std::vector<ObjectInst *> &objects,
 		}
 		captured.children.push_back(writeTextDrawList(GetMapTextDraws(), {}));
 		captured.children.push_back(WriteCoordinatePinXML());
+		captured.children.push_back(WriteLayoutPathsXML());
 		Node &camera = captured.add("camera");
 		write(camera, "position", TheCamera.m_position);
 		write(camera, "target", TheCamera.m_target);
@@ -846,6 +848,9 @@ bool ValidateEditorDocument(const Node &document, std::string *error)
 		return false;
 	if (const Node *pins = document.child("alignment"))
 		if (!ReadCoordinatePinXML(*pins, error, false))
+			return false;
+	if (const Node *paths = document.child("layout-paths"))
+		if (!ReadLayoutPathsXML(*paths, error, false))
 			return false;
 	if (const Node *camera = document.child("camera")) {
 		rw::V3d position = {}, target = {};
@@ -1122,6 +1127,8 @@ int RestoreMapXMLWorkspace(const char *path)
 	read(root, "show-material-indexes", gShowMaterialIndexes, &error);
 	if (const Node *pins = root.child("alignment"))
 		ReadCoordinatePinXML(*pins, &error);
+	if (const Node *paths = root.child("layout-paths"))
+		ReadLayoutPathsXML(*paths, &error);
 	if (const Node *camera = root.child("camera")) {
 		rw::V3d position = TheCamera.m_position, target = TheCamera.m_target;
 		float fov = TheCamera.m_fov;

@@ -1,5 +1,6 @@
 #include "haumea.h"
 #include "coordinatepin.h"
+#include "layoutpaths.h"
 #include "documentxml.h"
 #include "i18n.h"
 #include "editoricons.h"
@@ -2362,6 +2363,22 @@ AttachObjectInstance(ObjectInst *child, ObjectInst *parent, bool syncRotation)
 }
 
 bool
+RebaseObjectAttachment(ObjectInst *child)
+{
+	if(child == nil)
+		return false;
+	ObjectInst *parent = GetAttachParent(child);
+	if(parent == nil)
+		return false;
+	// Recalculate only the offset. Bone, slot, scale and colours belong to
+	// the existing attachment and must survive a parent being recentered.
+	ObjectPawnProperties properties = *GetObjectPawnProperties(child);
+	computeAttachmentOffset(parent, child, &properties);
+	SetObjectPawnProperties(child, properties);
+	return true;
+}
+
+bool
 AttachObjectToPlayer(ObjectInst *child, int previewSkin)
 {
 	if(child == nil || child->m_isDeleted || child->m_isVehicle ||
@@ -3014,6 +3031,7 @@ ResetPawnMap(void)
 	ClearLastPawnImportReport();
 	ResetMapTextDraws();
 	ResetCoordinatePins();
+	ResetLayoutPaths();
 	ClearRadarArtLayers();
 	gAreaRemovals.clear();
 	ClearSelection();
@@ -6081,6 +6099,29 @@ UndoRecordRadarArt(const std::shared_ptr<void> &before, const std::shared_ptr<vo
 	pushUndo(&a);
 }
 
+void UndoRecordLayoutPaths(const std::shared_ptr<void> &before, const std::shared_ptr<void> &after)
+{
+	UndoAction a = {};
+	a.type = UNDO_LAYOUT_PATHS;
+	a.radarBefore = before;
+	a.radarAfter = after;
+	pushUndo(&a);
+}
+
+void SetLayoutObjectState(ObjectInst *inst, const rw::V3d &position, const rw::Quat &rotation, bool deleted)
+{
+	if(!inst) return;
+	RemoveInstFromSectors(inst);
+	inst->m_translation = position;
+	inst->m_rotation = rotation;
+	setDeletedWithoutCascade(inst, deleted);
+	inst->m_isDirty = true;
+	inst->UpdateMatrix();
+	updateRwFrameForInst(inst);
+	StampChangeSeq(inst);
+	if(!deleted) InsertInstIntoSectors(inst);
+}
+
 static void undoStep(void);
 static void redoStep(void);
 
@@ -6158,6 +6199,9 @@ undoStep(void)
 	case UNDO_RADAR_ART:
 		RestoreRadarArtLayers(a->radarBefore);
 		break;
+	case UNDO_LAYOUT_PATHS:
+		RestoreLayoutPaths(a->radarBefore);
+		break;
 	}
 }
 
@@ -6214,6 +6258,9 @@ redoStep(void)
 		break;
 	case UNDO_RADAR_ART:
 		RestoreRadarArtLayers(a->radarAfter);
+		break;
+	case UNDO_LAYOUT_PATHS:
+		RestoreLayoutPaths(a->radarAfter);
 		break;
 	}
 }

@@ -227,6 +227,7 @@ void SetInstIplFilterKey(ObjectInst *inst, const char *sceneName);
 
 // non-rendering things
 extern bool gRenderCollision;
+extern bool gRenderBounds;
 extern bool gRenderZones;
 extern bool gRenderMapZones;
 extern bool gRenderNavigZones;
@@ -663,6 +664,12 @@ enum GizmoSpace {
 	GIZMO_LOCAL,
 	GIZMO_WORLD
 };
+enum GizmoPivot { GIZMO_PIVOT_ACTIVE, GIZMO_PIVOT_CENTRE, GIZMO_PIVOT_INDIVIDUAL, GIZMO_PIVOT_CUSTOM };
+extern int gGizmoPivot;
+extern rw::V3d gGizmoCustomPivot;
+void ComputeGizmoRotation(const rw::V3d &position, const rw::Quat &rotation,
+	const rw::Quat &leaderBefore, const rw::Quat &leaderAfter, const rw::V3d &pivot,
+	bool individual, bool local, rw::V3d *newPosition, rw::Quat *newRotation);
 extern int gGizmoMode;
 extern int gGizmoSpace;
 extern bool gGizmoEnabled;
@@ -716,6 +723,7 @@ enum UndoType {
 	UNDO_MODEL_ID,
 	UNDO_NODES,
 	UNDO_RADAR_ART,	// the radar art layers (radarart.cpp)
+	UNDO_LAYOUT_PATHS,
 };
 
 enum UndoTransformFlags {
@@ -801,6 +809,8 @@ bool MapHasUndoHistory(void);	// any step to undo or redo since the map was open
 void UndoRecordNodes(const std::vector<int> &areas, const std::vector<std::shared_ptr<void>> &before,
 	const std::vector<std::shared_ptr<void>> &after);
 void UndoRecordRadarArt(const std::shared_ptr<void> &before, const std::shared_ptr<void> &after);
+void UndoRecordLayoutPaths(const std::shared_ptr<void> &before, const std::shared_ptr<void> &after);
+void SetLayoutObjectState(ObjectInst *inst, const rw::V3d &position, const rw::Quat &rotation, bool deleted);
 void Undo(void);
 void Redo(void);
 // Actions recorded between these are undone as one step (they nest).
@@ -1000,6 +1010,7 @@ ObjectInst *FindObjectByPawnName(const char *name, const ObjectInst *except = ni
 bool AttachObjectInstance(ObjectInst *child, ObjectInst *parent, bool syncRotation = true);
 void DetachObjectInstance(ObjectInst *child);
 ObjectInst *GetAttachParent(const ObjectInst *inst);
+bool RebaseObjectAttachment(ObjectInst *child);
 enum { PAWN_ATTACH_PLAYER = -2, PAWN_ATTACH_NONE = -1 };
 bool IsPlayerAttachmentTarget(const ObjectInst *inst);
 bool IsPlayerAttachedObject(const ObjectInst *inst);

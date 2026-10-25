@@ -1,6 +1,7 @@
 #include "haumea.h"
 #include "discordpresence.h"
 #include "coordinatepin.h"
+#include "layoutpaths.h"
 #include "documentxml.h"
 #include "crashreports.h"
 #include "telemetry.h"
@@ -5090,6 +5091,8 @@ uiView(void)
 	ImGui::SetItemTooltip(_("3D text labels, gang zones and tags on pickups, actors,\nplayer classes and map icons."));
 	ImGui::Checkbox(_("Collisions"), &gRenderCollision);
 	ImGui::SetItemTooltip(_("What players and vehicles actually collide with."));
+	ImGui::Checkbox(L("Object bounds"), &gRenderBounds);
+	ImGui::SetItemTooltip(_("Shows collision bounding boxes without the collision mesh. Collisions takes precedence when both are enabled."));
 	ImGui::Checkbox(_("Water"), &gRenderWater);
 	if(gameversion == GAME_SA)
 		ImGui::Checkbox(_("Animated objects"), &gPlayAnimations);
@@ -6674,6 +6677,8 @@ loadSaveSettings(void)
 		// else-if chain exceeds MSVC's nested-block limit as settings are added.
 		if(strcmp(key, "render_collision") == 0){
 			if(parseBoolSetting(value, &boolValue)) gRenderCollision = boolValue;
+		}else if(strcmp(key, "render_bounds") == 0){
+			if(parseBoolSetting(value, &boolValue)) gRenderBounds = boolValue;
 		}else if(strcmp(key, "render_zones") == 0){
 			if(parseBoolSetting(value, &boolValue)) gRenderZones = boolValue;
 		}else if(strcmp(key, "render_samp_elements") == 0){
@@ -6787,6 +6792,11 @@ loadSaveSettings(void)
 			parseIntSetting(value, &gGizmoMode);
 		}else if(strcmp(key, "gizmo_space") == 0){
 			parseIntSetting(value, &gGizmoSpace);
+		}else if(strcmp(key, "gizmo_pivot") == 0){
+			parseIntSetting(value, &gGizmoPivot);
+			gGizmoPivot=clamp(gGizmoPivot,0,3);
+		}else if(strcmp(key, "gizmo_custom_pivot") == 0){
+			if(parseVec3Setting(value,&vecValue))gGizmoCustomPivot=vecValue;
 		}else if(strcmp(key, "gizmo_snap") == 0){
 			if(parseBoolSetting(value, &boolValue)) gGizmoSnap = boolValue;
 		}else if(strcmp(key, "gizmo_snap_angle") == 0){
@@ -7046,6 +7056,7 @@ saveSaveSettings(void)
 	fprintf(f, "draw_target %d\n", gDrawTarget ? 1 : 0);
 	fprintf(f, "selection_highlight_opacity %d\n", gSelectionHighlightOpacity);
 	fprintf(f, "render_collision %d\n", gRenderCollision ? 1 : 0);
+	fprintf(f, "render_bounds %d\n", gRenderBounds ? 1 : 0);
 	fprintf(f, "render_zones %d\n", gRenderZones ? 1 : 0);
 	fprintf(f, "render_samp_elements %d\n", gRenderSampElements ? 1 : 0);
 	fprintf(f, "render_map_zones %d\n", gRenderMapZones ? 1 : 0);
@@ -7101,6 +7112,8 @@ saveSaveSettings(void)
 	fprintf(f, "gizmo_enabled %d\n", gGizmoEnabled ? 1 : 0);
 	fprintf(f, "gizmo_mode %d\n", gGizmoMode);
 	fprintf(f, "gizmo_space %d\n", gGizmoSpace);
+	fprintf(f, "gizmo_pivot %d\n", gGizmoPivot);
+	fprintf(f, "gizmo_custom_pivot %.9g %.9g %.9g\n",gGizmoCustomPivot.x,gGizmoCustomPivot.y,gGizmoCustomPivot.z);
 	fprintf(f, "gizmo_snap %d\n", gGizmoSnap ? 1 : 0);
 	fprintf(f, "gizmo_snap_angle %.9g\n", gGizmoSnapAngle);
 	fprintf(f, "gizmo_snap_translate %.9g\n", gGizmoSnapTranslate);
@@ -13474,6 +13487,7 @@ gui(void)
 	}
 	BrowserDiscoveryHighlight(mapPanels && showBrowserWindow);
 	CoordinatePinOverlay(mapPanels);
+	LayoutPathsOverlay(mapPanels);
 	SAPaths::UpdateNodesUndo();
 	DrawTextDrawsWindow();
 	DrawTextDrawsOverlay();

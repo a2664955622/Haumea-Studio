@@ -136,6 +136,10 @@ msgid "%d added, %d deleted, %d moved, %d rotated, %d material"
 msgstr "%d adicionado(s), %d excluído(s), %d movido(s), %d girado(s), %d de material"
 
 #, c-format
+msgid "%d attached or referenced objects excluded from cleanup."
+msgstr "%d objetos vinculados ou referenciados excluídos da limpeza."
+
+#, c-format
 msgid "%d audio streams: a player hears one at a time, the last one started."
 msgstr "%d audio streams: o jogador ouve um de cada vez, o último iniciado."
 
@@ -162,6 +166,10 @@ msgstr "%d canto(s)"
 #, c-format
 msgid "%d days ago"
 msgstr "há %d dias"
+
+#, c-format
+msgid "%d duplicates in %d groups"
+msgstr "%d duplicados em %d grupos"
 
 #, c-format
 msgid "%d dynamic area(s) are not written in native code (they are the streamer's). Save as Streamer code."
@@ -254,6 +262,10 @@ msgstr "%d objeto(s) com modelos que o editor não conhece ficaram de fora ao ab
 #, c-format
 msgid "%d objects"
 msgstr "%d objetos"
+
+#, c-format
+msgid "%d objects along this path"
+msgstr "%d objetos ao longo deste caminho"
 
 #, c-format
 msgid "%d objects visible / %d created (native, limit 1000)"
@@ -1049,6 +1061,9 @@ msgstr "Acelerar o voo"
 msgid "Action"
 msgstr "Ação"
 
+msgid "Active object"
+msgstr "Objeto ativo"
+
 #, c-format
 msgid "Active: %s"
 msgstr "Em uso: %s"
@@ -1404,6 +1419,15 @@ msgstr "Colete"
 msgid "Around"
 msgstr "Em torno de"
 
+msgid "Around X"
+msgstr "Ao redor de X"
+
+msgid "Around Y"
+msgstr "Ao redor de Y"
+
+msgid "Around Z"
+msgstr "Ao redor de Z"
+
 msgid "Array"
 msgstr "Matriz"
 
@@ -1507,6 +1531,9 @@ msgstr "O COL gerado automaticamente não se ligou ao nome de modelo %s."
 msgid "Auto-generated COL from DFF geometry (%d -> %d tris, %d -> %d verts)."
 msgstr "COL gerado automaticamente a partir da geometria do DFF (%d -> %d triângulos, %d -> %d vértices)."
 
+msgid "Automatic handles"
+msgstr "Alças automáticas"
+
 msgid "Autosave unsaved maps"
 msgstr "Salvar automaticamente mapas não salvos"
 
@@ -1556,6 +1583,9 @@ msgstr "Início da roleta"
 
 msgid "Bands"
 msgstr "Faixas"
+
+msgid "Bank"
+msgstr "Inclinação lateral"
 
 msgid "Bar (0.3.7-R2)"
 msgstr "Bar (0.3.7-R2)"
@@ -1864,6 +1894,9 @@ msgstr "Tamanho da célula"
 
 msgid "Center (middle)"
 msgstr "Centro (meio)"
+
+msgid "Center Parent"
+msgstr "Centralizar objeto pai"
 
 msgid "Centre"
 msgstr "Centro"
@@ -2183,6 +2216,9 @@ msgstr "Relógio"
 msgid "Close"
 msgstr "Fechar"
 
+msgid "Closed"
+msgstr "Fechado"
+
 msgid "Clothes"
 msgstr "Roupas"
 
@@ -2266,6 +2302,9 @@ msgstr "Continuar sem workspace"
 
 msgid "Continuous buzz"
 msgstr "Zumbido contínuo"
+
+msgid "Control point"
+msgstr "Ponto de controle"
 
 msgid "Controls:"
 msgstr "Controles:"
@@ -2516,6 +2555,9 @@ msgstr "Batida C"
 msgid "Crash and error reports"
 msgstr "Relatórios de travamento e erro"
 
+msgid "Create a path, then drag its points or segment midpoints in the 3D view."
+msgstr "Crie um caminho e arraste seus pontos ou os pontos médios dos segmentos na vista 3D."
+
 msgid "Create a workspace folder."
 msgstr "Criar uma pasta de workspace."
 
@@ -2562,6 +2604,12 @@ msgstr "Cubo"
 msgid "Cuboid"
 msgstr "Cuboide"
 
+msgid "Curve"
+msgstr "Curva"
+
+msgid "Curve handles"
+msgstr "Alças da curva"
+
 msgid "Custom"
 msgstr "Personalizado"
 
@@ -2583,6 +2631,9 @@ msgstr "Modelos personalizados (0.3.DL)"
 #, c-format
 msgid "Custom models that couldn't be loaded: %d (see the log)"
 msgstr "Modelos personalizados que não puderam ser carregados: %d (veja o log)"
+
+msgid "Custom point"
+msgstr "Ponto personalizado"
 
 msgid "Cut"
 msgstr "Recortar"
@@ -2644,6 +2695,9 @@ msgstr "Exclusão limitada às primeiras %d instância(s) selecionada(s)"
 msgid "Delete node"
 msgstr "Excluir nó"
 
+msgid "Delete path"
+msgstr "Excluir caminho"
+
 msgid "Delete selection"
 msgstr "Excluir seleção"
 
@@ -2663,6 +2717,9 @@ msgstr "Excluídos"
 #, c-format
 msgid "Deleted %d instance(s)"
 msgstr "%d instância(s) excluída(s)"
+
+msgid "Deletes the guide and keeps its generated objects."
+msgstr "Exclui a guia e mantém os objetos gerados."
 
 msgid "Delta"
 msgstr "Delta"
@@ -2690,6 +2747,9 @@ msgstr "Crio um textdraw"
 
 msgid "Detach"
 msgstr "Desanexar"
+
+msgid "Detach objects"
+msgstr "Desvincular objetos"
 
 msgid "Detonator"
 msgstr "Detonador"
@@ -2841,6 +2901,9 @@ msgstr "Arraste até uma régua para remover"
 msgid "Drag to adjust. Double-click to enter an exact value."
 msgstr "Arraste para ajustar. Clique duas vezes para digitar um valor exato."
 
+msgid "Drag to bend this segment. Shift drags vertically."
+msgstr "Arraste para curvar este segmento. Shift arrasta na vertical."
+
 msgid "Drag to measure"
 msgstr "Arraste para medir"
 
@@ -2856,6 +2919,9 @@ msgstr "Arraste para mover · arraste um canto para redimensionar · %s encerra.
 
 msgid "Drag to move, wheel to zoom, double-click to fly there."
 msgstr "Arraste para mover, roda para zoom, clique duplo para voar até lá."
+
+msgid "Drag to move. Shift drags vertically; use the gizmo for an exact axis."
+msgstr "Arraste para mover. Shift arrasta na vertical; use o manipulador para mover em um eixo exato."
 
 msgid ""
 "Dragged panels stick to the screen edges and to each other.\n"
@@ -2964,6 +3030,9 @@ msgstr "Despejar depuração do trânsito de prévia"
 msgid "Duplicate"
 msgstr "Duplicar"
 
+msgid "Duplicate cleanup"
+msgstr "Limpar duplicados"
+
 msgid "Duplicate selection"
 msgstr "Duplicar seleção"
 
@@ -2997,6 +3066,9 @@ msgstr "Editar todos os selecionados"
 
 msgid "Edit in attachment workspace"
 msgstr "Editar na área de trabalho de anexos"
+
+msgid "Edit in view"
+msgstr "Editar na vista"
 
 msgid "Edit the NODES*.DAT files already in that folder."
 msgstr "Edita os arquivos NODES*.DAT que já estão nessa pasta."
@@ -3323,6 +3395,9 @@ msgstr "Localizar / Substituir"
 msgid "Find all"
 msgstr "Localizar todos"
 
+msgid "Find duplicates"
+msgstr "Encontrar duplicados"
+
 msgid "Find instances"
 msgstr "Encontrar instâncias"
 
@@ -3437,6 +3512,9 @@ msgstr "Acompanhar"
 msgid "Follow a path"
 msgstr "Seguir um caminho"
 
+msgid "Follow curve rotation"
+msgstr "Seguir rotação da curva"
+
 msgid "Follow ground"
 msgstr "Seguir o chão"
 
@@ -3486,6 +3564,9 @@ msgstr "Para o layout e as predefinições: as guias da prancheta são removidas
 #, c-format
 msgid "Frame %d  %.1f km/h  Health %.0f  Armour %.0f  Weapon %d"
 msgstr "Quadro %d  %.1f km/h  Vida %.0f  Colete %.0f  Arma %d"
+
+msgid "Frame path"
+msgstr "Enquadrar caminho"
 
 msgid "Frame rate"
 msgstr "Taxa de quadros"
@@ -3618,6 +3699,9 @@ msgstr "Porta da garagem abrindo"
 
 msgid "General"
 msgstr "Geral"
+
+msgid "Generate objects"
+msgstr "Gerar objetos"
 
 msgid "Generated Pawn code targets only the selected server."
 msgstr "O código Pawn gerado é direcionado somente ao servidor selecionado."
@@ -4161,12 +4245,21 @@ msgstr "Nesta pasta"
 msgid "In vehicle"
 msgstr "No veículo"
 
+msgid "Incoming"
+msgstr "Entrada"
+
 #, c-format
 msgid "Indexing textures... %d of %d TXDs"
 msgstr "Indexando texturas... %d de %d TXDs"
 
+msgid "Individual origins"
+msgstr "Origens individuais"
+
 msgid "Info"
 msgstr "Info"
+
+msgid "Insert midpoint"
+msgstr "Inserir ponto médio"
 
 msgid "Inside"
 msgstr "Interior"
@@ -4311,6 +4404,12 @@ msgstr "Mantém a linha mais nova à vista"
 
 msgid "Keep them read-only"
 msgstr "Mantê-los somente leitura"
+
+msgid "Keeps objects with different runtime settings, textures, or named variables separate."
+msgstr "Mantém separados os objetos com configurações, texturas ou variáveis nomeadas diferentes."
+
+msgid "Keeps the objects where they are and stops the path moving them."
+msgstr "Mantém os objetos onde estão e impede que o caminho os mova."
 
 msgid "Key"
 msgstr "Tecla"
@@ -4785,6 +4884,9 @@ msgstr ""
 msgid "Match"
 msgstr "Comparar"
 
+msgid "Match properties and materials"
+msgstr "Comparar propriedades e materiais"
+
 msgid "Match the object's angle to the ground slope. Enable Follow ground in More on the toolbar."
 msgstr "Alinhar o ângulo do objeto à inclinação do chão. Ative Seguir o chão em Mais na barra de ferramentas."
 
@@ -4928,6 +5030,10 @@ msgstr "O modelo %d não está carregado; o pickup é desenhado como o modelo %d
 msgid "Model %d was a modloader/Haumea import: open a map that uses it to move it to the server"
 msgstr "O modelo %d era uma importação do modloader/Haumea: abra um mapa que o use para movê-lo para o servidor"
 
+#, c-format
+msgid "Model %d: keep #%d, %d duplicates"
+msgstr "Modelo %d: manter #%d, %d duplicados"
+
 msgid "Model (inc,-exc)"
 msgstr "Modelo (inc,-exc)"
 
@@ -5063,6 +5169,9 @@ msgstr "Movidos"
 
 msgid "Movement"
 msgstr "Movimento"
+
+msgid "Moves the attachment root to its family's bounding-box centre while keeping every child's world position and rotation."
+msgstr "Move a raiz do vínculo para o centro dos limites do conjunto, mantendo a posição e a rotação globais de cada filho."
 
 msgid "Moves the camera to look at a point: paste x, y, z or a SetPlayerPos line."
 msgstr "Move a câmera para olhar um ponto: cole x, y, z ou uma linha SetPlayerPos."
@@ -5631,6 +5740,9 @@ msgstr "Informações do objeto"
 msgid "Object anchor"
 msgstr "Referência do objeto"
 
+msgid "Object bounds"
+msgstr "Limites dos objetos"
+
 msgid "Object snap"
 msgstr "Ajustar a objetos"
 
@@ -5650,6 +5762,9 @@ msgstr "Encaixe em objetos ligado / desligado"
 msgid "Objects"
 msgstr "Objetos"
 
+msgid "Objects along path"
+msgstr "Objetos ao longo do caminho"
+
 msgid ""
 "Objects are turned, not flipped: ramps and stairs rise the\n"
 "mirrored way, but a model that is lopsided both ways keeps its left and right."
@@ -5665,6 +5780,9 @@ msgstr "Desligado"
 
 msgid "Off draws only the interior set on the menu bar, like the client."
 msgstr "Desligado desenha só o interior definido na barra de menus, como o cliente."
+
+msgid "Off keeps the curve's height, so lifting a point also lifts its objects."
+msgstr "Desativado mantém a altura da curva: elevar um ponto também eleva seus objetos."
 
 msgid ""
 "Off plays it where it was recorded. On moves the whole route so it\n"
@@ -5875,6 +5993,9 @@ msgstr "Origem"
 msgid "Original"
 msgstr "Original"
 
+msgid "Outgoing"
+msgstr "Saída"
+
 msgid ""
 "Outgoing connections from this node to other path nodes.\n"
 "Each link can have a navi node (lane waypoint) between the two endpoints.\n"
@@ -6025,6 +6146,9 @@ msgstr "Caminho: %s"
 msgid "Paths"
 msgstr "Caminhos"
 
+msgid "Paths & curves"
+msgstr "Caminhos e curvas"
+
 msgid "Pause"
 msgstr "Pausar"
 
@@ -6169,6 +6293,15 @@ msgstr "Fixar: manter no topo da lista"
 msgid "Pitch"
 msgstr "Inclinação"
 
+msgid "Pivot"
+msgstr "Pivô"
+
+msgid "Pivot mode"
+msgstr "Modo do pivô"
+
+msgid "Pivot position"
+msgstr "Posição do pivô"
+
 msgid "Pixel-exact"
 msgstr "Pixel exato"
 
@@ -6223,6 +6356,9 @@ msgstr "Coloca neste mapa os objetos de um arquivo de prefab (.haumea)."
 
 msgid "Plain"
 msgstr "Liso"
+
+msgid "Plane"
+msgstr "Plano"
 
 msgid "Plane interior hum (0.3.7-R2)"
 msgstr "Zumbido dentro do avião (0.3.7-R2)"
@@ -6308,6 +6444,12 @@ msgstr "Ponto %d de %d. Os pontos são percorridos da menor ordem para cima."
 msgid "Point Dir To Node"
 msgstr "Apontar para o nó"
 
+msgid "Point position"
+msgstr "Posição do ponto"
+
+msgid "Point settings"
+msgstr "Configurações do ponto"
+
 msgid "Points down"
 msgstr "Aponta para baixo"
 
@@ -6350,6 +6492,9 @@ msgstr "Posição e rotação"
 
 msgid "Position copied"
 msgstr "Posição copiada"
+
+msgid "Position tolerance"
+msgstr "Tolerância de posição"
 
 msgid "Positions"
 msgstr "Posições"
@@ -6482,6 +6627,9 @@ msgstr "Anel de progresso"
 
 msgid "Project each selected object's anchor onto the extended ruler, preserving its position along the guide."
 msgstr "Projeta a referência de cada objeto selecionado na linha da régua, preservando sua posição ao longo da guia."
+
+msgid "Properties and materials were ignored. Overlapping objects may be intentional."
+msgstr "As propriedades e os materiais foram ignorados. A sobreposição pode ser intencional."
 
 msgid "Property (free)"
 msgstr "Propriedade (livre)"
@@ -6643,6 +6791,9 @@ msgstr "Raio (m)"
 msgid "Rain (0.3.7-R2)"
 msgstr "Chuva (0.3.7-R2)"
 
+msgid "Ramp / helix"
+msgstr "Rampa / hélice"
+
 msgid "Random (-1)"
 msgstr "Aleatória (-1)"
 
@@ -6675,6 +6826,9 @@ msgstr "Pronto"
 #, c-format
 msgid "Ready: %s"
 msgstr "Pronto: %s"
+
+msgid "Rebuild objects"
+msgstr "Reconstruir objetos"
 
 msgid "Recent maps"
 msgstr "Mapas recentes"
@@ -6781,6 +6935,13 @@ msgstr "Recarregar mapa"
 msgid "Remove"
 msgstr "Remover"
 
+#, c-format
+msgid "Remove %d duplicates, keeping one object per group? Undo restores them."
+msgstr "Remover %d duplicados e manter um objeto por grupo? Desfazer os restaura."
+
+msgid "Remove duplicates"
+msgstr "Remover duplicados"
+
 msgid "Remove from Favourites"
 msgstr "Remover dos favoritos"
 
@@ -6795,6 +6956,9 @@ msgstr "Remover último"
 
 msgid "Remove object from selection"
 msgstr "Remover objeto da seleção"
+
+msgid "Remove point"
+msgstr "Remover ponto"
 
 msgid "Remove tilt while preserving the object's Z heading."
 msgstr "Remove a inclinação mantendo a direção Z do objeto."
@@ -6975,6 +7139,9 @@ msgstr "Sino tocando (contínuo)"
 
 msgid "Riot (0.3.7-R2)"
 msgstr "Tumulto (0.3.7-R2)"
+
+msgid "Rise"
+msgstr "Elevação"
 
 msgid "Road"
 msgstr "Estrada"
@@ -7421,6 +7588,9 @@ msgstr "Selecione um TXD para ver as texturas dele."
 msgid "Select a node in the Nodes window (Windows > Nodes) first."
 msgstr "Selecione um nó na janela Nós (Janelas > Nós) antes."
 
+msgid "Select a parent with attached objects, or one of its children."
+msgstr "Selecione um pai com objetos vinculados ou um de seus filhos."
+
 msgid "Select a streamed SA path node in the viewport to begin editing."
 msgstr "Selecione um nó de caminho do SA na viewport para começar a editar."
 
@@ -7435,6 +7605,9 @@ msgstr "Selecione um objeto, jogador, NPC ou veículo como alvo."
 
 msgid "Select and go to this node."
 msgstr "Seleciona e vai até este nó."
+
+msgid "Select duplicates"
+msgstr "Selecionar duplicados"
 
 #, c-format
 msgid "Select every %s in the map, to edit them together."
@@ -7669,6 +7842,9 @@ msgstr "Mostra apenas o alvo e seus anexos sobre um fundo vazio."
 msgid "Show or hide the group in the editor"
 msgstr "Mostrar ou esconder o grupo no editor"
 
+msgid "Show paths"
+msgstr "Mostrar caminhos"
+
 msgid "Show pins and guides"
 msgstr "Mostrar pins e guias"
 
@@ -7703,6 +7879,9 @@ msgid ""
 msgstr ""
 "Mostrado só a jogadores dentro desta dynamic area (o areaid do streamer).\n"
 "Selecione vários itens para defini-la em todos."
+
+msgid "Shows collision bounding boxes without the collision mesh. Collisions takes precedence when both are enabled."
+msgstr "Mostra os limites de colisão sem a malha. Colisões tem prioridade quando ambos estão ativados."
 
 msgid ""
 "Shows the active workspace and session time through Discord desktop.\n"
@@ -7813,6 +7992,9 @@ msgstr "Vistas pequenas desta prancheta em 4:3, 16:9 e 21:9 no canto."
 
 msgid "Smaller interface (like Ctrl+wheel)"
 msgstr "Interface menor (como Ctrl+roda)"
+
+msgid "Smooth curve"
+msgstr "Curva suave"
 
 msgid "Snap"
 msgstr "Encaixar"
@@ -8377,6 +8559,9 @@ msgstr ""
 "O tamanho do pixel da arte. Células menores seguem as formas mais\n"
 "de perto e usam mais gang zones."
 
+msgid "The attachment contains read-only objects."
+msgstr "O vínculo contém objetos somente leitura."
+
 msgid ""
 "The chat and text outlines are sized in the player's pixels: on a bigger\n"
 "screen the chat takes less of it and outlines are thinner. Textdraws too."
@@ -8436,6 +8621,12 @@ msgstr "O instalador parou (código de saída %d)."
 
 msgid "The last checkpoint: Finish (or Air finish) shows a flag."
 msgstr "O último checkpoint: Chegada (ou Chegada aérea) mostra uma bandeira."
+
+msgid "The layout is limited to 2,000 objects. Increase spacing for a longer path."
+msgstr "O layout é limitado a 2.000 objetos. Aumente o espaçamento para caminhos mais longos."
+
+msgid "The map changed. Find duplicates again before removing objects."
+msgstr "O mapa mudou. Busque os duplicados novamente antes de remover objetos."
 
 msgid "The map has NPCs or NPC paths: their NPC_* calls only compile and run on open.mp (with its NPCs component), not on a SA-MP 0.3.7 server."
 msgstr "O mapa tem NPCs ou caminhos de NPC: as chamadas NPC_* só compilam e funcionam no open.mp (com o componente de NPCs), não em um servidor SA-MP 0.3.7."
@@ -8806,6 +8997,9 @@ msgstr "Peças de tuning"
 msgid "Turn by"
 msgstr "Girar por"
 
+msgid "Turns"
+msgstr "Voltas"
+
 msgid ""
 "Turns models that are longer sideways (most fences and barriers)\n"
 "so they run along the line."
@@ -8967,6 +9161,9 @@ msgstr "Usar"
 msgid "Use a vehicle..."
 msgstr "Usar um veículo..."
 
+msgid "Use active pin"
+msgstr "Usar pin ativo"
+
 msgid "Use an absolute path, or a path relative to the editor's working directory."
 msgstr "Use um caminho absoluto ou um caminho relativo à pasta de trabalho do editor."
 
@@ -8981,6 +9178,9 @@ msgstr "Usar posição"
 
 msgid "Use selected snap increment"
 msgstr "Usar o incremento de encaixe selecionado"
+
+msgid "Use selection"
+msgstr "Usar seleção"
 
 msgid "Use the first selected object's model."
 msgstr "Usar o modelo do primeiro objeto selecionado."

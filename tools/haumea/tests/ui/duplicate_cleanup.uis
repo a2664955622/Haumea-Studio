@@ -1,0 +1,43 @@
+open "$UI_FIXTURES/ui_map.pwn"
+click_object model=1271
+key Ctrl+D
+wait 5
+assert objects == 5
+shortcut window_tools
+wait 5
+click_item 'Tools' 'Duplicate cleanup'
+wait 3
+click_item 'Tools' 'Find duplicates'
+wait 3
+assert duplicates == 1
+click_item 'Tools' 'Select duplicates'
+assert selected == 1
+click_item 'Tools' 'Remove duplicates'
+wait 3
+click_item '*' 'Remove##confirm_duplicates'
+wait 5
+assert objects == 4
+move 800 400
+key Ctrl+Z
+wait 5
+assert objects == 5
+key Ctrl+Y
+wait 5
+assert objects == 4
+shortcut window_view
+wait 5
+click_item 'View' 'Object bounds'
+assert view.bounds == 1
+wait 3
+scroll_until 'Tools' 'Pivot'
+click_item 'Tools' 'Pivot'
+wait 3
+click_item 'Tools' 'Pivot mode'
+click_item '*' 'Selection centre'
+assert gizmo.pivot == 1
+click_item 'Tools' 'Pivot mode'
+click_item '*' 'Individual origins'
+assert gizmo.pivot == 2
+click_item 'Tools' 'Pivot mode'
+click_item '*' 'Custom point'
+assert gizmo.pivot == 3

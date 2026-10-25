@@ -1,0 +1,42 @@
+# Linked layouts track the requested HD objects, including their automatically placed LODs.
+open "$UI_FIXTURES/ui_floor.pwn"
+camera 2000 -3080 55 2000 -3000 5
+shortcut window_tools
+wait 5
+click_item 'Tools' 'Paths & curves'
+click_item 'Tools' 'Shape'
+click_item '*' 'Line'
+click_item 'Tools' 'New path'
+wait 5
+scroll_until 'Tools' 'Model ID'
+set_item 'Tools' 'Model ID' '3555' tab
+set_item 'Tools' 'Spacing' '30' tab
+scroll_until 'Tools' 'Generate objects'
+click_item 'Tools' 'Generate objects'
+wait 5
+assert layout.objects == 2
+assert objects == 5
+assert layout.matches == 1
+assert pawn_contains 'CreateObject(3555,'
+assert pawn_contains 'CreateObject(3563,'
+hold Shift
+drag path:1:0 path:1:0 50% 32% 15
+release Shift
+wait 5
+assert layout.matches == 1
+move 800 400
+key Ctrl+Z
+wait 5
+assert layout.matches == 1
+key Ctrl+Y
+wait 5
+assert layout.matches == 1
+close_popup
+key Ctrl+S
+wait 5
+reopen
+wait 8
+assert layout.objects > 1
+assert layout.matches == 1
+assert pawn_contains 'CreateObject(3555,'
+assert pawn_contains 'CreateObject(3563,'

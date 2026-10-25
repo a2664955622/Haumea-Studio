@@ -1,0 +1,43 @@
+# A vertical loop follows the tangent through the top rather than flipping upright.
+open "$UI_FIXTURES/ui_map.pwn"
+camera 2010 -3060 45 2010 -3000 5
+shortcut window_tools
+wait 6
+click_item 'Tools' 'Paths & curves'
+click_item 'Tools' 'Shape'
+click_item '*' 'Loop'
+wait 3
+set_item 'Tools' 'Radius' '8' tab
+click_item 'Tools' 'New path'
+wait 5
+assert layout.count == 1
+scroll_until 'Tools' 'Model ID'
+set_item 'Tools' 'Model ID' '1271' tab
+scroll_until 'Tools' 'Generate objects'
+click_item 'Tools' 'Generate objects'
+wait 5
+assert layout.objects > 15
+assert layout.upside_down > 0
+assert layout.matches == 1
+close_popup
+key Ctrl+S
+wait 6
+reopen
+wait 8
+assert layout.count == 1
+assert layout.upside_down > 0
+assert layout.matches == 1
+# Deleting the guide keeps the generated objects, and undo restores the link.
+move 1120 300
+wheel 100
+wait 5
+scroll_until 'Tools' 'Delete path'
+click_item 'Tools' 'Delete path'
+wait 5
+assert layout.count == 0
+assert objects > 19
+move 800 400
+key Ctrl+Z
+wait 5
+assert layout.count == 1
+assert layout.matches == 1

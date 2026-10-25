@@ -1,5 +1,6 @@
 #include "haumea.h"
 #include "coordinatepin.h"
+#include "layoutpaths.h"
 #include "alignmentmath.h"
 #include "i18n.h"
 #include "crashreports.h"
@@ -46,6 +47,8 @@ SaveDestination gSaveDestination = SAVE_DESTINATION_MODLOADER;
 
 int gGizmoMode = GIZMO_TRANSLATE;
 int gGizmoSpace = GIZMO_WORLD;
+int gGizmoPivot = GIZMO_PIVOT_ACTIVE;
+rw::V3d gGizmoCustomPivot = {0,0,0};
 bool gGizmoEnabled = true;
 bool gGizmoHovered = false;
 bool gGizmoUsing = false;
@@ -122,6 +125,7 @@ bool gCameraLooking;
 
 // non-rendering things
 bool gRenderCollision;
+bool gRenderBounds;
 bool gRenderZones;
 bool gRenderMapZones;
 bool gRenderNavigZones;
@@ -942,6 +946,20 @@ NormalizeOr(const rw::V3d &v, const rw::V3d &fallback)
 	if(len < 0.0001f)
 		return fallback;
 	return scale(v, 1.0f / len);
+}
+
+void
+ComputeGizmoRotation(const rw::V3d &position, const rw::Quat &rotation,
+	const rw::Quat &leaderBefore, const rw::Quat &leaderAfter, const rw::V3d &pivot,
+	bool individual, bool local, rw::V3d *newPosition, rw::Quat *newRotation)
+{
+	rw::Quat delta = NormalizeQuatOrIdentity(rw::mult(rw::conj(leaderBefore), leaderAfter));
+	*newPosition = individual ? position : add(pivot, rw::rotate(sub(position, pivot), rw::conj(delta)));
+	if(individual && local){
+		rw::Quat localDelta = rw::mult(leaderAfter, rw::conj(leaderBefore));
+		*newRotation = NormalizeQuatOrIdentity(rw::mult(localDelta, rotation));
+	}else
+		*newRotation = NormalizeQuatOrIdentity(rw::mult(rotation, delta));
 }
 
 static float
@@ -1786,7 +1804,7 @@ handleBrushTool(void)
 static void
 updateRectSelectEarly(void)
 {
-	if(CoordinatePinOwnsMouse()){
+	if(CoordinatePinOwnsMouse() || LayoutPathsOwnsMouse()){
 		gRectSelectActive = false;
 		sRectSelectDragging = false;
 		return;
@@ -1889,7 +1907,7 @@ rectSelectHighlightInst(ObjectInst *inst, void *data)
 static void
 handleRectSelect(void)
 {
-	if(CoordinatePinOwnsMouse()){
+	if(CoordinatePinOwnsMouse() || LayoutPathsOwnsMouse()){
 		gRectSelectActive = false;
 		sRectSelectDragging = false;
 		return;
@@ -1974,6 +1992,7 @@ handleRectSelect(void)
 void
 handleTool(void)
 {
+	if(LayoutPathsHandleViewport()) return;
 	if(CoordinatePinHandleViewport()) return;
 	// Don't process viewport clicks when ImGui wants the mouse
 	ImGuiIO &io = ImGui::GetIO();
@@ -3046,6 +3065,7 @@ dogizmo(void)
 {
 	gGizmoHovered = false;
 	gGizmoUsing = false;
+	if(LayoutPathsGizmo()) return;
 	if(CoordinatePinOwnsMouse()) return;
 
 	if(!gGizmoEnabled)
@@ -3124,6 +3144,7 @@ dogizmo(void)
 
 	static bool wasDragging = false;
 	static rw::V3d dragStartLeaderPos;
+	static rw::V3d dragStartPivot;
 	static rw::Quat dragStartLeaderRot;
 	static bool dragStartFollowGround;
 	static bool dragStartAlignToSurface;
@@ -3142,6 +3163,14 @@ dogizmo(void)
 
 	// Build object matrix from instance
 	rw::convMatrix(&gizobj, &inst->m_matrix);
+	rw::V3d pivot = gGizmoPivot==GIZMO_PIVOT_CENTRE ? MapToolsSelectionCentre() :
+		gGizmoPivot==GIZMO_PIVOT_CUSTOM ? gGizmoCustomPivot : inst->m_translation;
+	// A rotated bounding box can have a different centre. Keep the chosen
+	// pivot fixed throughout the gesture instead of chasing the changing box.
+	if(wasDragging)
+		pivot = gGizmoMode==GIZMO_ROTATE ? dragStartPivot :
+			add(dragStartPivot, sub(inst->m_translation, dragStartLeaderPos));
+	gizobj.pos.x=pivot.x;gizobj.pos.y=pivot.y;gizobj.pos.z=pivot.z;
 
 	cam = (rw::Camera*)rw::engine->currentCamera;
 	fview = (float*)&cam->devView;
@@ -3177,6 +3206,7 @@ dogizmo(void)
 
 	// Capture start state when drag begins
 	if(isUsing && !wasDragging){
+		dragStartPivot=pivot;
 		dragStartLeaderPos = inst->m_translation;
 		dragStartLeaderRot = NormalizeQuatOrIdentity(inst->m_rotation);
 		dragStartFollowGround = gGizmoMode == GIZMO_TRANSLATE && gDragFollowGround;
@@ -3232,6 +3262,7 @@ dogizmo(void)
 		newLeaderPos.x = gizobj.pos.x;
 		newLeaderPos.y = gizobj.pos.y;
 		newLeaderPos.z = gizobj.pos.z;
+		newLeaderPos=add(dragStartLeaderPos,sub(newLeaderPos,dragStartPivot));
 
 		if(gGizmoMode == GIZMO_TRANSLATE){
 			rw::Quat newLeaderRot = inst->m_rotation;
@@ -3261,6 +3292,7 @@ dogizmo(void)
 			}
 
 			// Pass 1: compute new positions and rotations from snapshot
+			if(gGizmoPivot==GIZMO_PIVOT_CUSTOM)gGizmoCustomPivot=add(dragStartPivot,totalDelta);
 			// (don't update matrices yet, so raycasts see old collision state)
 			for(int i = 0; i < (int)dragTransforms.size(); i++){
 				ObjectInst *obj = dragTransforms[i].inst;
@@ -3311,20 +3343,12 @@ dogizmo(void)
 			inst->m_matrix.at.z = gizobj.at.z;
 			rw::Quat newLeaderRot = QuatFromMatrix(inst->m_matrix);
 
-			// Stored instance quaternions are conjugated relative to world-space rotation.
-			// To apply the leader's world-space delta to the rest of the selection, the
-			// stored-space delta must be built as conj(start) * new, not new * conj(start).
-			rw::Quat deltaQ = NormalizeQuatOrIdentity(rw::mult(rw::conj(dragStartLeaderRot), newLeaderRot));
-
-			// Apply to all affected objects: orbit positions around leader, compose rotations.
-			// conj(deltaQ) is the world-space delta; right-multiplying oldRot by deltaQ
-			// applies that world delta under this codebase's conj(m_rotation) convention.
-			rw::Quat worldQ = rw::conj(deltaQ);
 			for(int i = 0; i < (int)dragTransforms.size(); i++){
 				ObjectInst *obj = dragTransforms[i].inst;
-				rw::V3d offset = sub(dragTransforms[i].oldPos, dragStartLeaderPos);
-				obj->m_translation = add(dragStartLeaderPos, rw::rotate(offset, worldQ));
-				obj->m_rotation = NormalizeQuatOrIdentity(rw::mult(dragTransforms[i].oldRot, deltaQ));
+				ComputeGizmoRotation(dragTransforms[i].oldPos, dragTransforms[i].oldRot,
+					dragStartLeaderRot, newLeaderRot, dragStartPivot,
+					gGizmoPivot==GIZMO_PIVOT_INDIVIDUAL, gGizmoSpace==GIZMO_LOCAL,
+					&obj->m_translation, &obj->m_rotation);
 				obj->m_isDirty = true;
 				obj->UpdateMatrix();
 				updateRwFrame(obj);
@@ -3425,7 +3449,7 @@ renderWorld(void)
 
 	if(gDrawTarget)
 		TheCamera.DrawTarget();
-	if(gRenderCollision)
+	if(gRenderCollision || gRenderBounds)
 		RenderEverythingCollisions();
 	if(gRenderTimecycleBoxes)
 		Timecycle::RenderBoxes();
