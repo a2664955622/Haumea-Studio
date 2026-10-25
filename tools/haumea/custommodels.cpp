@@ -4,6 +4,7 @@
 #include "workspace.h"
 #include "categories.h"
 #include "i18n.h"
+#include "serverartwork.h"
 
 #include <regex>
 #include <string>
@@ -33,6 +34,7 @@ struct CustomModel {
 };
 
 static std::string gServerDir;	// the server folder holding models/
+static std::string gModelsDir;	// artwork.models_path / artpath, or models/
 static std::vector<CustomModel> gModels;
 static std::map<int, std::string> gTxdPaths;	// txd slot -> file
 static std::map<std::string, int> gTxdSlots;	// file -> txd slot
@@ -113,11 +115,7 @@ customModelsServerDir(const char *mapPath)
 const char*
 GetCustomModelsDir(void)
 {
-	static std::string modelsDir;
-	if(gServerDir.empty())
-		return nil;
-	modelsDir = gServerDir + "/models";
-	return modelsDir.c_str();
+	return gModelsDir.empty() ? nil : gModelsDir.c_str();
 }
 
 // open.mp runs on Linux too, where a server's file names must match; the
@@ -125,11 +123,11 @@ GetCustomModelsDir(void)
 static std::string
 findModelFile(const std::string &name)
 {
-	std::string path = gServerDir + "/models/" + name;
+	std::string path = gModelsDir + "/" + name;
 	if(isFile(path))
 		return path;
 #ifndef _WIN32
-	std::string dir = gServerDir + "/models";
+	std::string dir = gModelsDir;
 	std::string file = name;
 	size_t slash = name.find_last_of("/\\");
 	if(slash != std::string::npos){
@@ -211,6 +209,103 @@ txdSlotForFile(const std::string &path)
 	gTxdSlots[path] = slot;
 	gTxdPaths[slot] = path;
 	return slot;
+}
+
+static bool
+serverTexturePath(const std::string &relative, std::string &path)
+{
+	std::string name = relative;
+	std::replace(name.begin(), name.end(), '\\', '/');
+	if(gModelsDir.empty() || name.empty() || name[0] == '/' || name.find(':') != std::string::npos ||
+	   name.size() < 5 || rw::strcmp_ci(name.c_str() + name.size() - 4, ".txd") != 0)
+		return false;
+	for(size_t at = 0; at < name.size(); ){
+		size_t end = name.find('/', at);
+		if(name.substr(at, end == std::string::npos ? end : end-at) == "..") return false;
+		if(end == std::string::npos) break;
+		at = end + 1;
+	}
+	path = findModelFile(name);
+	return !path.empty();
+}
+
+int
+LoadServerTextureTxd(const std::string &relativePath)
+{
+	std::string path;
+	if(!serverTexturePath(relativePath, path)) return -1;
+	int slot = txdSlotForFile(path);
+	if(!IsTxdLoaded(slot)) LoadTxd(slot);
+	return IsTxdLoaded(slot) ? slot : -1;
+}
+
+std::string
+ServerTexturePathForModel(int pawnId)
+{
+	ObjectDef *obj = GetObjectDef(EditorModelId(pawnId));
+	if(pawnId > -1000 || pawnId < -30000 || !IsCustomModel(EditorModelId(pawnId)) || obj == nil)
+		return "";
+	const char *path = GetCustomModelTxdPath(obj->m_txdSlot);
+	std::string prefix = gModelsDir + "/";
+	return path && std::string(path).compare(0, prefix.size(), prefix) == 0 ?
+		std::string(path + prefix.size()) : "";
+}
+
+int
+ServerTextureModelId(const std::string &relativePath)
+{
+	std::string path;
+	if(!serverTexturePath(relativePath, path)) return 0;
+	for(const CustomModel &model : gModels){
+		int id = PawnModelId(model.editorId);
+		if(id > -1000 || id < -30000) continue;
+		ObjectDef *obj = GetObjectDef(model.editorId);
+		const char *txd = obj ? GetCustomModelTxdPath(obj->m_txdSlot) : nil;
+		if(txd && path == txd) return id;
+	}
+	return 0;
+}
+
+static void
+listServerTextures(const std::string &relative, std::vector<std::string> &files, int depth)
+{
+	if(depth > 16) return;
+	std::string dir = gModelsDir + "/" + relative;
+#ifdef _WIN32
+	WIN32_FIND_DATAA entry;
+	HANDLE handle = FindFirstFileA((dir + "*").c_str(), &entry);
+	if(handle == INVALID_HANDLE_VALUE) return;
+	do{
+		std::string name = entry.cFileName;
+		if(name == "." || name == ".." || (entry.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)) continue;
+		if(entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			listServerTextures(relative + name + "/", files, depth + 1);
+		else if(name.size() > 4 && rw::strcmp_ci(name.c_str() + name.size()-4, ".txd") == 0)
+			files.push_back(relative + name);
+	}while(FindNextFileA(handle, &entry));
+	FindClose(handle);
+#else
+	DIR *handle = opendir(dir.c_str());
+	if(handle == nil) return;
+	while(struct dirent *entry = readdir(handle)){
+		std::string name = entry->d_name;
+		if(name == "." || name == "..") continue;
+		struct stat st;
+		if(lstat((dir + name).c_str(), &st) != 0) continue;
+		if(S_ISDIR(st.st_mode)) listServerTextures(relative + name + "/", files, depth + 1);
+		else if(S_ISREG(st.st_mode) && name.size() > 4 && rw::strcmp_ci(name.c_str() + name.size()-4, ".txd") == 0)
+			files.push_back(relative + name);
+	}
+	closedir(handle);
+#endif
+}
+
+void
+ListServerTextureFiles(std::vector<std::string> &files)
+{
+	files.clear();
+	if(!gModelsDir.empty()) listServerTextures("", files, 0);
+	std::sort(files.begin(), files.end());
 }
 
 // fmt with its one %s or %d filled in.
@@ -365,22 +460,24 @@ LoadCustomModelsForMap(const char *mapPath, const std::string &source)
 {
 	gLastMapPath = mapPath ? mapPath : "";
 	std::string serverDir = customModelsServerDir(mapPath);
-	if(serverDir != gServerDir){
+	std::string modelsDir = serverDir.empty() ? "" : ServerArtworkDirectory(serverDir);
+	if(serverDir != gServerDir || modelsDir != gModelsDir){
 		unloadModels();
 		gServerDir = serverDir;
+		gModelsDir = modelsDir;
 	}
 	if(gServerDir.empty())
 		return;
 	size_t before = gModels.size();
 	std::vector<std::string> problems;
-	readModelCalls(readText(gServerDir + "/models/artconfig.txt"), problems);
+	readModelCalls(readText(gModelsDir + "/artconfig.txt"), problems);
 	std::vector<std::string> gamemodes;
 	listGamemodes(gServerDir + "/gamemodes", gamemodes);
 	for(size_t i = 0; i < gamemodes.size(); i++)
 		readModelCalls(readText(gamemodes[i]), problems);
 	readModelCalls(source, problems);
 	if(gModels.size() != before)
-		log("CustomModels: %d custom model(s) from %s/models\n", (int)(gModels.size() - before), gServerDir.c_str());
+		log("CustomModels: %d custom model(s) from %s\n", (int)(gModels.size() - before), gModelsDir.c_str());
 	for(size_t i = 0; i < problems.size(); i++)
 		log("CustomModels: %s\n", problems[i].c_str());
 	if(!problems.empty())
@@ -529,7 +626,7 @@ addModelToServer(const std::string &dff, const std::string &txd, bool character,
 		err = _("pick the server folder first");
 		return -1;
 	}
-	std::string modelsDir = server + "/models";
+	std::string modelsDir = ServerArtworkDirectory(server);
 	if(IsInGameDir(modelsDir.c_str())){
 		err = _("that folder is inside the game folder; pick the server's folder");
 		return -1;

@@ -905,6 +905,15 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		std::string field = dot == std::string::npos ? "" : what.substr(dot + 1);
 		if(index < 0 || index >= (int)tds.size()){ why = "no such textdraw"; return false; }
 		const TextDraw &td = tds[index];
+		if(field == "server_txd"){
+			why = "server TXD: " + td.serverTxd;
+			return td.serverTxd == arg(1);
+		}
+		if(field == "texture_loaded"){
+			bool loaded = TextDrawSpriteTextureAvailable(td);
+			why = loaded ? "sprite texture loaded" : "sprite texture missing";
+			return compare(loaded ? 1 : 0, arg(1), atof(arg(2).c_str()));
+		}
 		double v = field == "x" ? td.x : field == "y" ? td.y : field == "letter_x" ? td.letterX :
 			field == "letter_y" ? td.letterY : field == "size_x" ? td.sizeX : field == "locked" ? (double)td.locked : td.sizeY;
 		snprintf(buf, sizeof(buf), "%s is %g", what.c_str(), v);
