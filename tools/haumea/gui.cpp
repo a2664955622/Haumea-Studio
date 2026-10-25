@@ -9461,6 +9461,35 @@ uiSelectedInstances(std::vector<ObjectInst*> &out)
 	}
 }
 
+void
+OpenObjectInspector(void)
+{
+	showInstanceWindow = true;
+}
+
+// Explicitly include an original GTA object, or the current selection, in Pawn.
+static void
+uiConvertWorldObjectAction(ObjectInst *inst, bool menu)
+{
+	if(IsIplMapDocumentOpen()) return;
+	std::vector<ObjectInst*> targets;
+	if(inst->m_selected) uiSelectedInstances(targets);
+	else targets.push_back(inst);
+	bool available = false;
+	for(ObjectInst *target : targets)
+		if(IsPawnWorldObject(target) && IsInstInIplMapDocument(target) &&
+		   !target->m_isDeleted && !GetObjectPawnProperties(target)->forceWorldReplacement)
+			available = true;
+	if(!available) return;
+	bool clicked = menu ? ImGui::MenuItem(_("Convert to map object")) :
+		ImGui::Button(_("Convert to map object"));
+	ImGui::SetItemTooltip(_("Keep the selected GTA objects in place. Saving removes the originals and recreates them as CreateObject or CreateDynamicObject, using the map's format."));
+	if(clicked){
+		finishTransformPanelEdit();
+		ConvertWorldObjectsToMapObjects(targets);
+	}
+}
+
 // Same kind of thing: objects with objects, labels with labels, and so on.
 static bool
 uiSameElementKind(const ObjectInst *a, const ObjectInst *b)
@@ -10018,11 +10047,15 @@ uiInstWindow(void)
 
 		if(IsPawnWorldObject(inst)){
 			ImGui::SameLine();
-			ImGui::TextColored(UiSemanticColor(UI_COLOR_WARNING), _("GTA world object"));
-			ImGui::SetItemTooltip(_("Unchanged world objects are not saved in the map. Once you move,\n"
+			ImGui::TextColored(UiSemanticColor(UI_COLOR_WARNING), properties->forceWorldReplacement ?
+				_("Map object") : _("GTA world object"));
+			ImGui::SetItemTooltip("%s", properties->forceWorldReplacement ?
+				_("Keep the selected GTA objects in place. Saving removes the originals and recreates them as CreateObject or CreateDynamicObject, using the map's format.") :
+				_("Unchanged world objects are not saved in the map. Once you move,\n"
 				"rotate, retexture or delete one, the map removes the original with\n"
 				"RemoveBuildingForPlayer and creates your version instead."));
 		}
+		uiConvertWorldObjectAction(inst, false);
 		if(numWorldChanged > 0 && numSelected > 1)
 			ImGui::TextDisabled(_("%d selected world object(s) will be replaced in the map."), numWorldChanged);
 		ImGui::Spacing();
@@ -12086,6 +12119,7 @@ uiSelectedOrThis(ObjectInst *inst, std::vector<ObjectInst*> &out)
 static void
 uiOutlinerObjectMenu(ObjectInst *inst)
 {
+	uiConvertWorldObjectAction(inst, true);
 	if(ImGui::MenuItem(_("Find instances"))) uiOpenObjectDiscovery(inst->m_objectId, false);
 	if(ImGui::MenuItem(_("Find similar models"))) uiOpenObjectDiscovery(inst->m_objectId, true);
 	ImGui::Separator();

@@ -4207,8 +4207,12 @@ GetInstanceDiffFlags(ObjectInst *inst)
 		flags |= DIFF_RESTORED;
 	if(inst->m_objectId != inst->m_savedObjectId)
 		flags |= DIFF_MODEL;
-	float dist = length(sub(inst->m_translation, inst->m_savedTranslation));
-	if(dist >= 0.001f)
+	// Position edits are stored directly, so any different component is a
+	// real change. A distance tolerance loses small inspector edits (even
+	// 0.001 can round just below that threshold in float storage).
+	if(inst->m_translation.x != inst->m_savedTranslation.x ||
+	   inst->m_translation.y != inst->m_savedTranslation.y ||
+	   inst->m_translation.z != inst->m_savedTranslation.z)
 		flags |= DIFF_MOVED;
 	if(GetQuaternionSimilarity(inst->m_rotation, inst->m_savedRotation) < 0.9999f)
 		flags |= DIFF_ROTATED;
@@ -6034,6 +6038,29 @@ UndoRecordProperties(ObjectInst *inst, const ObjectPawnProperties &oldProperties
 	pushUndo(&a);
 }
 
+int
+ConvertWorldObjectsToMapObjects(const std::vector<ObjectInst*> &objects)
+{
+	if(IsIplMapDocumentOpen())
+		return 0;
+	UndoAction action = {};
+	action.type = UNDO_WORLD_CONVERSION;
+	for(ObjectInst *inst : objects){
+		if(inst == nil || inst->m_isDeleted || !IsPawnWorldObject(inst) || !IsInstInIplMapDocument(inst))
+			continue;
+		ObjectPawnProperties properties = *GetObjectPawnProperties(inst);
+		if(properties.forceWorldReplacement)
+			continue;
+		properties.forceWorldReplacement = true;
+		SetObjectPawnProperties(inst, properties, false);
+		action.convertedWorldObjects.push_back(inst);
+	}
+	int count = (int)action.convertedWorldObjects.size();
+	if(count)
+		pushUndo(&action);
+	return count;
+}
+
 VehicleState
 GetVehicleState(const ObjectInst *inst)
 {
@@ -6201,6 +6228,13 @@ undoStep(void)
 	case UNDO_PROPERTIES:
 		SetObjectPawnProperties(a->inst, a->oldProperties, false);
 		break;
+	case UNDO_WORLD_CONVERSION:
+		for(ObjectInst *inst : a->convertedWorldObjects){
+			ObjectPawnProperties properties = *GetObjectPawnProperties(inst);
+			properties.forceWorldReplacement = false;
+			SetObjectPawnProperties(inst, properties, false);
+		}
+		break;
 	case UNDO_VEHICLE:
 		SetVehicleState(a->inst, a->oldVehicle);
 		break;
@@ -6260,6 +6294,13 @@ redoStep(void)
 		break;
 	case UNDO_PROPERTIES:
 		SetObjectPawnProperties(a->inst, a->newProperties, false);
+		break;
+	case UNDO_WORLD_CONVERSION:
+		for(ObjectInst *inst : a->convertedWorldObjects){
+			ObjectPawnProperties properties = *GetObjectPawnProperties(inst);
+			properties.forceWorldReplacement = true;
+			SetObjectPawnProperties(inst, properties, false);
+		}
 		break;
 	case UNDO_VEHICLE:
 		SetVehicleState(a->inst, a->newVehicle);

@@ -10237,3 +10237,15 @@ msgstr "目标：%s"
 
 msgid "The player already has 10 attached objects."
 msgstr "玩家已经附加了 10 个物体。"
+
+msgid "Convert to map object"
+msgstr "转换为地图物体"
+
+msgid "Keep the selected GTA objects in place. Saving removes the originals and recreates them as CreateObject or CreateDynamicObject, using the map's format."
+msgstr "保持所选 GTA 物体的位置。保存时会移除原有物体，并根据地图格式使用 CreateObject 或 CreateDynamicObject 重新创建。"
+
+msgid "Map object"
+msgstr "地图物体"
+
+msgid "Select all instances of this model in the current scope."
+msgstr "选择当前范围内此模型的所有实例。"

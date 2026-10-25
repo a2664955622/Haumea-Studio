@@ -1,0 +1,16 @@
+# Explicit GTA world-object conversion.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Convert to map object"
+msgstr "Converter em objeto do mapa"
+
+msgid "Keep the selected GTA objects in place. Saving removes the originals and recreates them as CreateObject or CreateDynamicObject, using the map's format."
+msgstr "Mantém os objetos do GTA selecionados no mesmo lugar. Ao salvar, remove os originais e os recria como CreateObject ou CreateDynamicObject, conforme o formato do mapa."
+
+msgid "Map object"
+msgstr "Objeto do mapa"
+
+msgid "Select all instances of this model in the current scope."
+msgstr "Seleciona todas as ocorrências deste modelo no escopo atual."

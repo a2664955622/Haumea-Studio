@@ -111,6 +111,13 @@ own settings, then position. World & streaming, attachment, materials (textures,
 and text) and group & note follow, closed until you need them. Select several objects to
 change a field on all of them at once.
 
+To turn original GTA geometry into scripted objects without moving it, use
+**Convert to map object** in Object Info or the object's right-click menu. This preserves
+its position, rotation and materials; saving writes `RemoveBuildingForPlayer` and a
+replacement using the map's Native or Streamer format. The action applies to the selection
+and undoes in one step. To convert every occurrence of a model, use **Find instances**,
+choose the scope, press **Select all**, then **Convert to map object** in Object Info.
+
 For an object in the active map, edit **Model ID** in Object Info to replace its
 model, with undo and redo. Objects linked to an LOD cannot change model this way.
 

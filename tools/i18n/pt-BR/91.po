@@ -2280,8 +2280,8 @@ msgid "default"
 msgstr "padrão"
 
 #: gui.cpp:6050
-msgid "SetVehicleNumberPlate, up to 32 characters. Empty keeps the game's plate."
-msgstr "SetVehicleNumberPlate, até 32 caracteres. Vazio mantém a placa do jogo."
+msgid "SetVehicleNumberPlate, up to 32 characters. Empty keeps the game's plate. GTA's preview displays the first 8 characters."
+msgstr "SetVehicleNumberPlate, até 32 caracteres. Vazio mantém a placa do jogo. A prévia do GTA exibe os primeiros 8 caracteres."
 
 #: gui.cpp:6054
 msgid "Tuning parts"

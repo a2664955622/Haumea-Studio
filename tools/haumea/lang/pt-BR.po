@@ -2309,6 +2309,9 @@ msgstr "Ponto de controle"
 msgid "Controls:"
 msgstr "Controles:"
 
+msgid "Convert to map object"
+msgstr "Converter em objeto do mapa"
+
 msgid "Coordinate pin"
 msgstr "Pin de coordenadas"
 
@@ -4402,6 +4405,9 @@ msgstr "Continuar colocando"
 msgid "Keep the newest line in view"
 msgstr "Mantém a linha mais nova à vista"
 
+msgid "Keep the selected GTA objects in place. Saving removes the originals and recreates them as CreateObject or CreateDynamicObject, using the map's format."
+msgstr "Mantém os objetos do GTA selecionados no mesmo lugar. Ao salvar, remove os originais e os recria como CreateObject ou CreateDynamicObject, conforme o formato do mapa."
+
 msgid "Keep them read-only"
 msgstr "Mantê-los somente leitura"
 
@@ -4835,6 +4841,9 @@ msgstr "Map icon %d  %s"
 
 msgid "Map icons"
 msgstr "Map icons"
+
+msgid "Map object"
+msgstr "Objeto do mapa"
 
 msgid "Map: place a marker"
 msgstr "Mapa: colocar um marcador"
@@ -7596,6 +7605,9 @@ msgstr "Selecione um nó de caminho do SA na viewport para começar a editar."
 
 msgid "Select all"
 msgstr "Selecionar todos"
+
+msgid "Select all instances of this model in the current scope."
+msgstr "Seleciona todas as ocorrências deste modelo no escopo atual."
 
 msgid "Select an object in the Browser first"
 msgstr "Selecione um objeto no Navegador antes"
