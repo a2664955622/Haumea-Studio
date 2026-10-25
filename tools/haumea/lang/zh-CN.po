@@ -9878,7 +9878,7 @@ msgstr "%s 附加到了 Pawn 无法使用的目标。"
 
 #, c-format
 msgid "%s shares player attachment slot %d with %s."
-msgstr "%s 与 %s 共用了玩家附件槽位 %d。"
+msgstr "%s 的玩家附件槽位 %d 与 %s 冲突。"
 
 #, c-format
 msgid "%s uses a player bone attachment, but its target isn't a player or NPC."
