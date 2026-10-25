@@ -218,6 +218,31 @@ exit
                ((config / 'savesettings.txt').read_text() if (config / 'savesettings.txt').exists() else ''), \
                result.stdout + result.stderr
 
+    def test_mapping_tool_controls_fit(self):
+        """New curve controls remain usable in each bundled language at panel width."""
+        script = '''open "$UI_FIXTURES/ui_map.pwn"
+shortcut window_tools
+wait 5
+click_item 'Tools' 'Paths & curves'
+click_item 'Tools' 'New path'
+wait 5
+assert clipped_items == 0
+click_item 'Tools' 'Point settings'
+wait 3
+assert clipped_items == 0
+scroll_until 'Tools' 'Model ID'
+assert clipped_items == 0
+scroll_until 'Tools' 'Advanced'
+click_item 'Tools' 'Advanced'
+wait 3
+assert clipped_items == 0
+exit
+'''
+        for language in ('en', 'pt-BR', 'zh-CN'):
+            with self.subTest(language=language):
+                self.editor(script, savesettings='settings_version 8\nlanguage ' + language +
+                            '\nshow_browser_window 0\nshow_instance_window 0\n')
+
     def test_old_layout_survives(self):
         """An imgui.ini saved before a window's label became ###English keeps its place and dock."""
         # Panels show once a map is open; the saved flags carry them to the second run.

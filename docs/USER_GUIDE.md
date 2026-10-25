@@ -279,6 +279,56 @@ puts its objects in a group named after the prefab.
 offsets), and **Along a line** (lay objects along a path you click). Exact moves and turns
 are in Object Info's Delta mode.
 
+### Editable 3D paths and curves
+
+Open **Tools → Paths & curves**, choose **Line**, **Curve**, **Loop** or **Ramp / helix**,
+then choose **New path**. The guide starts around the camera target. Loop and ramp presets
+have a radius and an axis; ramps also have a number of turns and a rise along that axis.
+Choose **Frame path** to bring the guide into view.
+
+- Enable **Edit in view** and drag a control point to reshape the path. **Shift-drag moves
+  vertically**, so you can grab the middle of a curve and lift it into an arch. Selecting a
+  point also shows the XYZ move gizmo for movement along an exact axis.
+- The small markers between points are segment midpoints. Dragging one inserts a control
+  point without first changing the curve's shape, then bends the segment as you move it.
+- Smooth curves have incoming and outgoing handles. Automatic handles follow neighbouring
+  points; dragging a handle switches that point to manual control. **Curve handles** also
+  lets you type their offsets. Open **Point settings** to add, remove or edit points numerically.
+- Under **Objects along path**, choose a model (or **Use selection**), set the spacing and
+  choose **Generate objects**. The objects stay linked and follow later edits to the guide.
+  **Advanced → Follow curve rotation** carries orientation through vertical loops, including upside-down
+  sections; **Bank** adjusts sideways tilt. Leave **On ground** off to retain the curve's height.
+
+Each edit, including changes to its generated objects, is one undo step. **Detach objects**
+keeps the objects and stops the path controlling them. **Delete path** removes the guide and
+keeps its objects. Layouts are limited to 2,000 objects per path; increase spacing for longer
+paths. The editable guide and its links are saved in the map's XML companion. Pawn contains
+the generated objects, so the server does not need the guide to display the map.
+
+![Editable 3D curve with a raised midpoint and linked objects](images/editable-3d-curve.png)
+
+### Pivots, bounds and duplicate cleanup
+
+**Tools → Pivot** chooses **Active object**, **Selection centre**, **Individual origins** or
+**Custom point**. Active object uses the first selected object's origin. Selection centre
+rotates the selection around its bounding-box centre; individual origins rotate each object
+in place. A custom point can be typed, copied from the camera target or selection centre, or
+taken from the active coordinate pin. Local/world axes still apply.
+
+**Center Parent** moves an attachment's root object to the whole family's bounding-box centre,
+recalculates child offsets and preserves every child's world position and rotation. Select the
+parent or one of its children. The operation is one undo step.
+
+**Windows → View → Object bounds** shows collision bounding boxes without the full collision
+mesh. **Collisions** shows both when enabled.
+
+**Tools → Duplicate cleanup → Find duplicates** compares placed objects by model, position,
+rotation, interior and virtual world. By default it also compares runtime properties and
+materials, and keeps distinct named variables separate. Choose a result row or **Select
+duplicates** to review the copies; **Remove duplicates** keeps one per group and can be undone.
+Attached objects, objects controlled by live layouts, and objects referenced by other elements are excluded. A map change requires
+a fresh scan before removal.
+
 **Coordinate pin** in Tools is an alignment reference. **Place pin** adds another pin;
 **Clear pin** removes only the active one. Drag a pin's head to move it, its base ring to
 measure, or the endpoint to move the other end. Both ends snap to object surfaces and

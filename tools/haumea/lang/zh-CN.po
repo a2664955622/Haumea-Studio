@@ -136,6 +136,10 @@ msgid "%d added, %d deleted, %d moved, %d rotated, %d material"
 msgstr "%d 个已添加，%d 个已删除，%d 个已移动，%d 个已旋转，%d 个材质"
 
 #, c-format
+msgid "%d attached or referenced objects excluded from cleanup."
+msgstr "清理已排除 %d 个附加或被引用的物体。"
+
+#, c-format
 msgid "%d audio streams: a player hears one at a time, the last one started."
 msgstr "%d 个音频流：玩家一次只能听到一个，即最后开始播放的那个。"
 
@@ -162,6 +166,10 @@ msgstr "%d 个角点"
 #, c-format
 msgid "%d days ago"
 msgstr "%d 天前"
+
+#, c-format
+msgid "%d duplicates in %d groups"
+msgstr "%d 个重复物体，分为 %d 组"
 
 #, c-format
 msgid "%d dynamic area(s) are not written in native code (they are the streamer's). Save as Streamer code."
@@ -254,6 +262,10 @@ msgstr "%d 个物体使用了编辑器不认识的模型，打开地图时被排
 #, c-format
 msgid "%d objects"
 msgstr "%d 个物体"
+
+#, c-format
+msgid "%d objects along this path"
+msgstr "此路径上有 %d 个物体"
 
 #, c-format
 msgid "%d objects visible / %d created (native, limit 1000)"
@@ -1037,6 +1049,9 @@ msgstr "加速飞行移动"
 msgid "Action"
 msgstr "动作"
 
+msgid "Active object"
+msgstr "活动物体"
+
 #, c-format
 msgid "Active: %s"
 msgstr "使用中：%s"
@@ -1389,6 +1404,15 @@ msgstr "护甲"
 msgid "Around"
 msgstr "环绕"
 
+msgid "Around X"
+msgstr "绕 X 轴"
+
+msgid "Around Y"
+msgstr "绕 Y 轴"
+
+msgid "Around Z"
+msgstr "绕 Z 轴"
+
 msgid "Array"
 msgstr "阵列"
 
@@ -1482,6 +1506,9 @@ msgstr "自动生成的 COL 未能附加到模型名 %s。"
 msgid "Auto-generated COL from DFF geometry (%d -> %d tris, %d -> %d verts)."
 msgstr "由 DFF 几何体自动生成的 COL (%d -> %d 三角形, %d -> %d 顶点)。"
 
+msgid "Automatic handles"
+msgstr "自动控制柄"
+
 msgid "Autosave unsaved maps"
 msgstr "自动保存未保存的地图"
 
@@ -1531,6 +1558,9 @@ msgstr "Bandit 车轮启动"
 
 msgid "Bands"
 msgstr "条带"
+
+msgid "Bank"
+msgstr "侧倾"
 
 msgid "Bar (0.3.7-R2)"
 msgstr "酒吧 (0.3.7-R2)"
@@ -1833,6 +1863,9 @@ msgstr "格子大小"
 
 msgid "Center (middle)"
 msgstr "居中（中间）"
+
+msgid "Center Parent"
+msgstr "居中父物体"
 
 msgid "Centre"
 msgstr "中心"
@@ -2149,6 +2182,9 @@ msgstr "时钟"
 msgid "Close"
 msgstr "关闭"
 
+msgid "Closed"
+msgstr "闭合"
+
 msgid "Clothes"
 msgstr "服装"
 
@@ -2232,6 +2268,9 @@ msgstr "不使用 workspace 继续"
 
 msgid "Continuous buzz"
 msgstr "持续蜂鸣声"
+
+msgid "Control point"
+msgstr "控制点"
 
 msgid "Controls:"
 msgstr "控制："
@@ -2476,6 +2515,9 @@ msgstr "碰撞声 C"
 msgid "Crash and error reports"
 msgstr "崩溃与错误报告"
 
+msgid "Create a path, then drag its points or segment midpoints in the 3D view."
+msgstr "创建路径后，在三维视图中拖动控制点或线段中点。"
+
 msgid "Create a workspace folder."
 msgstr "创建 workspace 文件夹。"
 
@@ -2519,6 +2561,12 @@ msgstr "立方体"
 msgid "Cuboid"
 msgstr "长方体"
 
+msgid "Curve"
+msgstr "曲线"
+
+msgid "Curve handles"
+msgstr "曲线控制柄"
+
 msgid "Custom"
 msgstr "自定义"
 
@@ -2540,6 +2588,9 @@ msgstr "自定义模型 (0.3.DL)"
 #, c-format
 msgid "Custom models that couldn't be loaded: %d (see the log)"
 msgstr "无法加载的自定义模型: %d（见日志）"
+
+msgid "Custom point"
+msgstr "自定义点"
 
 msgid "Cut"
 msgstr "剪切"
@@ -2601,6 +2652,9 @@ msgstr "仅删除前 %d 个选中实例"
 msgid "Delete node"
 msgstr "删除节点"
 
+msgid "Delete path"
+msgstr "删除路径"
+
 msgid "Delete selection"
 msgstr "删除所选物体"
 
@@ -2620,6 +2674,9 @@ msgstr "已删除"
 #, c-format
 msgid "Deleted %d instance(s)"
 msgstr "已删除 %d 个实例"
+
+msgid "Deletes the guide and keeps its generated objects."
+msgstr "删除辅助线并保留已生成的物体。"
 
 msgid "Delta"
 msgstr "增量"
@@ -2647,6 +2704,9 @@ msgstr "设计一个 textdraw"
 
 msgid "Detach"
 msgstr "分离"
+
+msgid "Detach objects"
+msgstr "解除物体关联"
 
 msgid "Detonator"
 msgstr "遥控引爆器"
@@ -2798,6 +2858,9 @@ msgstr "将它拖到标尺上即可移除"
 msgid "Drag to adjust. Double-click to enter an exact value."
 msgstr "拖动调整。双击可输入精确值。"
 
+msgid "Drag to bend this segment. Shift drags vertically."
+msgstr "拖动可弯曲此线段。按住 Shift 可垂直拖动。"
+
 msgid "Drag to measure"
 msgstr "拖动测量"
 
@@ -2813,6 +2876,9 @@ msgstr "拖动以移动 · 拖动角点调整大小 · %s 停止。"
 
 msgid "Drag to move, wheel to zoom, double-click to fly there."
 msgstr "拖动移动，滚轮缩放，双击飞往该处。"
+
+msgid "Drag to move. Shift drags vertically; use the gizmo for an exact axis."
+msgstr "拖动可移动。按住 Shift 可垂直拖动；使用变换工具可沿指定轴移动。"
 
 msgid ""
 "Dragged panels stick to the screen edges and to each other.\n"
@@ -2921,6 +2987,9 @@ msgstr "转储预览交通调试信息"
 msgid "Duplicate"
 msgstr "复制副本"
 
+msgid "Duplicate cleanup"
+msgstr "清理重复物体"
+
 msgid "Duplicate selection"
 msgstr "复制所选物体副本"
 
@@ -2951,6 +3020,9 @@ msgstr "编辑 Pawn · Ctrl+S 保存 · Ctrl+F 搜索。"
 
 msgid "Edit all selected"
 msgstr "编辑所有选中项"
+
+msgid "Edit in view"
+msgstr "在视图中编辑"
 
 msgid "Edit the NODES*.DAT files already in that folder."
 msgstr "编辑该文件夹中已有的 NODES*.DAT 文件。"
@@ -3277,6 +3349,9 @@ msgstr "查找 / 替换"
 msgid "Find all"
 msgstr "查找全部"
 
+msgid "Find duplicates"
+msgstr "查找重复物体"
+
 msgid "Find instances"
 msgstr "查找实例"
 
@@ -3388,6 +3463,9 @@ msgstr "跟随"
 msgid "Follow a path"
 msgstr "沿路径行进"
 
+msgid "Follow curve rotation"
+msgstr "跟随曲线方向"
+
 msgid "Follow ground"
 msgstr "贴合地面"
 
@@ -3437,6 +3515,9 @@ msgstr "对于布局和预设：画板上的参考线会先被移除。"
 #, c-format
 msgid "Frame %d  %.1f km/h  Health %.0f  Armour %.0f  Weapon %d"
 msgstr "帧 %d  %.1f km/h  生命值 %.0f  护甲 %.0f  武器 %d"
+
+msgid "Frame path"
+msgstr "聚焦路径"
 
 msgid "Frame rate"
 msgstr "帧率"
@@ -3569,6 +3650,9 @@ msgstr "车库门开启"
 
 msgid "General"
 msgstr "常规"
+
+msgid "Generate objects"
+msgstr "生成物体"
 
 msgid "Generated Pawn code targets only the selected server."
 msgstr "生成的 Pawn 代码仅适用于所选服务器。"
@@ -4109,12 +4193,21 @@ msgstr "在此文件夹中"
 msgid "In vehicle"
 msgstr "在载具内"
 
+msgid "Incoming"
+msgstr "入向控制柄"
+
 #, c-format
 msgid "Indexing textures... %d of %d TXDs"
 msgstr "正在索引贴图……第 %d 个，共 %d 个 TXD"
 
+msgid "Individual origins"
+msgstr "各自原点"
+
 msgid "Info"
 msgstr "信息"
+
+msgid "Insert midpoint"
+msgstr "插入中点"
 
 msgid "Inside"
 msgstr "内部"
@@ -4253,6 +4346,12 @@ msgstr "让最新一行保持在视野中"
 
 msgid "Keep them read-only"
 msgstr "将它们保持为只读"
+
+msgid "Keeps objects with different runtime settings, textures, or named variables separate."
+msgstr "将运行设置、纹理或具名变量不同的物体分开处理。"
+
+msgid "Keeps the objects where they are and stops the path moving them."
+msgstr "保留物体的当前位置，路径不再带动物体。"
 
 msgid "Key"
 msgstr "按键"
@@ -4706,6 +4805,9 @@ msgstr ""
 msgid "Match"
 msgstr "匹配"
 
+msgid "Match properties and materials"
+msgstr "匹配属性和材质"
+
 msgid "Match the object's angle to the ground slope. Enable Follow ground in More on the toolbar."
 msgstr "使物体角度与地面坡度一致。在工具栏的更多选项中启用贴合地面。"
 
@@ -4843,6 +4945,10 @@ msgstr "模型 %d 未加载；该 pickup 会以模型 %d 绘制。"
 msgid "Model %d was a modloader/Haumea import: open a map that uses it to move it to the server"
 msgstr "模型 %d 是从 modloader/Haumea 导入的：打开一个使用它的地图，即可将它移动到服务器"
 
+#, c-format
+msgid "Model %d: keep #%d, %d duplicates"
+msgstr "模型 %d：保留 #%d，%d 个重复物体"
+
 msgid "Model (inc,-exc)"
 msgstr "模型 (inc,-exc)"
 
@@ -4978,6 +5084,9 @@ msgstr "已移动"
 
 msgid "Movement"
 msgstr "移动"
+
+msgid "Moves the attachment root to its family's bounding-box centre while keeping every child's world position and rotation."
+msgstr "将附加层级根物体移至整个层级的包围盒中心，并保持所有子物体的世界位置和旋转。"
 
 msgid "Moves the camera to look at a point: paste x, y, z or a SetPlayerPos line."
 msgstr "移动相机使其看向某个点：粘贴 x, y, z 或一行 SetPlayerPos。"
@@ -5540,6 +5649,9 @@ msgstr "物体信息"
 msgid "Object anchor"
 msgstr "物体锚点"
 
+msgid "Object bounds"
+msgstr "物体包围盒"
+
 msgid "Object snap"
 msgstr "物体吸附"
 
@@ -5559,6 +5671,9 @@ msgstr "物体吸附开 / 关"
 msgid "Objects"
 msgstr "物体"
 
+msgid "Objects along path"
+msgstr "沿路径放置物体"
+
 msgid ""
 "Objects are turned, not flipped: ramps and stairs rise the\n"
 "mirrored way, but a model that is lopsided both ways keeps its left and right."
@@ -5574,6 +5689,9 @@ msgstr "关"
 
 msgid "Off draws only the interior set on the menu bar, like the client."
 msgstr "关闭时只绘制菜单栏中设置的内部，与客户端一样。"
+
+msgid "Off keeps the curve's height, so lifting a point also lifts its objects."
+msgstr "关闭后保留曲线高度，抬高控制点也会抬高关联物体。"
 
 msgid ""
 "Off plays it where it was recorded. On moves the whole route so it\n"
@@ -5781,6 +5899,9 @@ msgstr "原点"
 msgid "Original"
 msgstr "原始"
 
+msgid "Outgoing"
+msgstr "出向控制柄"
+
 msgid ""
 "Outgoing connections from this node to other path nodes.\n"
 "Each link can have a navi node (lane waypoint) between the two endpoints.\n"
@@ -5931,6 +6052,9 @@ msgstr "路径：%s"
 msgid "Paths"
 msgstr "路径"
 
+msgid "Paths & curves"
+msgstr "路径与曲线"
+
 msgid "Pause"
 msgstr "暂停"
 
@@ -6075,6 +6199,15 @@ msgstr "置顶：让它保持在列表顶部"
 msgid "Pitch"
 msgstr "俯仰"
 
+msgid "Pivot"
+msgstr "轴心"
+
+msgid "Pivot mode"
+msgstr "轴心模式"
+
+msgid "Pivot position"
+msgstr "轴心位置"
+
 msgid "Pixel-exact"
 msgstr "像素级精确"
 
@@ -6129,6 +6262,9 @@ msgstr "将 Prefab 文件 (.haumea) 中的物体放置到此地图中。"
 
 msgid "Plain"
 msgstr "纯色"
+
+msgid "Plane"
+msgstr "平面"
 
 msgid "Plane interior hum (0.3.7-R2)"
 msgstr "飞机内部嗡嗡声 (0.3.7-R2)"
@@ -6205,6 +6341,12 @@ msgstr "第 %d 个点，共 %d 个。各点按序号从小到大依次行走。"
 msgid "Point Dir To Node"
 msgstr "指向节点方向"
 
+msgid "Point position"
+msgstr "控制点位置"
+
+msgid "Point settings"
+msgstr "控制点设置"
+
 msgid "Points down"
 msgstr "朝下"
 
@@ -6247,6 +6389,9 @@ msgstr "位置与旋转"
 
 msgid "Position copied"
 msgstr "已复制位置"
+
+msgid "Position tolerance"
+msgstr "位置容差"
 
 msgid "Positions"
 msgstr "位置"
@@ -6376,6 +6521,9 @@ msgstr "进度环"
 
 msgid "Project each selected object's anchor onto the extended ruler, preserving its position along the guide."
 msgstr "将每个所选物体的锚点投影到延长后的标尺上，保持其沿参考线的位置。"
+
+msgid "Properties and materials were ignored. Overlapping objects may be intentional."
+msgstr "已忽略属性和材质。重叠物体可能是有意放置的。"
 
 msgid "Property (free)"
 msgstr "房产（空闲）"
@@ -6537,6 +6685,9 @@ msgstr "半径 (m)"
 msgid "Rain (0.3.7-R2)"
 msgstr "雨 (0.3.7-R2)"
 
+msgid "Ramp / helix"
+msgstr "坡道 / 螺旋线"
+
 msgid "Random (-1)"
 msgstr "随机 (-1)"
 
@@ -6569,6 +6720,9 @@ msgstr "就绪"
 #, c-format
 msgid "Ready: %s"
 msgstr "就绪：%s"
+
+msgid "Rebuild objects"
+msgstr "重新生成物体"
 
 msgid "Recent maps"
 msgstr "最近的地图"
@@ -6675,6 +6829,13 @@ msgstr "重新加载地图"
 msgid "Remove"
 msgstr "移除"
 
+#, c-format
+msgid "Remove %d duplicates, keeping one object per group? Undo restores them."
+msgstr "删除 %d 个重复物体并在每组保留一个？撤销可恢复这些物体。"
+
+msgid "Remove duplicates"
+msgstr "删除重复物体"
+
 msgid "Remove from Favourites"
 msgstr "从收藏夹移除"
 
@@ -6689,6 +6850,9 @@ msgstr "移除最后一个"
 
 msgid "Remove object from selection"
 msgstr "将物体从所选物体中移除"
+
+msgid "Remove point"
+msgstr "删除控制点"
 
 msgid "Remove tilt while preserving the object's Z heading."
 msgstr "移除倾斜，同时保留物体的 Z 轴朝向。"
@@ -6848,6 +7012,9 @@ msgstr "响铃（连续）"
 
 msgid "Riot (0.3.7-R2)"
 msgstr "暴动 (0.3.7-R2)"
+
+msgid "Rise"
+msgstr "升高量"
 
 msgid "Road"
 msgstr "道路"
@@ -7291,6 +7458,9 @@ msgstr "选择一个 TXD 以查看其贴图。"
 msgid "Select a node in the Nodes window (Windows > Nodes) first."
 msgstr "请先在节点窗口（窗口 > 节点）中选择一个节点。"
 
+msgid "Select a parent with attached objects, or one of its children."
+msgstr "选择有附加物体的父物体或其中一个子物体。"
+
 msgid "Select a streamed SA path node in the viewport to begin editing."
 msgstr "在视口中选择一个已流送的 SA 路径节点即可开始编辑。"
 
@@ -7302,6 +7472,9 @@ msgstr "请先在物体浏览器中选择一个物体"
 
 msgid "Select and go to this node."
 msgstr "选择并转到此节点。"
+
+msgid "Select duplicates"
+msgstr "选择重复物体"
 
 #, c-format
 msgid "Select every %s in the map, to edit them together."
@@ -7533,6 +7706,9 @@ msgstr "显示物体边缘，包括不可见和透明物体。"
 msgid "Show or hide the group in the editor"
 msgstr "在编辑器中显示或隐藏该组"
 
+msgid "Show paths"
+msgstr "显示路径"
+
 msgid "Show pins and guides"
 msgstr "显示图钉和参考线"
 
@@ -7567,6 +7743,9 @@ msgid ""
 msgstr ""
 "仅对此动态区域内的玩家显示（即 streamer 的 areaid）。\n"
 "选择多个项目即可为它们全部设置。"
+
+msgid "Shows collision bounding boxes without the collision mesh. Collisions takes precedence when both are enabled."
+msgstr "显示碰撞包围盒而不显示碰撞网格。两者均启用时，优先显示碰撞网格。"
 
 msgid ""
 "Shows the active workspace and session time through Discord desktop.\n"
@@ -7677,6 +7856,9 @@ msgstr "在角落显示此画板的 4:3、16:9 和 21:9 小视图。"
 
 msgid "Smaller interface (like Ctrl+wheel)"
 msgstr "更小的界面（如 Ctrl+滚轮）"
+
+msgid "Smooth curve"
+msgstr "平滑曲线"
 
 msgid "Snap"
 msgstr "吸附"
@@ -8237,6 +8419,9 @@ msgstr ""
 "图片的像素尺寸。格子越小越能贴合形状，\n"
 "但会占用更多 gang zone。"
 
+msgid "The attachment contains read-only objects."
+msgstr "附加层级包含只读物体。"
+
 msgid ""
 "The chat and text outlines are sized in the player's pixels: on a bigger\n"
 "screen the chat takes less of it and outlines are thinner. Textdraws too."
@@ -8296,6 +8481,12 @@ msgstr "安装程序已停止（退出代码 %d）。"
 
 msgid "The last checkpoint: Finish (or Air finish) shows a flag."
 msgstr "最后一个 checkpoint：Finish（或 Air finish）会显示旗帜。"
+
+msgid "The layout is limited to 2,000 objects. Increase spacing for a longer path."
+msgstr "布局最多包含 2,000 个物体。路径较长时请增大间距。"
+
+msgid "The map changed. Find duplicates again before removing objects."
+msgstr "地图已更改。删除物体前请重新查找重复物体。"
 
 msgid "The map has NPCs or NPC paths: their NPC_* calls only compile and run on open.mp (with its NPCs component), not on a SA-MP 0.3.7 server."
 msgstr "地图包含 NPC 或 NPC 路径：它们的 NPC_* 调用只能在 open.mp（连同其 NPCs 组件）上编译并运行，在 SA-MP 0.3.7 服务器上则不行。"
@@ -8663,6 +8854,9 @@ msgstr "改装部件"
 msgid "Turn by"
 msgstr "旋转量"
 
+msgid "Turns"
+msgstr "圈数"
+
 msgid ""
 "Turns models that are longer sideways (most fences and barriers)\n"
 "so they run along the line."
@@ -8824,6 +9018,9 @@ msgstr "使用"
 msgid "Use a vehicle..."
 msgstr "使用载具..."
 
+msgid "Use active pin"
+msgstr "使用活动坐标标记"
+
 msgid "Use an absolute path, or a path relative to the editor's working directory."
 msgstr "使用绝对路径，或相对于编辑器工作目录的路径。"
 
@@ -8838,6 +9035,9 @@ msgstr "使用位置"
 
 msgid "Use selected snap increment"
 msgstr "使用所选吸附增量"
+
+msgid "Use selection"
+msgstr "使用所选物体"
 
 msgid "Use the first selected object's model."
 msgstr "使用第一个所选物体的模型。"

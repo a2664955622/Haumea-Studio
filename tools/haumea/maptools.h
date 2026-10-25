@@ -70,3 +70,5 @@ float MapToolsModelLength(int model, bool *alongX);
 bool MapToolsHandleViewportClick(void);
 // The Tools window's sections.
 void MapToolsPanel(void);
+rw::V3d MapToolsSelectionCentre();
+int MapToolsCenterParent(std::string *error);
