@@ -2158,6 +2158,9 @@ msgstr "Código"
 msgid "Code Glass"
 msgstr "Vidro de código"
 
+msgid "Code target"
+msgstr "Alvo do código"
+
 msgid "Collision"
 msgstr "Colisão"
 
@@ -3560,6 +3563,9 @@ msgstr "Porta da garagem abrindo"
 
 msgid "General"
 msgstr "Geral"
+
+msgid "Generated Pawn code targets only the selected server."
+msgstr "O código Pawn gerado é direcionado somente ao servidor selecionado."
 
 msgid "Get out"
 msgstr "Sair"

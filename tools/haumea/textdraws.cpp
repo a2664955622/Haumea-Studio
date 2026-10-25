@@ -22,6 +22,7 @@ static std::vector<TextDraw> gTextDraws;	// the textdraw file's
 static std::vector<TextDraw> gMapTextDraws;	// an old map's, saved back with it
 static std::string gFilePath;
 static PawnTextEncoding gFileEncoding = PAWN_TEXT_CP1252;
+static TextDrawCodeTarget gCodeTarget = TEXTDRAW_CODE_SAMP;
 static unsigned int gChangeSeq, gSavedSeq;
 static bool gEditPending;	// changed since the last undo step was recorded
 static std::vector<std::vector<TextDraw>> gUndo, gRedo;
@@ -64,6 +65,24 @@ void
 TextDrawsChanged(void)
 {
 	gEditPending = true;
+	gChangeSeq++;
+}
+
+TextDrawCodeTarget
+GetTextDrawCodeTarget(void)
+{
+	return gCodeTarget;
+}
+
+void
+SetTextDrawCodeTarget(TextDrawCodeTarget target)
+{
+	gCodeTarget = target == TEXTDRAW_CODE_OPENMP ? TEXTDRAW_CODE_OPENMP : TEXTDRAW_CODE_SAMP;
+}
+
+void
+TextDrawCodeTargetChanged(void)
+{
 	gChangeSeq++;
 }
 
@@ -193,13 +212,20 @@ TextDrawFilePrefix(const char *path)
 
 static void writeCompatDefines(FILE *f);
 static void writeGlobals(FILE *f, const std::vector<TextDraw> &tds, const char *prefix);
-static void writeFunctions(FILE *f, const std::vector<TextDraw> &tds, const char *prefix);
+static void writeFunctions(FILE *f, const std::vector<TextDraw> &tds, const char *prefix,
+	TextDrawCodeTarget target);
 
 static void boardSuffixes(const std::vector<std::string> &boards, std::vector<std::string> &out);
 static void codeBoards(const std::vector<TextDraw> &tds, std::vector<std::string> &out);
 
 std::string
 BuildTextDrawFileCode(const char *path)
+{
+	return BuildTextDrawFileCode(path, GetTextDrawCodeTarget());
+}
+
+std::string
+BuildTextDrawFileCode(const char *path, TextDrawCodeTarget target)
 {
 	std::string prefix = TextDrawFilePrefix(path);
 	const char *p = prefix.c_str();
@@ -219,10 +245,10 @@ BuildTextDrawFileCode(const char *path)
 			fprintf(f, "%s %s", b == 0 ? "" : b + 1 == suffixes.size() ? " and" : ",", suffixes[b].c_str());
 		fprintf(f, ".\n// Call %s_ResetPlayer(playerid) from OnPlayerDisconnect.\n", p);
 	}
-	fputs("\n#tryinclude <open.mp>\n#if !defined _INC_open_mp\n\t#include <a_samp>\n#endif\n", f);
-	writeCompatDefines(f);
+	fputs(target == TEXTDRAW_CODE_OPENMP ? "\n#include <open.mp>\n" : "\n#include <a_samp>\n", f);
+	fputc('\n', f);
 	writeGlobals(f, gTextDraws, p);
-	writeFunctions(f, gTextDraws, p);
+	writeFunctions(f, gTextDraws, p, target);
 	std::string code;
 	if(fflush(f) != 0 || ferror(f)){
 		fclose(f);
@@ -538,7 +564,8 @@ WriteTextDrawsPawnGlobals(FILE *f, const char *prefix)
 
 
 static void
-writeTextDraw(FILE *f, const TextDraw &td, const std::string &name, const char *ind = "\t")
+writeTextDraw(FILE *f, const TextDraw &td, const std::string &name, TextDrawCodeTarget codeTarget,
+	const char *ind = "\t")
 {
 	TextDraw def;
 	InitTextDraw(&def);
@@ -560,21 +587,26 @@ writeTextDraw(FILE *f, const TextDraw &td, const std::string &name, const char *
 	if(td.sizeX != def.sizeX || td.sizeY != def.sizeY)
 		fprintf(f, "%s%sTextSize(%s, %.3f, %.3f);\n", ind, p, t, td.sizeX, td.sizeY);
 	if(td.alignment != def.alignment)
-		fprintf(f, "%s%sAlignment(%s, TEXT_DRAW_ALIGN:%d);\n", ind, p, t, td.alignment);
+		fprintf(f, "%s%sAlignment(%s, %s%d);\n", ind, p, t,
+			codeTarget == TEXTDRAW_CODE_OPENMP ? "TEXT_DRAW_ALIGN:" : "", td.alignment);
 	if(td.colour != def.colour)
-		fprintf(f, "%s%sColour(%s, 0x%08X);\n", ind, p, t, td.colour);
+		fprintf(f, "%s%s%s(%s, 0x%08X);\n", ind, p,
+			codeTarget == TEXTDRAW_CODE_OPENMP ? "Colour" : "Color", t, td.colour);
 	if(td.useBox)
 		fprintf(f, "%s%sUseBox(%s, true);\n", ind, p, t);
 	if(td.useBox && td.boxColour != def.boxColour)
-		fprintf(f, "%s%sBoxColour(%s, 0x%08X);\n", ind, p, t, td.boxColour);
+		fprintf(f, "%s%sBox%s(%s, 0x%08X);\n", ind, p,
+			codeTarget == TEXTDRAW_CODE_OPENMP ? "Colour" : "Color", t, td.boxColour);
 	if(td.shadow != def.shadow)
 		fprintf(f, "%s%sSetShadow(%s, %d);\n", ind, p, t, td.shadow);
 	if(td.outline != def.outline)
 		fprintf(f, "%s%sSetOutline(%s, %d);\n", ind, p, t, td.outline);
 	if(td.backgroundColour != def.backgroundColour)
-		fprintf(f, "%s%sBackgroundColour(%s, 0x%08X);\n", ind, p, t, td.backgroundColour);
+		fprintf(f, "%s%sBackground%s(%s, 0x%08X);\n", ind, p,
+			codeTarget == TEXTDRAW_CODE_OPENMP ? "Colour" : "Color", t, td.backgroundColour);
 	if(td.font != def.font)
-		fprintf(f, "%s%sFont(%s, TEXT_DRAW_FONT:%d);\n", ind, p, t, td.font);
+		fprintf(f, "%s%sFont(%s, %s%d);\n", ind, p, t,
+			codeTarget == TEXTDRAW_CODE_OPENMP ? "TEXT_DRAW_FONT:" : "", td.font);
 	if(td.proportional != def.proportional)
 		fprintf(f, "%s%sSetProportional(%s, %s);\n", ind, p, t, td.proportional ? "true" : "false");
 	if(td.selectable)
@@ -584,20 +616,21 @@ writeTextDraw(FILE *f, const TextDraw &td, const std::string &name, const char *
 		fprintf(f, "%s%sSetPreviewRot(%s, %.3f, %.3f, %.3f, %.3f);\n", ind, p, t,
 			td.previewRotX, td.previewRotY, td.previewRotZ, td.previewZoom);
 		if(td.previewColour1 != -1 || td.previewColour2 != -1)
-			fprintf(f, "%s%sSetPreviewVehicleColours(%s, %d, %d);\n", ind, p, t,
+			fprintf(f, "%s%sSetPreviewVeh%s(%s, %d, %d);\n", ind, p,
+				codeTarget == TEXTDRAW_CODE_OPENMP ? "icleColours" : "Col", t,
 				td.previewColour1, td.previewColour2);
 	}
 }
 
 static void
-writeFunctions(FILE *f, const std::vector<TextDraw> &tds, const char *prefix)
+writeFunctions(FILE *f, const std::vector<TextDraw> &tds, const char *prefix, TextDrawCodeTarget target)
 {
 	std::vector<std::string> names;
 	buildNames(tds, prefix, names);
 	fprintf(f, "stock %s_CreateTextDraws()\n{\n", prefix);
 	for(size_t i = 0; i < tds.size(); i++)
 		if(tds[i].font != TD_FONT_REFERENCE && !tds[i].perPlayer)
-			writeTextDraw(f, tds[i], names[i]);
+			writeTextDraw(f, tds[i], names[i], target);
 	fprintf(f, "}\n\n");
 	std::vector<std::string> boards, suffixes;
 	codeBoards(tds, boards);
@@ -605,7 +638,7 @@ writeFunctions(FILE *f, const std::vector<TextDraw> &tds, const char *prefix)
 		fprintf(f, "stock %s_ShowTextDraws(playerid)\n{\n", prefix);
 		for(size_t i = 0; i < tds.size(); i++)
 			if(tds[i].perPlayer && tds[i].font != TD_FONT_REFERENCE)
-				writeTextDraw(f, tds[i], names[i]);
+				writeTextDraw(f, tds[i], names[i], target);
 		for(size_t i = 0; i < tds.size(); i++)
 			if(tds[i].font == TD_FONT_REFERENCE)
 				continue;
@@ -625,7 +658,7 @@ writeFunctions(FILE *f, const std::vector<TextDraw> &tds, const char *prefix)
 		for(size_t i = 0; i < tds.size(); i++)
 			if(tds[i].perPlayer && tds[i].font != TD_FONT_REFERENCE && tds[i].board == boards[b]){
 				fprintf(f, "\tif(%s[playerid] == PlayerText:INVALID_TEXT_DRAW)\n\t{\n", names[i].c_str());
-				writeTextDraw(f, tds[i], names[i], "\t\t");
+				writeTextDraw(f, tds[i], names[i], target, "\t\t");
 				fprintf(f, "\t}\n");
 			}
 		for(size_t i = 0; i < tds.size(); i++)
@@ -671,7 +704,7 @@ void
 WriteTextDrawsPawnFunctions(FILE *f, const char *prefix)
 {
 	if(!gMapTextDraws.empty())
-		writeFunctions(f, gMapTextDraws, prefix);
+		writeFunctions(f, gMapTextDraws, prefix, TEXTDRAW_CODE_OPENMP);
 }
 
 // ---- Reading ----

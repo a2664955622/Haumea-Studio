@@ -98,12 +98,12 @@ public OnPlayerConnect(playerid)
 @unittest.skipUnless(GAME_DIR and BINARY and HAVE_DISPLAY,
                      'set HAUMEA_GAME_DIR and build the editor to run')
 class TextDrawTests(unittest.TestCase):
-    def compile(self, tmp, gamemode):
+    def compile(self, tmp, gamemode, targets=('OMP_INCLUDE', 'SAMP037_INCLUDE')):
         """0 errors and 0 warnings on every include set given."""
         if not PAWNCC:
             return
         Path(tmp, 'gm.pwn').write_text(gamemode)
-        for variable in ('OMP_INCLUDE', 'SAMP037_INCLUDE'):
+        for variable in targets:
             include = os.environ.get(variable)
             if not include:
                 continue
@@ -143,7 +143,7 @@ class TextDrawTests(unittest.TestCase):
                                      str(Path(tmp, 'map.pwn'))],
                                     cwd=tmp, env=env, capture_output=True, text=True)
             self.assertIn('pawn-roundtrip:', result.stdout, result.stdout[-2000:])
-            self.compile(tmp, GAMEMODE_WITH_FILE)
+            self.compile(tmp, GAMEMODE_WITH_FILE, ('SAMP037_INCLUDE',))
 
     def test_textdraws_round_trip(self):
         with tempfile.TemporaryDirectory() as tmp:

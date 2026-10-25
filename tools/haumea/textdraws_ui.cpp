@@ -231,7 +231,12 @@ AddRecentTextDrawFile(const char *path)
 bool
 LoadTextDrawSetting(const char *key, const char *value)
 {
-	if(strcmp(key, "textdraw_background") == 0)
+	if(strcmp(key, "textdraw_code_target") == 0){
+		int target = TEXTDRAW_CODE_SAMP;
+		if(sscanf(value, "%d", &target) == 1 &&
+		   (target == TEXTDRAW_CODE_SAMP || target == TEXTDRAW_CODE_OPENMP))
+			SetTextDrawCodeTarget((TextDrawCodeTarget)target);
+	}else if(strcmp(key, "textdraw_background") == 0)
 		gBackground = atoi(value) == TD_BACKGROUND_PLAIN ? TD_BACKGROUND_PLAIN : TD_BACKGROUND_STILL;
 	else if(strcmp(key, "textdraw_canvas_colour") == 0)
 		gCanvasColour = (unsigned int)strtoul(value, nil, 16);
@@ -321,6 +326,7 @@ LoadTextDrawSetting(const char *key, const char *value)
 void
 SaveTextDrawSettings(FILE *f)
 {
+	fprintf(f, "textdraw_code_target %d\n", (int)GetTextDrawCodeTarget());
 	fprintf(f, "textdraw_background %d\n", gBackground);
 	fprintf(f, "textdraw_canvas_colour %08X\n", gCanvasColour);
 	fputs("textdraw_favourite_sprites", f);
@@ -5247,6 +5253,26 @@ fileBar(void)
 	ImGui::SameLine();
 	if(iconButton(ICON_FA_ROTATE_RIGHT "###Redo", ShortcutLabel(SC_REDO)))
 		RedoTextDraws();
+	ImGui::SameLine(0.0f, ImGui::GetFontSize());
+	TextDrawCodeTarget codeTarget = GetTextDrawCodeTarget();
+	const char *targetLabel = codeTarget == TEXTDRAW_CODE_OPENMP ? "open.mp" : "SA-MP 0.3.7";
+	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 9.0f);
+	if(ImGui::BeginCombo(L("Code target"), targetLabel)){
+		if(ImGui::Selectable("SA-MP 0.3.7", codeTarget == TEXTDRAW_CODE_SAMP) &&
+		   codeTarget != TEXTDRAW_CODE_SAMP){
+			SetTextDrawCodeTarget(TEXTDRAW_CODE_SAMP);
+			TextDrawCodeTargetChanged();
+			SaveEditorSettings();
+		}
+		if(ImGui::Selectable("open.mp", codeTarget == TEXTDRAW_CODE_OPENMP) &&
+		   codeTarget != TEXTDRAW_CODE_OPENMP){
+			SetTextDrawCodeTarget(TEXTDRAW_CODE_OPENMP);
+			TextDrawCodeTargetChanged();
+			SaveEditorSettings();
+		}
+		ImGui::EndCombo();
+	}
+	ImGui::SetItemTooltip("%s", _("Generated Pawn code targets only the selected server."));
 	ImGui::TextDisabled(TextDrawFileHasUnsavedChanges() ? _("Unsaved changes - %s") : _("Saved - %s"),
 		GetTextDrawFileName());
 	if(GetTextDrawFilePath()[0])

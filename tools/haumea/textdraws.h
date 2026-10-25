@@ -8,6 +8,11 @@
 // SA-MP textdraws: designed on the client's 640x448 canvas and written to the
 // map as TextDrawCreate / CreatePlayerTextDraw calls.
 
+enum TextDrawCodeTarget {
+	TEXTDRAW_CODE_SAMP,
+	TEXTDRAW_CODE_OPENMP,
+};
+
 enum {
 	TD_FONT_BECKETT,	// 0..3 are text fonts
 	TD_FONT_AHARONI,
@@ -75,8 +80,12 @@ bool TextDrawFileHasUnsavedChanges(void);
 void NewTextDrawFile(void);
 bool OpenTextDrawFile(const char *path, std::string *error);
 bool SaveTextDrawFile(const char *path, std::string *error);	// nil or "": its own path
+TextDrawCodeTarget GetTextDrawCodeTarget(void);
+void SetTextDrawCodeTarget(TextDrawCodeTarget target);
+void TextDrawCodeTargetChanged(void);	// marks the file unsaved without adding an undo step
 // The file's code (UTF-8), with the function prefix its path gives.
 std::string BuildTextDrawFileCode(const char *path);
+std::string BuildTextDrawFileCode(const char *path, TextDrawCodeTarget target);
 std::string TextDrawFilePrefix(const char *path);	// Haumea_<name>
 
 // Undo for the textdraw file, apart from the map's.

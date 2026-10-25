@@ -999,7 +999,7 @@ TestServerRunMap(int pawnFormat)
 	// The textdraw file as it is now, beside the map.
 	if(!GetTextDraws().empty()){
 		std::string tdPath = tsJoin(gamemodes, "haumea_textdraws.pwn");
-		if(!tsWriteText(tdPath, EncodePawnFileText(BuildTextDrawFileCode(tdPath.c_str()), GetPawnTextEncoding()))){
+		if(!tsWriteText(tdPath, EncodePawnFileText(BuildTextDrawFileCode(tdPath.c_str(), TEXTDRAW_CODE_OPENMP), GetPawnTextEncoding()))){
 			tsFail(N_("could not export the textdraws"));
 			return;
 		}
