@@ -9926,9 +9926,6 @@ msgstr "浏览模型"
 msgid "Choose an object model in the browser first."
 msgstr "请先在浏览器中选择物体模型。"
 
-msgid "Code target"
-msgstr "代码目标"
-
 msgid "Could not attach this object to that target."
 msgstr "无法将此物体附加到该目标。"
 
@@ -9943,9 +9940,6 @@ msgstr "在附件工作区中编辑"
 
 msgid "Focus target"
 msgstr "聚焦目标"
-
-msgid "Generated Pawn code targets only the selected server."
-msgstr "生成的 Pawn 代码仅面向所选服务器。"
 
 msgid "Head"
 msgstr "头部"
