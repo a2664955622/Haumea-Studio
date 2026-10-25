@@ -1572,6 +1572,7 @@ static rw::V3d gAttachmentWorkspaceSavedCameraUp;
 static rw::V3d gAttachmentWorkspaceSavedCameraLocalUp;
 static float gAttachmentWorkspaceSavedCameraFov;
 static bool gAttachmentWorkspaceNeedsFocus;
+static bool gAttachmentWorkspaceSelectionPending;
 static int gAttachmentWorkspacePendingCameraView = ATTACHMENT_VIEW_FOCUS;
 static void setInstanceElementModel(ObjectInst *inst, int modelId);
 static void applyInstanceModelId(ObjectInst *inst, int editorModelId);
@@ -3091,7 +3092,7 @@ ObjectInst::Select(void)
 	if(isSA()){
 		ObjectInst *target = m_isVehicle || IsPlayerAttachmentTarget(this) ? this : GetAttachParent(this);
 		if(target && (target->m_isVehicle || IsPlayerAttachmentTarget(target)))
-			OpenAttachmentWorkspace(target, AttachmentWorkspaceHidesWorld());
+			gAttachmentWorkspaceSelectionPending = true;
 	}
 }
 
@@ -3670,6 +3671,7 @@ OpenPlayerAttachmentWorkspace(int skin, bool voidView)
 void
 CloseAttachmentWorkspace(void)
 {
+	gAttachmentWorkspaceSelectionPending = false;
 	restoreAttachmentWorkspaceCamera();
 	gAttachmentWorkspaceActive = false;
 	gAttachmentWorkspaceVoid = false;
@@ -3718,6 +3720,18 @@ SetAttachmentWorkspaceCameraView(int view)
 void
 UpdateAttachmentWorkspace(void)
 {
+	// Selection helpers may visit a ped or vehicle in the middle of a range.
+	// Wait for the complete selection before opening a window over the list.
+	if(gAttachmentWorkspaceSelectionPending){
+		gAttachmentWorkspaceSelectionPending = false;
+		if(selection.first && selection.first->next == nil){
+			ObjectInst *selected = (ObjectInst*)selection.first->item;
+			ObjectInst *target = selected->m_isVehicle || IsPlayerAttachmentTarget(selected) ?
+				selected : GetAttachParent(selected);
+			if(target && !target->m_isDeleted && (target->m_isVehicle || IsPlayerAttachmentTarget(target)))
+				OpenAttachmentWorkspace(target, AttachmentWorkspaceHidesWorld());
+		}
+	}
 	if(!gAttachmentWorkspaceActive)
 		return;
 	if(gAttachmentWorkspaceTarget && gAttachmentWorkspaceTarget->m_isDeleted){
