@@ -10,6 +10,8 @@
 
 #include <ctype.h>
 #include <string.h>
+#include <climits>
+#include <cmath>
 #include <algorithm>
 #include <functional>
 #include <map>
@@ -2631,6 +2633,23 @@ rulerSize(void)
 	return gRulers ? ImGui::GetFontSize() * 1.3f : 0.0f;
 }
 
+static bool
+rulerTickRange(float firstPx, float lastPx, float origin, float scale, float minor, int *first, int *last)
+{
+	if(!std::isfinite(firstPx) || !std::isfinite(lastPx) || !std::isfinite(origin) ||
+	   !std::isfinite(scale) || scale <= 0.0f || !std::isfinite(minor) || minor <= 0.0f || lastPx < firstPx)
+		return false;
+	double spacing = (double)scale * minor;
+	double lo = std::ceil(((double)firstPx - origin) / spacing);
+	double hi = std::floor(((double)lastPx - origin) / spacing);
+	if(!std::isfinite(lo) || !std::isfinite(hi) || hi < lo || lo < INT_MIN || lo > INT_MAX ||
+	   hi < INT_MIN || hi > INT_MAX || hi - lo >= 4096.0)
+		return false;
+	*first = (int)lo;
+	*last = (int)hi;
+	return true;
+}
+
 // The rulers along the top and the left, in canvas units: the selection's
 // extent and the mouse are marked on them, and so are the guides.
 static void
@@ -2644,6 +2663,10 @@ drawRulers(ImDrawList *dl, const Canvas &cv, ImVec2 a, ImVec2 b, const float *se
 	dl->AddRectFilled(ImVec2(a.x, a.y + rs), ImVec2(a.x + rs, b.y), bg);
 	dl->AddLine(ImVec2(a.x + rs, a.y + rs), ImVec2(b.x, a.y + rs), tick);
 	dl->AddLine(ImVec2(a.x + rs, a.y + rs), ImVec2(a.x + rs, b.y), tick);
+	// A minimized or unusually narrow viewport can leave the fitted canvas
+	// with a zero or negative scale. Ruler tick loops require positive scales.
+	if(!std::isfinite(cv.sx) || cv.sx <= 0.0f || !std::isfinite(cv.sy) || cv.sy <= 0.0f)
+		return;
 	// Numbers at least 50 pixels apart, four small ticks between.
 	static const float steps[] = { 1.0f, 2.0f, 5.0f, 10.0f, 20.0f, 25.0f, 50.0f, 100.0f, 200.0f };
 	float step = 500.0f;
@@ -2659,28 +2682,33 @@ drawRulers(ImDrawList *dl, const Canvas &cv, ImVec2 a, ImVec2 b, const float *se
 		dl->AddRectFilled(ImVec2(a.x + rs - 4, cv.at(0, sel[1]).y), ImVec2(a.x + rs, cv.at(0, sel[3]).y), accent);
 	}
 	dl->PushClipRect(ImVec2(a.x + rs, a.y), ImVec2(b.x, a.y + rs), true);
-	for(int k = (int)ceilf((a.x + rs - cv.x) / cv.sx / minor); ; k++){
-		float u = k * minor, px = cv.x + u * cv.sx;
-		if(px > b.x)
-			break;
-		bool major = k % 5 == 0;
-		dl->AddLine(ImVec2(px, a.y + rs * (major ? 0.25f : 0.65f)), ImVec2(px, a.y + rs), tick);
-		if(major){
-			snprintf(num, sizeof(num), "%g", u);
-			dl->AddText(ImGui::GetFont(), fs, ImVec2(px + 2.0f, a.y), text, num);
+	int first, last;
+	if(rulerTickRange(a.x + rs, b.x, cv.x, cv.sx, minor, &first, &last)){
+		for(int k = first; ; k++){
+			float u = k * minor, px = cv.x + u * cv.sx;
+			bool major = k % 5 == 0;
+			dl->AddLine(ImVec2(px, a.y + rs * (major ? 0.25f : 0.65f)), ImVec2(px, a.y + rs), tick);
+			if(major){
+				snprintf(num, sizeof(num), "%g", u);
+				dl->AddText(ImGui::GetFont(), fs, ImVec2(px + 2.0f, a.y), text, num);
+			}
+			if(k == last)
+				break;
 		}
 	}
 	dl->PopClipRect();
 	dl->PushClipRect(ImVec2(a.x, a.y + rs), ImVec2(a.x + rs, b.y), true);
-	for(int k = (int)ceilf((a.y + rs - cv.y) / cv.sy / minor); ; k++){
-		float u = k * minor, py = cv.y + u * cv.sy;
-		if(py > b.y)
-			break;
-		bool major = k % 5 == 0;
-		dl->AddLine(ImVec2(a.x + rs * (major ? 0.25f : 0.65f), py), ImVec2(a.x + rs, py), tick);
-		if(major){
-			snprintf(num, sizeof(num), "%g", u);
-			dl->AddText(ImGui::GetFont(), fs, ImVec2(a.x + 1.0f, py + 1.0f), text, num);
+	if(rulerTickRange(a.y + rs, b.y, cv.y, cv.sy, minor, &first, &last)){
+		for(int k = first; ; k++){
+			float u = k * minor, py = cv.y + u * cv.sy;
+			bool major = k % 5 == 0;
+			dl->AddLine(ImVec2(a.x + rs * (major ? 0.25f : 0.65f), py), ImVec2(a.x + rs, py), tick);
+			if(major){
+				snprintf(num, sizeof(num), "%g", u);
+				dl->AddText(ImGui::GetFont(), fs, ImVec2(a.x + 1.0f, py + 1.0f), text, num);
+			}
+			if(k == last)
+				break;
 		}
 	}
 	dl->PopClipRect();
