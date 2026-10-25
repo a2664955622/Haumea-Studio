@@ -3111,6 +3111,7 @@ DrawTextDrawsOverlay(void)
 	flags |= ImGuiWindowFlags_NoDocking;
 #endif
 	int hovered = -1;
+	bool consumedPickClick = false;
 	if(gPicking){
 		// The eyedropper: the top image layer under the click gives its colour.
 		ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
@@ -3135,9 +3136,10 @@ DrawTextDrawsOverlay(void)
 				if(over){
 					gPickedColour = under & 0xFFFFFF00u;
 					gPicked = true;
+					gPicking = false;
+					consumedPickClick = true;
 				}else
 					Toast(TOAST_SELECTION, "%s", _("Click on an image layer to take its colour"));
-				gPicking = !over;
 			}
 		}
 		if(ImGui::IsKeyPressed(ImGuiKey_Escape))
@@ -3147,7 +3149,8 @@ DrawTextDrawsOverlay(void)
 	ImGuiContext *ctx = ImGui::GetCurrentContext();
 	ImVec2 m0 = io.MousePos;
 	float rs = rulerSize();
-	bool overCanvas = !gPicking && m0.x >= areaPos.x && m0.y >= areaPos.y && m0.x < areaEnd.x && m0.y < areaEnd.y &&
+	bool overCanvas = !gPicking && !consumedPickClick && m0.x >= areaPos.x && m0.y >= areaPos.y &&
+		m0.x < areaEnd.x && m0.y < areaEnd.y &&
 		(ctx->HoveredWindow == nil || strncmp(ctx->HoveredWindow->Name, "##td", 4) == 0);
 	bool onRuler = gRulers && overCanvas && (m0.x < areaPos.x + rs || m0.y < areaPos.y + rs);
 	bool grabbed = gHandle >= 0 || gGuideDrag >= 0;
@@ -3206,7 +3209,7 @@ DrawTextDrawsOverlay(void)
 			gGuideDrag = (int)guides.size() - 1;
 		}
 	}
-	for(int i = (int)tds.size() - 1; i >= 0 && !gPicking; i--){
+	for(int i = (int)tds.size() - 1; i >= 0 && !gPicking && !consumedPickClick; i--){
 		TextDraw &td = tds[i];
 		if(!shown(td) || (td.locked && gClickThroughLocked))
 			continue;
@@ -3356,7 +3359,7 @@ DrawTextDrawsOverlay(void)
 	// round the cursor, the middle button pans.
 	ImVec2 m = io.MousePos;
 	bool inArea = m.x >= areaPos.x && m.y >= areaPos.y && m.x < areaEnd.x && m.y < areaEnd.y;
-	if(inArea && !io.WantCaptureMouse && ImGui::IsMouseClicked(0) && !gPicking && !grabbed){
+	if(inArea && !io.WantCaptureMouse && ImGui::IsMouseClicked(0) && !gPicking && !consumedPickClick && !grabbed){
 		gMarquee = true;
 		gMarqueeAdd = io.KeyShift || io.KeyCtrl;
 		gMarqueeStart = m;
@@ -3532,6 +3535,7 @@ colourEdit(const char *label, unsigned int *rgba)
 	if(gPicked && gPickFor == id){
 		*rgba = gPickedColour | (*rgba & 0xFF);	// the image's colour, this field's alpha
 		gPicked = false;
+		gPicking = false;
 		changed = true;
 	}
 	float w = ImGui::CalcItemWidth() - ImGui::GetFrameHeight() - ImGui::GetStyle().ItemInnerSpacing.x;
