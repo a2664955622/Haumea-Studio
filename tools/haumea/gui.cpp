@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "particles.h"
 #include "discordpresence.h"
 #include "coordinatepin.h"
 #include "layoutpaths.h"
@@ -5096,6 +5097,8 @@ uiView(void)
 	ImGui::Checkbox(_("Water"), &gRenderWater);
 	if(gameversion == GAME_SA)
 		ImGui::Checkbox(_("Animated objects"), &gPlayAnimations);
+	ImGui::Checkbox(_("Particle effects"), &ParticlePreview::enabled);
+	ImGui::SetItemTooltip(_("Animate fire, smoke, water and other particle objects in the viewport."));
 	ImGui::Checkbox(_("Light coronas"), &gRenderLightEffects);
 	ImGui::SetItemTooltip(_("Street lamp and building light coronas, as the client draws them."));
 	ImGui::Checkbox(_("Timed objects at any hour"), &gNoTimeCull);
@@ -6696,6 +6699,8 @@ loadSaveSettings(void)
 			if(parseBoolSetting(value, &boolValue)) gRenderCullZones = boolValue;
 		}else if(strcmp(key, "render_attrib_zones") == 0){
 			if(parseBoolSetting(value, &boolValue)) gRenderAttribZones = boolValue;
+		}else if(strcmp(key, "render_particle_effects") == 0){
+			if(parseBoolSetting(value, &boolValue)) ParticlePreview::enabled = boolValue;
 		}else if(strcmp(key, "render_light_effects") == 0){
 			if(parseBoolSetting(value, &boolValue)) gRenderLightEffects = boolValue;
 		}else if(strcmp(key, "render_effect_markers") == 0){
@@ -7067,6 +7072,7 @@ saveSaveSettings(void)
 	fprintf(f, "render_info_zones %d\n", gRenderInfoZones ? 1 : 0);
 	fprintf(f, "render_cull_zones %d\n", gRenderCullZones ? 1 : 0);
 	fprintf(f, "render_attrib_zones %d\n", gRenderAttribZones ? 1 : 0);
+	fprintf(f, "render_particle_effects %d\n", ParticlePreview::enabled ? 1 : 0);
 	fprintf(f, "render_light_effects %d\n", gRenderLightEffects ? 1 : 0);
 	fprintf(f, "render_effect_markers %d\n", gRenderEffects ? 1 : 0);
 	fprintf(f, "render_legacy_ped_paths %d\n", gRenderLegacyPedPaths ? 1 : 0);
@@ -9467,6 +9473,21 @@ OpenObjectInspector(void)
 	showInstanceWindow = true;
 }
 
+static void
+uiReplayParticlesAction(ObjectInst *inst, bool menu)
+{
+	if(!ParticlePreview::HasParticleEffect(inst)) return;
+	bool clicked=menu ? ImGui::MenuItem(_("Replay particles")) : ImGui::Button(_("Replay particles"));
+	ImGui::SetItemTooltip(_("Restart the selected particle emitters, including one-shot effects such as explosions."));
+	if(clicked){
+		if(inst->m_selected){
+			std::vector<ObjectInst*> targets;
+			uiSelectedInstances(targets);
+			for(ObjectInst *target:targets) ParticlePreview::Restart(target);
+		}else ParticlePreview::Restart(inst);
+	}
+}
+
 // Explicitly include an original GTA object, or the current selection, in Pawn.
 static void
 uiConvertWorldObjectAction(ObjectInst *inst, bool menu)
@@ -10056,6 +10077,7 @@ uiInstWindow(void)
 				"RemoveBuildingForPlayer and creates your version instead."));
 		}
 		uiConvertWorldObjectAction(inst, false);
+		uiReplayParticlesAction(inst, false);
 		if(numWorldChanged > 0 && numSelected > 1)
 			ImGui::TextDisabled(_("%d selected world object(s) will be replaced in the map."), numWorldChanged);
 		ImGui::Spacing();
@@ -12120,6 +12142,7 @@ static void
 uiOutlinerObjectMenu(ObjectInst *inst)
 {
 	uiConvertWorldObjectAction(inst, true);
+	uiReplayParticlesAction(inst, true);
 	if(ImGui::MenuItem(_("Find instances"))) uiOpenObjectDiscovery(inst->m_objectId, false);
 	if(ImGui::MenuItem(_("Find similar models"))) uiOpenObjectDiscovery(inst->m_objectId, true);
 	ImGui::Separator();

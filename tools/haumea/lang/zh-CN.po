@@ -10249,3 +10249,15 @@ msgstr "地图物体"
 
 msgid "Select all instances of this model in the current scope."
 msgstr "选择当前范围内此模型的所有实例。"
+
+msgid "Particle effects"
+msgstr "粒子效果"
+
+msgid "Animate fire, smoke, water and other particle objects in the viewport."
+msgstr "在视口中播放火焰、烟雾、水和其他粒子物体的动画。"
+
+msgid "Replay particles"
+msgstr "重播粒子效果"
+
+msgid "Restart the selected particle emitters, including one-shot effects such as explosions."
+msgstr "重新启动所选粒子发射器，包括爆炸等一次性效果。"

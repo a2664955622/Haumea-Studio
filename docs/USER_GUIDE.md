@@ -121,6 +121,28 @@ choose the scope, press **Select all**, then **Convert to map object** in Object
 For an object in the active map, edit **Model ID** in Object Info to replace its
 model, with undo and redo. Objects linked to an LOD cannot change model this way.
 
+## Particle objects
+
+![Particle preview in Grove Street](images/particle-preview.png)
+
+The Object Browser's **Effects and particles** category includes all 81 SA-MP particle
+objects (IDs 18668–18748). Place them like ordinary objects: fire, smoke, sparks, fountains
+and other effects animate in the viewport. A small emitter icon lets you select, move,
+rotate, duplicate or delete an effect even when its particles are transparent.
+
+**View → Particle effects** turns the preview on or off and remembers the choice. Hiding
+or deleting an object removes its particles immediately; undo restores its emitter.
+**Replay particles** in Object Info or the right-click menu restarts selected emitters,
+including one-shot bursts such as explosions and camera flashes.
+Saving keeps ordinary `CreateObject` / `CreateDynamicObject` calls, so no editor simulation
+code is added to the server script.
+
+The preview reads `models/effects.fxp` and `models/effectsPC.txd` from your chosen game.
+It uses the effect's emission, lifetime, speed, colour, size and sprite definitions.
+Screen refraction/heat haze, scene collisions and trails are not reproduced; this is an
+editor preview, so use **Test in game** to check those effects in the client. The common
+render distance also applies to particles, with a bounded particle budget for dense scenes.
+
 ## Characters, paths and other map elements
 
 Use the feature dropdown at the top of the Object Browser:

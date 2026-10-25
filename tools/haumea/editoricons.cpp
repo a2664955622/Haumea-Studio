@@ -1,5 +1,6 @@
 #include "haumea.h"
 #include "editoricons.h"
+#include "samp_loader.h"
 #include "playerview.h"
 
 #include <math.h>
@@ -10,7 +11,7 @@
 
 namespace {
 
-enum IconKind { ICON_LABEL, ICON_SOUND, ICON_MAPICON, ICON_GANGZONE, ICON_PATHPOINT, ICON_CHECKPOINT, ICON_AREA, NUM_ICONS };
+enum IconKind { ICON_LABEL, ICON_SOUND, ICON_MAPICON, ICON_GANGZONE, ICON_PATHPOINT, ICON_CHECKPOINT, ICON_AREA, ICON_PARTICLE, NUM_ICONS };
 
 struct IconStyle {
 	uint8 r, g, b;			// the disc
@@ -25,6 +26,7 @@ const IconStyle kStyles[NUM_ICONS] = {
 	{ 240, 200,  40,  40,  40,  40 },	// path point: yellow, dark glyph
 	{ 220,  30,  30, 255, 255, 255 },	// checkpoint: red, as in game (its marker is drawn too)
 	{   0, 150, 160, 255, 255, 255 },	// dynamic area: teal
+	{ 200,  80, 160, 255, 255, 255 },	// particle emitter: magenta
 };
 
 int
@@ -40,6 +42,15 @@ iconOf(int kind)
 	case SAMP_ELEMENT_AREA: return ICON_AREA;
 	}
 	return -1;
+}
+
+int
+iconOfInstance(const ObjectInst *inst)
+{
+	int model=inst->m_objectId;
+	if(GetSampElementKind(inst)==SAMP_ELEMENT_OBJECT && model>=18668 && model<=18748 && SampLoader::IsSampModel(model))
+		return ICON_PARTICLE;
+	return iconOf(GetSampElementKind(inst));
 }
 
 // ---- Shapes, in [-1, 1] with y up ----
@@ -84,6 +95,12 @@ glyph(int icon, float x, float y)
 {
 	const float pi = 3.14159265f;
 	switch(icon){
+	case ICON_PARTICLE: // a small burst, readable even when the preview is off
+		return x*x+y*y<.10f*.10f ||
+			segmentDistance(x,y,-.40f,0,.40f,0)<.045f ||
+			segmentDistance(x,y,0,-.40f,0,.40f)<.045f ||
+			segmentDistance(x,y,-.28f,-.28f,.28f,.28f)<.04f ||
+			segmentDistance(x,y,-.28f,.28f,.28f,-.28f)<.04f;
 	case ICON_LABEL:	// a "T"
 		return inRect(x, y, -0.42f, 0.28f, 0.42f, 0.44f) || inRect(x, y, -0.09f, -0.48f, 0.09f, 0.44f);
 	case ICON_SOUND:	// a speaker and two waves
@@ -334,7 +351,7 @@ ElementKindUsesIcon(int kind)
 bool
 InstUsesEditorIcon(const ObjectInst *inst)
 {
-	return inst && !inst->m_isVehicle && ElementKindUsesIcon(GetSampElementKind(inst));
+	return inst && !inst->m_isVehicle && iconOfInstance(inst)>=0;
 }
 
 void
@@ -396,7 +413,7 @@ RenderElementIcons(void)
 		for(int icon = 0; icon < NUM_ICONS; icon++){
 			rw::SetRenderStatePtr(rw::TEXTURERASTER, gIcons[icon] ? gIcons[icon]->raster : nil);
 			for(ObjectInst *inst : gQueued){
-				if(iconOf(GetSampElementKind(inst)) != icon || !drawsIcon(inst, many))
+				if(iconOfInstance(inst) != icon || !drawsIcon(inst, many))
 					continue;
 				Billboard b;
 				if(billboardFor(inst, &b, 1.0f))

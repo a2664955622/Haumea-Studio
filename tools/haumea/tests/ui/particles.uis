@@ -1,0 +1,95 @@
+# The emitter's game FX data drives actual textured sprites in the viewport.
+open "$UI_FIXTURES/ui_particles.pwn"
+camera 2006 -3020 15 2006 -3000 7
+wait 120
+assert particles.definitions > 0
+assert particles.model 18688 == 1
+assert particles.model 18673 == 1
+assert particles.model 18739 == 1
+assert particles.model 18717 == 1
+assert particles.model_live 18688 > 0
+assert particles.model_live 18673 > 0
+assert particles.model_live 18739 > 0
+assert particles.model_live 18717 > 0
+assert particles.model_drawn 18688 > 0
+assert particles.model_drawn 18673 > 0
+assert particles.model_drawn 18739 > 0
+assert particles.model_drawn 18717 > 0
+# Particle-only objects remain pickable through their emitter icon.
+click_object model=18688
+assert selected.model == 18688
+key H
+wait 5
+assert particles.model 18688 == 0
+assert particles.model_live 18688 == 0
+assert particles.model 18673 == 1
+key Alt+H
+wait 60
+assert particles.model 18688 == 1
+assert particles.model_live 18688 > 0
+# Two copies of one model have independent systems. Delete only one copy.
+click_object model=18688
+assert selected == 1
+key Ctrl+D
+wait 60
+assert particles.model 18688 == 2
+key Delete
+wait 5
+assert particles.model 18688 == 1
+key Ctrl+Z
+wait 60
+assert particles.model 18688 == 2
+key Ctrl+Y
+wait 5
+assert particles.model 18688 == 1
+click_object model=18688
+key Delete
+wait 5
+assert particles.model 18688 == 0
+assert particles.model_live 18688 == 0
+key Ctrl+Z
+wait 60
+assert particles.model 18688 == 1
+assert particles.model_live 18688 > 0
+# Preview is optional, without changing the exported objects.
+shortcut window_view
+wait 5
+click_item 'View' 'Particle effects'
+wait 5
+assert particles.systems == 0
+assert particles.live == 0
+assert pawn_contains 'CreateObject(18688,'
+click_item 'View' 'Particle effects'
+wait 60
+assert particles.model 18688 == 1
+# Player view must also filter a particle object's virtual world.
+click_object model=18688
+shortcut window_object_info
+wait 5
+click_item 'Object Info' 'Position & Rotation'
+click_item 'Object Info' 'World & streaming'
+set_item 'Object Info' 'Virtual world' '1'
+close_popup
+click_object model=18673
+shortcut player_view
+wait 5
+assert particles.model 18688 == 0
+assert particles.model 18673 == 1
+shortcut player_view
+wait 30
+assert particles.model 18688 == 1
+click_object model=18688
+set_item 'Object Info' 'Virtual world' '-1'
+move 800 400
+key Ctrl+S
+wait 5
+reopen
+wait 90
+assert objects == 4
+assert particles.model 18688 == 1
+assert particles.model 18673 == 1
+assert particles.model 18739 == 1
+assert particles.model 18717 == 1
+assert particles.model_live 18688 > 0
+assert pawn_contains 'CreateObject(18688,'
+assert pawn_contains 'CreateObject(18739,'

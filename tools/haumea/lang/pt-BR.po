@@ -1341,6 +1341,9 @@ msgstr "Ângulo"
 msgid "Angle step"
 msgstr "Passo do ângulo"
 
+msgid "Animate fire, smoke, water and other particle objects in the viewport."
+msgstr "Anima fogo, fumaça, água e outros objetos de partículas na visualização 3D."
+
 msgid "Animated"
 msgstr "Animado"
 
@@ -6101,6 +6104,9 @@ msgstr "Paraquedas"
 msgid "Parachute opening"
 msgstr "Paraquedas abrindo"
 
+msgid "Particle effects"
+msgstr "Efeitos de partículas"
+
 msgid ""
 "Parts of the objects below the water's surface (a rock's\n"
 "wide base, a pier's legs) aren't drawn, as the radar shows the water there."
@@ -7025,6 +7031,9 @@ msgstr "Substitua este documento pelo código gerado do mapa. Edições manuais 
 msgid "Replace this group's zones"
 msgstr "Substituir as zonas deste grupo"
 
+msgid "Replay particles"
+msgstr "Reiniciar partículas"
+
 msgid "Report"
 msgstr "Relatório"
 
@@ -7088,6 +7097,9 @@ msgstr "Reiniciar e descartar alterações"
 
 msgid "Restart now"
 msgstr "Reiniciar agora"
+
+msgid "Restart the selected particle emitters, including one-shot effects such as explosions."
+msgstr "Reinicia os emissores de partículas selecionados, incluindo efeitos únicos, como explosões."
 
 msgid "Restarts Haumea and reloads the game files from disk."
 msgstr "Reinicia o Haumea e recarrega os arquivos do jogo do disco."

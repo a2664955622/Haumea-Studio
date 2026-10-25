@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "particles.h"
 #include "documentxml.h"
 #include "coordinatepin.h"
 #include "layoutpaths.h"
@@ -836,6 +837,19 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		}
 		why = "missing catalog glyphs: " + std::to_string(count);
 		return compare(count, arg(1), atof(arg(2).c_str()));
+	}
+	if(what=="particles.model" || what=="particles.model_live" || what=="particles.model_drawn"){
+		int kind=what=="particles.model"?0:what=="particles.model_live"?1:2;
+		int count=ParticlePreview::CountForModel(atoi(arg(1).c_str()),kind);
+		why=what+" is "+std::to_string(count);
+		return compare(count,arg(2),atof(arg(3).c_str()));
+	}
+	if(what.compare(0,10,"particles.") == 0){
+		const auto &stats=ParticlePreview::GetStats();
+		int value=what=="particles.systems"?stats.systems:what=="particles.live"?stats.live:
+			what=="particles.drawn"?stats.drawn:what=="particles.missing"?stats.missing:stats.definitions;
+		why=what+" is "+std::to_string(value);
+		return compare(value,arg(1),atof(arg(2).c_str()));
 	}
 	if(what == "frame_limit" || what == "vsync" || what == "render_fog_start"){
 		double value = what == "frame_limit" ? gFrameLimit : what == "vsync" ? (gVSync ? 1 : 0) : TheCamera.m_rwcam->fogPlane;

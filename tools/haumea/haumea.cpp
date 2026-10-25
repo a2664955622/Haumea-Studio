@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "particles.h"
 #include "coordinatepin.h"
 #include "layoutpaths.h"
 #include "alignmentmath.h"
@@ -3406,6 +3407,7 @@ renderWorld(void)
 	RenderTransparent();
 	if(gRenderLightEffects)
 		Effects::RenderLights();
+	ParticlePreview::Render(timeStep);
 
 	if(gPlaceMode && GetSpawnObjectId() >= 0){
 		ImGuiIO &io = ImGui::GetIO();
