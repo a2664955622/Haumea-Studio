@@ -1,7 +1,9 @@
-# Windows > Namaka: it finds Python 3.14, installs from the bundle offline,
+# Windows > Extensions > Namaka: it finds Python 3.14, installs from the bundle offline,
 # copies the MCP command, and uninstalls. The runner makes the bundle and
 # sets HAUMEA_NAMAKA_BUNDLE/PYTHON (skipped without NAMAKA_WHEELHOUSE).
 click_item '*' 'Windows'
+wait 3
+click_item '*' 'Extensions'
 wait 3
 click_item '*' 'Namaka'
 wait 5

@@ -8231,8 +8231,8 @@ uiPerformancePreferences(void)
 static void
 uiPreferencesWindow(void)
 {
-	// Wide enough for every tab, Privacy and Namaka at the end included.
-	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 52.0f, ImGui::GetFontSize() * 32.0f), ImGuiCond_FirstUseEver);
+	// Leave room for translated tab names, including Privacy and Namaka.
+	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 62.0f, ImGui::GetFontSize() * 32.0f), ImGuiCond_FirstUseEver);
 	uiNextPanelSizeConstraints();
 	if(!ImGui::Begin(LI(ICON_FA_GEAR, "Preferences"), &showPreferencesWindow)){
 		ImGui::End();
