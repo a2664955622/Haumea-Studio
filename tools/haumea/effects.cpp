@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "playerview.h"
 #include <algorithm>
 #include <string>
 #include <unordered_map>
@@ -182,6 +183,9 @@ RenderLights(void)
 
 	for(CPtrNode *p = instances.first; p; p = p->next){
 		ObjectInst *inst = (ObjectInst*)p->item;
+		if(inst->m_isDeleted || inst->m_editorHidden || PlayerViewHides(inst) ||
+		   !AttachmentWorkspaceShowsInstance(inst))
+			continue;
 		ObjectDef *obj = GetObjectDef(inst->m_objectId);
 		if(obj == nil)
 			continue;
@@ -327,6 +331,9 @@ Render(void)
 {
 	for(CPtrNode *p = instances.first; p; p = p->next){
 		ObjectInst *inst = (ObjectInst*)p->item;
+		if(inst->m_isDeleted || inst->m_editorHidden || PlayerViewHides(inst) ||
+		   !AttachmentWorkspaceShowsInstance(inst))
+			continue;
 		ObjectDef *obj = GetObjectDef(inst->m_objectId);
 		if(obj == nil)
 			continue;
