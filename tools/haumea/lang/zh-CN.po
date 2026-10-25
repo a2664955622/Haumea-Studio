@@ -8168,8 +8168,6 @@ msgstr "该文件夹不存在。"
 msgid "That has no x, y and z in it."
 msgstr "其中没有 x、y 和 z。"
 
-msgid "That would attach an object to itself"
-msgstr "这会把物体附加到它自身"
 
 msgid "That's the game's own data. Pick a server's scriptfiles/NPCs/nodes."
 msgstr "那是游戏自带的数据。请选择某个服务器的 scriptfiles/NPCs/nodes。"
@@ -9873,3 +9871,155 @@ msgstr "|  自定义模型：%d"
 
 msgid "~n~ new line, ~r~ ~g~ ~b~ ~y~ ~p~ ~w~ ~l~ colours, ~h~ lighter, _ blank"
 msgstr "~n~ 换行，~r~ ~g~ ~b~ ~y~ ~p~ ~w~ ~l~ 颜色，~h~ 更亮，_ 空格"
+
+#, c-format
+msgid "%s is attached to a target that can't be used by Pawn."
+msgstr "%s 附加到了 Pawn 无法使用的目标。"
+
+#, c-format
+msgid "%s shares player attachment slot %d with %s."
+msgstr "%s 与 %s 共用了玩家附件槽位 %d。"
+
+#, c-format
+msgid "%s uses a player bone attachment, but its target isn't a player or NPC."
+msgstr "%s 使用了玩家骨骼附件，但目标不是玩家或 NPC。"
+
+msgid "Add selected model"
+msgstr "添加所选模型"
+
+msgid "Attach to player"
+msgstr "附加到玩家"
+
+#, c-format
+msgid "Attached to player preview (skin %d)"
+msgstr "已附加到玩家预览（皮肤 %d）"
+
+msgid "Attachment Workspace"
+msgstr "附件工作区"
+
+msgid "Bone"
+msgstr "骨骼"
+
+msgid "Browse models"
+msgstr "浏览模型"
+
+msgid "Choose an object model in the browser first."
+msgstr "请先在浏览器中选择物体模型。"
+
+msgid "Code target"
+msgstr "代码目标"
+
+msgid "Could not attach this object to that target."
+msgstr "无法将此物体附加到该目标。"
+
+msgid "Could not attach to the selected target."
+msgstr "无法附加到所选目标。"
+
+msgid "Creates a player bone attachment and opens its preview workspace."
+msgstr "创建玩家骨骼附件并打开其预览工作区。"
+
+msgid "Edit in attachment workspace"
+msgstr "在附件工作区中编辑"
+
+msgid "Focus target"
+msgstr "聚焦目标"
+
+msgid "Generated Pawn code targets only the selected server."
+msgstr "生成的 Pawn 代码仅面向所选服务器。"
+
+msgid "Head"
+msgstr "头部"
+
+msgid "Isolated void view"
+msgstr "独立空场景视图"
+
+msgid "Jaw"
+msgstr "下颌"
+
+msgid "Left calf"
+msgstr "左小腿"
+
+msgid "Left clavicle"
+msgstr "左锁骨"
+
+msgid "Left foot"
+msgstr "左脚"
+
+msgid "Left forearm"
+msgstr "左前臂"
+
+msgid "Left hand"
+msgstr "左手"
+
+msgid "Left thigh"
+msgstr "左大腿"
+
+msgid "Left upper arm"
+msgstr "左上臂"
+
+msgid "Material colour 1"
+msgstr "材质颜色 1"
+
+msgid "Material colour 2"
+msgstr "材质颜色 2"
+
+msgid "Neck"
+msgstr "颈部"
+
+msgid "No attachment target"
+msgstr "没有附件目标"
+
+msgid "Optional material colours for the attached model."
+msgstr "附加模型的可选材质颜色。"
+
+msgid "Player attachment workspace"
+msgstr "玩家附件工作区"
+
+msgid "Player skin"
+msgstr "玩家皮肤"
+
+msgid "Player slot"
+msgstr "玩家槽位"
+
+msgid "Preview skin used to position bone attachments."
+msgstr "用于定位骨骼附件的预览皮肤。"
+
+msgid "Right calf"
+msgstr "右小腿"
+
+msgid "Right clavicle"
+msgstr "右锁骨"
+
+msgid "Right foot"
+msgstr "右脚"
+
+msgid "Right forearm"
+msgstr "右前臂"
+
+msgid "Right hand"
+msgstr "右手"
+
+msgid "Right thigh"
+msgstr "右大腿"
+
+msgid "Right upper arm"
+msgstr "右上臂"
+
+msgid "Scale"
+msgstr "缩放"
+
+msgid "Select an object, player, NPC or vehicle as the target."
+msgstr "选择物体、玩家、NPC 或车辆作为目标。"
+
+msgid "Show only the target and its attachments against an empty background."
+msgstr "仅在空背景中显示目标及其附件。"
+
+msgid "Spine"
+msgstr "脊柱"
+
+#, c-format
+msgid "Target: %s"
+msgstr "目标：%s"
+
+msgid "The player already has 10 attached objects."
+msgstr "玩家已经附加了 10 个物体。"
