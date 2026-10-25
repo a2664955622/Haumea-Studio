@@ -1,5 +1,7 @@
 # Pins, links and exact alignment settings belong to the map's XML.
 open "$UI_FIXTURES/ui_pin_alignment.pwn"
+shortcut window_tools
+wait 5
 click_object model=1271
 click_item 'Tools' 'Coordinate pin'
 click_item 'Tools' 'Pin at selected centre'

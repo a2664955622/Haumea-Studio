@@ -3158,7 +3158,11 @@ uiCommandBar(void)
 				if(ImGui::InputInt("##viewport_interior", &currentArea, 0, 0))
 					currentArea = clamp(currentArea, 0, MAX_INTERIOR_AREA_CODE);
 			}
-			if(isSA() && ImGui::GetContentRegionAvail().x > ImGui::GetFontSize() * 12.0f){
+			float actionWidth = ImGui::CalcTextSize(TI(ICON_FA_FLOPPY_DISK, "Save")).x +
+				ImGui::CalcTextSize(TI(ICON_FA_PLAY, "Test in game")).x +
+				ImGui::GetStyle().FramePadding.x*4.0f + ImGui::GetStyle().ItemSpacing.x*3.0f +
+				ImGui::GetFontSize()*0.7f;
+			if(isSA() && ImGui::GetContentRegionAvail().x >= actionWidth){
 				ImGui::Dummy(ImVec2(ImGui::GetFontSize() * 0.7f, 0));
 				if(ImGui::Button(TI(ICON_FA_FLOPPY_DISK, "Save"))) savePawnMap();
 				if(ImGui::Button(TI(ICON_FA_PLAY, "Test in game"))){
@@ -10038,7 +10042,7 @@ uiObjectFavouritePopup(int objectId)
 		}
 		ImGui::Separator();
 		if(ImGui::MenuItem(_("Find instances"))) uiOpenObjectDiscovery(objectId, false);
-		if(ImGui::MenuItem(_("Similar models"))) uiOpenObjectDiscovery(objectId, true);
+		if(ImGui::MenuItem(_("Find similar models"))) uiOpenObjectDiscovery(objectId, true);
 		ImGui::EndPopup();
 	}
 }
@@ -11947,7 +11951,7 @@ static void
 uiOutlinerObjectMenu(ObjectInst *inst)
 {
 	if(ImGui::MenuItem(_("Find instances"))) uiOpenObjectDiscovery(inst->m_objectId, false);
-	if(ImGui::MenuItem(_("Similar models"))) uiOpenObjectDiscovery(inst->m_objectId, true);
+	if(ImGui::MenuItem(_("Find similar models"))) uiOpenObjectDiscovery(inst->m_objectId, true);
 	ImGui::Separator();
 	if(!IsInstInIplMapDocument(inst)){
 		if(ImGui::MenuItem(_("Focus"))) inst->JumpTo();

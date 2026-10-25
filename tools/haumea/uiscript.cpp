@@ -97,6 +97,8 @@ struct UiItem {
 };
 static std::vector<UiItem> gItems, gPrevItems;
 static std::map<ImGuiID, size_t> gItemIndex;
+// Tabs report their labels before ItemAdd; keep those labels for the later hook.
+static std::map<ImGuiID, std::string> gItemLabels;
 
 static std::string
 visibleTitle(const char *name)
@@ -130,6 +132,11 @@ ImGuiTestEngineHook_ItemAdd(ImGuiContext *ctx, ImGuiID id, const ImRect &bb, con
 		item.windowName = w->Name;
 		item.rootWindowName = w->RootWindow ? w->RootWindow->Name : w->Name;
 	}
+	auto label = gItemLabels.find(id);
+	if(label != gItemLabels.end()){
+		item.rawLabel = label->second;
+		item.label = visibleTitle(item.rawLabel.c_str());
+	}
 	gItemIndex[id] = gItems.size();
 	gItems.push_back(item);
 }
@@ -139,6 +146,7 @@ ImGuiTestEngineHook_ItemInfo(ImGuiContext*, ImGuiID id, const char *label, ImGui
 {
 	if(!gActive || label == nil)
 		return;
+	gItemLabels[id] = label;
 	std::map<ImGuiID, size_t>::iterator it = gItemIndex.find(id);
 	if(it != gItemIndex.end()){
 		gItems[it->second].label = visibleTitle(label);
@@ -161,10 +169,21 @@ ImGuiTestEngine_FindItemDebugLabel(ImGuiContext*, ImGuiID)
 static std::string
 plainLabel(const std::string &s)
 {
-	// Icon glyphs, "+" and similar marks before the words.
+	// Font Awesome uses private-use characters. Other UTF-8 characters can
+	// be the words themselves (Chinese, or an accented first letter).
 	size_t i = 0;
-	while(i < s.size() && ((unsigned char)s[i] >= 0x80 || !isalnum((unsigned char)s[i])))
-		i++;
+	while(i < s.size()){
+		unsigned char ch = (unsigned char)s[i];
+		if(ch < 0x80){
+			if(isalnum(ch)) break;
+			i++;
+		}else{
+			unsigned int cp;
+			int length = ImTextCharFromUtf8(&cp, s.c_str() + i, s.c_str() + s.size());
+			if(length <= 0 || cp < 0xE000 || cp > 0xF8FF) break;
+			i += length;
+		}
+	}
 	return s.substr(i);
 }
 
@@ -298,8 +317,13 @@ findItem(const std::string &window, const std::string &label, int nth)
 				return &it;
 			continue;
 		}
-		if(nameMatches(it.rawLabel, label, false))
-			return &it;
+		if(nameMatches(it.rawLabel, label, false)){
+			// Window diagnostics cover the whole panel. Prefer its dock tab
+			// (or another actual control) when a script clicks a panel's name.
+			if(it.id != ImHashStr(it.windowName.c_str()))
+				return &it;
+			contains = &it;
+		}
 		if(!contains && nameMatches(it.rawLabel, label, true))
 			contains = &it;
 	}
@@ -696,7 +720,12 @@ windowOpen(const std::string &title)
 	ImGuiContext &g = *GImGui;
 	for(int i = 0; i < g.Windows.Size; i++){
 		ImGuiWindow *w = g.Windows[i];
-		if(w->WasActive && !w->Hidden && nameMatches(w->Name, title, false))
+		// A panel in an inactive dock tab is still open.
+		bool open = !w->Hidden;
+#ifdef IMGUI_HAS_DOCK
+		open |= w->DockIsActive;
+#endif
+		if(w->WasActive && open && nameMatches(w->Name, title, false))
 			return true;
 	}
 	return false;
@@ -776,6 +805,25 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 	if(what == "fog_enabled"){
 		why = gEnableFog ? "fog enabled" : "fog disabled";
 		return compare(gEnableFog ? 1 : 0, arg(1), atof(arg(2).c_str()));
+	}
+	if(what == "missing_catalog_glyphs"){
+		std::vector<unsigned int> codepoints;
+		I18nCatalogCodepoints(codepoints);
+		ImFont *font = ImGui::GetIO().Fonts->Fonts[0];
+#if IMGUI_VERSION_NUM >= 19200
+		ImFontBaked *baked = font->GetFontBaked(font->LegacySize);
+#else
+		ImFont *baked = font;
+#endif
+		int count = 0;
+		for(unsigned int cp : codepoints){
+			if(cp >= 0x20 && baked->FindGlyphNoFallback((ImWchar)cp) == nil){
+				say("  missing catalog glyph U+%04X", cp);
+				count++;
+			}
+		}
+		why = "missing catalog glyphs: " + std::to_string(count);
+		return compare(count, arg(1), atof(arg(2).c_str()));
 	}
 	if(what == "frame_limit" || what == "vsync" || what == "render_fog_start"){
 		double value = what == "frame_limit" ? gFrameLimit : what == "vsync" ? (gVSync ? 1 : 0) : TheCamera.m_rwcam->fogPlane;
@@ -1570,6 +1618,7 @@ UiScriptTick(void)
 	gPrevItems.swap(gItems);
 	gItems.clear();
 	gItemIndex.clear();
+	gItemLabels.clear();
 	gFrame++;
 	if(gFrame < 30)
 		return;	// let the first frames settle

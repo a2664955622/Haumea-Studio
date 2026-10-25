@@ -5,6 +5,12 @@ wait 5
 click_object model=1634
 wait 5
 assert selected == 1
+# An already selected object still has a menu under its gizmo.
+click_object model=1634 right jitter
+wait 3
+assert item '*' 'Isolate'
+close_popup
+wait 3
 click_object model=19353 right jitter
 wait 5
 assert selected == 1

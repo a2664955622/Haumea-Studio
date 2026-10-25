@@ -2,6 +2,8 @@
 open "$UI_FIXTURES/ui_floor.pwn"
 click_item '*' 'Windows'
 wait 3
+click_item '*' 'Game tools'
+wait 3
 click_item '*' 'Interiors'
 wait 10
 assert window "Interiors"

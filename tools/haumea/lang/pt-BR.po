@@ -308,6 +308,10 @@ msgid "%d selected world object(s) will be replaced in the map."
 msgstr "%d objeto(s) do mundo selecionado(s) serão substituídos no mapa."
 
 #, c-format
+msgid "%d selected · Drag gizmo to move or rotate · %s deletes."
+msgstr "%d selecionados · Arraste o gizmo para mover ou girar · %s exclui."
+
+#, c-format
 msgid "%d selected, %d of this kind"
 msgstr "%d selecionados, %d deste tipo"
 
@@ -486,6 +490,10 @@ msgstr "%s  modelo %d"
 #, c-format
 msgid "%s (missing)"
 msgstr "%s (ausente)"
+
+#, c-format
+msgid "%s Browse · %s Map objects · %s Save · %s Shortcuts"
+msgstr "%s Navegar · %s Objetos do mapa · %s Salvar · %s Atalhos"
 
 #, c-format
 msgid "%s The update installs the next time Haumea starts."
@@ -1710,6 +1718,9 @@ msgstr ""
 msgid "Brush mode"
 msgstr "Modo pincel"
 
+msgid "Brush with this object"
+msgstr "Pintar com este objeto"
+
 msgid "Build an NPC path, one point at a time."
 msgstr "Crie um caminho para NPCs, um ponto de cada vez."
 
@@ -1920,6 +1931,9 @@ msgstr "Escolher textura do material"
 msgid "Choose Paths in the browser, then place the points of a route."
 msgstr "Escolha Caminhos no navegador e coloque os pontos de uma rota."
 
+msgid "Choose Place, then click the world. Double-click a tile also works."
+msgstr "Escolha Colocar e clique no mundo. Um clique duplo na miniatura também funciona."
+
 msgid "Choose TXD..."
 msgstr "Escolher TXD..."
 
@@ -1934,6 +1948,12 @@ msgstr "Escolha uma área de trabalho para começar."
 
 msgid "Choose an image"
 msgstr "Escolha uma imagem"
+
+msgid "Choose an object, then click the world to place it."
+msgstr "Escolha um objeto e clique no mundo para colocá-lo."
+
+msgid "Choose or create a workspace."
+msgstr "Escolha ou crie um workspace."
 
 msgid "Choose the GTA San Andreas folder"
 msgstr "Escolha a pasta do GTA San Andreas"
@@ -2054,6 +2074,10 @@ msgstr ""
 "Clique num nó e depois noutro para ligá-los.\n"
 "Clicar em dois nós ligados os desliga. Clique direito ou Esc para parar."
 
+#, c-format
+msgid "Click or drag to paint · %s stops."
+msgstr "Clique ou arraste para pintar · %s encerra."
+
 msgid ""
 "Click points in the world one after another.\n"
 "Right-click or Esc stops."
@@ -2092,6 +2116,10 @@ msgstr "Clicar através dos travados"
 
 msgid "Click to place the pin. Esc cancels."
 msgstr "Clique para posicionar o pin. Esc cancela."
+
+#, c-format
+msgid "Click to place · Shift+click repeats · %s stops."
+msgstr "Clique para colocar · Shift+clique repete · %s encerra."
 
 msgid "Click to place. Q/E or the wheel turn it, Esc stops."
 msgstr "Clique para colocar. Q/E ou a roda giram, Esc para."
@@ -2192,6 +2220,9 @@ msgstr "Contexto"
 
 msgid "Continue"
 msgstr "Continuar"
+
+msgid "Continue without workspace"
+msgstr "Continuar sem workspace"
 
 msgid "Continuous buzz"
 msgstr "Zumbido contínuo"
@@ -2439,6 +2470,9 @@ msgstr "Batida C"
 msgid "Crash and error reports"
 msgstr "Relatórios de travamento e erro"
 
+msgid "Create a workspace folder."
+msgstr "Criar uma pasta de workspace."
+
 msgid "Create workspace"
 msgstr "Criar workspace"
 
@@ -2523,6 +2557,9 @@ msgstr "DFF e TXD são obrigatórios."
 
 msgid "Damageable"
 msgstr "Destrutível"
+
+msgid "Dark"
+msgstr "Escuro"
 
 msgid "Date disco"
 msgstr "Encontro: discoteca"
@@ -2764,6 +2801,10 @@ msgstr "Arraste para mover a ponta"
 msgid "Drag to move pin"
 msgstr "Arraste para mover o pin"
 
+#, c-format
+msgid "Drag to move · drag a corner to resize · %s stops."
+msgstr "Arraste para mover · arraste um canto para redimensionar · %s encerra."
+
 msgid "Drag to move, wheel to zoom, double-click to fly there."
 msgstr "Arraste para mover, roda para zoom, clique duplo para voar até lá."
 
@@ -2799,6 +2840,10 @@ msgstr "Distância de desenho"
 #, c-format
 msgid "Draw distance %.0f"
 msgstr "Distância de desenho %.0f"
+
+#, c-format
+msgid "Draw distance %.0f  ·  LOD %s"
+msgstr "Distância de desenho %.0f  ·  LOD %s"
 
 msgid "Draw distance (m)"
 msgstr "Distância de desenho (m)"
@@ -2894,6 +2939,9 @@ msgstr "Cada ponto é um textdraw: o SA-MP permite 2048 globais e 256 por jogado
 
 msgid "Edit"
 msgstr "Editar"
+
+msgid "Edit Pawn · Ctrl+S saves · Ctrl+F searches."
+msgstr "Edite Pawn · Ctrl+S salva · Ctrl+F busca."
 
 msgid "Edit all selected"
 msgstr "Editar todos os selecionados"
@@ -3229,6 +3277,9 @@ msgstr "Encontre-o em Navegador de objetos > Modelos personalizados e coloque-o 
 msgid "Find objects by model or TXD"
 msgstr "Achar objetos por modelo ou TXD"
 
+msgid "Find similar models"
+msgstr "Buscar modelos semelhantes"
+
 msgid "Fire"
 msgstr "Fogo"
 
@@ -3327,6 +3378,9 @@ msgstr "Acompanhar"
 
 msgid "Follow a path"
 msgstr "Seguir um caminho"
+
+msgid "Follow ground"
+msgstr "Seguir o chão"
 
 msgid "Follow slope"
 msgstr "Seguir a inclinação"
@@ -3450,6 +3504,9 @@ msgstr "Objeto do mundo do GTA"
 
 msgid "Game HUD"
 msgstr "HUD do jogo"
+
+msgid "Game folder"
+msgstr "Pasta do jogo"
 
 msgid "Game nodes"
 msgstr "Nós do jogo"
@@ -3827,6 +3884,12 @@ msgstr "Segure Alt ao arrastar para posicionar um painel livremente."
 msgid "Hold Shift while dragging the gizmo to move in fixed steps."
 msgstr "Segure Shift ao arrastar o gizmo para mover em passos fixos."
 
+msgid "Hold Shift while moving with the magnet on."
+msgstr "Segure Shift ao mover com o ímã ativado."
+
+msgid "Hold Shift while rotating with the magnet on."
+msgstr "Segure Shift ao girar com o ímã ativado."
+
 msgid ""
 "Hold it and drag to look, and fly with W/A/S/D (Q/E down and up) while it's held;\n"
 "a click without dragging still selects."
@@ -3906,6 +3969,10 @@ msgstr "Enorme (mais de 50 m)"
 
 msgid "ID"
 msgstr "ID"
+
+#, c-format
+msgid "ID %d"
+msgstr "ID %d"
 
 #, c-format
 msgid "ID %d is already a game model"
@@ -4160,6 +4227,9 @@ msgstr "Ir para"
 msgid "Katana"
 msgstr "Katana"
 
+msgid "Keep dragged objects on the ground surface."
+msgstr "Manter os objetos arrastados na superfície do chão."
+
 msgid "Keep original"
 msgstr "Manter o original"
 
@@ -4311,7 +4381,7 @@ msgid "Lift bell"
 msgstr "Sino do elevador"
 
 msgid "Light"
-msgstr "Leve"
+msgstr "Claro"
 
 msgid "Light (red dot)"
 msgstr "Luz (ponto vermelho)"
@@ -4333,6 +4403,9 @@ msgstr "Limites"
 
 msgid "Line"
 msgstr "Linha"
+
+msgid "Line up edges and faces with nearby objects while moving."
+msgstr "Alinhar bordas e faces com os objetos próximos ao mover."
 
 msgid "Line width"
 msgstr "Espessura da linha"
@@ -4621,6 +4694,9 @@ msgstr ""
 msgid "Match"
 msgstr "Comparar"
 
+msgid "Match the object's angle to the ground slope. Enable Follow ground in More on the toolbar."
+msgstr "Alinhar o ângulo do objeto à inclinação do chão. Ative Seguir o chão em Mais na barra de ferramentas."
+
 msgid "Matches the display refresh rate to reduce tearing. Turn off for uncapped FPS."
 msgstr "Sincroniza com a taxa de atualização da tela. Desative para não limitar o FPS."
 
@@ -4816,8 +4892,14 @@ msgstr "Saco de dinheiro"
 msgid "More"
 msgstr "Mais"
 
+msgid "More actions"
+msgstr "Mais ações"
+
 msgid "More bands blend more smoothly. Each band is a textdraw."
 msgstr "Mais faixas misturam mais suavemente. Cada faixa é um textdraw."
+
+msgid "More display and snapping options"
+msgstr "Mais opções de exibição e ajuste"
 
 msgid "Motor, stopping"
 msgstr "Motor parando"
@@ -5093,6 +5175,9 @@ msgstr "Novo mapa"
 msgid "New objects sit on the ground under the cursor."
 msgstr "Novos objetos ficam no chão sob o cursor."
 
+msgid "New objects sit on the object under the cursor."
+msgstr "Novos objetos ficam sobre o objeto sob o cursor."
+
 msgid "New path"
 msgstr "Novo caminho"
 
@@ -5104,6 +5189,9 @@ msgstr "Novo arquivo de textdraws"
 
 msgid "New textdraws"
 msgstr "Novos textdraws"
+
+msgid "New workspace"
+msgstr "Novo workspace"
 
 msgid "New!"
 msgstr "Novo!"
@@ -5437,6 +5525,13 @@ msgstr "Informações do objeto"
 msgid "Object anchor"
 msgstr "Referência do objeto"
 
+msgid "Object snap"
+msgstr "Ajustar a objetos"
+
+#, c-format
+msgid "Object snap (%s) uses this distance."
+msgstr "O ajuste a objetos (%s) usa esta distância."
+
 msgid "Object snap mode disabled"
 msgstr "Encaixe em objetos desligado"
 
@@ -5594,8 +5689,14 @@ msgstr "Abrir um mapa..."
 msgid "Open a textdraw file"
 msgstr "Abrir um arquivo de textdraws"
 
+msgid "Open folder..."
+msgstr "Abrir pasta..."
+
 msgid "Open fonts folder"
 msgstr "Abrir pasta de fontes"
+
+msgid "Open last workspace at startup"
+msgstr "Abrir o último workspace ao iniciar"
 
 msgid "Open map"
 msgstr "Abrir mapa"
@@ -5893,6 +5994,9 @@ msgstr "Escolha uma biblioteca"
 msgid "Pick a path, or type a new name and place its points."
 msgstr "Escolha um caminho, ou digite um nome novo e coloque os pontos dele."
 
+msgid "Pick an object, then click in the world to place it."
+msgstr "Escolha um objeto e clique no mundo para colocá-lo."
+
 msgid "Pick endpoint"
 msgstr "Escolher destino"
 
@@ -5995,6 +6099,9 @@ msgstr "Posiciona o pin no meio dos dois pontos escolhidos, por exemplo as borda
 #, c-format
 msgid "Placed %s"
 msgstr "%s colocado"
+
+msgid "Placement"
+msgstr "Colocação"
 
 msgid "Places"
 msgstr "Lugares"
@@ -6888,6 +6995,9 @@ msgstr "Os clientes SA-MP 0.3.DL e open.mp baixam modelos personalizados."
 msgid "SA-MP chat"
 msgstr "Chat do SA-MP"
 
+msgid "SA-MP client not found"
+msgstr "Cliente SA-MP não encontrado"
+
 msgid "SA-MP ignores material text calls with empty text."
 msgstr "O SA-MP ignora chamadas de texto de material com texto vazio."
 
@@ -6902,6 +7012,9 @@ msgstr "Só texturas do SA-MP"
 
 msgid "SA-MP's defaults"
 msgstr "Os padrões do SA-MP"
+
+msgid "SA-MP's own objects won't show without its client files."
+msgstr "Os objetos do SA-MP não aparecem sem os arquivos do cliente."
 
 msgid "SELECT"
 msgstr "SELECIONAR"
@@ -7390,6 +7503,9 @@ msgstr "Mostrar guias:"
 msgid "Show material indexes"
 msgstr "Mostrar índices dos materiais"
 
+msgid "Show object edges, including invisible and see-through objects."
+msgstr "Mostrar as bordas dos objetos, incluindo os invisíveis e transparentes."
+
 msgid "Show or hide the group in the editor"
 msgstr "Mostrar ou esconder o grupo no editor"
 
@@ -7705,6 +7821,9 @@ msgstr "Ponto inicial"
 msgid "Start the route at the NPC"
 msgstr "Começar a rota no NPC"
 
+msgid "Start with a category."
+msgstr "Comece por uma categoria."
+
 msgid "Starting"
 msgstr "Iniciando"
 
@@ -7849,6 +7968,9 @@ msgstr "Sweet"
 msgid "Switch Workspace..."
 msgstr "Trocar workspace..."
 
+msgid "Switch between tiles and list. Right-click for tile size."
+msgstr "Alternar entre miniaturas e lista. Clique com o botão direito para ajustar o tamanho."
+
 msgid "Switch local / world axes"
 msgstr "Alternar eixos locais / do mundo"
 
@@ -7870,6 +7992,10 @@ msgstr "TXD"
 #, c-format
 msgid "TXD \"%s\" was not found; the original texture stays."
 msgstr "O TXD \"%s\" não foi encontrado; a textura original fica."
+
+#, c-format
+msgid "TXD %s"
+msgstr "TXD %s"
 
 msgid "TXD contains"
 msgstr "TXD contém"
@@ -8261,6 +8387,9 @@ msgstr "Os prefabs do workspace são compartilhados com todos que mapeiam para e
 
 msgid "The workspace's prefabs folder"
 msgstr "A pasta de prefabs do workspace"
+
+msgid "Theme"
+msgstr "Tema"
 
 msgid "Then click on an image layer on the canvas (Esc stops)."
 msgstr "Depois clique numa camada de imagem na tela (Esc cancela)."
@@ -9737,6 +9866,10 @@ msgstr "{RRGGBB} muda a cor daí em diante, como no jogo."
 
 msgid "{RRGGBB} switches color (opaque) for the following text. Enter starts a new line."
 msgstr "{RRGGBB} muda a cor (opaca) do texto seguinte. Enter começa uma nova linha."
+
+#, c-format
+msgid "|  Custom models: %d"
+msgstr "|  Modelos personalizados: %d"
 
 msgid "~n~ new line, ~r~ ~g~ ~b~ ~y~ ~p~ ~w~ ~l~ colours, ~h~ lighter, _ blank"
 msgstr "~n~ nova linha, ~r~ ~g~ ~b~ ~y~ ~p~ ~w~ ~l~ cores, ~h~ mais claro, _ espaço"

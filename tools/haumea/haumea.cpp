@@ -1977,7 +1977,10 @@ handleTool(void)
 	if(CoordinatePinHandleViewport()) return;
 	// Don't process viewport clicks when ImGui wants the mouse
 	ImGuiIO &io = ImGui::GetIO();
-	if(io.WantCaptureMouse || gGizmoHovered || gGizmoUsing || gRectSelectActive)
+	// The gizmo reserves left clicks; a stationary right-click still opens
+	// the object's menu, including when it is already selected.
+	bool gizmoContextClick = gGizmoHovered && CPad::IsMButtonClicked(3);
+	if(((io.WantCaptureMouse || gGizmoHovered) && !gizmoContextClick) || gGizmoUsing || gRectSelectActive)
 		return;
 
 	// Prefab placement mode intercepts all clicks

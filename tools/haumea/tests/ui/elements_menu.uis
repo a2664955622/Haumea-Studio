@@ -1,5 +1,7 @@
 # Feature navigation and complete setup panels; choosing a type does not place it.
 open "$UI_FIXTURES/ui_floor.pwn"
+shortcut window_browser
+shortcut window_object_info
 wait 40
 assert window 'Object Browser'
 click_item 'Object Browser' '##browser_source'

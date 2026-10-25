@@ -11,20 +11,8 @@ msgstr "Restaura o navegador à esquerda e as informações do objeto à direita
 msgid "Step snapping"
 msgstr "Ajustar por incrementos"
 
-msgid "Choose an element, then click in the world. Esc stops."
-msgstr "Escolha um elemento e clique no mundo. Esc para encerrar."
-
 msgid "%.0f FPS"
 msgstr "%.0f FPS"
-
-msgid "Game draw distance"
-msgstr "Distância de visão do jogo"
-
-msgid "Uses San Andreas model distances and the weather's view range.\nTurn off for extended editor distances."
-msgstr "Usa as distâncias dos modelos de San Andreas e o alcance de visão do clima.\nDesative para ampliar as distâncias no editor."
-
-msgid "View range: %.0f m"
-msgstr "Alcance de visão: %.0f m"
 
 msgid "Performance"
 msgstr "Desempenho"
@@ -55,9 +43,6 @@ msgstr "Sincroniza com a taxa de atualização da tela. Desative para não limit
 
 msgid "Distance fog"
 msgstr "Névoa à distância"
-
-msgid "Softens the edge of the chosen stream distance."
-msgstr "Suaviza o limite da distância de streaming escolhida."
 
 msgid "Previews virtual worlds, interiors, areas and client object limits.\nAll elements keep the stream distance set in Performance. Nothing is saved."
 msgstr "Prévia dos mundos virtuais, interiores, áreas e limites de objetos do cliente.\nTodos os elementos usam a distância definida em Desempenho. Nada é salvo."
@@ -169,3 +154,136 @@ msgstr "Nenhum ponto ainda. Escolha Caminhos no navegador para adicioná-los."
 
 msgid "Map elements"
 msgstr "Elementos do mapa"
+
+#, c-format
+msgid "%d selected · Drag gizmo to move or rotate · %s deletes."
+msgstr "%d selecionados · Arraste o gizmo para mover ou girar · %s exclui."
+
+#, c-format
+msgid "%s Browse · %s Map objects · %s Save · %s Shortcuts"
+msgstr "%s Navegar · %s Objetos do mapa · %s Salvar · %s Atalhos"
+
+msgid "Brush with this object"
+msgstr "Pintar com este objeto"
+
+msgid "Choose Place, then click the world. Double-click a tile also works."
+msgstr "Escolha Colocar e clique no mundo. Um clique duplo na miniatura também funciona."
+
+msgid "Choose an object, then click the world to place it."
+msgstr "Escolha um objeto e clique no mundo para colocá-lo."
+
+msgid "Choose or create a workspace."
+msgstr "Escolha ou crie um workspace."
+
+#, c-format
+msgid "Click or drag to paint · %s stops."
+msgstr "Clique ou arraste para pintar · %s encerra."
+
+#, c-format
+msgid "Click to place · Shift+click repeats · %s stops."
+msgstr "Clique para colocar · Shift+clique repete · %s encerra."
+
+msgid "Continue without workspace"
+msgstr "Continuar sem workspace"
+
+msgid "Create a workspace folder."
+msgstr "Criar uma pasta de workspace."
+
+msgid "Dark"
+msgstr "Escuro"
+
+#, c-format
+msgid "Drag to move · drag a corner to resize · %s stops."
+msgstr "Arraste para mover · arraste um canto para redimensionar · %s encerra."
+
+#, c-format
+msgid "Draw distance %.0f  ·  LOD %s"
+msgstr "Distância de desenho %.0f  ·  LOD %s"
+
+msgid "Edit Pawn · Ctrl+S saves · Ctrl+F searches."
+msgstr "Edite Pawn · Ctrl+S salva · Ctrl+F busca."
+
+msgid "Find similar models"
+msgstr "Buscar modelos semelhantes"
+
+msgid "Follow ground"
+msgstr "Seguir o chão"
+
+msgid "Game folder"
+msgstr "Pasta do jogo"
+
+msgid "Hold Shift while moving with the magnet on."
+msgstr "Segure Shift ao mover com o ímã ativado."
+
+msgid "Hold Shift while rotating with the magnet on."
+msgstr "Segure Shift ao girar com o ímã ativado."
+
+#, c-format
+msgid "ID %d"
+msgstr "ID %d"
+
+msgid "Keep dragged objects on the ground surface."
+msgstr "Manter os objetos arrastados na superfície do chão."
+
+msgid "Line up edges and faces with nearby objects while moving."
+msgstr "Alinhar bordas e faces com os objetos próximos ao mover."
+
+msgid "Match the object's angle to the ground slope. Enable Follow ground in More on the toolbar."
+msgstr "Alinhar o ângulo do objeto à inclinação do chão. Ative Seguir o chão em Mais na barra de ferramentas."
+
+msgid "More actions"
+msgstr "Mais ações"
+
+msgid "More display and snapping options"
+msgstr "Mais opções de exibição e ajuste"
+
+msgid "New objects sit on the object under the cursor."
+msgstr "Novos objetos ficam sobre o objeto sob o cursor."
+
+msgid "New workspace"
+msgstr "Novo workspace"
+
+msgid "Object snap"
+msgstr "Ajustar a objetos"
+
+#, c-format
+msgid "Object snap (%s) uses this distance."
+msgstr "O ajuste a objetos (%s) usa esta distância."
+
+msgid "Open folder..."
+msgstr "Abrir pasta..."
+
+msgid "Open last workspace at startup"
+msgstr "Abrir o último workspace ao iniciar"
+
+msgid "Pick an object, then click in the world to place it."
+msgstr "Escolha um objeto e clique no mundo para colocá-lo."
+
+msgid "Placement"
+msgstr "Colocação"
+
+msgid "SA-MP client not found"
+msgstr "Cliente SA-MP não encontrado"
+
+msgid "SA-MP's own objects won't show without its client files."
+msgstr "Os objetos do SA-MP não aparecem sem os arquivos do cliente."
+
+msgid "Show object edges, including invisible and see-through objects."
+msgstr "Mostrar as bordas dos objetos, incluindo os invisíveis e transparentes."
+
+msgid "Start with a category."
+msgstr "Comece por uma categoria."
+
+msgid "Switch between tiles and list. Right-click for tile size."
+msgstr "Alternar entre miniaturas e lista. Clique com o botão direito para ajustar o tamanho."
+
+#, c-format
+msgid "TXD %s"
+msgstr "TXD %s"
+
+msgid "Theme"
+msgstr "Tema"
+
+#, c-format
+msgid "|  Custom models: %d"
+msgstr "|  Modelos personalizados: %d"

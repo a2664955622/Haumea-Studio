@@ -1,0 +1,32 @@
+# Replacing a model is an undoable edit and survives saving and reopening.
+open "$UI_FIXTURES/ui_floor.pwn"
+wait 30
+click_object model=19377
+shortcut window_object_info
+wait 5
+assert selected.model == 19377
+assert item 'Object Info' 'Model ID'
+set_item 'Object Info' 'Model ID' '1271'
+key Enter
+wait 5
+assert selected.model == 1271
+assert pawn_contains 'CreateObject(1271,'
+key Ctrl+Z
+wait 5
+assert selected.model == 19377
+assert pawn_contains 'CreateObject(19377,'
+key Ctrl+Y
+wait 5
+assert selected.model == 1271
+# Unknown IDs leave the existing model intact.
+set_item 'Object Info' 'Model ID' '999999'
+key Enter
+wait 5
+assert selected.model == 1271
+key Ctrl+S
+wait 5
+reopen
+wait 10
+assert objects == 1
+assert pawn_contains 'CreateObject(1271,'
+assert pawn_lacks 'CreateObject(19377,'

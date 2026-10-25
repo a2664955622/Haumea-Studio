@@ -7,6 +7,8 @@ wait 5
 assert selected == 1
 assert keycast_lacks "LMB"
 click_item '*' 'Windows'
+click_item '*' 'Viewport'
+wait 3
 click_item '*' 'Show Pressed Keys'
 wait 5
 key Ctrl+D

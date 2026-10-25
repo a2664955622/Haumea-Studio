@@ -328,13 +328,16 @@ SetupFonts(void)
 			fontSize, &latinCfg, scriptRanges);
 	}
 	if(scriptRanges != nil && eastAsian){
-		// A bundled face when the build ships one, else the system's, which
-		// every desktop has for its own language.
+		// Ship the same CJK face on every platform. System paths are only a
+		// fallback for installations made without the bundled fonts folder.
 		std::string scriptFace;
 		ImU32 scriptFaceNo = 0;
 		char fontRoot[2048];
 		if(GetEditorRootDirectory(fontRoot, sizeof(fontRoot))){
-			const char *paths[] = { "/fonts/NotoSansSC-Regular.ttf", "/../../../fonts/NotoSansSC-Regular.ttf" };
+			const char *paths[] = {
+				"/fonts/NotoSansSC-Regular.otf", "/../../../fonts/NotoSansSC-Regular.otf",
+				"/fonts/NotoSansSC-Regular.ttf", "/../../../fonts/NotoSansSC-Regular.ttf"
+			};
 			for(const char *relative : paths){
 				std::string candidate = std::string(fontRoot) + relative;
 				FILE *f = fopen(candidate.c_str(), "rb");
@@ -349,7 +352,9 @@ SetupFonts(void)
 				{ "C:/Windows/Fonts/simsun.ttc", 0 },	// SimSun
 				{ "/System/Library/Fonts/PingFang.ttc", 0 },	// macOS
 				{ "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", 0 },	// Debian, Ubuntu
-				{ "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc", 0 },	// elsewhere
+				{ "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc", 0 },	// Arch Linux
+				{ "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc", 0 },
+				{ "/usr/share/fonts/wenquanyi/wqy-zenhei/wqy-zenhei.ttc", 0 },
 			};
 			for(const auto &candidate : faces){
 				FILE *f = fopen(candidate.path, "rb");

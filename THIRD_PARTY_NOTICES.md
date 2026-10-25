@@ -21,6 +21,7 @@ reads everything else from your own game folder.
 | LodePNG (in librw) | zlib | Copyright (c) 2005-2020 Lode Vandevenne | https://github.com/lvandeve/lodepng |
 | GLFW (linked into the Windows build, bundled on macOS) | zlib | Copyright (c) 2002-2006 Marcus Geelnard; Copyright (c) 2006-2019 Camilla Löwy | https://www.glfw.org |
 | Inter 4.001 (the UI font, `fonts/Inter-Regular.ttf`) | SIL Open Font License 1.1 | Copyright (c) 2016 The Inter Project Authors | https://github.com/rsms/inter |
+| Noto Sans SC Regular 2.004 (Chinese UI, `fonts/NotoSansSC-Regular.otf`) | SIL Open Font License 1.1 (`fonts/LICENSE-NotoSansSC.txt`) | Copyright (c) 2014-2021 Adobe | https://github.com/notofonts/noto-cjk |
 | Font Awesome Free 6.7.2 (icons, `fonts/fa-solid-900.ttf`) | Font files: SIL Open Font License 1.1; icons: CC BY 4.0 | Copyright (c) Font Awesome (Fonticons, Inc.) | https://fontawesome.com |
 | open.mp SDK tables: animation names (`anim_ids.h`), vehicle colours and components (`vehicle_tables.h`) | MPL-2.0 | open.mp team and contributors | https://github.com/openmultiplayer/open.mp |
 | Liberation Sans, Serif and Mono 2.1.5, Regular and Bold (material text, `fonts/material/Liberation*.ttf`) | SIL Open Font License 1.1 (`fonts/material/LICENSE-Liberation.txt`) | Digitized data copyright (c) 2010 Google Corporation; Copyright (c) 2012 Red Hat, Inc. | https://github.com/liberationfonts/liberation-fonts |
