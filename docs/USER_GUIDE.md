@@ -111,8 +111,37 @@ own settings, then position. World & streaming, attachment, materials (textures,
 and text) and group & note follow, closed until you need them. Select several objects to
 change a field on all of them at once.
 
+To turn original GTA geometry into scripted objects without moving it, use
+**Convert to map object** in Object Info or the object's right-click menu. This preserves
+its position, rotation and materials; saving writes `RemoveBuildingForPlayer` and a
+replacement using the map's Native or Streamer format. The action applies to the selection
+and undoes in one step. To convert every occurrence of a model, use **Find instances**,
+choose the scope, press **Select all**, then **Convert to map object** in Object Info.
+
 For an object in the active map, edit **Model ID** in Object Info to replace its
 model, with undo and redo. Objects linked to an LOD cannot change model this way.
+
+## Particle objects
+
+![Particle preview in Grove Street](images/particle-preview.png)
+
+The Object Browser's **Effects and particles** category includes all 81 SA-MP particle
+objects (IDs 18668–18748). Place them like ordinary objects: fire, smoke, sparks, fountains
+and other effects animate in the viewport. A small emitter icon lets you select, move,
+rotate, duplicate or delete an effect even when its particles are transparent.
+
+**View → Particle effects** turns the preview on or off and remembers the choice. Hiding
+or deleting an object removes its particles immediately; undo restores its emitter.
+**Replay particles** in Object Info or the right-click menu restarts selected emitters,
+including one-shot bursts such as explosions and camera flashes.
+Saving keeps ordinary `CreateObject` / `CreateDynamicObject` calls, so no editor simulation
+code is added to the server script.
+
+The preview reads `models/effects.fxp` and `models/effectsPC.txd` from your chosen game.
+It uses the effect's emission, lifetime, speed, colour, size and sprite definitions.
+Screen refraction/heat haze, scene collisions and trails are not reproduced; this is an
+editor preview, so use **Test in game** to check those effects in the client. The common
+render distance also applies to particles, with a bounded particle budget for dense scenes.
 
 ## Characters, paths and other map elements
 
@@ -220,13 +249,20 @@ A map saved by an earlier build may still hold textdraws. Opening it offers **Mo
 separate file** (`<map>_textdraws.pwn`); save the map afterwards to take them out of it. If you
 keep them in the map, they show on the canvas but are read-only and are saved back unchanged.
 
-![The TextDraw designer](images/textdraws.png)
+The editor opens docked to the right with its own saved layout. Drag its tab to move or
+undock it. **Canvas** in the top bar holds screen shape, background, HUD, grid, snapping,
+rulers and guides. **Compare** opens **Screen previews**, a window you can move, resize or
+dock. **…** in the file toolbar contains **Save As**, recent files and the code target.
+Use **Content**, **Layout** and **Style** for the selection; **Code settings** contains its
+Pawn variable and scope, and **Arrange** contains grouping and alignment tools.
+
+![The TextDraw designer](images/textdraw-editor.png)
 
 ### Server TXD sprites (0.3.DL)
 
 1. Open the **server folder as your workspace**. Its artwork folder can contain subfolders,
    such as `models/txd`; Haumea lists their `.txd` files too.
-2. In **TextDraws**, add or select a **Sprite**, then open **Sprite TXD → Server TXDs**.
+2. In **TextDraws**, add or select a **Sprite**, then open **Browse sprites… → Sprite TXD → Server TXDs**.
    Choose the server's TXD. Use **Refresh** if you added files while the editor was open.
 3. Check **Model ID**. Haumea fills it from recognized `AddSimpleModel` registrations.
    If your gamemode builds registrations through variables or helper functions, enter the

@@ -25,6 +25,7 @@ void writeProperties(Node &node, const ObjectPawnProperties &value)
 	write(node, "drawDistance", value.drawDistance);
 	write(node, "streamDistance", value.streamDistance);
 	write(node, "virtualWorld", value.virtualWorld);
+	write(node, "forceWorldReplacement", value.forceWorldReplacement);
 	write(node, "attachOffset", value.attachOffset);
 	write(node, "attachRotation", value.attachRotation);
 	write(node, "attachSyncRotation", value.attachSyncRotation);
@@ -112,6 +113,8 @@ bool readProperties(const Node &node, ObjectPawnProperties &value, std::string *
 	if (!read(node, "streamDistance", value.streamDistance, error))
 		return false;
 	if (!read(node, "virtualWorld", value.virtualWorld, error))
+		return false;
+	if (!read(node, "forceWorldReplacement", value.forceWorldReplacement, error))
 		return false;
 	if (!read(node, "attachOffset", value.attachOffset, error))
 		return false;
@@ -935,7 +938,8 @@ bool ApplyMapXML(const Node &document, bool sameRevision, std::vector<ObjectInst
 			return m.second.active || m.second.textEnabled;
 		});
 		bool runtime =
-		    !saved.deleted && (!saved.world || length(sub(saved.position, saved.original)) >= .001f ||
+		    !saved.deleted && (!saved.world || saved.position.x != saved.original.x ||
+				       saved.position.y != saved.original.y || saved.position.z != saved.original.z ||
 				       GetQuaternionSimilarity(saved.rotation, saved.originalRotation) < .9999f ||
 				       !ObjectPawnPropertiesAreDefault(saved.properties) || activeMaterial);
 		auto h = handles.find(saved.handle);

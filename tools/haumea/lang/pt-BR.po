@@ -1341,6 +1341,9 @@ msgstr "Ângulo"
 msgid "Angle step"
 msgstr "Passo do ângulo"
 
+msgid "Animate fire, smoke, water and other particle objects in the viewport."
+msgstr "Anima fogo, fumaça, água e outros objetos de partículas na visualização 3D."
+
 msgid "Animated"
 msgstr "Animado"
 
@@ -1427,6 +1430,9 @@ msgstr "Ao redor de Y"
 
 msgid "Around Z"
 msgstr "Ao redor de Z"
+
+msgid "Arrange"
+msgstr "Organizar"
 
 msgid "Array"
 msgstr "Matriz"
@@ -1779,6 +1785,9 @@ msgstr "Procurar precisa do zenity ou do kdialog: digite ou cole o caminho da pa
 msgid "Browse objects"
 msgstr "Procurar objetos"
 
+msgid "Browse sprites..."
+msgstr "Explorar sprites..."
+
 msgid "Browse textures..."
 msgstr "Procurar texturas..."
 
@@ -1889,6 +1898,9 @@ msgstr "Cancelar seleção do alvo"
 
 msgid "Cane"
 msgstr "Bengala"
+
+msgid "Canvas"
+msgstr "Tela"
 
 msgid "Car horn"
 msgstr "Buzina de carro"
@@ -2265,6 +2277,9 @@ msgstr "Código"
 msgid "Code Glass"
 msgstr "Vidro de código"
 
+msgid "Code settings"
+msgstr "Opções de código"
+
 msgid "Code target"
 msgstr "Alvo do código"
 
@@ -2342,6 +2357,9 @@ msgstr "Ponto de controle"
 
 msgid "Controls:"
 msgstr "Controles:"
+
+msgid "Convert to map object"
+msgstr "Converter em objeto do mapa"
 
 msgid "Coordinate pin"
 msgstr "Pin de coordenadas"
@@ -3373,6 +3391,9 @@ msgstr "Arquivo > Workspace: escolha a pasta do seu servidor SA-MP ou open.mp."
 
 msgid "File dialogs need zenity or kdialog. Install one (sudo apt install zenity) or type the path."
 msgstr "As caixas de diálogo de arquivo precisam do zenity ou do kdialog. Instale um (sudo apt install zenity) ou digite o caminho."
+
+msgid "File options"
+msgstr "Opções do arquivo"
 
 msgid "Files"
 msgstr "Arquivos"
@@ -4433,6 +4454,9 @@ msgstr "Continuar colocando"
 msgid "Keep the newest line in view"
 msgstr "Mantém a linha mais nova à vista"
 
+msgid "Keep the selected GTA objects in place. Saving removes the originals and recreates them as CreateObject or CreateDynamicObject, using the map's format."
+msgstr "Mantém os objetos do GTA selecionados no mesmo lugar. Ao salvar, remove os originais e os recria como CreateObject ou CreateDynamicObject, conforme o formato do mapa."
+
 msgid "Keep them read-only"
 msgstr "Mantê-los somente leitura"
 
@@ -4869,6 +4893,9 @@ msgstr "Map icon %d  %s"
 
 msgid "Map icons"
 msgstr "Map icons"
+
+msgid "Map object"
+msgstr "Objeto do mapa"
 
 msgid "Map: place a marker"
 msgstr "Mapa: colocar um marcador"
@@ -5962,6 +5989,9 @@ msgstr "Abrir o último workspace ao iniciar"
 msgid "Open map"
 msgstr "Abrir mapa"
 
+msgid "Open movable previews at 4:3, 16:9 and 21:9. Dock them beside the canvas to compare."
+msgstr "Abre prévias móveis em 4:3, 16:9 e 21:9. Encaixe-as ao lado da tela para comparar."
+
 msgid "Open script"
 msgstr "Abrir script"
 
@@ -6125,6 +6155,9 @@ msgstr "Paraquedas"
 
 msgid "Parachute opening"
 msgstr "Paraquedas abrindo"
+
+msgid "Particle effects"
+msgstr "Efeitos de partículas"
 
 msgid ""
 "Parts of the objects below the water's surface (a rock's\n"
@@ -7050,6 +7083,9 @@ msgstr "Substitua este documento pelo código gerado do mapa. Edições manuais 
 msgid "Replace this group's zones"
 msgstr "Substituir as zonas deste grupo"
 
+msgid "Replay particles"
+msgstr "Reiniciar partículas"
+
 msgid "Report"
 msgstr "Relatório"
 
@@ -7113,6 +7149,9 @@ msgstr "Reiniciar e descartar alterações"
 
 msgid "Restart now"
 msgstr "Reiniciar agora"
+
+msgid "Restart the selected particle emitters, including one-shot effects such as explosions."
+msgstr "Reinicia os emissores de partículas selecionados, incluindo efeitos únicos, como explosões."
 
 msgid "Restarts Haumea and reloads the game files from disk."
 msgstr "Reinicia o Haumea e recarrega os arquivos do jogo do disco."
@@ -7545,6 +7584,9 @@ msgstr "Escola"
 msgid "Scope"
 msgstr "Buscar em"
 
+msgid "Screen previews"
+msgstr "Prévias de tela"
+
 msgid "Script file"
 msgstr "Arquivo de script"
 
@@ -7636,6 +7678,9 @@ msgstr "Selecione um nó de caminho do SA na viewport para começar a editar."
 
 msgid "Select all"
 msgstr "Selecionar todos"
+
+msgid "Select all instances of this model in the current scope."
+msgstr "Seleciona todas as ocorrências deste modelo no escopo atual."
 
 msgid "Select an object in the Browser first"
 msgstr "Selecione um objeto no Navegador antes"
@@ -8029,9 +8074,6 @@ msgstr "Voo mais lento"
 
 msgid "Small (under 2 m)"
 msgstr "Pequeno (menos de 2 m)"
-
-msgid "Small views of this board at 4:3, 16:9 and 21:9 in the corner."
-msgstr "Vistas pequenas desta prancheta em 4:3, 16:9 e 21:9 no canto."
 
 msgid "Smaller interface (like Ctrl+wheel)"
 msgstr "Interface menor (como Ctrl+roda)"
@@ -8494,9 +8536,6 @@ msgstr "O TextDraw %s tem %s, que o Windows-1252 (o que os clientes SA-MP e open
 #, c-format
 msgid "TextDraw %s: %s"
 msgstr "TextDraw %s: %s"
-
-msgid "TextDraw mode"
-msgstr "Modo textdraw"
 
 msgid "TextDraw mode: edit the textdraw file on a canvas instead of the world."
 msgstr "Modo TextDraw: edite o arquivo de textdraws em uma tela em vez do mundo."

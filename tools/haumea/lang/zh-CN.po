@@ -7848,9 +7848,6 @@ msgstr "更慢的飞行速度"
 msgid "Small (under 2 m)"
 msgstr "小型（小于 2 m）"
 
-msgid "Small views of this board at 4:3, 16:9 and 21:9 in the corner."
-msgstr "在角落显示此画板的 4:3、16:9 和 21:9 小视图。"
-
 msgid "Smaller interface (like Ctrl+wheel)"
 msgstr "更小的界面（如 Ctrl+滚轮）"
 
@@ -8303,9 +8300,6 @@ msgstr "TextDraw %s 含有 %s，而 Windows-1252（SA-MP 与 open.mp 客户端�
 msgid "TextDraw %s: %s"
 msgstr "TextDraw %s: %s"
 
-msgid "TextDraw mode"
-msgstr "TextDraw 模式"
-
 msgid "TextDraw mode: edit the textdraw file on a canvas instead of the world."
 msgstr "TextDraw 模式：在画布上编辑 textdraw 文件，而不是在世界中编辑。"
 
@@ -8370,7 +8364,6 @@ msgstr "该文件夹不存在。"
 
 msgid "That has no x, y and z in it."
 msgstr "其中没有 x、y 和 z。"
-
 
 msgid "That's the game's own data. Pick a server's scriptfiles/NPCs/nodes."
 msgstr "那是游戏自带的数据。请选择某个服务器的 scriptfiles/NPCs/nodes。"
@@ -10289,3 +10282,48 @@ msgstr "没有附加的物体"
 
 msgid "Placement settings"
 msgstr "放置设置"
+
+msgid "Convert to map object"
+msgstr "转换为地图物体"
+
+msgid "Keep the selected GTA objects in place. Saving removes the originals and recreates them as CreateObject or CreateDynamicObject, using the map's format."
+msgstr "保持所选 GTA 物体的位置。保存时会移除原有物体，并根据地图格式使用 CreateObject 或 CreateDynamicObject 重新创建。"
+
+msgid "Map object"
+msgstr "地图物体"
+
+msgid "Select all instances of this model in the current scope."
+msgstr "选择当前范围内此模型的所有实例。"
+
+msgid "Particle effects"
+msgstr "粒子效果"
+
+msgid "Animate fire, smoke, water and other particle objects in the viewport."
+msgstr "在视口中播放火焰、烟雾、水和其他粒子物体的动画。"
+
+msgid "Replay particles"
+msgstr "重播粒子效果"
+
+msgid "Restart the selected particle emitters, including one-shot effects such as explosions."
+msgstr "重新启动所选粒子发射器，包括爆炸等一次性效果。"
+
+msgid "Arrange"
+msgstr "排列"
+
+msgid "Browse sprites..."
+msgstr "浏览精灵..."
+
+msgid "Canvas"
+msgstr "画布"
+
+msgid "Code settings"
+msgstr "代码设置"
+
+msgid "File options"
+msgstr "文件选项"
+
+msgid "Open movable previews at 4:3, 16:9 and 21:9. Dock them beside the canvas to compare."
+msgstr "打开可移动的 4:3、16:9 和 21:9 预览。将它们停靠在画布旁进行比较。"
+
+msgid "Screen previews"
+msgstr "屏幕预览"

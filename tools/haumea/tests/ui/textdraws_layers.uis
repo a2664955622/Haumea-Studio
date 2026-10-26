@@ -21,6 +21,8 @@ hold Ctrl
 click_item 'TextDraws' 'text  Text' 2
 release Ctrl
 wait 2
+click_item 'TextDraws' 'Arrange'
+wait 3
 click_item 'TextDraws' 'Group'
 wait 3
 click_item 'TextDraws' 'text  Text' 1

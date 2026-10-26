@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "particles.h"
 #include "discordpresence.h"
 #include "coordinatepin.h"
 #include "layoutpaths.h"
@@ -3147,14 +3148,16 @@ uiMainmenu(void)
 static void
 uiCommandBar(void)
 {
-	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12.0f, 9.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12.0f, InTextDrawMode() ? 4.0f : 9.0f));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 6.0f));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.0f, 6.0f));
 	ImGui::BeginViewportSideBar("##EditorCommands", ImGui::GetMainViewport(), ImGuiDir_Up,
-		ImGui::GetFrameHeight() + 12.0f, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_MenuBar |
+		ImGui::GetFrameHeight() + (InTextDrawMode() ? 4.0f : 12.0f), ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_MenuBar |
 		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking);
 	if(ImGui::BeginMenuBar()){
 		uiWorkspaceNavigation();
+		if(InTextDrawMode())
+			DrawTextDrawsToolbar();
 		if(!InTextDrawMode() && !InPawnIdeMode()){
 			uiToolbar();
 			ImGui::Dummy(ImVec2(ImGui::GetFontSize() * 0.7f, 0));
@@ -5104,6 +5107,8 @@ uiView(void)
 	ImGui::Checkbox(_("Water"), &gRenderWater);
 	if(gameversion == GAME_SA)
 		ImGui::Checkbox(_("Animated objects"), &gPlayAnimations);
+	ImGui::Checkbox(_("Particle effects"), &ParticlePreview::enabled);
+	ImGui::SetItemTooltip(_("Animate fire, smoke, water and other particle objects in the viewport."));
 	ImGui::Checkbox(_("Light coronas"), &gRenderLightEffects);
 	ImGui::SetItemTooltip(_("Street lamp and building light coronas, as the client draws them."));
 	ImGui::Checkbox(_("Timed objects at any hour"), &gNoTimeCull);
@@ -6704,6 +6709,8 @@ loadSaveSettings(void)
 			if(parseBoolSetting(value, &boolValue)) gRenderCullZones = boolValue;
 		}else if(strcmp(key, "render_attrib_zones") == 0){
 			if(parseBoolSetting(value, &boolValue)) gRenderAttribZones = boolValue;
+		}else if(strcmp(key, "render_particle_effects") == 0){
+			if(parseBoolSetting(value, &boolValue)) ParticlePreview::enabled = boolValue;
 		}else if(strcmp(key, "render_light_effects") == 0){
 			if(parseBoolSetting(value, &boolValue)) gRenderLightEffects = boolValue;
 		}else if(strcmp(key, "render_effect_markers") == 0){
@@ -7075,6 +7082,7 @@ saveSaveSettings(void)
 	fprintf(f, "render_info_zones %d\n", gRenderInfoZones ? 1 : 0);
 	fprintf(f, "render_cull_zones %d\n", gRenderCullZones ? 1 : 0);
 	fprintf(f, "render_attrib_zones %d\n", gRenderAttribZones ? 1 : 0);
+	fprintf(f, "render_particle_effects %d\n", ParticlePreview::enabled ? 1 : 0);
 	fprintf(f, "render_light_effects %d\n", gRenderLightEffects ? 1 : 0);
 	fprintf(f, "render_effect_markers %d\n", gRenderEffects ? 1 : 0);
 	fprintf(f, "render_legacy_ped_paths %d\n", gRenderLegacyPedPaths ? 1 : 0);
@@ -7475,11 +7483,30 @@ uiBuildDefaultDockLayout(ImGuiID dockspace)
 static void
 uiDockSpace(void)
 {
-	ImGuiID dockspace = ImHashStr("HaumeaDockSpace");
-	if(gResetPanelLayout || ImGui::DockBuilderGetNode(dockspace) == nil)
-		uiBuildDefaultDockLayout(dockspace);
-	ImGui::DockSpaceOverViewport(dockspace, ImGui::GetMainViewport(),
-		ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoDockingOverCentralNode);
+	ImGuiID map = ImHashStr("HaumeaDockSpace");
+	ImGuiID textdraws = ImHashStr("HaumeaTextDrawDockSpace");
+	bool editingTextDraws = InTextDrawMode();
+	if(!editingTextDraws && (gResetPanelLayout || ImGui::DockBuilderGetNode(map) == nil))
+		uiBuildDefaultDockLayout(map);
+	if(editingTextDraws && (gResetPanelLayout || ImGui::DockBuilderGetNode(textdraws) == nil)){
+		ImGuiViewportP *viewport = (ImGuiViewportP*)ImGui::GetMainViewport();
+		ImRect work = viewport->GetBuildWorkRect();
+		ImGui::DockBuilderRemoveNode(textdraws);
+		ImGui::DockBuilderAddNode(textdraws, ImGuiDockNodeFlags_DockSpace);
+		ImGui::DockBuilderSetNodePos(textdraws, work.Min);
+		ImGui::DockBuilderSetNodeSize(textdraws, work.GetSize());
+		ImGuiID center = textdraws;
+		float side = clamp(350.0f * GetUiScale() / work.GetWidth(), 0.22f, 0.42f);
+		ImGuiID right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, side, nil, &center);
+		ImGui::DockBuilderDockWindow("###textdraws", right);
+		ImGui::DockBuilderFinish(textdraws);
+	}
+	ImGuiDockNodeFlags flags = ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoDockingOverCentralNode;
+	ImGuiID active = editingTextDraws ? textdraws : map;
+	ImGuiID hidden = editingTextDraws ? map : textdraws;
+	if(ImGui::DockBuilderGetNode(hidden))
+		ImGui::DockSpace(hidden, ImVec2(0, 0), ImGuiDockNodeFlags_KeepAliveOnly);
+	ImGui::DockSpaceOverViewport(active, ImGui::GetMainViewport(), flags);
 }
 
 static void
@@ -9469,6 +9496,50 @@ uiSelectedInstances(std::vector<ObjectInst*> &out)
 	}
 }
 
+void
+OpenObjectInspector(void)
+{
+	showInstanceWindow = true;
+}
+
+static void
+uiReplayParticlesAction(ObjectInst *inst, bool menu)
+{
+	if(!ParticlePreview::HasParticleEffect(inst)) return;
+	bool clicked=menu ? ImGui::MenuItem(_("Replay particles")) : ImGui::Button(_("Replay particles"));
+	ImGui::SetItemTooltip(_("Restart the selected particle emitters, including one-shot effects such as explosions."));
+	if(clicked){
+		if(inst->m_selected){
+			std::vector<ObjectInst*> targets;
+			uiSelectedInstances(targets);
+			for(ObjectInst *target:targets) ParticlePreview::Restart(target);
+		}else ParticlePreview::Restart(inst);
+	}
+}
+
+// Explicitly include an original GTA object, or the current selection, in Pawn.
+static void
+uiConvertWorldObjectAction(ObjectInst *inst, bool menu)
+{
+	if(IsIplMapDocumentOpen()) return;
+	std::vector<ObjectInst*> targets;
+	if(inst->m_selected) uiSelectedInstances(targets);
+	else targets.push_back(inst);
+	bool available = false;
+	for(ObjectInst *target : targets)
+		if(IsPawnWorldObject(target) && IsInstInIplMapDocument(target) &&
+		   !target->m_isDeleted && !GetObjectPawnProperties(target)->forceWorldReplacement)
+			available = true;
+	if(!available) return;
+	bool clicked = menu ? ImGui::MenuItem(_("Convert to map object")) :
+		ImGui::Button(_("Convert to map object"));
+	ImGui::SetItemTooltip(_("Keep the selected GTA objects in place. Saving removes the originals and recreates them as CreateObject or CreateDynamicObject, using the map's format."));
+	if(clicked){
+		finishTransformPanelEdit();
+		ConvertWorldObjectsToMapObjects(targets);
+	}
+}
+
 // Same kind of thing: objects with objects, labels with labels, and so on.
 static bool
 uiSameElementKind(const ObjectInst *a, const ObjectInst *b)
@@ -10216,11 +10287,16 @@ uiInstWindow(void)
 
 		if(IsPawnWorldObject(inst)){
 			ImGui::SameLine();
-			ImGui::TextColored(UiSemanticColor(UI_COLOR_WARNING), _("GTA world object"));
-			ImGui::SetItemTooltip(_("Unchanged world objects are not saved in the map. Once you move,\n"
+			ImGui::TextColored(UiSemanticColor(UI_COLOR_WARNING), properties->forceWorldReplacement ?
+				_("Map object") : _("GTA world object"));
+			ImGui::SetItemTooltip("%s", properties->forceWorldReplacement ?
+				_("Keep the selected GTA objects in place. Saving removes the originals and recreates them as CreateObject or CreateDynamicObject, using the map's format.") :
+				_("Unchanged world objects are not saved in the map. Once you move,\n"
 				"rotate, retexture or delete one, the map removes the original with\n"
 				"RemoveBuildingForPlayer and creates your version instead."));
 		}
+		uiConvertWorldObjectAction(inst, false);
+		uiReplayParticlesAction(inst, false);
 		if(numWorldChanged > 0 && numSelected > 1)
 			ImGui::TextDisabled(_("%d selected world object(s) will be replaced in the map."), numWorldChanged);
 		ImGui::Spacing();
@@ -12283,6 +12359,8 @@ uiSelectedOrThis(ObjectInst *inst, std::vector<ObjectInst*> &out)
 static void
 uiOutlinerObjectMenu(ObjectInst *inst)
 {
+	uiConvertWorldObjectAction(inst, true);
+	uiReplayParticlesAction(inst, true);
 	if(ImGui::MenuItem(_("Find instances"))) uiOpenObjectDiscovery(inst->m_objectId, false);
 	if(ImGui::MenuItem(_("Find similar models"))) uiOpenObjectDiscovery(inst->m_objectId, true);
 	ImGui::Separator();

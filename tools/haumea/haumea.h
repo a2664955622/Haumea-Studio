@@ -393,6 +393,7 @@ struct ObjectPawnProperties
 	float drawDistance;	// CreateObject DrawDistance / streamer drawdistance; 0 = default
 	float streamDistance;	// streamer streamdistance; 0 = STREAMER_OBJECT_SD
 	int virtualWorld;	// streamer worldid; -1 = every world
+	bool forceWorldReplacement;	// explicitly remove/recreate a GTA original, even at its original pose
 	int32 attachParent;	// ObjectInst::m_id of the parent, or -1
 	rw::V3d attachOffset;	// in the parent's frame
 	rw::V3d attachRotation;	// degrees, SA-MP Euler order
@@ -720,6 +721,7 @@ enum UndoType {
 	UNDO_TRANSFORM_BATCH,
 	UNDO_MATERIAL,
 	UNDO_PROPERTIES,
+	UNDO_WORLD_CONVERSION,
 	UNDO_VEHICLE,
 	UNDO_MODEL_ID,
 	UNDO_NODES,
@@ -784,6 +786,7 @@ struct UndoAction {
 	// For one object-properties edit
 	ObjectPawnProperties oldProperties;
 	ObjectPawnProperties newProperties;
+	std::vector<ObjectInst*> convertedWorldObjects;
 	// For a vehicle edit (colours, plate, paintjob, parts)
 	VehicleState oldVehicle;
 	VehicleState newVehicle;
@@ -957,6 +960,7 @@ bool IsPawnObjectEditable(ObjectInst *inst);
 bool CanChangeInstanceModelId(ObjectInst *inst);
 bool ChangeInstanceModelId(ObjectInst *inst, int editorModelId, bool recordUndo = true);
 bool PawnObjectNeedsExport(const ObjectInst *inst);
+int ConvertWorldObjectsToMapObjects(const std::vector<ObjectInst*> &objects);
 void SetPawnEditMode(bool enabled);
 void SetPawnWorldDeleteMode(bool enabled);
 int SelectAllPawnObjects(void);
@@ -1080,6 +1084,7 @@ bool UiCombo(const char *label, int *current, const char *const *items, int coun
 // Right-click in the 3D view: Map Objects' menu for inst (selecting it first
 // when it isn't selected). False for what Map Objects doesn't list.
 bool OpenViewportObjectMenu(ObjectInst *inst);
+void OpenObjectInspector(void);
 
 // Diff viewer flags (bitmask — an instance can be both moved and rotated)
 enum DiffFlags {

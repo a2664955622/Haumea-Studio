@@ -125,6 +125,14 @@ void instancesPanel()
 	if(ImGui::Button(_("Next"))) next(1);
 	ImGui::EndDisabled();
 	ImGui::SetItemTooltip(_("Jump the camera between this model's instances, including other interiors."));
+	ImGui::BeginDisabled(members.empty());
+	if(ImGui::Button(_("Select all"))){
+		ClearSelection();
+		for(ObjectInst *inst : members) inst->Select();
+		OpenObjectInspector();
+	}
+	ImGui::SetItemTooltip(_("Select all instances of this model in the current scope."));
+	ImGui::EndDisabled();
 	ImGui::BeginChild("##instance_locations", ImVec2(0, 0), ImGuiChildFlags_Borders);
 	clipper.Begin((int)members.size());
 	while(clipper.Step()) for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++){

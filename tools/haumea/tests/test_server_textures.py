@@ -93,17 +93,19 @@ click_item '*' 'TextDraws'
 wait 5
 click_item 'TextDraws' 'Sprite'
 wait 5
-scroll_until 'TextDraws' 'Sprite TXD'
-click_item 'TextDraws' 'Sprite TXD'
+scroll_until 'TextDraws' 'Browse sprites...'
+click_item 'TextDraws' 'Browse sprites...'
+wait 3
+click_item '*' 'Sprite TXD'
 wait 3
 assert item '*' 'txd/UI.TXD'
 click_item '*' 'txd/UI.TXD'
 wait 3
-''' + ('' if registered else '''scroll_until 'TextDraws' 'Model ID'
-set_item 'TextDraws' 'Model ID' '-2018' tab
+''' + ('' if registered else '''scroll_until '*' 'Model ID'
+set_item '*' 'Model ID' '-2018' tab
 wait 3
-''') + '''scroll_until 'TextDraws' '##s'
-click_item 'TextDraws' '##s'
+''') + '''scroll_until '*' '##s'
+click_item '*' '##s'
 wait 5
 assert textdraw.0.texture_loaded == 1
 assert textdraw.0.server_txd 'txd/UI.TXD'
@@ -115,19 +117,21 @@ key Ctrl+Y
 wait 5
 assert textdraw.0.texture_loaded == 1
 assert textdraw.0.server_txd 'txd/UI.TXD'
-click_item 'TextDraws' '##s' right
+click_item '*' '##s' right
 wait 3
 click_item '*' 'Add to favourites'
 wait 3
-click_item 'TextDraws' 'Sprite TXD'
+click_item '*' 'Sprite TXD'
 wait 3
 click_item '*' 'Favourites'
 wait 3
-scroll_until 'TextDraws' '##s'
-click_item 'TextDraws' '##s'
+scroll_until '*' '##s'
+click_item '*' '##s'
 wait 3
 assert textdraw.0.texture_loaded == 1
 assert textdraw.0.server_txd 'txd/UI.TXD'
+close_popup
+wait 3
 shortcut save_map_as
 wait 5
 set_item 'Save TextDraws As' 'Path' '$TD_OUTPUT'

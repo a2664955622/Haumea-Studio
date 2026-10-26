@@ -206,6 +206,7 @@ ClassifyObjectCategory(int id, bool samp)
 		return -1;
 	if(obj->m_isVehicle) return vehicleCategory(obj);
 	if(obj->m_isPed) return CAT_PEOPLE;
+	if(samp && id>=18668 && id<=18748) return CAT_SAMP_EFFECTS;
 	std::string name = lower(obj->m_name), txd, folder, file;
 	TxdDef *td = GetTxdDef(obj->m_txdSlot);
 	txd = lower(td ? td->name : "");

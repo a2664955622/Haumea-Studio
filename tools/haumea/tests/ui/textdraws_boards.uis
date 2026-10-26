@@ -15,7 +15,9 @@ set_item 'TextDraws' 'Image file' "$UI_FIXTURES/missing_reference.png"
 key Enter
 wait 5
 assert textdraws == 3
-click_item 'TextDraws' 'Save As...'
+click_item 'TextDraws' '###File options'
+wait 3
+click_item '*' 'Save As...'
 wait 5
 click_item 'Save TextDraws As' 'Save'
 wait 5

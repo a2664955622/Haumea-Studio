@@ -1,0 +1,22 @@
+# Compact TextDraw workspace
+
+msgid "Arrange"
+msgstr "Organizar"
+
+msgid "Browse sprites..."
+msgstr "Explorar sprites..."
+
+msgid "Canvas"
+msgstr "Tela"
+
+msgid "Code settings"
+msgstr "Opções de código"
+
+msgid "File options"
+msgstr "Opções do arquivo"
+
+msgid "Open movable previews at 4:3, 16:9 and 21:9. Dock them beside the canvas to compare."
+msgstr "Abre prévias móveis em 4:3, 16:9 e 21:9. Encaixe-as ao lado da tela para comparar."
+
+msgid "Screen previews"
+msgstr "Prévias de tela"
