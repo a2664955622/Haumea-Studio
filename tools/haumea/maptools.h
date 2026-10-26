@@ -66,6 +66,16 @@ bool MapToolsLayAlongPreview(const std::vector<rw::V3d> &points, int model, floa
 // The model's length along its longer sideways axis, and whether that is X.
 float MapToolsModelLength(int model, bool *alongX);
 
+struct MapToolsLineFeedback {
+	int points = 0, markers = 0;
+	bool picking = false, cursorVisible = false;
+	rw::V3d cursor = {0, 0, 0};
+};
+const MapToolsLineFeedback &GetMapToolsLineFeedback();
+bool MapToolsPickingLine();
+void MapToolsLineOverlay(bool enabled);
+void ResetMapToolsLine();
+
 // Viewport clicks while picking a line for "Along a line"; true when used.
 bool MapToolsHandleViewportClick(void);
 // The Tools window's sections.

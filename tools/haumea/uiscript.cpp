@@ -3,6 +3,7 @@
 #include "particles.h"
 #include "documentxml.h"
 #include "coordinatepin.h"
+#include "maptools.h"
 #include "layoutpaths.h"
 #include "mapcleanup.h"
 #include "alignmentmath.h"
@@ -1175,6 +1176,13 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		int offset=what=="layout.point_z"?1:0;
 		why=what+" is "+std::to_string(value);
 		return compare(value,arg(offset+1),atof(arg(offset+2).c_str()));
+	}
+	if(what == "line.points" || what == "line.markers" || what == "line.picking" || what == "line.cursor"){
+		const auto &feedback = GetMapToolsLineFeedback();
+		int value = what == "line.points" ? feedback.points : what == "line.markers" ? feedback.markers :
+			what == "line.picking" ? feedback.picking : feedback.cursorVisible;
+		why = what + " is " + std::to_string(value);
+		return compare(value, arg(1), atof(arg(2).c_str()));
 	}
 	if(what.compare(0, 4, "pin.") == 0){
 		rw::V3d pin, end;

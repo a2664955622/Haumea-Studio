@@ -252,7 +252,9 @@ de você clicar. **Como grupo** coloca os objetos dele num grupo com o nome do p
 **Ferramentas** também tem ferramentas de arranjo: **Matriz** (cópias em linha ou em círculo),
 **Espelhar**, **Alinhar e distribuir**, **Pôr no chão e copiar como Pawn** (pôr no chão, copiar
 como anexos ou deslocamentos) e **Ao longo de uma linha** (distribuir objetos por um caminho que
-você clica). Movimentos e giros exatos ficam no modo Delta das Informações do objeto.
+você clica). Anéis numerados marcam cada ponto; um alvo ciano e um segmento mostram onde
+o próximo clique será colocado. Clique com o botão direito ou pressione Esc para terminar;
+**Limpar** remove os pontos. Movimentos e giros exatos ficam no modo Delta das Informações do objeto.
 
 **Pin de coordenadas**, em Ferramentas, serve como referência de alinhamento.
 **Posicionar pin** adiciona outro pin; **Limpar pin** remove só o ativo. Arraste a cabeça

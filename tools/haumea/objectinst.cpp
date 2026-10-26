@@ -1,5 +1,6 @@
 #include "haumea.h"
 #include "coordinatepin.h"
+#include "maptools.h"
 #include "layoutpaths.h"
 #include "documentxml.h"
 #include "i18n.h"
@@ -3218,6 +3219,7 @@ ResetPawnMap(void)
 	// A new or reopened map has nothing left out yet.
 	ClearLastPawnImportReport();
 	ResetMapTextDraws();
+	ResetMapToolsLine();
 	ResetCoordinatePins();
 	ResetLayoutPaths();
 	ClearRadarArtLayers();

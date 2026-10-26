@@ -13781,6 +13781,7 @@ gui(void)
 		SAPaths::DrawNodesWindow(&showNodesWindow);
 	}
 	BrowserDiscoveryHighlight(mapPanels && showBrowserWindow);
+	MapToolsLineOverlay(mapPanels);
 	CoordinatePinOverlay(mapPanels);
 	LayoutPathsOverlay(mapPanels);
 	SAPaths::UpdateNodesUndo();

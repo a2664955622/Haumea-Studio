@@ -312,7 +312,9 @@ puts its objects in a group named after the prefab.
 
 **Tools** also has tools for layouts: **Array** (copies in a line or a ring), **Mirror**,
 **Align & distribute**, **Drop & copy as Pawn** (drop to the ground, copy as attachments or
-offsets), and **Along a line** (lay objects along a path you click). Exact moves and turns
+offsets), and **Along a line** (lay objects along a path you click). Numbered rings mark each clicked
+point; a cyan target and connecting segment show where the next click will land.
+Right-click or Esc finishes picking, and **Clear** removes the picked points. Exact moves and turns
 are in Object Info's Delta mode.
 
 ### Editable 3D paths and curves

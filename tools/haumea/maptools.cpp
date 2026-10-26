@@ -756,36 +756,126 @@ MapToolsLayAlong(const std::vector<rw::V3d> &points, int model, float spacing,
 // ---- UI ----------------------------------------------------------------------
 
 static bool gPicking;
-static std::vector<rw::V3d> gPickedLine;
-static int gPanelFrame = -100;	// when the panel was last drawn
+static std::vector<rw::V3d> gPickedLine, gLinePoints;
+static int gPanelFrame = -100, gLinePanelFrame = -100;
+static MapToolsLineFeedback gLineFeedback;
+
+const MapToolsLineFeedback &
+GetMapToolsLineFeedback()
+{
+	return gLineFeedback;
+}
+
+bool
+MapToolsPickingLine()
+{
+	if(gPicking && ImGui::GetFrameCount() - gPanelFrame > 2)
+		gPicking = false;
+	return gPicking;
+}
+
+void
+ResetMapToolsLine()
+{
+	gPicking = false;
+	gPickedLine.clear();
+	gLinePoints.clear();
+	gLineFeedback = {};
+	gLinePanelFrame = gPanelFrame = -100;
+}
+
+// The cursor indicator and the actual click share the same surface query.
+static rw::V3d
+linePickPosition()
+{
+	Ray ray;
+	ray.start = TheCamera.m_position;
+	ray.dir = normalize(TheCamera.m_mouseDir);
+	rw::V3d hit;
+	if(GetVisibleInstUnderRay(ray, &hit) == nil){
+		float t = fabsf(ray.dir.z) < 0.001f ? 50.0f : (TheCamera.m_target.z - ray.start.z) / ray.dir.z;
+		hit = add(ray.start, scale(ray.dir, clamp(t, 1.0f, 5000.0f)));
+	}
+	return hit;
+}
 
 bool
 MapToolsHandleViewportClick(void)
 {
-	// Picking stops when the Tools window closes.
-	if(gPicking && ImGui::GetFrameCount() - gPanelFrame > 2)
-		gPicking = false;
-	if(!gPicking)
+	if(!MapToolsPickingLine())
 		return false;
-	if(CPad::IsMButtonClicked(1)){
-		Ray ray;
-		ray.start = TheCamera.m_position;
-		ray.dir = normalize(TheCamera.m_mouseDir);
-		rw::V3d hit;
-		if(GetVisibleInstUnderRay(ray, &hit) == nil){
-			// The plane at the camera target's height, as placing does.
-			float t = fabsf(ray.dir.z) < 0.001f ? 50.0f : (TheCamera.m_target.z - ray.start.z) / ray.dir.z;
-			t = clamp(t, 1.0f, 5000.0f);
-			hit = add(ray.start, scale(ray.dir, t));
-		}
-		gPickedLine.push_back(hit);
-		return true;
-	}
 	if(CPad::IsMButtonClicked(3) || CPad::IsMButtonClicked(2) || ShortcutPressed(SC_CANCEL)){
 		gPicking = false;
 		return true;
 	}
-	return true;	// nothing else is clicked while picking
+	if(!ImGui::GetIO().WantCaptureMouse && CPad::IsMButtonClicked(1))
+		gPickedLine.push_back(linePickPosition());
+	return true;
+}
+
+void
+MapToolsLineOverlay(bool enabled)
+{
+	gLineFeedback = {};
+	if(!enabled){
+		gPicking = false;
+		return;
+	}
+	if(ImGui::GetFrameCount() != gLinePanelFrame)
+		return;
+	gLineFeedback.points = (int)gLinePoints.size();
+	gLineFeedback.picking = MapToolsPickingLine();
+	ImGuiViewport *viewport = ImGui::GetMainViewport();
+	ImDrawList *draw = ImGui::GetBackgroundDrawList(viewport);
+	float ui = GetUiScale();
+	const ImU32 yellow = IM_COL32(255, 218, 60, 255), cyan = IM_COL32(80, 225, 255, 255);
+	const ImU32 dark = IM_COL32(15, 20, 24, 240);
+	auto project = [](rw::V3d position, ImVec2 *point){
+		rw::V3d screen;
+		float w, h;
+		if(!Sprite::CalcScreenCoors(position, &screen, &w, &h, false)) return false;
+		*point = EditorUiPoint(screen.x, screen.y);
+		return true;
+	};
+	auto segment = [&](rw::V3d a, rw::V3d b, ImU32 colour){
+		ImVec2 from, to;
+		if(project(a, &from) && project(b, &to)){
+			draw->AddLine(from, to, dark, 4 * ui);
+			draw->AddLine(from, to, colour, 2 * ui);
+		}
+	};
+	for(size_t i = 1; i < gLinePoints.size(); i++)
+		segment(gLinePoints[i - 1], gLinePoints[i], yellow);
+	for(size_t i = 0; i < gLinePoints.size(); i++){
+		ImVec2 point;
+		if(!project(gLinePoints[i], &point)) continue;
+		if(point.x < viewport->Pos.x || point.y < viewport->Pos.y ||
+		   point.x > viewport->Pos.x + viewport->Size.x || point.y > viewport->Pos.y + viewport->Size.y) continue;
+		draw->AddCircleFilled(point, 7 * ui, dark);
+		draw->AddCircle(point, 6 * ui, yellow, 0, 2 * ui);
+		draw->AddCircleFilled(point, 2 * ui, yellow);
+		char number[24];
+		snprintf(number, sizeof(number), "%d", (int)i + 1);
+		ImVec2 label(point.x + 10 * ui, point.y - ImGui::GetFontSize() - 6 * ui);
+		ImVec2 size = ImGui::CalcTextSize(number);
+		draw->AddRectFilled(ImVec2(label.x - 3 * ui, label.y - 2 * ui),
+			ImVec2(label.x + size.x + 3 * ui, label.y + size.y + 2 * ui), dark, 3 * ui);
+		draw->AddText(label, yellow, number);
+		gLineFeedback.markers++;
+	}
+	if(gLineFeedback.picking && !ImGui::GetIO().WantCaptureMouse){
+		gLineFeedback.cursor = linePickPosition();
+		ImVec2 cursor;
+		if(project(gLineFeedback.cursor, &cursor)){
+			gLineFeedback.cursorVisible = true;
+			if(!gLinePoints.empty()) segment(gLinePoints.back(), gLineFeedback.cursor, cyan);
+			draw->AddCircleFilled(cursor, 9 * ui, dark);
+			draw->AddCircle(cursor, 8 * ui, cyan, 0, 2 * ui);
+			draw->AddLine(ImVec2(cursor.x - 12 * ui, cursor.y), ImVec2(cursor.x + 12 * ui, cursor.y), cyan, ui);
+			draw->AddLine(ImVec2(cursor.x, cursor.y - 12 * ui), ImVec2(cursor.x, cursor.y + 12 * ui), cyan, ui);
+			ImGui::SetMouseCursor(ImGuiMouseCursor_None);
+		}
+	}
 }
 
 static void
@@ -1007,6 +1097,7 @@ dropSection(const std::vector<ObjectInst*> &objs)
 static void
 lineSection(void)
 {
+	gLinePanelFrame = ImGui::GetFrameCount();
 	static int source = 0;	// 0 = picked, else NPC path source-1
 	static int model = 1228;	// roadworkbarrier1
 	static float spacing = 3.0f, heading = 0.0f;
@@ -1030,13 +1121,22 @@ lineSection(void)
 	ImGui::SetItemTooltip(_("Points you click in the world, or an NPC path's points in order."));
 	std::vector<rw::V3d> points;
 	if(source == 0){
-		if(ImGui::Button(gPicking ? _("Stop picking") : _("Pick points")))
+		if(ImGui::Button(gPicking ? _("Stop picking") : _("Pick points"))){
 			gPicking = !gPicking;
+			if(gPicking){
+				SpawnExitPlaceMode();
+				ExitPrefabPlaceMode();
+				ExitBrushMode();
+				gRectSelectActive = false;
+			}
+		}
 		ImGui::SetItemTooltip(_("Click points in the world one after another.\n"
 			"Right-click or Esc stops."));
 		ImGui::SameLine();
 		if(ImGui::Button(_("Clear")))
 			gPickedLine.clear();
+		ImGui::SameLine();
+		ImGui::TextDisabled(_("%d points"), (int)gPickedLine.size());
 		points = gPickedLine;
 	}else{
 		std::vector<ObjectInst*> pathPoints;
@@ -1085,14 +1185,7 @@ lineSection(void)
 			error, N_("Along a line"));
 	}
 	ImGui::EndDisabled();
-	// The line, and a box for each object when previewing.
-	rw::RGBA lineCol = { 255, 200, 40, 230 };
-	for(size_t i = 0; i + 1 < points.size(); i++)
-		RenderLine(points[i], points[i + 1], lineCol, lineCol);
-	for(size_t i = 0; i < points.size() && source == 0; i++){
-		const rw::V3d &p = points[i];
-		RenderLine({ p.x, p.y, p.z }, { p.x, p.y, p.z + 2.0f }, lineCol, lineCol);
-	}
+	gLinePoints = points;
 	if(preview && ok && GetObjectDef(model))
 		for(size_t i = 0; i < positions.size(); i++)
 			drawBox(model, positions[i], MakeObjectRotationDegrees(degrees[i]), { 90, 200, 255, 220 });

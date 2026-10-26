@@ -1810,7 +1810,7 @@ updateRectSelectEarly(void)
 		sRectSelectDragging = false;
 		return;
 	}
-	if(CoordinatePinOwnsMouse() || LayoutPathsOwnsMouse()){
+	if(CoordinatePinOwnsMouse() || LayoutPathsOwnsMouse() || MapToolsPickingLine()){
 		gRectSelectActive = false;
 		sRectSelectDragging = false;
 		return;
@@ -1918,7 +1918,7 @@ handleRectSelect(void)
 		sRectSelectDragging = false;
 		return;
 	}
-	if(CoordinatePinOwnsMouse() || LayoutPathsOwnsMouse()){
+	if(CoordinatePinOwnsMouse() || LayoutPathsOwnsMouse() || MapToolsPickingLine()){
 		gRectSelectActive = false;
 		sRectSelectDragging = false;
 		return;
@@ -2025,6 +2025,7 @@ handleTool(void)
 		}
 		return;
 	}
+	if(MapToolsHandleViewportClick()) return;
 	if(LayoutPathsHandleViewport()) return;
 	if(CoordinatePinHandleViewport()) return;
 	// Don't process viewport clicks when ImGui wants the mouse
@@ -2084,11 +2085,8 @@ handleTool(void)
 	// The Nodes window's add and link tools
 	if(SAPaths::HandleNodesViewportClick())
 		return;
-	// Tools > Along a line, picking its points
 	// A dynamic area's handles and polygon corners
 	if(DynamicAreaHandleViewport())
-		return;
-	if(MapToolsHandleViewportClick())
 		return;
 
 	// Brush mode intercepts all clicks (click-to-place + drag-to-paint)
@@ -3099,6 +3097,7 @@ dogizmo(void)
 	gGizmoHovered = false;
 	gGizmoUsing = false;
 	if(AttachmentTargetPickActive()) return;
+	if(MapToolsPickingLine()) return;
 	if(LayoutPathsGizmo()) return;
 	if(CoordinatePinOwnsMouse()) return;
 
