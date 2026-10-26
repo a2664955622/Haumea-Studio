@@ -12950,7 +12950,6 @@ uiWorkspaceNavigation(void)
 		int mode = InTextDrawMode() ? 1 : (InPawnIdeMode() ? 2 : 0);
 		bool selected = mode == i;
 		ImVec4 accent = ImGui::GetStyleColorVec4(ImGuiCol_CheckMark);
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12.0f, 9.0f));
 		ImGui::PushStyleColor(ImGuiCol_Button, selected ? ImVec4(accent.x, accent.y, accent.z, 0.24f) : ImVec4(0, 0, 0, 0));
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(accent.x, accent.y, accent.z, selected ? 0.32f : 0.12f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(accent.x, accent.y, accent.z, 0.42f));
@@ -12961,7 +12960,6 @@ uiWorkspaceNavigation(void)
 				ImGui::GetColorU32(ImGuiCol_CheckMark), 2.0f);
 		}
 		ImGui::PopStyleColor(3);
-		ImGui::PopStyleVar();
 		if(clicked){
 			if(i == 1){
 				showPawnCodeWindow = false;

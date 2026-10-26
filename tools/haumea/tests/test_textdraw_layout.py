@@ -12,6 +12,33 @@ import test_i18n as harness
 class TextDrawLayoutTests(unittest.TestCase):
     editor = harness.EditorTests.editor
 
+    def test_workspace_buttons_fit_the_command_bar(self):
+        script = '\n'.join((
+            "click_item '*' 'TextDraws'", 'wait 5',
+            "assert item_fully_visible '*' 'Map'",
+            "assert item_fully_visible '*' 'TextDraws'",
+            "assert item_fully_visible '*' 'Code'",
+            "assert item_fully_visible '*' 'Canvas'",
+            "click_item '*' 'Code'", 'wait 5',
+            "assert item_fully_visible '*' 'Map'",
+            "assert item_fully_visible '*' 'TextDraws'",
+            "assert item_fully_visible '*' 'Code'",
+            "click_item '*' 'Map'", 'wait 5',
+            "assert item_fully_visible '*' 'Map'",
+            "assert item_fully_visible '*' 'TextDraws'",
+            "assert item_fully_visible '*' 'Code'", 'exit',
+        ))
+        for scale in (1.0, 1.25, 1.5, 2.0):
+            with self.subTest(scale=scale):
+                self.editor(script, savesettings=f'''settings_version 8
+language en
+ui_scale {scale}
+show_browser_window 0
+show_instance_window 0
+show_code_hint 0
+show_textdraws_hint 0
+''')
+
     def test_narrow_dock_in_bundled_languages(self):
         # Dear ImGui 1.91.6+ uses CRC32C for its saved node IDs.
         root = 0xffffffff

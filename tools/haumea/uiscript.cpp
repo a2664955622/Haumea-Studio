@@ -913,6 +913,7 @@ checkGeometryCloneTextures(ObjectInst *inst, std::string &why)
 // assert window_docked|window_x|window_y|window_width|window_height "Title" <op> N
 // assert textdraw_canvas_right <op> N
 // assert item 'Window' 'Label'   / no_item
+// assert item_fully_visible 'Window' 'Label'   (bounds stay inside the clip rectangle)
 // assert hidden|player_view_hidden|fov|ui_scale|camera_moved <op> N   (camera_moved: metres since mark_camera)
 // assert camera_target.x|y|z <op> N   (the point the camera looks at)
 // assert camera_position.x|y|z <op> N
@@ -1295,6 +1296,17 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		bool open = windowOpen(arg(1));
 		why = open ? "open" : "not open";
 		return what == "window" ? open : !open;
+	}
+	if(what == "item_fully_visible"){
+		const UiItem *item = findItem(arg(1), arg(2));
+		if(!item){ why = "item not found"; return false; }
+		bool fits = item->bb.Min.x >= item->clip.Min.x - 1.0f && item->bb.Min.y >= item->clip.Min.y - 1.0f &&
+			item->bb.Max.x <= item->clip.Max.x + 1.0f && item->bb.Max.y <= item->clip.Max.y + 1.0f;
+		snprintf(buf, sizeof(buf), "%s: item (%.0f,%.0f..%.0f,%.0f), clip (%.0f,%.0f..%.0f,%.0f)",
+			arg(2).c_str(), item->bb.Min.x, item->bb.Min.y, item->bb.Max.x, item->bb.Max.y,
+			item->clip.Min.x, item->clip.Min.y, item->clip.Max.x, item->clip.Max.y);
+		why = buf;
+		return fits;
 	}
 	if(what == "item" || what == "no_item"){
 		bool found = findItem(arg(1), arg(2)) != nil;
