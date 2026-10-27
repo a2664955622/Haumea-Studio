@@ -116,6 +116,7 @@ bool gDrawTarget = false;
 int gSelectionHighlightOpacity = 25;
 bool gOutlineMapObjects;
 bool gOutlineSelection = true;	// outline selected and hovered objects
+bool gPreviewObjectMoves = true;	// RenderObjectMovePreviews
 bool gFlyAcceleration = true;
 float gFlySpeed = 2.0f;
 float gFlyFastMul = 2.0f;
@@ -3442,6 +3443,7 @@ renderWorld(void)
 	if(gRenderLightEffects)
 		Effects::RenderLights();
 	ParticlePreview::Render(timeStep);
+	RenderObjectMovePreviews();
 
 	if(gPlaceMode && GetSpawnObjectId() >= 0){
 		ImGuiIO &io = ImGui::GetIO();

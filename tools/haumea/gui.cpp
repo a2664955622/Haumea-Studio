@@ -1,4 +1,5 @@
 #include "haumea.h"
+#include "checkpoints.h"
 #include "particles.h"
 #include "discordpresence.h"
 #include "coordinatepin.h"
@@ -2733,7 +2734,7 @@ uiToolbarButton(const char *label, bool active, const char *tooltip, bool enable
 {
 	ImVec4 accent = ImGui::GetStyleColorVec4(ImGuiCol_CheckMark);
 	ImGui::PushStyleColor(ImGuiCol_Button, active ?
-		(GetUiTheme() == UI_THEME_LIGHT ? accent : ImVec4(0.0f, 0.34f, 0.36f, 1.0f)) : ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+		(GetUiTheme() == UI_THEME_DARK ? ImVec4(0.0f, 0.34f, 0.36f, 1.0f) : accent) : ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, active ?
 		ImVec4(accent.x, accent.y, accent.z, 0.50f) : ImGui::GetStyleColorVec4(ImGuiCol_ButtonHovered));
 	if(active) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1,1,1,1));
@@ -8117,17 +8118,19 @@ uiGeneralPreferences(void)
 		gUiScale = scale;
 	}
 	changed |= ImGui::IsItemDeactivatedAfterEdit();
-	ImGui::TextDisabled(_("Theme"));
-	ImGui::SameLine();
 	int theme = GetUiTheme();
-	if(ImGui::RadioButton(_("Dark"), &theme, UI_THEME_DARK)){
-		SetUiTheme(theme);
-		changed = true;
-	}
-	ImGui::SameLine();
-	if(ImGui::RadioButton(_("Light"), &theme, UI_THEME_LIGHT)){
-		SetUiTheme(theme);
-		changed = true;
+	if(ImGui::BeginCombo(_("Theme"), GetUiThemeName(theme))){
+		for(int t = 0; t < NumUiThemes(); t++){
+			if(t == UI_THEME_FIRST_PALETTE)
+				ImGui::Separator();
+			if(ImGui::Selectable(GetUiThemeName(t), t == theme)){
+				SetUiTheme(t);
+				changed = true;
+			}
+			if(t == theme)
+				ImGui::SetItemDefaultFocus();
+		}
+		ImGui::EndCombo();
 	}
 	changed |= ImGui::Checkbox(_("Snap panels to edges and each other"), &gPanelSnap);
 	ImGui::SetItemTooltip(_("Hold Alt while dragging to place a panel freely."));
@@ -8677,10 +8680,13 @@ uiSelectNpcPath(const char *pathName)
 }
 
 // CreateDynamicRaceCP / SetPlayerRaceCheckpoint types.
+static bool uiIsDirectory(const std::string &path);
+
 static const char *uiRaceCheckpointTypes[] = {
 	N_("0  Normal"), N_("1  Finish"), N_("2  Nothing"), N_("3  Air normal"), N_("4  Air finish"),
 	N_("5  Air (rotates and stops)"), N_("6  Air (grows, shrinks, disappears)"),
 	N_("7  Air (swings down and up)"), N_("8  Air (swings up and down)"),
+	N_("9  Automatic (normal, finish at the end)"), N_("10  Automatic air"),
 };
 
 static void
@@ -8900,7 +8906,17 @@ uiAnimationPicker(ObjectInst *inst, ObjectPawnProperties &edited)
 				rw::strcmp_ci(edited.animLib, AnimLibraryName(shownLib)) == 0;
 			char item[64];
 			snprintf(item, sizeof(item), "%s  (%.1f s)", name, AnimDuration(shownLib, i));
-			if(ImGui::Selectable(item, current) && !current){
+			// Shown dim: a skin can't play it, or it twists the skin.
+			int problem = AnimPedProblem(AnimLibraryName(shownLib), name);
+			if(problem != ANIM_PED_OK)
+				ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+			bool picked = ImGui::Selectable(item, current);
+			if(problem != ANIM_PED_OK){
+				ImGui::PopStyleColor();
+				ImGui::SetItemTooltip("%s", problem == ANIM_PED_OBJECT_ONLY ?
+					_("Moves only an object's parts: a skin stands still.") : _("Twists the skin out of shape."));
+			}
+			if(picked && !current){
 				if(!edited.animName[0]){
 					// First pick: ApplyActorAnimation's usual values.
 					edited.animDelta = 4.1f;
@@ -8922,6 +8938,10 @@ uiAnimationPicker(ObjectInst *inst, ObjectPawnProperties &edited)
 			edited.animLib[0] = edited.animName[0] = '\0';
 			changed = true;
 		}
+		int problem = AnimPedProblem(edited.animLib, edited.animName);
+		if(problem != ANIM_PED_OK)
+			ImGui::TextColored(UiSemanticColor(UI_COLOR_WARNING), "%s", problem == ANIM_PED_OBJECT_ONLY ?
+				_("Moves only an object's parts: a skin stands still.") : _("Twists the skin out of shape."));
 		if(ImGui::InputFloat(_("Delta"), &edited.animDelta, 0.1f, 1.0f, "%.2f")) changed = true;
 		ImGui::SetItemTooltip(_("Playback speed in game (4.1 is normal). The editor plays at normal speed."));
 		if(ImGui::Checkbox(_("Loop"), &edited.animLoop)) changed = true;
@@ -9256,7 +9276,7 @@ uiSampElementSettings(ObjectInst *inst, ObjectPawnProperties &edited)
 			if(UiCombo(_("Type"), &edited.cpRaceType, uiRaceCheckpointTypes, IM_ARRAYSIZE(uiRaceCheckpointTypes)))
 				changed = true;
 			ImGui::SetItemTooltip(_("Normal shows an arrow to the next checkpoint; Finish a flag.\n"
-				"The Air types are rings for planes."));
+				"The Air types are rings for planes. Automatic is Normal until the race's end, then Finish."));
 			char race[PAWN_OBJECT_NAME_LEN];
 			snprintf(race, sizeof(race), "%s", edited.cpRace);
 			if(ImGui::InputText(_("Race"), race, sizeof(race)) && IsValidPawnObjectName(race)){
@@ -9283,8 +9303,81 @@ uiSampElementSettings(ObjectInst *inst, ObjectPawnProperties &edited)
 			}
 			ImGui::SetItemTooltip(_("Checkpoint %d of %d. Each points at the next one up; the last at none."),
 				position, (int)points.size());
-			if(position == (int)points.size() && edited.cpRaceType != 1 && edited.cpRaceType != 4)
+			if(position == (int)points.size() && edited.cpRaceType != 1 && edited.cpRaceType != 4 &&
+			   edited.cpRaceType < SAMP_RACE_CP_AUTO_GROUND && edited.cpRaceMode != SAMP_RACE_CIRCUIT)
 				ImGui::TextDisabled(_("The last checkpoint: Finish (or Air finish) shows a flag."));
+
+			// The whole race's settings, on every one of its checkpoints.
+			bool raceChanged = false;
+			static const char *raceModes[] = { N_("Point to point"), N_("Circuit") };
+			if(UiCombo(_("Route"), &edited.cpRaceMode, raceModes, IM_ARRAYSIZE(raceModes))){
+				if(edited.cpRaceMode == SAMP_RACE_CIRCUIT && edited.cpRaceLaps < 1)
+					edited.cpRaceLaps = 3;
+				raceChanged = true;
+			}
+			ImGui::SetItemTooltip(_("Circuit: the last checkpoint leads back to the first, lap after lap."));
+			if(edited.cpRaceMode == SAMP_RACE_CIRCUIT && ImGui::InputInt(_("Laps"), &edited.cpRaceLaps)){
+				edited.cpRaceLaps = clamp(edited.cpRaceLaps, 1, (int)SAMP_RACE_MAX_LAPS);
+				raceChanged = true;
+			}
+			if(ImGui::Checkbox(_("Playable race"), &edited.cpRacePlayable))
+				raceChanged = true;
+			ImGui::SetItemTooltip(_("Saved for haumea_races.inc: each player races on their own with\n"
+				"StartMapRace, seeing one checkpoint at a time, with laps and times.\n"
+				"Works without the streamer. Off: every checkpoint is a fixed marker."));
+			if(raceChanged){
+				SetRaceSettings(edited.cpRace, edited.cpRaceMode, edited.cpRaceLaps, edited.cpRacePlayable);
+				changed = true;
+			}
+			if(edited.cpRacePlayable){
+				std::string include = WorkspacePath("qawno/include");
+				if(include.empty() || !uiIsDirectory(include))
+					include = WorkspacePath("pawno/include");
+				ImGui::BeginDisabled(include.empty() || !uiIsDirectory(include));
+				if(ImGui::SmallButton(_("Save haumea_races.inc to the workspace"))){
+					std::string path = include + "/haumea_races.inc";
+					if(WriteHaumeaRacesInclude(path.c_str()))
+						Toast(TOAST_SAVE, _("Saved %s"), path.c_str());
+					else
+						Toast(TOAST_SAVE, _("Could not write %s"), path.c_str());
+				}
+				ImGui::EndDisabled();
+				ImGui::SetItemTooltip(_("Into the workspace's qawno/include (or pawno/include), where pawncc finds it."));
+			}
+
+			// Driving it in the editor.
+			bool previewing = RacePreviewActive() && strcmp(RacePreviewRace(), edited.cpRace) == 0;
+			auto frameTarget = [&](){
+				std::vector<ObjectInst*> race;
+				GetRaceCheckpoints(RacePreviewRace(), race);
+				int target = RacePreviewTarget();
+				if(target < 0 || target >= (int)race.size())
+					return;
+				rw::V3d d = sub(race[target]->m_translation, TheCamera.m_target);
+				TheCamera.m_target = add(TheCamera.m_target, d);
+				TheCamera.m_position = add(TheCamera.m_position, d);
+			};
+			if(!previewing){
+				if(ImGui::SmallButton(TI(ICON_FA_PLAY, "Preview race")) && StartRacePreview(edited.cpRace))
+					frameTarget();
+				ImGui::SetItemTooltip(_("Shows the race as a player drives it: one checkpoint at a time."));
+			}else{
+				if(RacePreviewLaps() > 1)
+					ImGui::Text(_("Lap %d of %d, checkpoint %d of %d"), RacePreviewLap(), RacePreviewLaps(),
+						RacePreviewTarget() + 1, RacePreviewCount());
+				else
+					ImGui::Text(_("Checkpoint %d of %d"), RacePreviewTarget() + 1, RacePreviewCount());
+				if(ImGui::SmallButton(_("Next checkpoint"))){
+					AdvanceRacePreview();
+					if(RacePreviewActive())
+						frameTarget();
+					else
+						Toast(TOAST_SELECTION, _("Race finished"));
+				}
+				ImGui::SameLine();
+				if(ImGui::SmallButton(TI(ICON_FA_STOP, "Stop preview")))
+					StopRacePreview();
+			}
 			if(ImGui::SmallButton(_("Select whole race")))
 				uiSelectRace(edited.cpRace);
 			ImGui::SameLine();
@@ -9451,6 +9544,8 @@ static const UiBatchField uiBatchFields[] = {
 	UI_BATCH_FIELD(group, false), UI_BATCH_FIELD(comment, false),
 	UI_BATCH_FIELD(drawDistance, false), UI_BATCH_FIELD(streamDistance, false),
 	UI_BATCH_FIELD(virtualWorld, false),
+	UI_BATCH_FIELD(moveEnabled, false), UI_BATCH_FIELD(moveOffset, false), UI_BATCH_FIELD(moveRotation, false),
+	UI_BATCH_FIELD(moveRotates, false), UI_BATCH_FIELD(moveSpeed, false),
 	UI_BATCH_FIELD(pickupType, true), UI_BATCH_FIELD(labelText, true),
 	UI_BATCH_FIELD(labelColor, true), UI_BATCH_FIELD(labelTestLOS, true),
 	UI_BATCH_FIELD(elementModel, true), UI_BATCH_FIELD(actorInvulnerable, true),
@@ -9629,7 +9724,7 @@ uiBatchEditHeader(ObjectInst *inst)
 // Object Info shows an instance's Pawn settings in parts, in this order:
 // the variable, the element's own settings, world and streaming, the group
 // and note, and (objects only) the attachment.
-enum { UI_PROPS_VARIABLE, UI_PROPS_ELEMENT, UI_PROPS_WORLD, UI_PROPS_NOTES, UI_PROPS_ATTACH };
+enum { UI_PROPS_VARIABLE, UI_PROPS_ELEMENT, UI_PROPS_WORLD, UI_PROPS_NOTES, UI_PROPS_ATTACH, UI_PROPS_MOVE };
 
 // Whether an element kind has anything under World & streaming.
 static bool
@@ -9805,6 +9900,35 @@ uiObjectProperties(ObjectInst *inst, int part)
 	}
 	if(SampElementTakesArea(kind) && !inst->m_isVehicle)
 		if(uiAreaPicker(edited)) changed = true;
+	}
+
+	if(part == UI_PROPS_MOVE && kind == SAMP_ELEMENT_OBJECT){
+		if(ImGui::Checkbox(_("Moves when the map loads"), &edited.moveEnabled)){
+			if(edited.moveEnabled && edited.moveSpeed <= 0.0f){
+				edited.moveSpeed = 2.0f;
+				edited.moveOffset = { 0.0f, 0.0f, 3.0f };
+			}
+			changed = true;
+		}
+		ImGui::SetItemTooltip(_("MoveObject (MoveDynamicObject with the streamer) right after the object is made."));
+		if(edited.moveEnabled){
+			if(ImGui::DragFloat3(_("Move by"), &edited.moveOffset.x, 0.05f, -20000.0f, 20000.0f, "%.3f")) changed = true;
+			ImGui::SetItemTooltip(_("How far it goes, in metres along the world axes. It follows the object when\n"
+				"you move it."));
+			if(ImGui::InputFloat(_("Speed"), &edited.moveSpeed, 0.5f, 5.0f, "%.2f m/s")) changed = true;
+			if(ImGui::Checkbox(_("Turns on the way"), &edited.moveRotates)){
+				if(edited.moveRotates)
+					edited.moveRotation = GetInstanceRotationDegrees(inst);
+				changed = true;
+			}
+			if(edited.moveRotates &&
+			   ImGui::DragFloat3(_("Turns to"), &edited.moveRotation.x, 0.5f, -360.0f, 360.0f, "%.1f")) changed = true;
+			float length = sqrtf(edited.moveOffset.x*edited.moveOffset.x + edited.moveOffset.y*edited.moveOffset.y +
+				edited.moveOffset.z*edited.moveOffset.z);
+			if(edited.moveSpeed > 0.0f)
+				ImGui::TextDisabled(_("%.2f m in %.2f s"), length, length / edited.moveSpeed);
+			ImGui::Checkbox(_("Preview the movement"), &gPreviewObjectMoves);
+		}
 	}
 
 	if(part != UI_PROPS_ATTACH || kind != SAMP_ELEMENT_OBJECT){
@@ -10329,6 +10453,9 @@ uiInstWindow(void)
 			uiObjectProperties(inst, UI_PROPS_WORLD);
 		if(isObject && uiInspectorSection(L("Attachment"), ImGuiTreeNodeFlags_DefaultOpen))
 			uiObjectProperties(inst, UI_PROPS_ATTACH);
+		if(isObject && !IsPlayerAttachedObject(inst) && properties->attachParent == -1 &&
+		   uiInspectorSection(L("Movement"), properties->moveEnabled ? ImGuiTreeNodeFlags_DefaultOpen : 0))
+			uiObjectProperties(inst, UI_PROPS_MOVE);
 		if(isObject && uiInspectorSection(L("Materials"),
 		   HasObjectMaterialOverrides(inst) ? ImGuiTreeNodeFlags_DefaultOpen : 0))
 			uiMaterialInfo(inst);
@@ -11772,7 +11899,7 @@ uiDrawSampElementOverlays(void)
 					if(points[j] == inst)
 						position = (int)j + 1;
 				// The type without its leading number ("1  Finish").
-				const char *type = _(uiRaceCheckpointTypes[clamp(properties->cpRaceType, 0, 8)]);
+				const char *type = _(uiRaceCheckpointTypes[GetRaceCheckpointShownType(inst)]);
 				type += strspn(type, "0123456789 ");
 				snprintf(tag, sizeof(tag), "%s %d/%d  %s", properties->cpRace, position, (int)points.size(), type);
 			}else
@@ -13364,7 +13491,7 @@ uiRunShortcut(int action)
 		break;
 	case SC_DUPLICATE:
 		finishTransformPanelEdit();
-		count = DuplicateSelected();
+		count = MapToolsDuplicate(nil);
 		if(count > 0)
 			Toast(TOAST_COPY_PASTE, _("Duplicated %d instance(s)"), count);
 		break;
