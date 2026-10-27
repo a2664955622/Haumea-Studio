@@ -13,11 +13,8 @@ namespace {
 
 // open.mp SDK values.hpp and the streamer's defaults.
 const int CLIENT_OBJECTS = 1000;	// OBJECT_POOL_SIZE_037: what a client creates
-const float STREAMER_OBJECT_SD = 300.0f;
-const float STREAM_DISTANCE = 200.0f;	// players, vehicles and actors
 const int MAX_STREAMED_VEHICLES = 700;
 const int MAX_STREAMED_ACTORS = 50;
-const float LABEL_DRAW_DISTANCE = 20.0f;	// what the editor writes when it is 0
 
 enum { PV_UNTOUCHED, PV_HIDDEN, PV_SHOWN };
 
@@ -119,31 +116,18 @@ PlayerViewUpdate(void)
 		}
 
 		float dist = TheCamera.distanceTo(inst->m_translation);
+		if(dist >= gStreamDistance){
+			inst->m_playerView = PV_HIDDEN;
+			continue;
+		}
 		inst->m_playerView = PV_SHOWN;
-		if(inst->m_isVehicle){
-			if(dist > STREAM_DISTANCE)
-				inst->m_playerView = PV_HIDDEN;
-			else
-				vehicles.push_back({ inst, dist });
-		}else if(kind == SAMP_ELEMENT_ACTOR){
-			if(dist > STREAM_DISTANCE)
-				inst->m_playerView = PV_HIDDEN;
-			else
-				actors.push_back({ inst, dist });
-		}else if(kind == SAMP_ELEMENT_LABEL){
-			float draw = props->drawDistance > 0.0f ? props->drawDistance : LABEL_DRAW_DISTANCE;
-			if(dist > draw)
-				inst->m_playerView = PV_HIDDEN;
-		}else if(kind == SAMP_ELEMENT_OBJECT){
-			if(nativeObject)
-				nativeObjects.push_back(inst);
-			else{
-				float sd = props->streamDistance > 0.0f ? props->streamDistance : STREAMER_OBJECT_SD;
-				if(dist > sd)
-					inst->m_playerView = PV_HIDDEN;
-				else
-					objects.push_back({ inst, dist });
-			}
+		if(inst->m_isVehicle)
+			vehicles.push_back({ inst, dist });
+		else if(kind == SAMP_ELEMENT_ACTOR)
+			actors.push_back({ inst, dist });
+		else if(kind == SAMP_ELEMENT_OBJECT){
+			if(nativeObject) nativeObjects.push_back(inst);
+			else objects.push_back({ inst, dist });
 		}
 	}
 	if(!gPlayerView)
@@ -168,17 +152,11 @@ PlayerViewUpdate(void)
 	stats.vehiclesStreamed = streamNearest(vehicles, MAX_STREAMED_VEHICLES);
 	stats.actorsStreamed = streamNearest(actors, MAX_STREAMED_ACTORS);
 
-	// Created objects show within their draw distance, the model's when 0.
+	// Preview range is uniform; exported stream/draw properties stay unchanged.
 	for(const Candidate &c : objects){
 		if(c.inst->m_playerView != PV_SHOWN)
 			continue;
-		const ObjectPawnProperties *props = GetObjectPawnProperties(c.inst);
-		ObjectDef *obj = GetObjectDef(c.inst->m_objectId);
-		float draw = props->drawDistance > 0.0f ? props->drawDistance : obj ? obj->GetLargestDrawDist() : 300.0f;
-		if(c.dist > draw)
-			c.inst->m_playerView = PV_HIDDEN;
-		else
-			stats.objectsVisible++;
+		stats.objectsVisible++;
 	}
 }
 

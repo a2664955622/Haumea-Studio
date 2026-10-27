@@ -3,6 +3,7 @@
 #include "documentxml.h"
 #include "xmlfields.h"
 #include "coordinatepin.h"
+#include "layoutpaths.h"
 #include "encoding.h"
 #include "radarart.h"
 #include "textdraws.h"
@@ -24,9 +25,21 @@ void writeProperties(Node &node, const ObjectPawnProperties &value)
 	write(node, "drawDistance", value.drawDistance);
 	write(node, "streamDistance", value.streamDistance);
 	write(node, "virtualWorld", value.virtualWorld);
+	write(node, "forceWorldReplacement", value.forceWorldReplacement);
 	write(node, "attachOffset", value.attachOffset);
 	write(node, "attachRotation", value.attachRotation);
 	write(node, "attachSyncRotation", value.attachSyncRotation);
+	write(node, "attachBone", value.attachBone);
+	write(node, "attachSlot", value.attachSlot);
+	write(node, "attachScale", value.attachScale);
+	write(node, "attachColor1", value.attachColor1);
+	write(node, "attachColor2", value.attachColor2);
+	write(node, "attachSkin", value.attachSkin);
+	write(node, "moveEnabled", value.moveEnabled);
+	write(node, "moveOffset", value.moveOffset);
+	write(node, "moveRotation", value.moveRotation);
+	write(node, "moveRotates", value.moveRotates);
+	write(node, "moveSpeed", value.moveSpeed);
 	write(node, "elementKind", value.elementKind);
 	write(node, "pickupType", value.pickupType);
 	write(node, "labelText", value.labelText);
@@ -81,6 +94,9 @@ void writeProperties(Node &node, const ObjectPawnProperties &value)
 	write(node, "cpKind", value.cpKind);
 	write(node, "cpSize", value.cpSize);
 	write(node, "cpRaceType", value.cpRaceType);
+	write(node, "cpRaceMode", value.cpRaceMode);
+	write(node, "cpRaceLaps", value.cpRaceLaps);
+	write(node, "cpRacePlayable", value.cpRacePlayable);
 	write(node, "cpRace", value.cpRace);
 	write(node, "cpOrder", value.cpOrder);
 	write(node, "areaShape", value.areaShape);
@@ -106,11 +122,29 @@ bool readProperties(const Node &node, ObjectPawnProperties &value, std::string *
 		return false;
 	if (!read(node, "virtualWorld", value.virtualWorld, error))
 		return false;
+	if (!read(node, "forceWorldReplacement", value.forceWorldReplacement, error))
+		return false;
 	if (!read(node, "attachOffset", value.attachOffset, error))
 		return false;
 	if (!read(node, "attachRotation", value.attachRotation, error))
 		return false;
 	if (!read(node, "attachSyncRotation", value.attachSyncRotation, error))
+		return false;
+	if (!read(node, "attachBone", value.attachBone, error))
+		return false;
+	if (!read(node, "attachSlot", value.attachSlot, error))
+		return false;
+	if (!read(node, "attachScale", value.attachScale, error))
+		return false;
+	if (!read(node, "attachColor1", value.attachColor1, error))
+		return false;
+	if (!read(node, "attachColor2", value.attachColor2, error))
+		return false;
+	if (!read(node, "attachSkin", value.attachSkin, error))
+		return false;
+	if (!read(node, "moveEnabled", value.moveEnabled, error) || !read(node, "moveOffset", value.moveOffset, error) ||
+	    !read(node, "moveRotation", value.moveRotation, error) || !read(node, "moveRotates", value.moveRotates, error) ||
+	    !read(node, "moveSpeed", value.moveSpeed, error))
 		return false;
 	if (!read(node, "elementKind", value.elementKind, error))
 		return false;
@@ -219,6 +253,9 @@ bool readProperties(const Node &node, ObjectPawnProperties &value, std::string *
 	if (!read(node, "cpSize", value.cpSize, error))
 		return false;
 	if (!read(node, "cpRaceType", value.cpRaceType, error))
+		return false;
+	if (!read(node, "cpRaceMode", value.cpRaceMode, error) || !read(node, "cpRaceLaps", value.cpRaceLaps, error) ||
+	    !read(node, "cpRacePlayable", value.cpRacePlayable, error))
 		return false;
 	if (!read(node, "cpRace", value.cpRace, error))
 		return false;
@@ -329,6 +366,7 @@ void writeTextDraw(Node &node, const TextDraw &value)
 	write(node, "group", value.group);
 	write(node, "board", value.board);
 	write(node, "shape", value.shape);
+	if(!value.serverTxd.empty()) write(node, "serverTxd", value.serverTxd);
 }
 bool readTextDraw(const Node &node, TextDraw &value, std::string *error)
 {
@@ -394,6 +432,8 @@ bool readTextDraw(const Node &node, TextDraw &value, std::string *error)
 		return false;
 	if (!read(node, "shape", value.shape, error))
 		return false;
+	if (!read(node, "serverTxd", value.serverTxd, error))
+		return false;
 	return true;
 }
 
@@ -401,6 +441,7 @@ struct Instance {
 	unsigned id = 0, parent = 0, vehicle = 0, lod = 0;
 	int model = 0, area = 0, kind = SAMP_ELEMENT_OBJECT;
 	bool isVehicle = false, deleted = false, world = false, hidden = false, sourceDegrees = false, radar = false;
+	bool playerTarget = false;
 	rw::V3d position = {0, 0, 0}, original = {0, 0, 0};
 	rw::Quat rotation = {0, 0, 0, 1}, sourceRotation = {0, 0, 0, 1}, originalRotation = {0, 0, 0, 1};
 	double degrees[3] = {0, 0, 0};
@@ -485,7 +526,10 @@ Node writeInstance(ObjectInst *inst, const std::string &handle)
 		write(node, "source-degrees", inst->m_sourceDegrees);
 		write(node, "source-rotation", inst->m_sourceRotation);
 	}
-	node.set("parent", documentId(GetInstanceByID(p.attachParent)));
+	if (p.attachParent == PAWN_ATTACH_PLAYER)
+		node.set("parent-type", "player");
+	else
+		node.set("parent", documentId(GetInstanceByID(p.attachParent)));
 	node.set("npc-vehicle", documentId(GetInstanceByID(p.npcVehicle)));
 	node.set("lod", documentId(inst->m_lod));
 	// Unchanged world geometry may only carry editor visibility. Its
@@ -531,6 +575,7 @@ bool readInstance(const Node &node, Instance &out, std::string *error)
 	    !read(node, "source-rotation", out.sourceRotation, error) || !read(node, "parent", out.parent, error) ||
 	    !read(node, "npc-vehicle", out.vehicle, error) || !read(node, "lod", out.lod, error))
 		return false;
+	out.playerTarget = node.get("parent-type") == "player";
 	out.handle = node.get("runtime-handle");
 	if (out.kind < SAMP_ELEMENT_OBJECT || out.kind > SAMP_ELEMENT_AREA || out.model < -30000 ||
 	    out.model >= NUMOBJECTDEFS ||
@@ -732,6 +777,7 @@ void CaptureMapXMLExport(const std::vector<ObjectInst *> &objects,
 		}
 		captured.children.push_back(writeTextDrawList(GetMapTextDraws(), {}));
 		captured.children.push_back(WriteCoordinatePinXML());
+		captured.children.push_back(WriteLayoutPathsXML());
 		Node &camera = captured.add("camera");
 		write(camera, "position", TheCamera.m_position);
 		write(camera, "target", TheCamera.m_target);
@@ -777,6 +823,8 @@ bool ReadTextDrawXML(const Node &document, bool sameRevision, std::vector<TextDr
 					td.group = saved.group;
 					td.board = saved.board;
 					td.shape = saved.shape;
+					if(td.text.substr(0, td.text.find(':')) == saved.text.substr(0, saved.text.find(':')))
+						td.serverTxd = saved.serverTxd;
 					break;
 				}
 		for (size_t i = 0; i < snapshot.size(); i++)
@@ -818,6 +866,9 @@ bool ValidateEditorDocument(const Node &document, std::string *error)
 		return false;
 	if (const Node *pins = document.child("alignment"))
 		if (!ReadCoordinatePinXML(*pins, error, false))
+			return false;
+	if (const Node *paths = document.child("layout-paths"))
+		if (!ReadLayoutPathsXML(*paths, error, false))
 			return false;
 	if (const Node *camera = document.child("camera")) {
 		rw::V3d position = {}, target = {};
@@ -902,7 +953,8 @@ bool ApplyMapXML(const Node &document, bool sameRevision, std::vector<ObjectInst
 			return m.second.active || m.second.textEnabled;
 		});
 		bool runtime =
-		    !saved.deleted && (!saved.world || length(sub(saved.position, saved.original)) >= .001f ||
+		    !saved.deleted && (!saved.world || saved.position.x != saved.original.x ||
+				       saved.position.y != saved.original.y || saved.position.z != saved.original.z ||
 				       GetQuaternionSimilarity(saved.rotation, saved.originalRotation) < .9999f ||
 				       !ObjectPawnPropertiesAreDefault(saved.properties) || activeMaterial);
 		auto h = handles.find(saved.handle);
@@ -999,7 +1051,7 @@ bool ApplyMapXML(const Node &document, bool sameRevision, std::vector<ObjectInst
 		if (sameRevision) {
 			props = saved.properties;
 			// References belong to this XML document, not to a previous process.
-			props.attachParent = saved.parent ? 0 : -1;
+			props.attachParent = saved.playerTarget ? PAWN_ATTACH_PLAYER : saved.parent ? 0 : -1;
 			props.npcVehicle = saved.vehicle ? 0 : -1;
 			target->m_area = saved.area;
 			RestoreDocumentTransform(target, saved.position, saved.rotation, saved.deleted);
@@ -1037,7 +1089,7 @@ bool ApplyMapXML(const Node &document, bool sameRevision, std::vector<ObjectInst
 				continue;
 			ObjectPawnProperties props = saved.properties;
 			ObjectInst *parent = ref(saved.parent), *vehicle = ref(saved.vehicle);
-			props.attachParent = parent && parent != inst ? parent->m_id : -1;
+			props.attachParent = saved.playerTarget ? PAWN_ATTACH_PLAYER : parent && parent != inst ? parent->m_id : -1;
 			props.npcVehicle = vehicle ? vehicle->m_id : -1;
 			SetObjectPawnProperties(inst, props, false);
 			ObjectInst *lod = ref(saved.lod);
@@ -1094,6 +1146,8 @@ int RestoreMapXMLWorkspace(const char *path)
 	read(root, "show-material-indexes", gShowMaterialIndexes, &error);
 	if (const Node *pins = root.child("alignment"))
 		ReadCoordinatePinXML(*pins, &error);
+	if (const Node *paths = root.child("layout-paths"))
+		ReadLayoutPathsXML(*paths, &error);
 	if (const Node *camera = root.child("camera")) {
 		rw::V3d position = TheCamera.m_position, target = TheCamera.m_target;
 		float fov = TheCamera.m_fov;

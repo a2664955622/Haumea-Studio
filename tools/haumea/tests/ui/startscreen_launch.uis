@@ -4,7 +4,7 @@
 wait 30
 assert window "Welcome to Haumea Studio"
 assert objects == 0
-click_item 'Welcome to Haumea Studio' 'New workspace...'
+click_item 'Welcome to Haumea Studio' 'New workspace'
 wait 3
 set_item 'Welcome to Haumea Studio' '##parent' "."
 wait 3

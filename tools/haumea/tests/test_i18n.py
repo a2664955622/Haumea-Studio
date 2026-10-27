@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
-"""Translation: the extractor, the pt-BR catalog, and the editor loading a
+"""Translation: the extractor, the pt-BR and zh-CN catalogs, and the editor loading a
 catalog (a language is a lang/<code>.po file), keeping the saved layout of
 windows whose labels became "translated###English" IDs.
 
@@ -57,6 +57,15 @@ class ExtractTests(unittest.TestCase):
 
 
 class CatalogTests(unittest.TestCase):
+    def test_zh_cn_matches_current_ui(self):
+        """Every current UI key is translated, with no stale or duplicate keys."""
+        entries = [(key, value, fuzzy) for key, value, fuzzy in extract.parse_po(
+            (ROOT / 'tools/haumea/lang/zh-CN.po').read_text(encoding='utf-8')) if key]
+        keys = [key for key, _, _ in entries]
+        self.assertEqual(len(keys), len(set(keys)), 'duplicate Chinese translation keys')
+        self.assertEqual(sorted(keys), sorted(extract.collect()), 'Chinese catalog needs refreshing')
+        self.assertEqual([key for key, value, fuzzy in entries if not value or fuzzy], [])
+
     def test_placeholders(self):
         self.assertEqual(extract.check_catalogs(), 0)
 
@@ -148,6 +157,44 @@ def ini_sections(text):
 
 @unittest.skipUnless(BINARY and XVFB, 'needs the editor and Xvfb')
 class EditorTests(unittest.TestCase):
+    def test_zh_cn_glyphs_and_redesigned_controls(self):
+        """The bundled font draws Chinese, including the new feature and settings labels."""
+        self.editor('''open "$UI_FIXTURES/ui_floor.pwn"
+wait 50
+assert missing_catalog_glyphs == 0
+assert window 'Object Browser'
+assert window '物体浏览器'
+click_item 'Object Browser' '##browser_source'
+wait 3
+assert item '*' '角色'
+assert item '*' '路径'
+assert item '*' '标记'
+assert item '*' '文本与音频'
+assert item '*' '模型文件'
+click_item '*' '角色'
+wait 5
+assert item 'Object Browser' '##place_skin'
+shortcut window_preferences
+wait 5
+assert window '首选项'
+assert item 'Preferences' '主题'
+click_item 'Preferences' '主题'
+wait 3
+assert item '*' '深色'
+assert item '*' '浅色'
+click_item '*' '浅色'
+wait 3
+assert missing_catalog_glyphs == 0
+click_item 'Preferences' 'Performance'
+wait 3
+assert item 'Preferences' '距离雾'
+assert item 'Preferences' '垂直同步'
+assert item 'Preferences' '限制帧率'
+assert item 'Preferences' '##stream_distance'
+assert clipped_items == 0
+exit
+''', savesettings='language zh-CN\nsettings_version 8\nshow_browser_window 1\nshow_instance_window 1\n')
+
     def editor(self, script, ini=None, savesettings=None, lang=None):
         tmp, game = shared()
         work = tempfile.mkdtemp(dir=tmp)
@@ -156,8 +203,8 @@ class EditorTests(unittest.TestCase):
         config.mkdir(parents=True, exist_ok=True)
         if ini is not None:
             (config / 'imgui.ini').write_text(ini, encoding='utf-8')
-        if savesettings is not None:
-            (config / 'savesettings.txt').write_text(savesettings)
+        (config / 'savesettings.txt').write_text(savesettings if savesettings is not None else
+            'settings_version 8\nshow_browser_window 0\nshow_instance_window 0\n')
         if lang is not None:
             Path(work, 'lang').mkdir()
             Path(work, 'lang', 'xx.po').write_text(lang, encoding='utf-8')
@@ -174,12 +221,37 @@ class EditorTests(unittest.TestCase):
                ((config / 'savesettings.txt').read_text() if (config / 'savesettings.txt').exists() else ''), \
                result.stdout + result.stderr
 
+    def test_mapping_tool_controls_fit(self):
+        """New curve controls remain usable in each bundled language at panel width."""
+        script = '''open "$UI_FIXTURES/ui_map.pwn"
+shortcut window_tools
+wait 5
+click_item 'Tools' 'Paths & curves'
+click_item 'Tools' 'New path'
+wait 5
+assert clipped_items == 0
+click_item 'Tools' 'Point settings'
+wait 3
+assert clipped_items == 0
+scroll_until 'Tools' 'Model ID'
+assert clipped_items == 0
+scroll_until 'Tools' 'Advanced'
+click_item 'Tools' 'Advanced'
+wait 3
+assert clipped_items == 0
+exit
+'''
+        for language in ('en', 'pt-BR', 'zh-CN'):
+            with self.subTest(language=language):
+                self.editor(script, savesettings='settings_version 8\nlanguage ' + language +
+                            '\nshow_browser_window 0\nshow_instance_window 0\n')
+
     def test_old_layout_survives(self):
         """An imgui.ini saved before a window's label became ###English keeps its place and dock."""
         # Panels show once a map is open; the saved flags carry them to the second run.
         ini_a, saved_a, _ = self.editor('open "$UI_FIXTURES/ui_floor.pwn"\nwait 100\n' +
                                         'shortcut window_object_info\nshortcut window_browser\n' +
-                                        'shortcut window_map_objects\nwait 600\nexit\n')
+                                        'shortcut window_map_objects\nshortcut window_tools\nwait 600\nexit\n')
         windows = ini_sections(ini_a)
         marked = [n for n in windows if n.startswith('###')]
         if not marked:
@@ -214,7 +286,7 @@ class EditorTests(unittest.TestCase):
                       for tab in ('Shortcuts', 'Camera', 'Test server', 'Privacy', 'Updates')) +
               'exit\n')
 
-    PANEL_FLAGS = ''.join('show_%s_window 1\n' % w for w in (
+    PANEL_FLAGS = 'settings_version 8\n' + ''.join('show_%s_window 1\n' % w for w in (
         'instance', 'browser', 'map_objects', 'view', 'time_weather'))
 
     @staticmethod

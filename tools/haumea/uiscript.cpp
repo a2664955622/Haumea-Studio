@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
+#include "particles.h"
 #include "documentxml.h"
 #include "coordinatepin.h"
+#include "maptools.h"
+#include "layoutpaths.h"
+#include "mapcleanup.h"
 #include "alignmentmath.h"
 #include "browserdiscovery.h"
 #include "crashreports.h"
@@ -47,6 +51,9 @@
 // One command per line ('#' starts a comment; quote arguments with spaces):
 //   assert work_area_top < 30    viewport height reserved above the workspace
 //   assert item_count "Code" == 1 visible controls with this label
+//   assert rendered.map_model 3555 == 1  visible map instances of a model
+//   assert rendered.lod_overlaps == 0    visible LODs covering visible children
+//   assert render_far_clip < 1000        current weather/editor far clip
 //   wait N                      frames
 //   wait_until <assert>         up to 600 frames
 //   key Ctrl+Shift+H            press and release a chord
@@ -56,11 +63,11 @@
 //   click [X Y] [left|right|middle]
 //   drag X1 Y1 X2 Y2 [frames]
 //   wheel N
-//   click_object N|model=M [right]  a map object, where it is on screen
+//   click_object N|model=M [right] [jitter]  a map object, where it is on screen
 //   camera X Y Z TX TY TZ / mark_camera
 //   click_item 'Window' 'Label' [N] [right]   '*' for any window; N: the Nth match, -1 the last
 //   hover_item 'Window' 'Label'
-//   set_item 'Window' 'Label' "text" [N] [tab] types into a field ('Colour/##X' = red)
+//   set_item 'Window' 'Label' "text" [N] [tab] [ctrl] types into a field ('Colour/##X' = red)
 //   close_popup                         clicks the empty end of the menu bar
 //   reopen                              opens the map file again
 //   click_world X Y Z [shift|right]    looks at a world point and clicks it
@@ -94,6 +101,8 @@ struct UiItem {
 };
 static std::vector<UiItem> gItems, gPrevItems;
 static std::map<ImGuiID, size_t> gItemIndex;
+// Tabs report their labels before ItemAdd; keep those labels for the later hook.
+static std::map<ImGuiID, std::string> gItemLabels;
 
 static std::string
 visibleTitle(const char *name)
@@ -127,6 +136,11 @@ ImGuiTestEngineHook_ItemAdd(ImGuiContext *ctx, ImGuiID id, const ImRect &bb, con
 		item.windowName = w->Name;
 		item.rootWindowName = w->RootWindow ? w->RootWindow->Name : w->Name;
 	}
+	auto label = gItemLabels.find(id);
+	if(label != gItemLabels.end()){
+		item.rawLabel = label->second;
+		item.label = visibleTitle(item.rawLabel.c_str());
+	}
 	gItemIndex[id] = gItems.size();
 	gItems.push_back(item);
 }
@@ -136,6 +150,7 @@ ImGuiTestEngineHook_ItemInfo(ImGuiContext*, ImGuiID id, const char *label, ImGui
 {
 	if(!gActive || label == nil)
 		return;
+	gItemLabels[id] = label;
 	std::map<ImGuiID, size_t>::iterator it = gItemIndex.find(id);
 	if(it != gItemIndex.end()){
 		gItems[it->second].label = visibleTitle(label);
@@ -158,10 +173,21 @@ ImGuiTestEngine_FindItemDebugLabel(ImGuiContext*, ImGuiID)
 static std::string
 plainLabel(const std::string &s)
 {
-	// Icon glyphs, "+" and similar marks before the words.
+	// Font Awesome uses private-use characters. Other UTF-8 characters can
+	// be the words themselves (Chinese, or an accented first letter).
 	size_t i = 0;
-	while(i < s.size() && ((unsigned char)s[i] >= 0x80 || !isalnum((unsigned char)s[i])))
-		i++;
+	while(i < s.size()){
+		unsigned char ch = (unsigned char)s[i];
+		if(ch < 0x80){
+			if(isalnum(ch)) break;
+			i++;
+		}else{
+			unsigned int cp;
+			int length = ImTextCharFromUtf8(&cp, s.c_str() + i, s.c_str() + s.size());
+			if(length <= 0 || cp < 0xE000 || cp > 0xF8FF) break;
+			i += length;
+		}
+	}
 	return s.substr(i);
 }
 
@@ -295,8 +321,13 @@ findItem(const std::string &window, const std::string &label, int nth)
 				return &it;
 			continue;
 		}
-		if(nameMatches(it.rawLabel, label, false))
-			return &it;
+		if(nameMatches(it.rawLabel, label, false)){
+			// Window diagnostics cover the whole panel. Prefer its dock tab
+			// (or another actual control) when a script clicks a panel's name.
+			if(it.id != ImHashStr(it.windowName.c_str()))
+				return &it;
+			contains = &it;
+		}
 		if(!contains && nameMatches(it.rawLabel, label, true))
 			contains = &it;
 	}
@@ -574,6 +605,16 @@ coordinate(const std::string &s, bool vertical)
 		}
 		return -1000;
 	}
+	if(s.compare(0,5,"path:")==0){
+		int index=0,handle=0;
+		sscanf(s.c_str()+5,"%d:%d",&index,&handle);
+		ImVec2 point;
+		if(LayoutPathPointScreen(&point,index,handle)){
+			ImVec2 origin=ImGui::GetMainViewport()->Pos;
+			return (int)(vertical?point.y-origin.y:point.x-origin.x);
+		}
+		return -1000;
+	}
 	if(s.compare(0,4,"obj:") == 0){
 		int model, x, y, z;
 		if(sscanf(s.c_str(),"obj:%d:%d:%d:%d",&model,&x,&y,&z) == 4){
@@ -693,7 +734,12 @@ windowOpen(const std::string &title)
 	ImGuiContext &g = *GImGui;
 	for(int i = 0; i < g.Windows.Size; i++){
 		ImGuiWindow *w = g.Windows[i];
-		if(w->WasActive && !w->Hidden && nameMatches(w->Name, title, false))
+		// A panel in an inactive dock tab is still open.
+		bool open = !w->Hidden;
+#ifdef IMGUI_HAS_DOCK
+		open |= w->DockIsActive;
+#endif
+		if(w->WasActive && open && nameMatches(w->Name, title, false))
 			return true;
 	}
 	return false;
@@ -738,6 +784,124 @@ keycastAssert(const std::string &what, const std::string &text, std::string &why
 	return true;
 }
 
+// Exercise the same geometry-copy path used by animated skins and per-instance
+// vehicle materials under an unrelated scene dictionary. This catches lookups
+// and disk reads that the final material replacement would otherwise hide.
+rw::Geometry *CloneInstanceGeometry(rw::Geometry *source);
+static rw::Texture *(*gCloneProbeFind)(const char *name);
+static rw::Texture *(*gCloneProbeRead)(const char *name, const char *mask);
+static int gCloneProbeFinds, gCloneProbeReads;
+
+static rw::Texture*
+cloneProbeFind(const char *name)
+{
+	gCloneProbeFinds++;
+	return gCloneProbeFind(name);
+}
+
+static rw::Texture*
+cloneProbeRead(const char *name, const char *mask)
+{
+	gCloneProbeReads++;
+	return gCloneProbeRead(name, mask);
+}
+
+static std::vector<rw::Texture*>
+geometryTextures(rw::Geometry *geometry)
+{
+	std::vector<rw::Texture*> textures;
+	auto add = [&](rw::Texture *texture){ if(texture) textures.push_back(texture); };
+	for(int i = 0; i < geometry->matList.numMaterials; i++){
+		rw::Material *material = geometry->matList.materials[i];
+		if(material == nil) continue;
+		add(material->texture);
+		rw::MatFX *fx = rw::MatFX::get(material);
+		if(fx == nil) continue;
+		for(int j = 0; j < 2; j++)
+			switch(fx->fx[j].type){
+			case rw::MatFX::BUMPMAP: add(fx->fx[j].bump.bumpedTex); add(fx->fx[j].bump.tex); break;
+			case rw::MatFX::ENVMAP: add(fx->fx[j].env.tex); break;
+			case rw::MatFX::DUAL: add(fx->fx[j].dual.tex); break;
+			}
+	}
+	return textures;
+}
+
+static bool
+checkGeometryCloneTextures(ObjectInst *inst, std::string &why)
+{
+	ObjectDef *def = inst ? GetObjectDef(inst->m_objectId) : nil;
+	if(def == nil || inst->m_rwObject == nil){ why = "no selected rendered model"; return false; }
+	std::vector<rw::Geometry*> geometries;
+	if(def->m_type == ObjectDef::ATOMIC)
+		geometries.push_back(((rw::Atomic*)inst->m_rwObject)->geometry);
+	else if(def->m_type == ObjectDef::CLUMP){
+		rw::Clump *clump = (rw::Clump*)inst->m_rwObject;
+		FORLIST(lnk, clump->atomics)
+			geometries.push_back(rw::Atomic::fromClump(lnk)->geometry);
+	}
+	int checked = 0;
+	for(rw::Geometry *source : geometries){
+		if(source == nil) continue;
+		std::vector<rw::Texture*> textures = geometryTextures(source);
+		if(textures.empty()) continue;
+		std::vector<int32> refs;
+		std::vector<rw::TexDictionary*> dictionaries;
+		for(rw::Texture *texture : textures){
+			refs.push_back(texture->refCount);
+			dictionaries.push_back(texture->dict);
+		}
+		rw::TexDictionary *previous = rw::TexDictionary::getCurrent();
+		rw::TexDictionary *decoy = rw::TexDictionary::create();
+		rw::Texture *sentinel = rw::Texture::create(nil);
+		strcpy(sentinel->name, "__clone_scene_probe__");
+		decoy->add(sentinel);
+		rw::TexDictionary::setCurrent(decoy);
+		bool ok = true;
+		for(int pass = 0; pass < 2 && ok; pass++){
+			if(pass == 1){
+				// Also protect the source from same-name textures in the scene.
+				rw::Texture *collision = rw::Texture::create(nil);
+				memcpy(collision->name, textures.front()->name, sizeof(collision->name));
+				decoy->add(collision);
+			}
+			int count = decoy->count(), allocated = rw::Texture::numAllocated;
+			uint32 flags = source->flags;
+			gCloneProbeFind = rw::Texture::findCB;
+			gCloneProbeRead = rw::Texture::readCB;
+			gCloneProbeFinds = gCloneProbeReads = 0;
+			rw::Texture::findCB = cloneProbeFind;
+			rw::Texture::readCB = cloneProbeRead;
+			rw::Geometry *copy = CloneInstanceGeometry(source);
+			bool restored = rw::Texture::findCB == cloneProbeFind && rw::Texture::readCB == cloneProbeRead;
+			rw::Texture::findCB = gCloneProbeFind;
+			rw::Texture::readCB = gCloneProbeRead;
+			bool sameTextures = copy && geometryTextures(copy) == textures;
+			bool sameShape = copy && copy->numVertices == source->numVertices && copy->numTriangles == source->numTriangles;
+			if(copy) copy->destroy();
+			bool sameOwners = true;
+			for(size_t i = 0; i < textures.size(); i++)
+				if(textures[i]->refCount != refs[i] || textures[i]->dict != dictionaries[i]) sameOwners = false;
+			ok = sameTextures && sameShape && sameOwners && restored && source->flags == flags &&
+				rw::TexDictionary::getCurrent() == decoy && decoy->count() == count &&
+				rw::Texture::numAllocated == allocated && gCloneProbeFinds == 0 && gCloneProbeReads == 0;
+			if(!ok){
+				char message[256];
+				snprintf(message, sizeof(message),
+					"geometry %d pass %d: %d scene lookups, %d disk reads, dictionary %d -> %d, textures preserved %d, owners preserved %d",
+					checked, pass, gCloneProbeFinds, gCloneProbeReads, count, decoy->count(), sameTextures, sameOwners);
+				why = message;
+			}
+		}
+		rw::TexDictionary::setCurrent(previous);
+		decoy->destroy();
+		if(!ok) return false;
+		checked++;
+	}
+	why = std::to_string(checked) + " textured geometries cloned without scene lookups, disk reads or texture changes";
+	return checked > 0;
+}
+
 // assert objects|selected|textdraws|textdraw_zoom|radar_zones <op> N
 // assert selected.model|selected.x|selected.y|selected.z <op> N
 // assert selected.texture <slot> "name"
@@ -747,9 +911,13 @@ keycastAssert(const std::string &what, const std::string &text, std::string &why
 // assert keycast_contains "text"   (and keycast_lacks: what the pressed-keys overlay shows now)
 // assert file_contains <path> "text"   (and file_lacks)
 // assert window "Title"     / no_window "Title"
+// assert window_docked|window_x|window_y|window_width|window_height "Title" <op> N
+// assert textdraw_canvas_right <op> N
 // assert item 'Window' 'Label'   / no_item
+// assert item_fully_visible 'Window' 'Label'   (bounds stay inside the clip rectangle)
 // assert hidden|player_view_hidden|fov|ui_scale|camera_moved <op> N   (camera_moved: metres since mark_camera)
 // assert camera_target.x|y|z <op> N   (the point the camera looks at)
+// assert camera_position.x|y|z <op> N
 // assert train.cars|train.off_track|train.N.x|y|z|model <op> N   (the selected engine's train in game)
 // assert drawn_rotation N|selected RX RY RZ   (the map's Nth object, from 0, is drawn as CreateObject rotates it)
 static bool
@@ -764,13 +932,88 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 	ObjectInst *sel = selection.first ? (ObjectInst*)selection.first->item : nil;
 	char buf[256];
 	bool result;
+	if(what == "geometry_clone_textures")
+		return checkGeometryCloneTextures(sel, why);
 	if(keycastAssert(what, arg(1), why, &result))
 		return result;
-	if(what == "objects" || what == "selected" || what == "textdraws" || what == "textdraw_zoom" || what == "radar_zones" ||
+	if(what == "placing"){
+		why = gPlaceMode ? "placing" : "not placing";
+		return compare(gPlaceMode ? 1 : 0, arg(1), atof(arg(2).c_str()));
+	}
+	if(what == "fog_enabled"){
+		why = gEnableFog ? "fog enabled" : "fog disabled";
+		return compare(gEnableFog ? 1 : 0, arg(1), atof(arg(2).c_str()));
+	}
+	if(what == "missing_catalog_glyphs"){
+		std::vector<unsigned int> codepoints;
+		I18nCatalogCodepoints(codepoints);
+		ImFont *font = ImGui::GetIO().Fonts->Fonts[0];
+#if IMGUI_VERSION_NUM >= 19200
+		ImFontBaked *baked = font->GetFontBaked(font->LegacySize);
+#else
+		ImFont *baked = font;
+#endif
+		int count = 0;
+		for(unsigned int cp : codepoints){
+			if(cp >= 0x20 && baked->FindGlyphNoFallback((ImWchar)cp) == nil){
+				say("  missing catalog glyph U+%04X", cp);
+				count++;
+			}
+		}
+		why = "missing catalog glyphs: " + std::to_string(count);
+		return compare(count, arg(1), atof(arg(2).c_str()));
+	}
+	if(what=="particles.model" || what=="particles.model_live" || what=="particles.model_drawn"){
+		int kind=what=="particles.model"?0:what=="particles.model_live"?1:2;
+		int count=ParticlePreview::CountForModel(atoi(arg(1).c_str()),kind);
+		why=what+" is "+std::to_string(count);
+		return compare(count,arg(2),atof(arg(3).c_str()));
+	}
+	if(what.compare(0,10,"particles.") == 0){
+		const auto &stats=ParticlePreview::GetStats();
+		int value=what=="particles.systems"?stats.systems:what=="particles.live"?stats.live:
+			what=="particles.drawn"?stats.drawn:what=="particles.missing"?stats.missing:stats.definitions;
+		why=what+" is "+std::to_string(value);
+		return compare(value,arg(1),atof(arg(2).c_str()));
+	}
+	if(what == "frame_limit" || what == "vsync" || what == "render_fog_start"){
+		double value = what == "frame_limit" ? gFrameLimit : what == "vsync" ? (gVSync ? 1 : 0) : TheCamera.m_rwcam->fogPlane;
+		why = what + " is " + std::to_string(value);
+		return compare(value, arg(1), atof(arg(2).c_str()));
+	}
+	if(what == "render_far_clip"){
+		float distance = TheCamera.m_rwcam->farPlane;
+		why = "render far clip is " + std::to_string(distance);
+		return compare(distance, arg(1), atof(arg(2).c_str()));
+	}
+	if(what == "rendered.map_model" || what == "rendered.lod_overlaps"){
+		std::set<ObjectInst*> visible;
+		ForEachVisibleInst([](ObjectInst *inst, void *data){
+			((std::set<ObjectInst*>*)data)->insert(inst);
+		}, &visible);
+		int count = 0;
+		if(what == "rendered.map_model"){
+			int model = atoi(arg(1).c_str());
+			for(ObjectInst *inst : visible)
+				if(IsUserMapObject(inst) && PawnModelId(inst->m_objectId) == model)
+					count++;
+			why = "visible map instances of model " + arg(1) + ": " + std::to_string(count);
+			return compare(count, arg(2), atof(arg(3).c_str()));
+		}
+		for(ObjectInst *inst : visible){
+			ObjectInst *parent = inst->m_lod;
+			for(int depth = 0; parent && depth < 32; depth++, parent = parent->m_lod)
+				if(visible.count(parent)) count++;
+		}
+		why = "visible LOD overlaps: " + std::to_string(count);
+		return compare(count, arg(1), atof(arg(2).c_str()));
+	}
+	if(what == "objects" || what == "selected" || what == "selected_world" || what == "textdraws" || what == "textdraw_zoom" || what == "radar_zones" ||
 	   what == "selected.model" || what == "selected.x" || what == "selected.y" || what == "selected.z"){
 		double v = 0;
 		if(what == "objects") v = countObjects();
 		else if(what == "selected") v = countSelected();
+		else if(what == "selected_world"){for(CPtrNode *p=selection.first;p;p=p->next)if(IsPawnWorldObject((ObjectInst*)p->item))v++;}
 		else if(what == "textdraws") v = GetTextDraws().size();
 		else if(what == "textdraw_zoom") v = TextDrawCanvasZoom();
 		else if(what == "radar_zones") v = CountRadarArtZones();
@@ -814,6 +1057,15 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		std::string field = dot == std::string::npos ? "" : what.substr(dot + 1);
 		if(index < 0 || index >= (int)tds.size()){ why = "no such textdraw"; return false; }
 		const TextDraw &td = tds[index];
+		if(field == "server_txd"){
+			why = "server TXD: " + td.serverTxd;
+			return td.serverTxd == arg(1);
+		}
+		if(field == "texture_loaded"){
+			bool loaded = TextDrawSpriteTextureAvailable(td);
+			why = loaded ? "sprite texture loaded" : "sprite texture missing";
+			return compare(loaded ? 1 : 0, arg(1), atof(arg(2).c_str()));
+		}
 		double v = field == "x" ? td.x : field == "y" ? td.y : field == "letter_x" ? td.letterX :
 			field == "letter_y" ? td.letterY : field == "size_x" ? td.sizeX : field == "locked" ? (double)td.locked : td.sizeY;
 		snprintf(buf, sizeof(buf), "%s is %g", what.c_str(), v);
@@ -871,7 +1123,8 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 	}
 	if(what == "hidden" || what == "player_view_hidden" || what == "fov" || what == "ui_scale" ||
 	   what == "camera_moved" || what == "camera_target.x" || what == "camera_target.y" ||
-	   what == "camera_target.z"){
+	   what == "camera_target.z" || what == "camera_position.x" || what == "camera_position.y" ||
+	   what == "camera_position.z"){
 		double v = 0;
 		if(what == "hidden"){
 			v = CountHiddenInstances();
@@ -884,6 +1137,9 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		else if(what == "camera_target.x") v = TheCamera.m_target.x;
 		else if(what == "camera_target.y") v = TheCamera.m_target.y;
 		else if(what == "camera_target.z") v = TheCamera.m_target.z;
+		else if(what == "camera_position.x") v = TheCamera.m_position.x;
+		else if(what == "camera_position.y") v = TheCamera.m_position.y;
+		else if(what == "camera_position.z") v = TheCamera.m_position.z;
 		else v = rw::length(rw::sub(TheCamera.m_position, gMarkedCamera));
 		snprintf(buf, sizeof(buf), "%s is %g", what.c_str(), v);
 		why = buf;
@@ -912,6 +1168,21 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		bool found=FindSelectionSnapDelta(objs,positions,{(float)atof(arg(1).c_str()),(float)atof(arg(2).c_str()),(float)atof(arg(3).c_str())},&correction);
 		why=found?"snap target found":"no snap target";
 		return compare(found,arg(4),atof(arg(5).c_str()));
+	}
+	if(what=="layout.count"||what=="layout.objects"||what=="layout.point_z"||what=="layout.matches"||what=="layout.upside_down"||what=="duplicates"||what=="view.bounds"||what=="gizmo.pivot"){
+		double value=what=="layout.count"?LayoutPathCount():what=="layout.objects"?LayoutPathObjectCount():
+			what=="layout.matches"?LayoutPathObjectsMatch():what=="layout.upside_down"?LayoutPathUpsideDownCount():
+			what=="layout.point_z"?LayoutPathPointHeight(atoi(arg(1).c_str())):what=="duplicates"?MapCleanupDuplicateCount():what=="view.bounds"?gRenderBounds:gGizmoPivot;
+		int offset=what=="layout.point_z"?1:0;
+		why=what+" is "+std::to_string(value);
+		return compare(value,arg(offset+1),atof(arg(offset+2).c_str()));
+	}
+	if(what == "line.points" || what == "line.markers" || what == "line.picking" || what == "line.cursor"){
+		const auto &feedback = GetMapToolsLineFeedback();
+		int value = what == "line.points" ? feedback.points : what == "line.markers" ? feedback.markers :
+			what == "line.picking" ? feedback.picking : feedback.cursorVisible;
+		why = what + " is " + std::to_string(value);
+		return compare(value, arg(1), atof(arg(2).c_str()));
 	}
 	if(what.compare(0, 4, "pin.") == 0){
 		rw::V3d pin, end;
@@ -978,6 +1249,25 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		why = "last toast: " + gLastToast;
 		return gLastToast.find(arg(1)) != std::string::npos;
 	}
+	if(what == "textdraw_canvas_right"){
+		float right = TextDrawCanvasToScreen(640.0f, false, false);
+		why = "textdraw_canvas_right is " + std::to_string(right);
+		return compare(right, arg(1), atof(arg(2).c_str()));
+	}
+	if(what == "window_docked" || what == "window_x" || what == "window_y" || what == "window_width" || what == "window_height"){
+		for(ImGuiWindow *window : GImGui->Windows){
+			if(!window->WasActive || ((window->Flags & ImGuiWindowFlags_ChildWindow) && !window->DockIsActive) ||
+			   (arg(1) != window->Name && !nameMatches(window->Name, arg(1), false))) continue;
+			double value = what == "window_docked" ? window->DockIsActive :
+				what == "window_x" ? window->Pos.x : what == "window_y" ? window->Pos.y :
+				what == "window_width" ? window->Size.x : window->Size.y;
+			snprintf(buf, sizeof(buf), "%s '%s' is %.1f", what.c_str(), arg(1).c_str(), value);
+			why = buf;
+			return compare(value, arg(2), atof(arg(3).c_str()));
+		}
+		why = "no such active window: " + arg(1);
+		return false;
+	}
 	if(what == "clipped_items"){
 		// clipped_items <op> <n>: labelled items on screen whose box runs past the
 		// side of their window (a label that grew, in a language with longer words).
@@ -1014,6 +1304,17 @@ uiAssert(const std::vector<std::string> &a, size_t first, std::string &why)
 		bool open = windowOpen(arg(1));
 		why = open ? "open" : "not open";
 		return what == "window" ? open : !open;
+	}
+	if(what == "item_fully_visible"){
+		const UiItem *item = findItem(arg(1), arg(2));
+		if(!item){ why = "item not found"; return false; }
+		bool fits = item->bb.Min.x >= item->clip.Min.x - 1.0f && item->bb.Min.y >= item->clip.Min.y - 1.0f &&
+			item->bb.Max.x <= item->clip.Max.x + 1.0f && item->bb.Max.y <= item->clip.Max.y + 1.0f;
+		snprintf(buf, sizeof(buf), "%s: item (%.0f,%.0f..%.0f,%.0f), clip (%.0f,%.0f..%.0f,%.0f)",
+			arg(2).c_str(), item->bb.Min.x, item->bb.Min.y, item->bb.Max.x, item->bb.Max.y,
+			item->clip.Min.x, item->clip.Min.y, item->clip.Max.x, item->clip.Max.y);
+		why = buf;
+		return fits;
 	}
 	if(what == "item" || what == "no_item"){
 		bool found = findItem(arg(1), arg(2)) != nil;
@@ -1166,6 +1467,22 @@ nextCommand(void)
 			addStep(Step::UP, 0, 0, 1);
 			addStep(Step::NOP);
 			return;
+		}else if(cmd == "drag_window" && a.size() >= 4){
+			ImGuiWindow *window = nil;
+			for(ImGuiWindow *candidate : GImGui->Windows)
+				if(candidate->WasActive && (!(candidate->Flags & ImGuiWindowFlags_ChildWindow) || candidate->DockIsActive) &&
+				   (a[1] == candidate->Name || nameMatches(candidate->Name, a[1], false))) window = candidate;
+			if(!window){ say("line %d: FAIL no window '%s'", (int)gLine, a[1].c_str()); gFails++; continue; }
+			ImRect title = window->DockIsActive ? window->DC.DockTabItemRect : window->TitleBarRect();
+			int x = (int)title.GetCenter().x, y = (int)title.GetCenter().y;
+			int dx = atoi(a[2].c_str()), dy = atoi(a[3].c_str());
+			addStep(Step::MOVE, x, y);
+			addStep(Step::DOWN, 0, 0, 1);
+			for(int f = 1; f <= 20; f++) addStep(Step::MOVE, x + dx * f / 20, y + dy * f / 20);
+			for(int f = 0; f < 5; f++) addStep(Step::NOP);
+			addStep(Step::UP, 0, 0, 1);
+			addStep(Step::NOP);
+			return;
 		}else if(cmd == "wheel" && a.size() >= 2){
 			addStep(Step::WHEEL, 0, 0, atoi(a[1].c_str()));
 			addStep(Step::NOP);
@@ -1215,17 +1532,22 @@ nextCommand(void)
 			s.window = a[1];
 			s.label = a[2];
 			s.nth = 1;
-			bool tab = false;
+			bool tab = false, ctrl = false;
 			for(size_t k = 4; k < a.size(); k++){
 				if(a[k] == "tab") tab = true;
+				else if(a[k] == "ctrl") ctrl = true;
 				else if(isdigit((unsigned char)a[k][0])) s.nth = atoi(a[k].c_str());
 			}
 			gSteps.push_back(s);
 			addStep(Step::NOP);
+			if(ctrl) addStep(Step::KEYDOWN, 0, 0, sk::KEY_LCTRL);
 			addStep(Step::DOWN, 0, 0, 1);
 			addStep(Step::UP, 0, 0, 1);
-			addStep(Step::DOWN, 0, 0, 1);
-			addStep(Step::UP, 0, 0, 1);
+			if(ctrl) addStep(Step::KEYUP, 0, 0, sk::KEY_LCTRL);
+			else{
+				addStep(Step::DOWN, 0, 0, 1);
+				addStep(Step::UP, 0, 0, 1);
+			}
 			addStep(Step::NOP);
 			addStep(Step::NOP);
 			addChord({ sk::KEY_LCTRL, 'A' });
@@ -1295,6 +1617,10 @@ nextCommand(void)
 			addStep(Step::MOVE, (int)screen.x, (int)screen.y);
 			addStep(Step::NOP);
 			addStep(Step::DOWN, 0, 0, bit);
+			if(a.size() > 3 && a[3] == "jitter"){
+				addStep(Step::MOVE, (int)screen.x + 3, (int)screen.y + 2);
+				addStep(Step::NOP);
+			}
 			addStep(Step::UP, 0, 0, bit);
 			addStep(Step::NOP);
 			return;
@@ -1518,6 +1844,7 @@ UiScriptTick(void)
 	gPrevItems.swap(gItems);
 	gItems.clear();
 	gItemIndex.clear();
+	gItemLabels.clear();
 	gFrame++;
 	if(gFrame < 30)
 		return;	// let the first frames settle

@@ -16,6 +16,8 @@ shortcut window_object_info
 wait 20
 assert pawn_count "\"white\"" == 3
 assert pawn_count "\"all_walls\"" == 0
+scroll_until 'Object Info' 'Browse textures...'
+wait 3
 click_item 'Object Info' 'Browse textures...'
 wait 10
 assert window "Choose Material Texture"

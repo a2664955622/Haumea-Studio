@@ -1541,10 +1541,6 @@ msgstr "Texto"
 msgid "Text size"
 msgstr "Tamanho do texto"
 
-#: tools/haumea/textdraws_ui.cpp:1240
-msgid "TextDraw mode"
-msgstr "Modo textdraw"
-
 #: tools/haumea/textdraws_ui.cpp:1360
 msgid "TextDraws"
 msgstr "TextDraws"
@@ -2381,10 +2377,6 @@ msgid "Compare"
 msgstr "Comparar"
 
 #: tools/haumea/textdraws_ui.cpp
-msgid "Small views of this board at 4:3, 16:9 and 21:9 in the corner."
-msgstr "Vistas pequenas desta prancheta em 4:3, 16:9 e 21:9 no canto."
-
-#: tools/haumea/textdraws_ui.cpp
 msgid "Grid"
 msgstr "Grade"
 
@@ -3106,18 +3098,6 @@ msgstr "Modelos personalizados (0.3.DL)"
 #: tools/haumea/textdraws_ui.cpp
 msgid "The game's"
 msgstr "Do jogo"
-
-#: tools/haumea/textdraws_ui.cpp
-msgid ""
-"The game's TXDs, and the custom models' of the open map (AddSimpleModel):\n"
-"those are mdl-<id> (mdl-2018 for -2018), for players on 0.3.DL or open.mp."
-msgstr ""
-"Os TXDs do jogo e os dos modelos personalizados do mapa aberto (AddSimpleModel):\n"
-"esses são mdl-<id> (mdl-2018 para -2018), para jogadores no 0.3.DL ou open.mp."
-
-#: tools/haumea/textdraws_ui.cpp
-msgid "The open map has no custom model with that ID."
-msgstr "O mapa aberto não tem modelo personalizado com esse ID."
 
 #: tools/haumea/testserver.cpp
 msgid "open.mp launcher (SA-MP if not found)"

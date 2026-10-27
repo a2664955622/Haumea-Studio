@@ -2019,6 +2019,8 @@ loadRwClumpFromMemory(rw::Stream *stream)
 static void
 setupPreviewAtomic(rw::Atomic *atm)
 {
+	if(atm == nil || atm->geometry == nil)
+		return;
 	gta::attachCustomPipelines(atm);
 	int32 driver = rw::platform;
 	int32 platform = rw::findPlatform(atm);
@@ -2089,8 +2091,10 @@ setupPreviewClump(rw::Clump *clump)
 
 	FORLIST(lnk, clump->atomics){
 		rw::Atomic *atomic = rw::Atomic::fromClump(lnk);
+		if(atomic == nil)
+			continue;
 		setupPreviewAtomic(atomic);
-		if(hier)
+		if(hier && atomic->geometry)
 			rw::Skin::setHierarchy(atomic, hier);
 	}
 }
@@ -2126,43 +2130,85 @@ findPreviewFrameByName(rw::Clump *clump, const char *name)
 	return find.found;
 }
 
-static rw::Atomic*
-findPreviewVehicleWheelSourceAtomic(rw::Clump *clump)
-{
-	if(clump == nil)
-		return nil;
 
-	rw::Atomic *fallback = nil;
-	FORLIST(lnk, clump->atomics){
-		rw::Atomic *atomic = rw::Atomic::fromClump(lnk);
-		if(atomic == nil)
-			continue;
-		rw::Frame *frame = atomic->getFrame();
-		const char *nodeName = frame ? gta::getNodeName(frame) : nil;
-		if(nodeName == nil)
-			continue;
-		if(rw::strcmp_ci(nodeName, "wheel") == 0)
-			return atomic;
-		if(strncmp(nodeName, "wheel_rf", 8) == 0 && strstr(nodeName, "dummy") == nil)
-			return atomic;
-		if(fallback == nil && rw::strcmp_ci(nodeName, "wheel_rf_dummy") == 0)
-			fallback = atomic;
-	}
-	return fallback;
+static bool
+previewNameContains(const char *name, const char *needle)
+{
+	if(name == nil || needle == nil || needle[0] == '\0')
+		return false;
+	size_t nameLength = strlen(name);
+	size_t needleLength = strlen(needle);
+	if(needleLength > nameLength)
+		return false;
+	for(size_t i = 0; i <= nameLength - needleLength; i++)
+		if(rw::strncmp_ci(name + i, needle, (int)needleLength) == 0)
+			return true;
+	return false;
 }
 
 static bool
-previewFrameHasAtomic(rw::Clump *clump, rw::Frame *frame)
+previewVehicleAtomicRenderable(rw::Atomic *atomic)
+{
+	return atomic && atomic->geometry &&
+		atomic->geometry->numMorphTargets > 0 &&
+		(atomic->getFlags() & rw::Atomic::RENDER) != 0;
+}
+
+static rw::Atomic*
+findPreviewVehicleWheelSourceAtomic(rw::Clump *clump, const char *sideName,
+	bool allowFallback)
+{
+	if(clump == nil)
+		return nil;
+	rw::Atomic *generic = nil;
+	rw::Atomic *anyWheel = nil;
+	rw::Atomic *dummyWheel = nil;
+	FORLIST(lnk, clump->atomics){
+		rw::Atomic *atomic = rw::Atomic::fromClump(lnk);
+		if(!previewVehicleAtomicRenderable(atomic))
+			continue;
+		rw::Frame *frame = atomic->getFrame();
+		const char *nodeName = frame ? gta::getNodeName(frame) : nil;
+		if(nodeName == nil || rw::strncmp_ci(nodeName, "wheel", 5) != 0)
+			continue;
+		if(previewNameContains(nodeName, "dummy")){
+			if(dummyWheel == nil)
+				dummyWheel = atomic;
+			continue;
+		}
+		if(sideName && rw::strncmp_ci(nodeName, sideName,
+		   (int)strlen(sideName)) == 0)
+			return atomic;
+		if(rw::strcmp_ci(nodeName, "wheel") == 0)
+			generic = atomic;
+		else if(anyWheel == nil)
+			anyWheel = atomic;
+	}
+	if(!allowFallback)
+		return nil;
+	return generic ? generic : anyWheel ? anyWheel : dummyWheel;
+}
+
+static bool
+previewFrameHasWheelAtomic(rw::Clump *clump, rw::Frame *frame)
 {
 	if(clump == nil || frame == nil)
 		return false;
 	FORLIST(lnk, clump->atomics){
 		rw::Atomic *atomic = rw::Atomic::fromClump(lnk);
-		if(atomic && atomic->getFrame() == frame)
-			return true;
+		if(!previewVehicleAtomicRenderable(atomic))
+			continue;
+		rw::Frame *atomicFrame = atomic->getFrame();
+		const char *nodeName = atomicFrame ? gta::getNodeName(atomicFrame) : nil;
+		if(nodeName == nil || rw::strncmp_ci(nodeName, "wheel", 5) != 0)
+			continue;
+		for(rw::Frame *parent = atomicFrame; parent; parent = parent->getParent())
+			if(parent == frame)
+				return true;
 	}
 	return false;
 }
+
 
 static void
 ensurePreviewVehicleWheelAtomics(rw::Clump *clump)
@@ -2173,17 +2219,27 @@ ensurePreviewVehicleWheelAtomics(rw::Clump *clump)
 		"wheel_lb_dummy",
 		"wheel_rb_dummy"
 	};
+	static const char *wheelAtomicNames[] = {
+		"wheel_lf",
+		"wheel_rf",
+		"wheel_lb",
+		"wheel_rb"
+	};
 
 	if(clump == nil)
 		return;
-	rw::Atomic *sourceAtomic = findPreviewVehicleWheelSourceAtomic(clump);
-	if(sourceAtomic == nil)
-		return;
-
 	rw::HAnimHierarchy *hier = getHAnimHierarchyFromClump(clump);
 	for(size_t i = 0; i < sizeof(wheelDummyNames)/sizeof(wheelDummyNames[0]); i++){
 		rw::Frame *dummyFrame = findPreviewFrameByName(clump, wheelDummyNames[i]);
-		if(dummyFrame == nil || previewFrameHasAtomic(clump, dummyFrame))
+		if(dummyFrame == nil || previewFrameHasWheelAtomic(clump, dummyFrame))
+			continue;
+		// Some DFFs put a visible wheel on the side frame itself rather than
+		// under its dummy. Keep that wheel and fill only the other sides.
+		if(findPreviewVehicleWheelSourceAtomic(clump, wheelAtomicNames[i], false))
+			continue;
+		rw::Atomic *sourceAtomic =
+			findPreviewVehicleWheelSourceAtomic(clump, wheelAtomicNames[i], true);
+		if(sourceAtomic == nil)
 			continue;
 
 		rw::Atomic *clone = sourceAtomic->clone();
@@ -2358,7 +2414,7 @@ stripPreviewVehicleDamageAtomics(rw::Clump *clump)
 			continue;
 		rw::Frame *frame = atomic->getFrame();
 		char *nodeName = frame ? gta::getNodeName(frame) : nil;
-		if(nodeName && strstr(nodeName, "_dam"))
+		if(previewNameContains(nodeName, "_dam"))
 			atomic->setFlags(0);
 	}
 }
@@ -2375,7 +2431,8 @@ stripPreviewVehicleLowDetailAtomics(rw::Clump *clump)
 			continue;
 		rw::Frame *frame = atomic->getFrame();
 		char *nodeName = frame ? gta::getNodeName(frame) : nil;
-		if(nodeName && (strstr(nodeName, "_vlo") || strstr(nodeName, "_lo_")))
+		if(previewNameContains(nodeName, "_vlo") ||
+		   previewNameContains(nodeName, "_lo_"))
 			atomic->setFlags(0);
 	}
 }

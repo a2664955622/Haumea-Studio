@@ -61,6 +61,11 @@ OBJECTS = {
 }
 # SA-MP's own objects live in SAMP/SAMP.img with SAMP/SAMP.ide.
 SAMP_OBJECTS = {
+	18670: ('camflash', 'MatTextures', 100, 0),
+	18688: ('fire', 'MatTextures', 100, 0),
+	18673: ('cigarette_smoke', 'MatTextures', 100, 0),
+	18739: ('water_fountain', 'MatTextures', 100, 0),
+	18717: ('prt_spark', 'MatTextures', 100, 0),
 	18990: ('Tube25m90Bend1', 'MatTextures', 299, 0),	# hv_areas.pwn's canal tubes
 	19297: ('PointLight17', 'MatLights', 120, 4),
 	19353: ('wall001', 'all_walls', 100, 0),
@@ -213,7 +218,7 @@ def texture_dictionary(textures):
 	return chunk(0x16, rw_struct(struct.pack('<HH', len(textures), 2)) + natives + extension())
 
 
-def box_geometry(size, texture, centre=(0, 0, 0), prelit=None):
+def box_geometry(size, texture, centre=(0, 0, 0), prelit=None, particle=None):
 	"""A box with normals, UVs and one textured material, around centre;
 	prelit: one vertex colour for every vertex."""
 	sx, sy, sz = (s / 2 for s in size)
@@ -252,7 +257,11 @@ def box_geometry(size, texture, centre=(0, 0, 0), prelit=None):
 	indices = [i for t in tris for i in t]
 	binmesh = struct.pack('<III', 0, 1, len(indices)) + struct.pack('<II', len(indices), 0)
 	binmesh += b''.join(struct.pack('<I', i) for i in indices)
-	return chunk(0x0F, rw_struct(data) + materials + extension(chunk(0x50E, binmesh)))
+	fx = b''
+	if particle:
+		name = particle.encode('ascii').ljust(24, b'\0')
+		fx = chunk(0x253F2F8, struct.pack('<IfffII', 1, 0, 0, 0, 1, 24) + name)
+	return chunk(0x0F, rw_struct(data) + materials + extension(chunk(0x50E, binmesh) + fx))
 
 
 def frame_list(names):
@@ -265,9 +274,9 @@ def frame_list(names):
 	return chunk(0x0E, rw_struct(data) + exts)
 
 
-def clump(size, texture, frames=None, centre=(0, 0, 0), prelit=None):
+def clump(size, texture, frames=None, centre=(0, 0, 0), prelit=None, particle=None):
 	names = frames or ['root']
-	geometry = chunk(0x1A, rw_struct(struct.pack('<I', 1)) + box_geometry(size, texture, centre, prelit))
+	geometry = chunk(0x1A, rw_struct(struct.pack('<I', 1)) + box_geometry(size, texture, centre, prelit, particle))
 	atomic = chunk(0x14, rw_struct(struct.pack('<IIII', 0, 0, 5, 0)) + extension())
 	return chunk(0x10, rw_struct(struct.pack('<III', 1, 0, 0)) + frame_list(names) + geometry + atomic + extension())
 
@@ -329,7 +338,8 @@ def main(target):
 		img[name.lower() + '.dff'] = clump(size, name.lower(), centre=centre, prelit=PRELIT.get(name.lower()))
 		txds.setdefault(txd.lower(), []).append(name.lower())
 	for model_id, (name, txd, dist, flags) in SAMP_OBJECTS.items():
-		samp_img[name.lower() + '.dff'] = clump((2, 0.2, 3), name.lower())
+		particle = name if 18668 <= model_id <= 18748 else None
+		samp_img[name.lower() + '.dff'] = clump((.1, .1, .1) if particle else (2, 0.2, 3), name.lower(), particle=particle)
 		samp_img[txd.lower() + '.txd'] = texture_dictionary([(name.lower(), colour_for(name))])
 	for line in VEHICLES:
 		fields = [f.strip() for f in line.split(',')]
@@ -351,6 +361,10 @@ def main(target):
 	write_img(root / 'models' / 'gta3.img', img)
 	write_img(root / 'models' / 'gta_int.img', {})
 	write_img(root / 'SAMP' / 'SAMP.img', samp_img)
+	from particle_effects import project as particle_project
+	(root / 'models' / 'effects.fxp').write_text(particle_project())
+	(root / 'models' / 'effectsPC.txd').write_bytes(texture_dictionary([
+		('preview_fire', (255, 160, 60, 200)), ('preview_smoke', (170, 170, 170, 140)), ('preview_water', (100, 160, 255, 160))]))
 	(root / 'models' / 'particle.txd').write_bytes(
 		texture_dictionary([(name, (120, 170, 220, 160)) for name in PARTICLE_TEXTURES]))
 
@@ -370,6 +384,12 @@ def main(target):
 	(root / 'data' / 'gta.dat').write_text('IDE DATA\\MAPS\\FIXTURE.IDE\nCOLFILE 0 MODELS\\FIXTURE.COL\n'
 	                                       'IPL DATA\\MAPS\\FIXTURE.IPL\n')
 	(root / 'data' / 'water.dat').write_text('processed\n')
+	# object.dat as the game writes it: names end in a comma, column L (the
+	# 12th) is "causes explosion". barrel4 blows up; sm_des_cactiigrp moves only.
+	(root / 'data' / 'object.dat').write_text(
+		'; (L) Causes Explosion\n'
+		'barrel4,\t100.0,\t100.0\t0.99,\t0.05,\t50.0,\t0.0,\t10.0,\t20,\t0,\t1,\t1,\t2,\t0.0, 0.0, 0.0,\texplosion_medium\n'
+		'sm_des_cactiigrp\t50.0,\t50.0\t0.99,\t0.05,\t50.0,\t0.0,\t1.0,\t0,\t0,\t1,\t0,\t0,\t0.0, 0.0, 0.0,\tnone\n')
 	# One clear midday for every weather and hour (8 x 23 lines), so objects
 	# the timecycle lights (material colours) aren't black: ambient, object
 	# ambient, sun, sky, ..., far clip 800, fog start 100, then 1.0 sun scale.

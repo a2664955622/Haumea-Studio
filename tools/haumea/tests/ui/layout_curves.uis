@@ -1,0 +1,50 @@
+# Editable 3D curves: lift a segment midpoint, live objects, undo, and reopen.
+open "$UI_FIXTURES/ui_map.pwn"
+camera 2010 -3100 70 2010 -3000 10
+shortcut window_tools
+wait 8
+click_item 'Tools' 'Paths & curves'
+wait 3
+click_item 'Tools' 'New path'
+wait 5
+assert layout.count == 1
+assert layout.point_z 1 == 18
+# Numeric editing and generation use the same path that the viewport manipulates.
+scroll_until 'Tools' 'Model ID'
+set_item 'Tools' 'Model ID' '1271' tab
+scroll_until 'Tools' 'Generate objects'
+click_item 'Tools' 'Generate objects'
+wait 6
+assert layout.objects > 10
+assert layout.matches == 1
+assert selected_world == 0
+assert objects > 14
+# Keep the Tools window out of the curve's centre. Shift-drag its first segment's midpoint upward.
+hold Shift
+drag path:0:2 path:0:2 46% 35% 20
+release Shift
+wait 5
+assert layout.point_z 1 > 18
+assert layout.count == 1
+assert layout.objects > 10
+assert layout.matches == 1
+assert selected_world == 0
+move 750 400
+key Ctrl+Z
+wait 5
+assert layout.point_z 1 == 18
+key Ctrl+Y
+wait 5
+assert layout.point_z 1 > 18
+# Save the generated objects as Pawn and the editable curve in its XML companion.
+close_popup
+key Ctrl+S
+wait 6
+reopen
+wait 8
+assert layout.count == 1
+assert layout.objects > 10
+assert layout.matches == 1
+assert selected_world == 0
+assert layout.point_z 1 > 18
+assert pawn_contains 'CreateObject(1271,'

@@ -1,0 +1,32 @@
+# Recenter an actual attachment root without moving its child; undo as one action.
+open "$UI_FIXTURES/ui_center_parent.pwn"
+camera 2010 -3050 40 2010 -3000 5
+click_world 2020 -3000 5
+wait 4
+assert selected.x == 2020
+shortcut window_tools
+wait 5
+click_item 'Tools' 'Pivot'
+wait 3
+click_item 'Tools' 'Center Parent'
+wait 5
+assert selected.x == 2020
+assert pawn_contains 'root = CreateObject(1271, 2010.000000'
+assert pawn_contains 'child = CreateObject(1271, 2020.000000'
+assert pawn_contains 'AttachObjectToObject(child, root, 10.000000'
+move 800 400
+key Ctrl+Z
+wait 5
+assert pawn_contains 'root = CreateObject(1271, 2000.000000'
+assert pawn_contains 'AttachObjectToObject(child, root, 20.000000'
+key Ctrl+Y
+wait 5
+assert pawn_contains 'root = CreateObject(1271, 2010.000000'
+assert selected.x == 2020
+key Ctrl+S
+wait 5
+reopen
+wait 8
+assert objects == 2
+assert pawn_contains 'root = CreateObject(1271, 2010.000000'
+assert pawn_contains 'child = CreateObject(1271, 2020.000000'

@@ -1,0 +1,16 @@
+# Animated particle object preview.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Particle effects"
+msgstr "Efeitos de partículas"
+
+msgid "Animate fire, smoke, water and other particle objects in the viewport."
+msgstr "Anima fogo, fumaça, água e outros objetos de partículas na visualização 3D."
+
+msgid "Replay particles"
+msgstr "Reiniciar partículas"
+
+msgid "Restart the selected particle emitters, including one-shot effects such as explosions."
+msgstr "Reinicia os emissores de partículas selecionados, incluindo efeitos únicos, como explosões."

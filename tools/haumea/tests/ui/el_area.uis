@@ -1,12 +1,15 @@
-# Dynamic area: place a cuboid from the SA-MP tab, size it, limit three boxes to it in one
+# Dynamic area: place a cuboid from the feature dropdown, size it, limit three boxes to it in one
 # batch edit; save, reopen. The area is written first, the boxes take it as their areaid.
 open "$UI_FIXTURES/ui_areas.pwn"
 shortcut window_browser
 wait 5
-click_item 'Object Browser' 'SA-MP'
-wait 5
-scroll_until 'Object Browser' '##place Dynamic area'
+click_item 'Object Browser' '##browser_source'
+wait 3
+click_item '*' 'Zones'
+wait 3
 click_item 'Object Browser' '##place Dynamic area'
+wait 3
+click_item 'Object Browser' '##element_place'
 wait 3
 click_world 2000 -3000 4
 wait 5
@@ -27,12 +30,16 @@ click_item 'Map Objects' 'box_c (gunbox)'
 release Ctrl
 wait 3
 assert selected == 3
-# Object Info is still open from sizing the area (its shortcut toggles it).
+# Switch back from the Map Objects dock tab to the inspector.
+click_item '*' 'Object Info'
+wait 5
 assert window 'Object Info'
 wait 20
 # Under World & streaming, closed until opened.
 click_item 'Object Info' 'World & streaming'
 wait 5
+scroll_until 'Object Info' 'Only inside area'
+wait 3
 click_item 'Object Info' 'Only inside area'
 wait 3
 click_item '*' 'area'

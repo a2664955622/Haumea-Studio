@@ -1,8 +1,8 @@
 # The Code workspace edits a document, rather than the map serializer's preview.
 open "$UI_FIXTURES/ui_map.pwn"
 wait 5
-# Workspaces share the existing top bar, with one entry for each workspace.
-assert work_area_top < 30
+# The menu and command rows leave one entry for each workspace.
+assert work_area_top < 90
 assert window 'TextDrawsNew'
 assert window 'CodeNew'
 assert item_count 'Map' == 1
@@ -12,7 +12,7 @@ click_item '*' 'Windows'
 wait 3
 assert item_count 'TextDraws' == 1
 assert item_count 'Code' == 1
-key Escape
+close_popup
 wait 3
 click_item '*' 'Code'
 wait 8

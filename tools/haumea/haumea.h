@@ -48,6 +48,11 @@ const char *GetCustomModelTxdPath(int txdSlot);
 // editor's own slot names (~custom0...) only keep them apart from stock TXDs.
 const char *GetCustomModelTxdName(int txdSlot);
 int FindCustomModelTxdSlot(const char *name);
+// Server artwork TXDs can be browsed without importing or placing a 3D model.
+void ListServerTextureFiles(std::vector<std::string> &files);
+int LoadServerTextureTxd(const std::string &relativePath);
+int ServerTextureModelId(const std::string &relativePath); // 0 if no literal registration was found
+std::string ServerTexturePathForModel(int pawnId);
 bool MapUsesCustomModels(void);
 void SetupCustomModelCollision(struct ObjectDef *obj, rw::Clump *clump);
 void OpenAddCustomModelDialog(const char *droppedPath);	// nil, or a dropped DFF/TXD
@@ -67,6 +72,7 @@ bool IsVehicleComponentValid(int vehicleModel, int component);
 int GetVehicleComponentSlot(int component);	// -1 for none
 const char *GetVehicleComponentSlotName(int slot);
 int GetVehiclePaintjobCount(int vehicleModel);	// 0-3
+void ApplyEditorVehiclePlate(rw::Clump *clump, const char *plateText);
 void AddEditorVehicleComponents(rw::Clump *clump, const uint16 *mods);
 void ApplyEditorVehiclePaintjob(rw::Clump *clump, int vehicleModel, int paintjob);
 
@@ -92,6 +98,16 @@ void panic(const char *fmt, ...);
 void debug(const char *fmt, ...);
 void log(const char *fmt, ...);
 void SetupStyle(void);
+// 0 and 1 are Haumea's own; the rest are palettes (style.cpp).
+enum { UI_THEME_DARK, UI_THEME_LIGHT, UI_THEME_FIRST_PALETTE };
+enum { UI_COLOR_SUCCESS, UI_COLOR_WARNING, UI_COLOR_ERROR, UI_COLOR_INFO };
+int GetUiTheme(void);
+void SetUiTheme(int theme);
+int NumUiThemes(void);
+const char *GetUiThemeName(int theme);	// in the UI's language
+bool UiThemeIsLight(void);	// dark text on a light background
+rw::RGBA UiThemePreviewBackground(void);	// behind model previews and thumbnails
+ImVec4 UiSemanticColor(int color);
 void SetupFonts(void);
 bool GetEditorRootDirectory(char *dir, size_t size);
 bool GetGameRootDirectory(char *dir, size_t size);
@@ -183,14 +199,13 @@ extern bool gRenderBackground;
 extern bool gRenderWater;
 extern bool gRenderPostFX;
 extern bool gEnableFog;	// follows gFogMode
-// View settings: how far the editor's view reaches outside Player view (which
-// keeps the game's distances), and its fog.
+// One preview distance for every object; map export properties stay separate.
 enum { FOG_GAME, FOG_LIGHT, FOG_OFF };
 extern int gFogMode;
-extern float gWorldDrawDistance;	// the game's buildings, 50-3000 m
-extern float gMapDrawDistance;	// the map's own objects, never short of the world
-extern bool gFocusMyMap;	// dims the game's buildings
-float GetMapDrawDistance(void);
+extern float gStreamDistance;
+extern bool gVSync;
+extern int gFrameLimit; // zero is unlimited
+extern bool gFocusMyMap;
 bool IsUserMapObject(ObjectInst *inst);
 extern bool gEnableTimecycleBoxes;
 extern bool gUseBlurAmb;
@@ -218,6 +233,7 @@ void SetInstIplFilterKey(ObjectInst *inst, const char *sceneName);
 
 // non-rendering things
 extern bool gRenderCollision;
+extern bool gRenderBounds;
 extern bool gRenderZones;
 extern bool gRenderMapZones;
 extern bool gRenderNavigZones;
@@ -355,6 +371,11 @@ enum {
 	SAMP_CHECKPOINT_NORMAL,	// CreateDynamicCP
 	SAMP_CHECKPOINT_RACE,	// CreateDynamicRaceCP
 };
+// A race: from first to last, or round and round (cpRaceMode). The race
+// checkpoint types after the client's 0-8: Normal until the end, then Finish
+// (as haumea_races.inc does).
+enum { SAMP_RACE_POINT_TO_POINT, SAMP_RACE_CIRCUIT };
+enum { SAMP_RACE_CP_AUTO_GROUND = 9, SAMP_RACE_CP_AUTO_AIR = 10, SAMP_RACE_MAX_LAPS = 999 };
 
 // How a gang zone is shown (ObjectPawnProperties::zoneMode).
 enum {
@@ -382,10 +403,24 @@ struct ObjectPawnProperties
 	float drawDistance;	// CreateObject DrawDistance / streamer drawdistance; 0 = default
 	float streamDistance;	// streamer streamdistance; 0 = STREAMER_OBJECT_SD
 	int virtualWorld;	// streamer worldid; -1 = every world
+	bool forceWorldReplacement;	// explicitly remove/recreate a GTA original, even at its original pose
 	int32 attachParent;	// ObjectInst::m_id of the parent, or -1
 	rw::V3d attachOffset;	// in the parent's frame
 	rw::V3d attachRotation;	// degrees, SA-MP Euler order
 	bool attachSyncRotation;
+	int attachBone;	// SA-MP player bone ID (1-18), or -1 for object/vehicle attachment
+	int attachSlot;	// SetPlayerAttachedObject slot (0-9)
+	rw::V3d attachScale;	// SetPlayerAttachedObject scale
+	uint32 attachColor1, attachColor2;	// SetPlayerAttachedObject material colours (ARGB)
+	int attachSkin;	// preview skin for the generic player target
+	// MoveObject / MoveDynamicObject once the object is made: it glides by
+	// moveOffset (world axes, from where it stands, so it follows the object)
+	// at moveSpeed m/s and, with moveRotates, turns to moveRotation.
+	bool moveEnabled;
+	rw::V3d moveOffset;
+	rw::V3d moveRotation;	// degrees, SA-MP Euler order
+	bool moveRotates;
+	float moveSpeed;	// metres a second
 
 	// SA-MP element settings; elementKind is SAMP_ELEMENT_OBJECT for objects
 	// and vehicles. The world, draw and stream distances above apply too.
@@ -459,6 +494,12 @@ struct ObjectPawnProperties
 	int cpRaceType;	// CreateDynamicRaceCP type: 0 normal .. 8
 	char cpRace[PAWN_OBJECT_NAME_LEN];
 	int cpOrder;
+	// The whole race's settings, the same on each of its checkpoints
+	// (SetRaceSettings). Playable races are saved for haumea_races.inc
+	// (MapRace_Create), one player at a time, instead of as fixed markers.
+	int cpRaceMode;	// SAMP_RACE_POINT_TO_POINT / SAMP_RACE_CIRCUIT
+	int cpRaceLaps;	// circuits: 1 to SAMP_RACE_MAX_LAPS
+	bool cpRacePlayable;
 	// Dynamic areas (streamer only). The shape sits around the position;
 	// a rectangle or cuboid is areaSize wide, centred in x and y, its z
 	// going up from the position.
@@ -649,6 +690,12 @@ enum GizmoSpace {
 	GIZMO_LOCAL,
 	GIZMO_WORLD
 };
+enum GizmoPivot { GIZMO_PIVOT_ACTIVE, GIZMO_PIVOT_CENTRE, GIZMO_PIVOT_INDIVIDUAL, GIZMO_PIVOT_CUSTOM };
+extern int gGizmoPivot;
+extern rw::V3d gGizmoCustomPivot;
+void ComputeGizmoRotation(const rw::V3d &position, const rw::Quat &rotation,
+	const rw::Quat &leaderBefore, const rw::Quat &leaderAfter, const rw::V3d &pivot,
+	bool individual, bool local, rw::V3d *newPosition, rw::Quat *newRotation);
 extern int gGizmoMode;
 extern int gGizmoSpace;
 extern bool gGizmoEnabled;
@@ -698,9 +745,12 @@ enum UndoType {
 	UNDO_TRANSFORM_BATCH,
 	UNDO_MATERIAL,
 	UNDO_PROPERTIES,
+	UNDO_WORLD_CONVERSION,
 	UNDO_VEHICLE,
+	UNDO_MODEL_ID,
 	UNDO_NODES,
 	UNDO_RADAR_ART,	// the radar art layers (radarart.cpp)
+	UNDO_LAYOUT_PATHS,
 };
 
 enum UndoTransformFlags {
@@ -760,9 +810,11 @@ struct UndoAction {
 	// For one object-properties edit
 	ObjectPawnProperties oldProperties;
 	ObjectPawnProperties newProperties;
+	std::vector<ObjectInst*> convertedWorldObjects;
 	// For a vehicle edit (colours, plate, paintjob, parts)
 	VehicleState oldVehicle;
 	VehicleState newVehicle;
+	int oldModelId, newModelId;
 	// For a Nodes tool edit: the areas it changed (SAPaths' own copies)
 	std::vector<int> nodeAreas;
 	std::vector<std::shared_ptr<void>> nodesBefore;
@@ -779,11 +831,14 @@ void UndoRecordTransformBatch(UndoTransform *transforms, int num);
 void UndoRecordMaterial(ObjectInst *inst, int slot, const ObjectMaterialOverride &oldMaterial);
 void UndoRecordProperties(ObjectInst *inst, const ObjectPawnProperties &oldProperties);
 void UndoRecordVehicle(ObjectInst *inst, const VehicleState &before);	// after is the vehicle now
+void UndoRecordModelId(ObjectInst *inst, int oldModelId);
 int GetUndoPosition(void);	// undo steps recorded so far, for tests
 bool MapHasUndoHistory(void);	// any step to undo or redo since the map was opened
 void UndoRecordNodes(const std::vector<int> &areas, const std::vector<std::shared_ptr<void>> &before,
 	const std::vector<std::shared_ptr<void>> &after);
 void UndoRecordRadarArt(const std::shared_ptr<void> &before, const std::shared_ptr<void> &after);
+void UndoRecordLayoutPaths(const std::shared_ptr<void> &before, const std::shared_ptr<void> &after);
+void SetLayoutObjectState(ObjectInst *inst, const rw::V3d &position, const rw::Quat &rotation, bool deleted);
 void Undo(void);
 void Redo(void);
 // Actions recorded between these are undone as one step (they nest).
@@ -926,7 +981,10 @@ extern bool gPawnEditMode;
 extern bool gPawnWorldDeleteMode;
 bool IsPawnObjectSelectable(ObjectInst *inst);
 bool IsPawnObjectEditable(ObjectInst *inst);
+bool CanChangeInstanceModelId(ObjectInst *inst);
+bool ChangeInstanceModelId(ObjectInst *inst, int editorModelId, bool recordUndo = true);
 bool PawnObjectNeedsExport(const ObjectInst *inst);
+int ConvertWorldObjectsToMapObjects(const std::vector<ObjectInst*> &objects);
 void SetPawnEditMode(bool enabled);
 void SetPawnWorldDeleteMode(bool enabled);
 int SelectAllPawnObjects(void);
@@ -952,7 +1010,8 @@ void UiScriptRestateMouse(void);	// d3d9: the script's pointer over the backend'
 void DrawTextureBrowserWindow(bool *open);
 // Help > About > Licenses (licenses.cpp)
 void DrawLicensesWindow(bool *open);
-struct TextureSearchResult { int model; std::string txd, texture; bool samp, custom; int tstudioIndex; };
+struct TextureSearchResult { int model; std::string txd, texture; bool samp, custom; int tstudioIndex;
+	int tiles; };	// tiles: 0 not, 1 left to right, 2 top to bottom, 3 both
 int SearchTextures(const char *query, int limit, std::vector<TextureSearchResult> &out);	// indexes everything first
 // Texture Studio's texture list (tstudio.cpp): Texture Studio maps store
 // textures as indices into it, so its order matters. The workspace's own
@@ -978,9 +1037,43 @@ bool SampElementTakesArea(int kind);
 void ApplyInstanceAnimation(ObjectInst *inst);	// from its actor/NPC properties
 ObjectInst *FindObjectByPawnName(const char *name, const ObjectInst *except = nil);
 // Attaches keeping the child's current world transform; false on a cycle.
-bool AttachObjectInstance(ObjectInst *child, ObjectInst *parent, bool syncRotation = true);
+bool AttachObjectInstance(ObjectInst *child, ObjectInst *parent, bool syncRotation = true,
+	int playerBone = 2, const rw::V3d *playerScale = nil, bool recordUndo = true);
 void DetachObjectInstance(ObjectInst *child);
 ObjectInst *GetAttachParent(const ObjectInst *inst);
+bool BeginAttachmentTargetPick(void);
+bool AttachmentTargetPickActive(void);
+void CancelAttachmentTargetPick(void);
+int CompleteAttachmentTargetPick(ObjectInst *target);
+void GetAttachmentTargetPickOptions(int *bone, rw::V3d *scale);
+void SetAttachmentTargetPickOptions(int bone, const rw::V3d &scale);
+bool GetAttachmentPlayerBoneTransform(const ObjectInst *parent, int bone, rw::Matrix *matrix);
+bool RebaseObjectAttachment(ObjectInst *child);
+enum { PAWN_ATTACH_PLAYER = -2, PAWN_ATTACH_NONE = -1 };
+bool IsPlayerAttachmentTarget(const ObjectInst *inst);
+bool IsPlayerAttachedObject(const ObjectInst *inst);
+bool AttachObjectToPlayer(ObjectInst *child, int previewSkin = 1, bool recordUndo = true);
+bool IsAttachmentWorkspaceActive(void);
+bool AttachmentWorkspaceHidesWorld(void);
+bool AttachmentWorkspaceShowsInstance(const ObjectInst *inst);
+enum AttachmentWorkspaceCameraView {
+	ATTACHMENT_VIEW_FOCUS,
+	ATTACHMENT_VIEW_FRONT,
+	ATTACHMENT_VIEW_BACK,
+	ATTACHMENT_VIEW_LEFT,
+	ATTACHMENT_VIEW_RIGHT,
+	ATTACHMENT_VIEW_TOP
+};
+void OpenAttachmentWorkspace(ObjectInst *target, bool voidView);
+void OpenPlayerAttachmentWorkspace(int skin, bool voidView);
+void CloseAttachmentWorkspace(void);
+void SetAttachmentWorkspaceVoid(bool voidView);
+void SetAttachmentWorkspaceCameraView(int view);
+void UpdateAttachmentWorkspace(void);
+void SetAttachmentWorkspacePlayerSkin(int skin);
+int GetAttachmentWorkspacePlayerSkin(void);
+ObjectInst *GetAttachmentWorkspacePlayerPreview(void);
+ObjectInst *GetAttachmentWorkspaceTarget(void);
 // The vehicle an NPC sits in (npcVehicle), or nil on foot or when it was deleted.
 ObjectInst *GetNpcVehicle(const ObjectInst *npc);
 // Once per frame, after recordings move vehicles: seats NPCs in their vehicles.
@@ -1016,6 +1109,7 @@ bool UiCombo(const char *label, int *current, const char *const *items, int coun
 // Right-click in the 3D view: Map Objects' menu for inst (selecting it first
 // when it isn't selected). False for what Map Objects doesn't list.
 bool OpenViewportObjectMenu(ObjectInst *inst);
+void OpenObjectInspector(void);
 
 // Diff viewer flags (bitmask — an instance can be both moved and rotated)
 enum DiffFlags {
@@ -1026,6 +1120,7 @@ enum DiffFlags {
 	DIFF_RESTORED = 16,
 	DIFF_MATERIAL = 32,
 	DIFF_PROPERTIES = 64,
+	DIFF_MODEL = 128,
 };
 int GetInstanceDiffFlags(ObjectInst *inst);
 float GetQuaternionSimilarity(const rw::Quat &a, const rw::Quat &b);
@@ -1036,6 +1131,7 @@ bool LogicalPathEquals(const char *a, const char *b);
 
 // Object Spawner
 extern bool gPlaceMode;
+extern bool gPlaceRepeat;
 void InitLodLookup(void);
 void SpawnPlaceObject(rw::V3d position, const rw::Quat *orientation = nil);
 int SpawnPlaceObjectNoUndo(rw::V3d position, const rw::Quat *orientation,
@@ -1057,7 +1153,16 @@ void GetNpcPathPoints(const char *pathName, std::vector<ObjectInst*> &out);
 void GetNpcPathNames(std::vector<std::string> &out);
 // A race's checkpoints in order, and the one after a race checkpoint (nil for the last).
 void GetRaceCheckpoints(const char *raceName, std::vector<ObjectInst*> &out);
+// The next checkpoint; a circuit's last leads back to its first.
 ObjectInst *GetNextRaceCheckpoint(const ObjectInst *inst);
+// The type a player sees on a checkpoint shown on its own (a marker): the
+// automatic types become Finish on a race's last checkpoint (a circuit's
+// first, where laps end) and Normal before; air ones likewise.
+int GetRaceCheckpointShownType(const ObjectInst *inst);
+// Mode, laps and playable on every checkpoint of the race, as one undo step.
+void SetRaceSettings(const char *raceName, int mode, int laps, bool playable);
+// haumea_races.inc, written to path; false if it can't be.
+bool WriteHaumeaRacesInclude(const char *path);
 int GetSpawnElementKind(void);
 // Stand-in model used to draw and pick elements that have no model.
 int GetSampElementProxyModel(int kind);
@@ -1294,6 +1399,7 @@ struct ObjectInst
 	// get the full rotation, so only instances read from or saved to an IPL.
 	bool m_iplRotation;
 	int m_objectId;
+	int m_savedObjectId;
 	int m_area;
 
 	void *m_rwObject;
@@ -1380,6 +1486,7 @@ struct ObjectInst
 	void refreshMaterialGeometry(void);
 	void RefreshVehicleColors(void);
 	void RefreshVehicleUpgrades(void);
+	void RefreshVehiclePlate(void);
 
 	void JumpTo(void);
 	void Select(void);
@@ -1793,6 +1900,9 @@ void BuildRenderList(void);
 void RenderOpaque(void);
 void RenderTransparent(void);
 void RenderEverything(void);
+void RenderAttachmentWorkspaceGrid(void);
+void RenderAttachmentBoneMarker(void);
+void RenderAttachmentWorkspacePreview(void);
 bool IntersectRayColModelDetailed(const Ray &ray, ObjectInst *inst, rw::V3d *hitPos, rw::V3d *hitNormal);
 ObjectInst *GetVisibleInstUnderRay(const Ray &ray, rw::V3d *hitPos = nil, float *hitT = nil);
 void ForEachVisibleInst(void (*fn)(ObjectInst *inst, void *data), void *data);
@@ -1814,6 +1924,10 @@ void SplashKeepAlive(void);
 extern ImFont *gCodeFont;
 extern ImFont *gTitleFont;
 void RenderLinesNow(const rw::V3d *points, int numPoints, rw::RGBA col);
+// Selected objects that move (MoveObject): a line to where they go, a ghost
+// there, and one gliding between at their speed.
+extern bool gPreviewObjectMoves;
+void RenderObjectMovePreviews(void);
 void RenderObjectOutlines(void);
 
 

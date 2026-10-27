@@ -15,6 +15,11 @@ CColModel::CColModel(void)
 	this->flags = 0;
 	this->allocFlag = 0;	// SA does something strange here
 	this->rawdata = nil;
+
+	// Vehicle selection bounds are synthesized from the DFF and have no COL
+	// file. Model Details still reads these metadata fields.
+	this->name[0] = '\0';
+	this->file = nil;
 }
 
 CColModel::~CColModel(void)

@@ -1,0 +1,9 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Code target"
+msgstr "Alvo do código"
+
+msgid "Generated Pawn code targets only the selected server."
+msgstr "O código Pawn gerado é direcionado somente ao servidor selecionado."

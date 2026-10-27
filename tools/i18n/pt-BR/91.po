@@ -249,18 +249,6 @@ msgstr "Local"
 msgid "Step snapping: hold Shift while dragging the gizmo\nto move in %g m steps or rotate in %g° steps.\nRight-click to change the steps."
 msgstr "Encaixe por passos: segure Shift ao arrastar o gizmo\npara mover em passos de %g m ou girar em passos de %g°.\nClique com o botão direito para mudar os passos."
 
-#: gui.cpp:2594
-msgid "Object snap (%s)\nWhile moving, line up edges and faces with nearby objects."
-msgstr "Encaixe em objetos (%s)\nAo mover, alinha bordas e faces com objetos próximos."
-
-#: gui.cpp:2599
-msgid "Follow ground\nDragged objects stay on the ground surface."
-msgstr "Seguir o chão\nObjetos arrastados ficam sobre a superfície do chão."
-
-#: gui.cpp:2601
-msgid "Outline map objects (%s)\nDraws the edges of everything in this map, so invisible\nand see-through objects can be found.\nRight-click for selection outlines."
-msgstr "Contornar objetos do mapa (%s)\nDesenha as bordas de tudo neste mapa, para que objetos invisíveis\ne transparentes possam ser encontrados.\nClique com o botão direito para os contornos da seleção."
-
 #: gui.cpp:2606
 msgid "Outline map objects"
 msgstr "Contornar objetos do mapa"
@@ -276,18 +264,6 @@ msgstr "Desfazer (%s)"
 #: gui.cpp:2615
 msgid "Redo (%s)"
 msgstr "Refazer (%s)"
-
-#: gui.cpp:2622
-msgid "Save (%s)\nThe map has unsaved changes."
-msgstr "Salvar (%s)\nO mapa tem alterações não salvas."
-
-#: gui.cpp:2622
-msgid "Save (%s)\nEverything is saved."
-msgstr "Salvar (%s)\nTudo está salvo."
-
-#: gui.cpp:2629
-msgid "Test in game (%s)\nRuns the map on a private open.mp test server."
-msgstr "Testar no jogo (%s)\nRoda o mapa em um servidor de teste open.mp privado."
 
 #: gui.cpp:2646
 msgid "Workspace"
@@ -587,10 +563,6 @@ msgstr "Registro"
 msgid "Reset Panel Layout"
 msgstr "Redefinir layout dos painéis"
 
-#: gui.cpp:2842
-msgid "Puts the Object Browser, Object Info, Map Objects and Tools\nback in their default places along the screen edges."
-msgstr "Coloca o Navegador de objetos, Informações do objeto, Objetos do mapa e Ferramentas\nde volta nos lugares padrão nas bordas da tela."
-
 #: gui.cpp:2843
 msgid "Snap Panels"
 msgstr "Encaixar painéis"
@@ -634,18 +606,6 @@ msgstr "Namaka (assistente de IA)..."
 #: gui.cpp:2877
 msgid "Interior"
 msgstr "Interior"
-
-#: gui.cpp:2882
-msgid "The interior you see and place new objects in. 0 is outside."
-msgstr "O interior que você vê e onde coloca novos objetos. 0 é o exterior."
-
-#: gui.cpp:2888
-msgid "(selection: %d)"
-msgstr "(seleção: %d)"
-
-#: gui.cpp:2889
-msgid "The selected object is in interior %d. Change it under Position\nin Object Info."
-msgstr "O objeto selecionado está no interior %d. Mude isso em Posição,\nem Informações do objeto."
 
 #: gui.cpp:2925
 msgid "Save Prefab"
@@ -1627,10 +1587,6 @@ msgstr "Coloco objetos, pickups, atores..."
 msgid "Object Browser (%s): pick an object, Place, then click in the world."
 msgstr "Navegador de objetos (%s): escolha um objeto, Colocar, e clique no mundo."
 
-#: gui.cpp:4643
-msgid "Its SA-MP tab has pickups, labels, actors, gang zones, sounds and more."
-msgstr "A aba SA-MP tem pickups, rótulos, atores, gang zones, sons e mais."
-
 #: gui.cpp:4644
 msgid "Click something to edit it in Object Info (%s). %s stops placing."
 msgstr "Clique em algo para editá-lo em Informações do objeto (%s). %s para de colocar."
@@ -1642,10 +1598,6 @@ msgstr "Faço um NPC andar por uma rota"
 #: gui.cpp:4648
 msgid "open.mp only"
 msgstr "só open.mp"
-
-#: gui.cpp:4649
-msgid "SA-MP tab: Place NPC path points, clicking one point after another."
-msgstr "Aba SA-MP: coloque pontos de caminho de NPC, clicando um ponto depois do outro."
 
 #: gui.cpp:4650
 msgid "Place an NPC, then in Object Info > NPC > Movement pick \"Follow a path\"."
@@ -1803,10 +1755,6 @@ msgstr "O editor só pré-visualiza isso; não é salvo no mapa."
 msgid "Show"
 msgstr "Mostrar"
 
-#: gui.cpp:4793
-msgid "SA-MP elements"
-msgstr "Elementos SA-MP"
-
 #: gui.cpp:4794
 msgid "3D text labels, gang zones and tags on pickups, actors,\nplayer classes and map icons."
 msgstr "3D text labels, gang zones e marcas em pickups, atores,\nclasses de jogador e map icons."
@@ -1855,41 +1803,9 @@ msgstr "Desligado desenha só o interior definido na barra de menus, como o clie
 msgid "Draw distance"
 msgstr "Distância de desenho"
 
-#: gui.cpp:4809
-msgid "How far each model shows before its low-detail version, as a\nmultiple of the game's distance."
-msgstr "Até onde cada modelo aparece antes da versão de baixo detalhe, como um\nmúltiplo da distância do jogo."
-
-#: gui.cpp:4812
-msgid "World draw distance"
-msgstr "Distância de desenho do mundo"
-
-#: gui.cpp:4813
-msgid "How far the game's buildings show. Player view keeps the game's."
-msgstr "Até onde os prédios do jogo aparecem. A visão do jogador mantém a do jogo."
-
-#: gui.cpp:4815
-msgid "Map draw distance"
-msgstr "Distância de desenho do mapa"
-
-#: gui.cpp:4816
-msgid "How far your map's objects show, whatever their model's draw distance,\nand never less far than the world. Player view keeps the game's."
-msgstr "Até onde os objetos do seu mapa aparecem, qualquer que seja a distância de desenho do modelo,\ne nunca menos que o mundo. A visão do jogador mantém a do jogo."
-
-#: gui.cpp:4818
-msgid "Game"
-msgstr "Jogo"
-
 #: gui.cpp:4818
 msgid "Light"
-msgstr "Leve"
-
-#: gui.cpp:4820
-msgid "Fog"
-msgstr "Neblina"
-
-#: gui.cpp:4821
-msgid "Game: as thick as in game, which on a clear day starts 10 m out.\nLight: only towards the end of the world draw distance."
-msgstr "Jogo: tão densa quanto no jogo, que num dia claro começa a 10 m.\nLeve: só perto do fim da distância de desenho do mundo."
+msgstr "Claro"
 
 #: gui.cpp:4823
 msgid "Focus my map"
@@ -1906,10 +1822,6 @@ msgstr "Visão do jogador"
 #: gui.cpp:4831
 msgid "As a player sees it (%s)"
 msgstr "Como um jogador vê (%s)"
-
-#: gui.cpp:4833
-msgid "Draws the map's elements the way the client would from the camera:\nnative objects within their draw distance, streamer objects within their stream\nand draw distance (300 m by default, the nearest 1000), vehicles and actors within\n200 m, and only what is in the virtual world below and the interior on the menu bar.\nSelected objects stay visible. Nothing is saved."
-msgstr "Desenha os elementos do mapa como o cliente faria a partir da câmera:\nobjetos nativos dentro da distância de desenho, objetos do streamer dentro da distância de stream\ne de desenho (300 m por padrão, os 1000 mais próximos), veículos e atores a até\n200 m, e só o que está no mundo virtual abaixo e no interior da barra de menus.\nObjetos selecionados continuam visíveis. Nada é salvo."
 
 #: gui.cpp:4840
 msgid "Virtual world"
@@ -2368,8 +2280,8 @@ msgid "default"
 msgstr "padrão"
 
 #: gui.cpp:6050
-msgid "SetVehicleNumberPlate, up to 32 characters. Empty keeps the game's plate."
-msgstr "SetVehicleNumberPlate, até 32 caracteres. Vazio mantém a placa do jogo."
+msgid "SetVehicleNumberPlate, up to 32 characters. Empty keeps the game's plate. GTA's preview displays the first 8 characters."
+msgstr "SetVehicleNumberPlate, até 32 caracteres. Vazio mantém a placa do jogo. A prévia do GTA exibe os primeiros 8 caracteres."
 
 #: gui.cpp:6054
 msgid "Tuning parts"

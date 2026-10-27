@@ -23,8 +23,8 @@ wait 5
 assert selected.model == 4206
 shortcut window_object_info
 wait 5
-# The sixth unlabelled item is the Rotation row's X field.
-set_item 'Object Info' '' "-2" 6
+# Address the rotation field by its ID, independent of inspector layout.
+set_item 'Object Info' 'Rotation/#0' "-2"
 wait 5
 assert drawn_rotation selected -2 0 0
 assert pawn_contains "RemoveBuildingForPlayer(playerid, 4206"

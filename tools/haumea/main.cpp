@@ -1160,11 +1160,19 @@ AppEventHandler(sk::Event e, void *param)
 		return EVENTNOTPROCESSED; // skeleton terminates librw after the GUI releases its device
 	case PLUGINATTACH:
 		return attachPlugins() ? EVENTPROCESSED : EVENTERROR;
-	case KEYDOWN:
-		// Over the gizmo keys are its own, except while looking around (W/A/S/D fly).
-		if(input && !input->WantCaptureKeyboard && !input->WantTextInput && (!gGizmoHovered || gCameraLooking))
-			CPad::tempKeystates[*(int*)param] = 1;
+	case KEYDOWN: {
+		// A fly key can start looking after RMB was armed over the gizmo.
+		// Otherwise the key was swallowed before the camera could start.
+		int key = *(int*)param;
+		int lookButton = gBrushMode && gCameraLookButton == 1 ? 3 : gCameraLookButton;
+		bool flyKey = key == 'W' || key == 'A' || key == 'S' || key == 'D' || key == 'Q' || key == 'E';
+		bool startFlying = lookButton != 1 && !gGizmoUsing && flyKey &&
+			(CPad::tempMouseState.btns & (1u << (lookButton-1))) != 0 && input && !input->KeyCtrl;
+		if(input && !input->WantCaptureKeyboard && !input->WantTextInput &&
+		   (!gGizmoHovered || gCameraLooking || startFlying))
+			CPad::tempKeystates[key] = 1;
 		return EVENTPROCESSED;
+	}
 	case KEYUP:
 		CPad::tempKeystates[*(int*)param] = 0;
 		return EVENTPROCESSED;

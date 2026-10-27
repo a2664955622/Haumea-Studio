@@ -113,41 +113,20 @@ AddToRenderList(ObjectInst *inst, float dist)
 static void
 AddToLodRenderList(ObjectInst *inst, float dist)
 {
-	// Highlighted objects are always visible
-	if(!inst->m_selected && (inst->m_highlight == HIGHLIGHT_NONE || inst->m_highlight == HIGHLIGHT_MATCH)){
-		InstDist e;
-		e.inst = inst;
-		e.dist = dist;
-		lodList.push_back(e);
-	}else
-		AddToRenderList(inst, dist);
+	// Selection must still resolve HD/LOD
+	// coverage. Bypassing this queue drew the selected building's LOD on top.
+	InstDist e;
+	e.inst = inst;
+	e.dist = dist;
+	lodList.push_back(e);
 }
 
-// Past its draw distance. Player view keeps the game's: the model's (for the
-// map's elements Player view decides). The editor's view shows the game's
-// buildings to the World draw distance and the map's own objects to the Map
-// draw distance whatever their model's, while at least a pixel or so tall.
+// One hard range for every model, including selected objects. Individual
+// IDE distances, weather, altitude and projected size never shorten it.
 static bool
-beyondDrawDistance(ObjectInst *inst, ObjectDef *obj, float camdist)
+beyondDrawDistance(float camdist)
 {
-	float model = obj->GetLargestDrawDist()*TheCamera.m_LODmult;
-	if(gPlayerView)
-		return camdist >= model;
-	// The game's buildings with a LOD keep its distances, so the LOD takes
-	// over. The rest (an interior's papers and pens, small street props) the
-	// game shows only a few metres away: the editor shows them as it does the
-	// map's own objects, so they can be seen and box-selected from a step back.
-	bool lodLinked = inst->m_lod != nil || inst->m_numChildren > 0;
-	if(!IsUserMapObject(inst) && lodLinked)
-		return camdist >= model || camdist >= gWorldDrawDistance;
-	if(camdist >= (IsUserMapObject(inst) ? GetMapDrawDistance() : gWorldDrawDistance))
-		return true;
-	if(camdist < model || obj->m_colModel == nil)
-		return false;
-	// Projected radius in pixels.
-	float pixels = obj->m_colModel->boundingSphere.radius/camdist *
-		sk::globals.height*0.5f/TheCamera.m_rwcam->viewWindow.y;
-	return pixels < 1.5f;
+	return camdist >= gStreamDistance;
 }
 
 // Don't assume there are LODs, just draw if below draw distance
@@ -161,8 +140,11 @@ SetupVisibilitySimple(ObjectInst *inst, float *distout)
 
 	obj = GetObjectDef(inst->m_objectId);
 	if(obj == nil) return VIS_INVISIBLE;
+	camdist = TheCamera.distanceTo(inst->m_translation);
+	if(beyondDrawDistance(camdist))
+		return VIS_INVISIBLE;
 
-	// Highlighted objects are always visible
+	// Selection bypasses area/time filters, but keeps the common distance limit
 	if(!inst->m_selected && (inst->m_highlight == HIGHLIGHT_NONE || inst->m_highlight == HIGHLIGHT_MATCH)){
 		if(!gNoAreaCull && inst->m_area != currentArea && inst->m_area != 13)
 			return VIS_INVISIBLE;
@@ -172,14 +154,12 @@ SetupVisibilitySimple(ObjectInst *inst, float *distout)
 		if(obj->m_isHidden)
 			return VIS_INVISIBLE;
 
-		camdist = TheCamera.distanceTo(inst->m_translation);
-		if(beyondDrawDistance(inst, obj, camdist))
-			return VIS_INVISIBLE;
 
 		if(!gNoTimeCull && obj->m_isTimed && !IsHourInRange(obj->m_timeOn, obj->m_timeOff))
 			return VIS_INVISIBLE;
 	}else
 		camdist = TheCamera.distanceTo(inst->m_translation);
+	*distout = camdist;
 
 	if(!obj->IsLoaded())
 		return VIS_STREAMME;
@@ -194,7 +174,7 @@ SetupVisibilitySimple(ObjectInst *inst, float *distout)
 			return VIS_INVISIBLE;	// this shouldn't happen
 
 	if(obj->m_type == ObjectDef::ATOMIC){
-		atm = obj->GetAtomicForDist(camdist);
+		atm = obj->GetAtomicForDist(0.0f);
 		if(atm == nil)	// this shouldn't happen but it does (in xbox III)
 			return VIS_INVISIBLE;
 		instatm = (rw::Atomic*)inst->m_rwObject;
@@ -215,8 +195,11 @@ SetupVisibilityIII(ObjectInst *inst, float *distout)
 
 	obj = GetObjectDef(inst->m_objectId);
 	if(obj == nil) return VIS_INVISIBLE;
+	camdist = TheCamera.distanceTo(inst->m_translation);
+	if(beyondDrawDistance(camdist))
+		return VIS_INVISIBLE;
 
-	// Highlighted objects are always visible
+	// Selection bypasses area/time filters, but keeps the common distance limit
 	if(!inst->m_selected && (inst->m_highlight == HIGHLIGHT_NONE || inst->m_highlight == HIGHLIGHT_MATCH)){
 		if(!gNoAreaCull && inst->m_area != currentArea && inst->m_area != 13)
 			return VIS_INVISIBLE;
@@ -226,17 +209,15 @@ SetupVisibilityIII(ObjectInst *inst, float *distout)
 		if(obj->m_isHidden)
 			return VIS_INVISIBLE;
 
-		camdist = TheCamera.distanceTo(inst->m_translation);
-		if(beyondDrawDistance(inst, obj, camdist))
-			return VIS_INVISIBLE;
-		if(camdist < obj->m_minDrawDist*TheCamera.m_LODmult)
-			if(hdobj == nil || hdobj->IsLoaded())
+		if(inst->m_isBigBuilding && hdobj)
+			if(hdobj->IsLoaded())
 				return VIS_INVISIBLE;
 
 		if(!gNoTimeCull && obj->m_isTimed && !IsHourInRange(obj->m_timeOn, obj->m_timeOff))
 			return VIS_INVISIBLE;
 	}else
 		camdist = TheCamera.distanceTo(inst->m_translation);
+	*distout = camdist;
 
 	if(!obj->IsLoaded())
 		return VIS_STREAMME;
@@ -251,7 +232,7 @@ SetupVisibilityIII(ObjectInst *inst, float *distout)
 			return VIS_INVISIBLE;	// this shouldn't happen
 
 	if(obj->m_type == ObjectDef::ATOMIC){
-		atm = obj->GetAtomicForDist(camdist);
+		atm = obj->GetAtomicForDist(0.0f);
 		if(atm == nil)	// this shouldn't happen but it does (in xbox III)
 			return VIS_INVISIBLE;
 		instatm = (rw::Atomic*)inst->m_rwObject;
@@ -272,10 +253,12 @@ SetupVisibilitySA(ObjectInst *inst, float camdist)
 
 	obj = GetObjectDef(inst->m_objectId);
 	if(obj == nil) return VIS_INVISIBLE;
+	camdist = TheCamera.distanceTo(inst->m_translation);
+	if(beyondDrawDistance(camdist))
+		return VIS_INVISIBLE;
 	lodinst = inst->m_lod;
 
-	// Highlighted objects are always visible, and the player view decides
-	// itself for the map's elements.
+	// Selection and player view can bypass area/time filters. The range is shared.
 	if(!inst->m_selected && (inst->m_highlight == HIGHLIGHT_NONE || inst->m_highlight == HIGHLIGHT_MATCH) && !PlayerViewShows(inst)){
 		if(!gNoAreaCull && inst->m_area != currentArea && inst->m_area != 13)
 			return VIS_INVISIBLE;
@@ -283,8 +266,6 @@ SetupVisibilitySA(ObjectInst *inst, float camdist)
 		if(obj->m_isHidden)
 			return VIS_INVISIBLE;
 
-		if(beyondDrawDistance(inst, obj, camdist))
-			return VIS_INVISIBLE;
 
 		if(!gNoTimeCull && obj->m_isTimed && !IsHourInRange(obj->m_timeOn, obj->m_timeOff))
 			return VIS_INVISIBLE;
@@ -301,7 +282,7 @@ SetupVisibilitySA(ObjectInst *inst, float camdist)
 			return VIS_INVISIBLE;	// this shouldn't happen
 
 	if(obj->m_type == ObjectDef::ATOMIC){
-		atm = obj->GetAtomicForDist(camdist);
+		atm = obj->GetAtomicForDist(0.0f);
 		if(atm == nil)	// this shouldn't happen but it does (in xbox III)
 			return VIS_INVISIBLE;
 		instatm = (rw::Atomic*)inst->m_rwObject;
@@ -313,12 +294,11 @@ SetupVisibilitySA(ObjectInst *inst, float camdist)
 	if(!inst->IsOnScreen())
 		ret = VIS_CULLED;	// we want to render but we're culled
 
-	if(lodinst == nil)
+	if(lodinst == nil || ret != VIS_VISIBLE)
 		return ret;
 
 	// Only visible HD children should suppress the fallback LOD.
-	if(ret == VIS_VISIBLE)
-		lodinst->m_numChildrenRendered++;
+	lodinst->m_numChildrenRendered++;
 	if(lodinst->m_numChildren > 1){
 		AddToLodRenderList(inst, camdist);
 		return VIS_INVISIBLE;
@@ -344,14 +324,9 @@ SetupBigBuildingVisibilitySA(ObjectInst *inst, float *distout)
 		if(lodinst)
 			lodinst->m_numChildrenRendered++;
 
-		if(inst->m_numChildren > 1)
-			// might still have to render this LOD,
-			// if not all children are rendered
-			// We actually don't test for frustum culling here...TODO?
-			AddToLodRenderList(inst, camdist);
-		else
-			// otherwise...???
-			inst->m_numChildrenRendered = 0;
+		// Defer every fallback until all of its children have been scanned.
+		// Keep the count until ProcessLodList, including single-child LODs.
+		AddToLodRenderList(inst, camdist);
 		return VIS_INVISIBLE;
 	}else{
 		// No child wants to be rendered (yet?)
@@ -359,16 +334,11 @@ SetupBigBuildingVisibilitySA(ObjectInst *inst, float *distout)
 
 		v = SetupVisibilitySA(inst, camdist);
 
-		if(v == VIS_VISIBLE && inst->m_numChildren > 1){
-			// we're visible AND have multiple children,
-			// so we might have to render
+		if(v == VIS_VISIBLE && inst->m_numChildren > 0){
+			// Children may be visited later in the big-building scan.
 			AddToLodRenderList(inst, camdist);
 			return VIS_INVISIBLE;
 		}
-		// But what if we're a super LOD and our child
-		// just hasn't been visited yet?
-		// Maybe that isn't allowed?
-		// With v == 1 and m_numChildren == 1 how is this correct?
 		return v;
 	}
 }
@@ -384,50 +354,26 @@ SetupHdVisibilitySA(ObjectInst *inst, float *distout)
 static void
 ProcessLodList(void)
 {
-	int i;
-	ObjectInst *inst;//, *superlod;
-
-	// I don't understand SA's code of this function...
-	// So this one doesn't make perfect sense either.
-
-	int numLods = (int)lodList.size();
-	for(i = 0; i < numLods; i++){
-		inst = lodList[i].inst;
-		if(inst == nil) continue;
-		if(inst->m_numChildren > 0 && inst->m_numChildrenRendered == inst->m_numChildren){
-			// all children can be drawn, so don't draw the LOD
-			inst->m_numChildrenRendered = 0;
-			lodList[i].inst = nil;
-		}else{
-			// not all children are drawn
-
-			// We don't have the RW object yet, in case we didn't call the visbility function
-			if(inst->m_rwObject == nil)
-				inst->CreateRwObject();
-
-			//superlod = inst->m_lod;
-			//if(superlod){
-			//}
-		}
-//		printf("%d %s %d %d\n", i, GetObjectDef(inst->m_objectId)->m_name,
-//			inst->m_numChildren, inst->m_numChildrenRendered);
+	// Resolve coverage before drawing any queued LOD. A visible detailed
+	// child also covers its ancestors; this must not depend on sector order.
+	for(const InstDist &entry : lodList){
+		if(entry.inst->m_numChildrenRendered == 0)
+			continue;
+		ObjectInst *parent = entry.inst->m_lod;
+		for(int depth = 0; parent && depth < 32; depth++, parent = parent->m_lod)
+			parent->m_numChildrenRendered = max((int)parent->m_numChildrenRendered, 1);
 	}
-
-	// I don't get this, do we really want to hide superlods with this?
-//	for(i = 0; i < numLods; i++){
-//		inst = lodList[i];
-//		if(inst == nil) continue;
-//		// what's this exactly?
-//		if(inst->m_numChildrenRendered > 0){
-//			inst->m_numChildrenRendered = 0;
-//			lodList[i] = 0;
-//		}
-//	}
-
-	for(i = 0; i < numLods; i++){
-		inst = lodList[i].inst;
-		if(inst == nil) continue;
-		AddToRenderList(inst, lodList[i].dist);
+	for(const InstDist &entry : lodList){
+		ObjectInst *inst = entry.inst;
+		// As in SA's ProcessLodRenderLists, don't overlay a coarse LOD on
+		// any of its visible detailed children. Frustum-culled children do
+		// not count, and unloaded children leave their fallback available.
+		if(inst->m_numChildrenRendered > 0)
+			continue;
+		if(inst->m_rwObject == nil && inst->CreateRwObject() == nil)
+			continue;
+		if(inst->IsOnScreen())
+			AddToRenderList(inst, entry.dist);
 	}
 }
 
@@ -637,7 +583,9 @@ RenderInst(ObjectInst *inst)
 		SetRenderState(rw::CULLMODE, rw::CULLNONE);
 	}
 
-	pDirect->setFlags(0);
+	// The isolated attachment view uses a simple preview rig so models stay
+	// readable without the map's sky and surrounding world lighting.
+	pDirect->setFlags(AttachmentWorkspaceHidesWorld() ? rw::Light::LIGHTATOMICS : 0);
 	gta::colourCode.red = inst->m_id & 0xFF;
 	gta::colourCode.green = inst->m_id>>8 & 0xFF;
 	gta::colourCode.blue = inst->m_id>>16 & 0xFF;
@@ -676,6 +624,74 @@ RenderInst(ObjectInst *inst)
 	if(obj->m_noBackfaceCulling)
 		SetRenderState(rw::CULLMODE, cull);
 	pDirect->setFlags(rw::Light::LIGHTATOMICS);
+}
+
+void
+RenderAttachmentWorkspaceGrid(void)
+{
+	if(!AttachmentWorkspaceHidesWorld())
+		return;
+	ObjectInst *target = GetAttachmentWorkspaceTarget();
+	if(target == nil || target->m_isDeleted)
+		return;
+
+	float range = max(10.0f, min(40.0f, TheCamera.distanceToTarget() * 1.25f));
+	int steps = (int)ceilf(range);
+	rw::V3d origin = target->m_translation;
+	float gridZ = origin.z;
+	ObjectDef *obj = GetObjectDef(target->m_objectId);
+	if(obj && obj->m_colModel){
+		const CBox &box = obj->m_colModel->boundingBox;
+		gridZ = 1.0e30f;
+		for(int x = 0; x < 2; x++)
+			for(int y = 0; y < 2; y++)
+				for(int z = 0; z < 2; z++){
+					rw::V3d corner = {
+						x ? box.max.x : box.min.x,
+						y ? box.max.y : box.min.y,
+						z ? box.max.z : box.min.z
+					};
+					rw::V3d::transformPoints(&corner, &corner, 1, &target->m_matrix);
+					gridZ = min(gridZ, corner.z);
+				}
+		gridZ -= 0.03f;
+	}
+	rw::RGBA grid = { 65, 72, 82, 255 };
+	rw::RGBA xAxis = { 110, 78, 70, 255 };
+	rw::RGBA yAxis = { 70, 100, 78, 255 };
+	rw::V3d gridPoints[324];
+	int numGridPoints = 0;
+	for(int i = -steps; i <= steps; i++){
+		if(i == 0)
+			continue;
+		float offset = (float)i;
+		gridPoints[numGridPoints++] = { origin.x - range, origin.y + offset, gridZ };
+		gridPoints[numGridPoints++] = { origin.x + range, origin.y + offset, gridZ };
+		gridPoints[numGridPoints++] = { origin.x + offset, origin.y - range, gridZ };
+		gridPoints[numGridPoints++] = { origin.x + offset, origin.y + range, gridZ };
+	}
+	SetRenderState(rw::CULLMODE, rw::CULLNONE);
+	rw::SetRenderState(rw::FOGENABLE, 0);
+	rw::SetRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
+	RenderLinesNow(gridPoints, numGridPoints, grid);
+	rw::V3d axes[] = {
+		{ origin.x - range, origin.y, gridZ }, { origin.x + range, origin.y, gridZ },
+		{ origin.x, origin.y - range, gridZ }, { origin.x, origin.y + range, gridZ }
+	};
+	RenderLinesNow(axes, 2, xAxis);
+	RenderLinesNow(axes + 2, 2, yAxis);
+}
+
+void
+RenderAttachmentWorkspacePreview(void)
+{
+	if(!IsAttachmentWorkspaceActive())
+		return;
+	ObjectInst *preview = GetAttachmentWorkspacePlayerPreview();
+	if(preview == nil || preview->m_rwObject == nil)
+		return;
+	preview->PreRender();
+	RenderInst(preview);
 }
 
 static void
@@ -752,7 +768,8 @@ ScanInstList(CPtrList *list, void (*f)(ObjectInst *inst))
 	CPtrNode *p;
 	for(p = list->first; p; p = p->next){
 		ObjectInst *inst = (ObjectInst*)p->item;
-		if(inst->m_isDeleted || inst->m_editorHidden || PlayerViewHides(inst))
+		if(inst->m_isDeleted || inst->m_editorHidden || PlayerViewHides(inst) ||
+		   !AttachmentWorkspaceShowsInstance(inst))
 			continue;
 		f(inst);
 	}
@@ -833,7 +850,8 @@ RenderOpaque(void)
 {
 	SetRenderState(rw::ALPHATESTREF, params.alphaRef);
 
-	SetRenderState(rw::CULLMODE, gDoBackfaceCulling ? rw::CULLBACK : rw::CULLNONE);
+	SetRenderState(rw::CULLMODE, AttachmentWorkspaceHidesWorld() || !gDoBackfaceCulling ?
+		rw::CULLNONE : rw::CULLBACK);
 	int i, numVisibleInsts = (int)visibleInsts.size();
 	for(i = 0; i < numVisibleInsts; i++)
 		RenderInst(visibleInsts[i]);
@@ -842,7 +860,8 @@ RenderOpaque(void)
 void
 RenderTransparent(void)
 {
-	SetRenderState(rw::CULLMODE, gDoBackfaceCulling ? rw::CULLBACK : rw::CULLNONE);
+	SetRenderState(rw::CULLMODE, AttachmentWorkspaceHidesWorld() || !gDoBackfaceCulling ?
+		rw::CULLNONE : rw::CULLBACK);
 	std::sort(sortedInsts.begin(), sortedInsts.end(), [](const InstDist &a, const InstDist &b) {
 		return a.dist < b.dist;
 	});
@@ -857,6 +876,68 @@ RenderTransparent(void)
 		RenderElementIcons();
 		RenderRadarArtLayers();
 	}
+}
+
+void
+RenderAttachmentBoneMarker(void)
+{
+	ObjectInst *parent = nil;
+	int boneId = 2;
+	if(AttachmentTargetPickActive()){
+		if(ImGui::GetIO().WantCaptureMouse)
+			return;
+		Ray ray;
+		ray.start = TheCamera.m_position;
+		ray.dir = normalize(TheCamera.m_mouseDir);
+		parent = GetVisibleInstUnderRay(ray);
+		if(!IsPlayerAttachmentTarget(parent))
+			return;
+		GetAttachmentTargetPickOptions(&boneId, nil);
+	}else{
+		ObjectInst *child = nil;
+		for(CPtrNode *p = selection.first; p; p = p->next){
+			ObjectInst *inst = (ObjectInst*)p->item;
+			if(inst && !inst->m_isDeleted && IsPlayerAttachedObject(inst)){
+				child = inst;
+				break;
+			}
+		}
+		if(child){
+			parent = GetAttachParent(child);
+			boneId = GetObjectPawnProperties(child)->attachBone;
+		}else{
+			parent = GetAttachmentWorkspaceTarget();
+			GetAttachmentTargetPickOptions(&boneId, nil);
+		}
+	}
+	rw::Matrix bone;
+	if(parent == nil || !GetAttachmentPlayerBoneTransform(parent, boneId, &bone))
+		return;
+
+	float length = max(0.16f, min(0.55f, TheCamera.distanceToTarget() * 0.014f));
+	rw::V3d points[] = {
+		bone.pos, add(bone.pos, scale(bone.right, length)),
+		bone.pos, add(bone.pos, scale(bone.up, length)),
+		bone.pos, add(bone.pos, scale(bone.at, length))
+	};
+	rw::RGBA red = { 255, 80, 70, 255 };
+	rw::RGBA green = { 85, 255, 100, 255 };
+	rw::RGBA blue = { 75, 145, 255, 255 };
+	uint32 oldZTest = rw::GetRenderState(rw::ZTESTENABLE);
+	uint32 oldFog = rw::GetRenderState(rw::FOGENABLE);
+	uint32 oldCull = rw::GetRenderState(rw::CULLMODE);
+	uint32 oldAlphaFunc = rw::GetRenderState(rw::ALPHATESTFUNC);
+	SetRenderState(rw::ZTESTENABLE, 0);
+	SetRenderState(rw::FOGENABLE, 0);
+	SetRenderState(rw::CULLMODE, rw::CULLNONE);
+	SetRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
+	RenderLinesNow(points, 2, red);
+	RenderLinesNow(points + 2, 2, green);
+	RenderLinesNow(points + 4, 2, blue);
+	SetRenderState(rw::ZTESTENABLE, oldZTest);
+	SetRenderState(rw::FOGENABLE, oldFog);
+	SetRenderState(rw::CULLMODE, oldCull);
+	SetRenderState(rw::ALPHATESTFUNC, oldAlphaFunc);
 }
 
 void
@@ -901,7 +982,7 @@ RenderCollision(ObjectInst *inst)
 	ObjectDef *obj = GetObjectDef(inst->m_objectId);
 	if(obj == nil) return;
 	if(obj->m_colModel)
-		RenderColModelWire(obj->m_colModel, &inst->m_matrix, obj->m_isBigBuilding);
+		RenderColModelWire(obj->m_colModel, &inst->m_matrix, !gRenderCollision || obj->m_isBigBuilding);
 	else
 		printf("object %s has no LOD\n", obj->m_name);
 }
@@ -1006,13 +1087,22 @@ RenderInit(void)
 // it. They show selected and hovered objects whatever their textures, so
 // invisible and see-through objects can still be found and retextured.
 
+// A smooth edge between two faces: on the silhouette when the camera sees
+// one face and not the other. Smooth models (barrels, rocks) have no borders
+// or creases, so only these give them a contour.
+struct SilhouetteEdge
+{
+	rw::V3d a, b, n1, n2;
+};
+
 // Model-space segments (pairs of points) along a geometry's open borders
 // and sharp creases. Vertices are welded by position first, so texture
 // seams do not count as borders.
 static void
-BuildOutlineEdges(rw::Geometry *geo, std::vector<rw::V3d> &out)
+BuildOutlineEdges(rw::Geometry *geo, std::vector<rw::V3d> &out, std::vector<SilhouetteEdge> &smooth)
 {
 	out.clear();
+	smooth.clear();
 	if(geo->triangles == nil || geo->numMorphTargets < 1 || geo->morphTargets[0].vertices == nil)
 		return;
 	rw::V3d *verts = geo->morphTargets[0].vertices;
@@ -1029,7 +1119,7 @@ BuildOutlineEdges(rw::Geometry *geo, std::vector<rw::V3d> &out)
 	}
 
 	struct EdgeInfo {
-		rw::V3d normal;
+		rw::V3d normal, normal2;
 		int count;
 		bool crease;	// two faces meet at a sharp angle
 		bool opposite;	// back-to-back faces, as on a double-sided sheet
@@ -1052,12 +1142,13 @@ BuildOutlineEdges(rw::Geometry *geo, std::vector<rw::V3d> &out)
 			uint64 key = a < b ? (uint64)a << 32 | b : (uint64)b << 32 | a;
 			auto it = edges.find(key);
 			if(it == edges.end()){
-				EdgeInfo info = { n, 1, false, false };
+				EdgeInfo info = { n, n, 1, false, false };
 				edges.emplace(key, info);
 				continue;
 			}
 			EdgeInfo &info = it->second;
 			info.count++;
+			info.normal2 = n;
 			float d = dot(n, info.normal);
 			if(d < -0.98f)
 				info.opposite = true;
@@ -1072,7 +1163,8 @@ BuildOutlineEdges(rw::Geometry *geo, std::vector<rw::V3d> &out)
 		if(info.count == 1 || info.crease || (info.count == 2 && info.opposite)){
 			out.push_back(verts[edge.first >> 32]);
 			out.push_back(verts[edge.first & 0xFFFFFFFF]);
-		}
+		}else if(info.count == 2)
+			smooth.push_back({ verts[edge.first >> 32], verts[edge.first & 0xFFFFFFFF], info.normal, info.normal2 });
 	}
 }
 
@@ -1081,38 +1173,62 @@ struct OutlineCacheEntry
 	int numVertices;
 	int numTriangles;
 	std::vector<rw::V3d> points;
+	std::vector<SilhouetteEdge> smooth;
 };
 static std::unordered_map<rw::Geometry*, OutlineCacheEntry> outlineCache;
 
-static const std::vector<rw::V3d>&
+static const OutlineCacheEntry&
 GetOutlineEdges(rw::Geometry *geo)
 {
 	auto it = outlineCache.find(geo);
 	// A streamed-out model's geometry can be freed and the address reused.
 	if(it != outlineCache.end() && it->second.numVertices == geo->numVertices &&
 	   it->second.numTriangles == geo->numTriangles)
-		return it->second.points;
+		return it->second;
 	if(outlineCache.size() > 4096)
 		outlineCache.clear();
 	OutlineCacheEntry &entry = outlineCache[geo];
 	entry.numVertices = geo->numVertices;
 	entry.numTriangles = geo->numTriangles;
-	BuildOutlineEdges(geo, entry.points);
-	return entry.points;
+	BuildOutlineEdges(geo, entry.points, entry.smooth);
+	return entry;
 }
 
+// silhouette: also the smooth edges on the contour from the camera; only
+// for the few selected and hovered objects, since it changes every frame.
 static void
-AddAtomicOutline(rw::Atomic *atomic, std::vector<rw::V3d> &out)
+AddAtomicOutline(rw::Atomic *atomic, std::vector<rw::V3d> &out, bool silhouette)
 {
 	rw::Geometry *geo = atomic->geometry;
 	if(geo == nil || !(atomic->getFlags() & rw::Atomic::RENDER))
 		return;
-	const std::vector<rw::V3d> &edges = GetOutlineEdges(geo);
-	if(edges.empty())
-		return;
+	const OutlineCacheEntry &entry = GetOutlineEdges(geo);
+	const std::vector<rw::V3d> &edges = entry.points;
+	rw::Matrix *ltm = atomic->getFrame()->getLTM();
 	size_t start = out.size();
-	out.resize(start + edges.size());
-	rw::V3d::transformPoints(&out[start], edges.data(), (int32)edges.size(), atomic->getFrame()->getLTM());
+	if(!edges.empty()){
+		out.resize(start + edges.size());
+		rw::V3d::transformPoints(&out[start], edges.data(), (int32)edges.size(), ltm);
+	}
+	if(silhouette && !entry.smooth.empty()){
+		// The camera in model space: which side of a face it is on doesn't
+		// change under the object's transform, scaled or not.
+		rw::Matrix inverse;
+		rw::Matrix::invert(&inverse, ltm);
+		rw::V3d eye;
+		rw::V3d::transformPoints(&eye, &TheCamera.m_position, 1, &inverse);
+		size_t silhouetteStart = out.size();
+		for(const SilhouetteEdge &e : entry.smooth){
+			rw::V3d toEye = sub(eye, e.a);
+			if((dot(e.n1, toEye) > 0.0f) != (dot(e.n2, toEye) > 0.0f)){
+				out.push_back(e.a);
+				out.push_back(e.b);
+			}
+		}
+		if(out.size() > silhouetteStart)
+			rw::V3d::transformPoints(&out[silhouetteStart], &out[silhouetteStart],
+				(int32)(out.size() - silhouetteStart), ltm);
+	}
 	// Pull the lines a little toward the camera so they win the depth test
 	// against the surface they lie on.
 	for(size_t i = start; i < out.size(); i++)
@@ -1120,16 +1236,16 @@ AddAtomicOutline(rw::Atomic *atomic, std::vector<rw::V3d> &out)
 }
 
 static void
-AddInstOutline(ObjectInst *inst, std::vector<rw::V3d> &out)
+AddInstOutline(ObjectInst *inst, std::vector<rw::V3d> &out, bool silhouette = false)
 {
 	ObjectDef *obj = GetObjectDef(inst->m_objectId);
 	if(obj == nil || inst->m_rwObject == nil)
 		return;
 	if(obj->m_type == ObjectDef::ATOMIC)
-		AddAtomicOutline((rw::Atomic*)inst->m_rwObject, out);
+		AddAtomicOutline((rw::Atomic*)inst->m_rwObject, out, silhouette);
 	else if(obj->m_type == ObjectDef::CLUMP){
 		FORLIST(lnk, ((rw::Clump*)inst->m_rwObject)->atomics)
-			AddAtomicOutline(rw::Atomic::fromClump(lnk), out);
+			AddAtomicOutline(rw::Atomic::fromClump(lnk), out, silhouette);
 	}
 }
 
@@ -1151,15 +1267,16 @@ RenderObjectOutlines(void)
 		points[k].clear();
 	for(CPtrNode *p = instances.first; p; p = p->next){
 		ObjectInst *inst = (ObjectInst*)p->item;
-		if(inst->m_isDeleted || inst->m_editorHidden || PlayerViewHides(inst) || inst->m_rwObject == nil ||
+		if(inst->m_isDeleted || inst->m_editorHidden || PlayerViewHides(inst) ||
+		   !AttachmentWorkspaceShowsInstance(inst) || inst->m_rwObject == nil ||
 		   InstUsesEditorIcon(inst))
 			continue;
 		if(inst->m_highlight == HIGHLIGHT_MATCH && points[OUTLINE_MATCH].size() < maxMapPoints)
 			AddInstOutline(inst, points[OUTLINE_MATCH]);
 		else if(inst->m_selected && gOutlineSelection)
-			AddInstOutline(inst, points[OUTLINE_SELECTED]);
+			AddInstOutline(inst, points[OUTLINE_SELECTED], points[OUTLINE_SELECTED].size() < maxMapPoints);
 		else if(inst->m_highlight == HIGHLIGHT_HOVER && gOutlineSelection)
-			AddInstOutline(inst, points[OUTLINE_HOVER]);
+			AddInstOutline(inst, points[OUTLINE_HOVER], true);
 		else if(gOutlineMapObjects && points[OUTLINE_MAP].size() < maxMapPoints &&
 		        PawnObjectNeedsExport(inst) &&
 		        length(sub(inst->m_translation, TheCamera.m_position)) < maxMapDistance)
@@ -1182,4 +1299,47 @@ RenderObjectOutlines(void)
 	for(int k = 0; k < NUM_OUTLINES; k++)
 		RenderLinesNow(points[k].data(), (int)points[k].size(), colours[k]);
 	rw::SetRenderState(rw::ZWRITEENABLE, 1);
+}
+
+// Where selected moving objects go (MoveObject): a line, a ghost at the end
+// and one gliding there and back at the object's speed, pausing at each end.
+// The client moves at a constant speed and turns in step with the distance
+// (reSA-MP MoveObjectRuntimeToTarget); with no distance the turn takes a second here.
+void
+RenderObjectMovePreviews(void)
+{
+	if(!gPreviewObjectMoves)
+		return;
+	float now = (float)ImGui::GetTime();
+	for(CPtrNode *p = selection.first; p; p = p->next){
+		ObjectInst *inst = (ObjectInst*)p->item;
+		if(inst->m_isDeleted || inst->m_isVehicle || GetSampElementKind(inst) != SAMP_ELEMENT_OBJECT)
+			continue;
+		const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+		if(!properties->moveEnabled)
+			continue;
+		rw::V3d from = inst->m_translation, to = add(from, properties->moveOffset);
+		rw::Quat startRot = inst->m_rotation;
+		rw::Quat endRot = properties->moveRotates ? MakeObjectRotationDegrees(properties->moveRotation) : startRot;
+		rw::V3d line[2] = { from, to };
+		RenderLinesNow(line, 2, { 120, 230, 255, 255 });
+		RenderPlacementGhost(inst->m_objectId, to, endRot, { 120, 230, 255, 70 });
+
+		float distance = length(properties->moveOffset);
+		float duration = distance > 0.001f ? distance / std::max(properties->moveSpeed, 0.01f) : 1.0f;
+		const float pause = 0.5f;
+		float cycle = 2.0f * (duration + pause);
+		float t = fmodf(now, cycle);
+		float f = t < duration ? t / duration : t < duration + pause ? 1.0f :
+			t < 2.0f * duration + pause ? 1.0f - (t - duration - pause) / duration : 0.0f;
+		// Normalised lerp, the short way round.
+		rw::Quat a = startRot, b = endRot;
+		if(a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w < 0.0f)
+			b = { -b.x, -b.y, -b.z, -b.w };
+		rw::Quat q = { a.x + (b.x - a.x)*f, a.y + (b.y - a.y)*f, a.z + (b.z - a.z)*f, a.w + (b.w - a.w)*f };
+		float n = sqrtf(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
+		if(n > 1e-6f)
+			q = { q.x/n, q.y/n, q.z/n, q.w/n };
+		RenderPlacementGhost(inst->m_objectId, add(from, scale(properties->moveOffset, f)), q, { 120, 230, 255, 150 });
+	}
 }

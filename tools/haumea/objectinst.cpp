@@ -1,5 +1,8 @@
 #include "haumea.h"
 #include "coordinatepin.h"
+#include "haumea_races_inc.h"
+#include "maptools.h"
+#include "layoutpaths.h"
 #include "documentxml.h"
 #include "i18n.h"
 #include "editoricons.h"
@@ -863,6 +866,13 @@ ObjectInst::UpdateMatrix(void)
 	// RemoveBuildingForPlayer plus CreateObject, so it is drawn as one.
 	bool ipl = m_iplRotation && (IsIplMapDocumentOpen() || !PawnObjectNeedsExport(this));
 	BuildInstanceMatrix(&m_matrix, m_rotation, m_translation, ipl);
+	const ObjectPawnProperties *properties = GetObjectPawnProperties(this);
+	if(IsPlayerAttachedObject(this)){
+		m_matrix.right = scale(m_matrix.right, properties->attachScale.x);
+		m_matrix.up = scale(m_matrix.up, properties->attachScale.y);
+		m_matrix.at = scale(m_matrix.at, properties->attachScale.z);
+		m_matrix.flags = 0;
+	}
 }
 
 static bool
@@ -924,6 +934,64 @@ InitObjectMaterialOverride(ObjectMaterialOverride *material, int sourceModel)
 static void copyMaterialUVAnimationState(rw::Material *dst,
 	const rw::Material *src);
 
+// A geometry round trip recreates temporary materials before the live
+// materials are cloned below. Its texture names must never be resolved through
+// the current map TXD or image files. Keep those temporary handles private;
+// the final material clones retain the original textures and plugin state.
+static std::vector<rw::Texture*> *gGeometryReadTextures;
+
+static rw::Texture*
+findGeometryReadTexture(const char *name)
+{
+	if(name == nil || gGeometryReadTextures == nil)
+		return nil;
+	for(rw::Texture *texture : *gGeometryReadTextures)
+		if(rw::strncmp_ci(texture->name, name, sizeof(texture->name)) == 0)
+			return texture;
+	rw::Texture *texture = rw::Texture::create(nil);
+	if(texture){
+		strncpy(texture->name, name, sizeof(texture->name));
+		gGeometryReadTextures->push_back(texture);
+	}
+	return texture;
+}
+
+static rw::Texture*
+skipGeometryReadImage(const char*, const char*)
+{
+	return nil;
+}
+
+class ScopedGeometryTextureReads
+{
+	rw::TexDictionary *previousDictionary;
+	rw::Texture *(*previousFind)(const char*);
+	rw::Texture *(*previousRead)(const char*, const char*);
+	std::vector<rw::Texture*> *previousTextures;
+	std::vector<rw::Texture*> textures;
+public:
+	ScopedGeometryTextureReads()
+	{
+		previousDictionary = rw::TexDictionary::getCurrent();
+		previousFind = rw::Texture::findCB;
+		previousRead = rw::Texture::readCB;
+		previousTextures = gGeometryReadTextures;
+		gGeometryReadTextures = &textures;
+		rw::TexDictionary::setCurrent(nil);
+		rw::Texture::findCB = findGeometryReadTexture;
+		rw::Texture::readCB = skipGeometryReadImage;
+	}
+	~ScopedGeometryTextureReads()
+	{
+		rw::Texture::findCB = previousFind;
+		rw::Texture::readCB = previousRead;
+		rw::TexDictionary::setCurrent(previousDictionary);
+		gGeometryReadTextures = previousTextures;
+		for(rw::Texture *texture : textures)
+			texture->destroy();
+	}
+};
+
 static rw::Geometry*
 cloneGeometryForMaterial(rw::Geometry *source)
 {
@@ -958,7 +1026,11 @@ cloneGeometryForMaterial(rw::Geometry *source)
 	if(!written)
 		return nil;
 	stream.seek(12, 0);
-	rw::Geometry *geometry = rw::Geometry::streamRead(&stream);
+	rw::Geometry *geometry;
+	{
+		ScopedGeometryTextureReads textureReads;
+		geometry = rw::Geometry::streamRead(&stream);
+	}
 	if(geometry == nil)
 		return nil;
 
@@ -1484,7 +1556,29 @@ static void updateRwFrameForInst(ObjectInst *inst);
  */
 
 static bool gAttachmentListDirty = true;
+static bool gAttachmentWorkspaceActive;
+static bool gAttachmentWorkspaceVoid;
+static bool gAttachmentWorkspacePlayerMode;
+static int gAttachmentWorkspacePlayerSkin = 1;
+static bool gAttachmentWorkspacePlayerSkinSet;
+static ObjectInst *gAttachmentWorkspaceTarget;
+static ObjectInst *gAttachmentPlayerPreview;
+static bool gAttachmentTargetPickActive;
+static std::vector<ObjectInst*> gAttachmentTargetPickChildren;
+static int gAttachmentTargetPickBone = 2;
+static rw::V3d gAttachmentTargetPickScale = { 1.0f, 1.0f, 1.0f };
+static bool gAttachmentWorkspaceCameraSaved;
+static rw::V3d gAttachmentWorkspaceSavedCameraPosition;
+static rw::V3d gAttachmentWorkspaceSavedCameraTarget;
+static rw::V3d gAttachmentWorkspaceSavedCameraUp;
+static rw::V3d gAttachmentWorkspaceSavedCameraLocalUp;
+static float gAttachmentWorkspaceSavedCameraFov;
+static bool gAttachmentWorkspaceNeedsFocus;
+static bool gAttachmentWorkspaceSelectionPending;
+static int gAttachmentWorkspacePendingCameraView = ATTACHMENT_VIEW_FOCUS;
 static void setInstanceElementModel(ObjectInst *inst, int modelId);
+static void applyInstanceModelId(ObjectInst *inst, int editorModelId);
+static void destroyInstanceRwObject(ObjectInst *inst, ObjectDef *obj);
 
 void
 InitObjectPawnProperties(ObjectPawnProperties *properties)
@@ -1495,6 +1589,9 @@ InitObjectPawnProperties(ObjectPawnProperties *properties)
 	properties->virtualWorld = -1;
 	properties->attachParent = -1;
 	properties->attachSyncRotation = true;
+	properties->attachBone = -1;
+	properties->attachScale = { 1.0f, 1.0f, 1.0f };
+	properties->attachSkin = 1;
 	properties->npcVehicle = -1;
 }
 
@@ -1771,7 +1868,51 @@ GetNextRaceCheckpoint(const ObjectInst *inst)
 	for(size_t i = 0; i + 1 < race.size(); i++)
 		if(race[i] == inst)
 			return race[i + 1];
+	if(properties->cpRaceMode == SAMP_RACE_CIRCUIT && race.size() >= 2 && race.back() == inst)
+		return race.front();
 	return nil;
+}
+
+int
+GetRaceCheckpointShownType(const ObjectInst *inst)
+{
+	const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+	int type = properties->cpRaceType;
+	if(type != SAMP_RACE_CP_AUTO_GROUND && type != SAMP_RACE_CP_AUTO_AIR)
+		return clamp(type, 0, 8);
+	std::vector<ObjectInst*> race;
+	GetRaceCheckpoints(properties->cpRace, race);
+	bool finish = !race.empty() &&
+		(properties->cpRaceMode == SAMP_RACE_CIRCUIT && race.size() >= 2 ? race.front() == inst : race.back() == inst);
+	return type == SAMP_RACE_CP_AUTO_AIR ? (finish ? 4 : 3) : (finish ? 1 : 0);
+}
+
+void
+SetRaceSettings(const char *raceName, int mode, int laps, bool playable)
+{
+	std::vector<ObjectInst*> race;
+	GetRaceCheckpoints(raceName, race);
+	UndoBeginGroup();
+	for(ObjectInst *inst : race){
+		ObjectPawnProperties properties = *GetObjectPawnProperties(inst);
+		properties.cpRaceMode = mode;
+		properties.cpRaceLaps = laps;
+		properties.cpRacePlayable = playable;
+		SetObjectPawnProperties(inst, properties);
+	}
+	UndoEndGroup();
+}
+
+bool
+WriteHaumeaRacesInclude(const char *path)
+{
+	FILE *f = fopen(path, "wb");
+	if(f == nil)
+		return false;
+	bool ok = true;
+	for(const char *piece : kHaumeaRacesInc)
+		ok &= fputs(piece, f) >= 0;
+	return fclose(f) == 0 && ok;
 }
 
 static int
@@ -1854,8 +1995,16 @@ normalizeObjectPawnProperties(ObjectPawnProperties *properties)
 		properties->cpOrder = 0;
 	}
 	properties->cpSize = clamp(properties->cpSize, 0.0f, 1000.0f);
-	properties->cpRaceType = clamp(properties->cpRaceType, 0, 8);
+	properties->cpRaceType = clamp(properties->cpRaceType, 0, (int)SAMP_RACE_CP_AUTO_AIR);
 	properties->cpOrder = max(properties->cpOrder, 0);
+	if(properties->elementKind == SAMP_ELEMENT_CHECKPOINT && properties->cpKind == SAMP_CHECKPOINT_RACE){
+		properties->cpRaceMode = clamp(properties->cpRaceMode, (int)SAMP_RACE_POINT_TO_POINT, (int)SAMP_RACE_CIRCUIT);
+		properties->cpRaceLaps = properties->cpRaceMode == SAMP_RACE_CIRCUIT ?
+			clamp(properties->cpRaceLaps, 1, (int)SAMP_RACE_MAX_LAPS) : 1;
+	}else{
+		properties->cpRaceMode = properties->cpRaceLaps = 0;
+		properties->cpRacePlayable = false;
+	}
 	if(properties->elementKind != SAMP_ELEMENT_AREA){
 		properties->areaShape = SAMP_AREA_CIRCLE;
 		properties->areaRadius = properties->areaHeight = 0.0f;
@@ -1901,9 +2050,26 @@ normalizeObjectPawnProperties(ObjectPawnProperties *properties)
 		if(properties->classWeapons[i] == 0)
 			properties->classAmmo[i] = 0;
 	}
-	// Only objects attach to objects.
+	// Only map objects can be attached. Player attachments use the negative
+	// PAWN_ATTACH_PLAYER target; ordinary object/vehicle links use an instance ID.
 	if(properties->elementKind != SAMP_ELEMENT_OBJECT)
 		properties->attachParent = -1;
+	if(properties->attachParent < PAWN_ATTACH_PLAYER)
+		properties->attachParent = -1;
+	if(properties->attachBone < -1 || properties->attachBone > 18 || properties->attachBone == 0)
+		properties->attachBone = -1;
+	properties->attachSlot = clamp(properties->attachSlot, 0, 9);
+	properties->attachScale.x = clamp(properties->attachScale.x, 0.01f, 50.0f);
+	properties->attachScale.y = clamp(properties->attachScale.y, 0.01f, 50.0f);
+	properties->attachScale.z = clamp(properties->attachScale.z, 0.01f, 50.0f);
+	properties->attachSkin = clamp(properties->attachSkin, 0, 311);
+	if(properties->attachBone < 1){
+		if(properties->attachParent == PAWN_ATTACH_PLAYER)
+			properties->attachParent = PAWN_ATTACH_NONE;
+		properties->attachScale = { 1.0f, 1.0f, 1.0f };
+		properties->attachColor1 = properties->attachColor2 = 0;
+		properties->attachSkin = 1;
+	}
 	if(properties->elementKind != SAMP_ELEMENT_PATHPOINT && properties->elementKind != SAMP_ELEMENT_NPC)
 		properties->pathName[0] = '\0';
 	// Repeating is for an NPC that walks a path.
@@ -1911,11 +2077,33 @@ normalizeObjectPawnProperties(ObjectPawnProperties *properties)
 	if(properties->elementKind != SAMP_ELEMENT_NPC || !properties->pathName[0] ||
 	   properties->npcRecording[0] || properties->npcPlaysNode)
 		properties->npcPathRepeat = NPC_PATH_ONCE;
-	if(properties->attachParent < 0){
+	// Only free-standing objects move: an attached one goes with its parent.
+	if(properties->elementKind != SAMP_ELEMENT_OBJECT || properties->attachParent != -1)
+		properties->moveEnabled = false;
+	if(properties->moveEnabled){
+		properties->moveSpeed = std::isfinite(properties->moveSpeed) ? clamp(properties->moveSpeed, 0.01f, 1000.0f) : 1.0f;
+		for(int a = 0; a < 3; a++){
+			float &o = (&properties->moveOffset.x)[a], &r = (&properties->moveRotation.x)[a];
+			o = std::isfinite(o) ? clamp(o, -20000.0f, 20000.0f) : 0.0f;
+			r = std::isfinite(r) ? clamp(r, -360.0f, 360.0f) : 0.0f;
+		}
+		if(!properties->moveRotates)
+			properties->moveRotation = { 0.0f, 0.0f, 0.0f };
+	}else{
+		properties->moveOffset = properties->moveRotation = { 0.0f, 0.0f, 0.0f };
+		properties->moveRotates = false;
+		properties->moveSpeed = 0.0f;
+	}
+	if(properties->attachParent == -1){
 		properties->attachParent = -1;
 		properties->attachOffset = { 0.0f, 0.0f, 0.0f };
 		properties->attachRotation = { 0.0f, 0.0f, 0.0f };
 		properties->attachSyncRotation = true;
+		properties->attachBone = -1;
+		properties->attachSlot = 0;
+		properties->attachScale = { 1.0f, 1.0f, 1.0f };
+		properties->attachColor1 = properties->attachColor2 = 0;
+		properties->attachSkin = 1;
 	}
 }
 
@@ -1934,7 +2122,11 @@ SetObjectPawnProperties(ObjectInst *inst, const ObjectPawnProperties &properties
 	bool attachmentChanged = old.attachParent != normalized.attachParent ||
 		memcmp(&old.attachOffset, &normalized.attachOffset, sizeof(rw::V3d)) != 0 ||
 		memcmp(&old.attachRotation, &normalized.attachRotation, sizeof(rw::V3d)) != 0 ||
-		old.attachSyncRotation != normalized.attachSyncRotation;
+		old.attachSyncRotation != normalized.attachSyncRotation || old.attachBone != normalized.attachBone ||
+		old.attachSlot != normalized.attachSlot ||
+		memcmp(&old.attachScale, &normalized.attachScale, sizeof(rw::V3d)) != 0 ||
+		old.attachColor1 != normalized.attachColor1 || old.attachColor2 != normalized.attachColor2 ||
+		old.attachSkin != normalized.attachSkin;
 	if(ObjectPawnPropertiesAreDefault(normalized)){
 		delete inst->m_pawnProperties;
 		inst->m_pawnProperties = nil;
@@ -1946,6 +2138,10 @@ SetObjectPawnProperties(ObjectInst *inst, const ObjectPawnProperties &properties
 	if(attachmentChanged)
 		// Snap to the (new) offset on the next attachment update.
 		inst->m_attachApplied = false;
+	if(memcmp(&old.attachScale, &normalized.attachScale, sizeof(rw::V3d)) != 0){
+		inst->UpdateMatrix();
+		updateRwFrameForInst(inst);
+	}
 	if(strcmp(old.animLib, normalized.animLib) != 0 || strcmp(old.animName, normalized.animName) != 0 ||
 	   old.npcVehicle != normalized.npcVehicle || old.npcSeat != normalized.npcSeat ||
 	   old.animLoop != normalized.animLoop || old.animLockX != normalized.animLockX ||
@@ -2098,10 +2294,107 @@ ObjectInst*
 GetAttachParent(const ObjectInst *inst)
 {
 	const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+	if(properties->attachParent == PAWN_ATTACH_PLAYER)
+		return gAttachmentWorkspaceActive && gAttachmentWorkspacePlayerMode ?
+			GetAttachmentWorkspacePlayerPreview() : nil;
 	if(properties->attachParent < 0)
 		return nil;
 	ObjectInst *parent = GetInstanceByID(properties->attachParent);
 	return parent && !parent->m_isDeleted ? parent : nil;
+}
+
+bool
+IsPlayerAttachmentTarget(const ObjectInst *inst)
+{
+	if(inst == nil || inst->m_isDeleted || inst->m_isVehicle)
+		return false;
+	int kind = GetSampElementKind(inst);
+	return kind == SAMP_ELEMENT_CLASS || kind == SAMP_ELEMENT_NPC;
+}
+
+bool
+IsPlayerAttachedObject(const ObjectInst *inst)
+{
+	if(inst == nil || inst->m_isVehicle ||
+	   GetSampElementKind(inst) != SAMP_ELEMENT_OBJECT)
+		return false;
+	const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+	if(properties->attachParent == PAWN_ATTACH_NONE || properties->attachBone < 1)
+		return false;
+	if(properties->attachParent == PAWN_ATTACH_PLAYER)
+		return true;
+	ObjectInst *parent = GetInstanceByID(properties->attachParent);
+	return IsPlayerAttachmentTarget(parent);
+}
+
+static int
+playerBoneNodeId(int sampBone)
+{
+	// SA-MP's bone numbers mapped to the GTA HAnim node IDs used by skin DFFs.
+	static const int nodes[] = {
+		-1, 3, 5, 32, 22, 34, 24, 41, 51, 43, 53, 52, 42, 33, 23, 31, 21, 4, 8
+	};
+	return sampBone >= 1 && sampBone <= 18 ? nodes[sampBone] : -1;
+}
+
+static bool
+playerBoneMatrix(const ObjectInst *parent, int sampBone, rw::Matrix *matrix)
+{
+	if(parent == nil || parent->m_rwObject == nil || matrix == nil)
+		return false;
+	ObjectDef *obj = GetObjectDef(parent->m_objectId);
+	if(obj == nil || obj->m_type != ObjectDef::CLUMP || !obj->m_isPed)
+		return false;
+	rw::Clump *clump = (rw::Clump*)parent->m_rwObject;
+	rw::HAnimHierarchy *hier = rw::HAnimHierarchy::get(clump);
+	int node = playerBoneNodeId(sampBone);
+	int index = hier && node >= 0 ? hier->getIndex(node) : -1;
+	if(index < 0 || index >= hier->numNodes || hier->nodeInfo[index].frame == nil)
+		return false;
+	*matrix = *hier->nodeInfo[index].frame->getLTM();
+	return true;
+}
+
+bool
+GetAttachmentPlayerBoneTransform(const ObjectInst *parent, int bone, rw::Matrix *matrix)
+{
+	return playerBoneMatrix(parent, bone, matrix);
+}
+
+static int
+nextPlayerAttachmentSlot(int32 parentId, int skin, const ObjectInst *except)
+{
+	bool used[10] = {};
+	ObjectInst *target = parentId >= 0 ? GetInstanceByID(parentId) : nil;
+	bool classTarget = target && GetSampElementKind(target) == SAMP_ELEMENT_CLASS;
+	bool npcTarget = target && GetSampElementKind(target) == SAMP_ELEMENT_NPC;
+	for(CPtrNode *p = instances.first; p; p = p->next){
+		ObjectInst *inst = (ObjectInst*)p->item;
+		if(inst == except || inst->m_isDeleted || inst->m_isVehicle ||
+		   GetSampElementKind(inst) != SAMP_ELEMENT_OBJECT)
+			continue;
+		const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+		ObjectInst *otherTarget = properties->attachParent >= 0 ? GetInstanceByID(properties->attachParent) : nil;
+		int otherKind = otherTarget ? GetSampElementKind(otherTarget) : -1;
+		bool samePlayer = properties->attachParent == parentId ||
+			properties->attachParent == PAWN_ATTACH_PLAYER;
+		if(parentId == PAWN_ATTACH_PLAYER)
+			samePlayer = true; // this slot is emitted for every player skin
+		else if(classTarget)
+			samePlayer = samePlayer ||
+				((otherKind == SAMP_ELEMENT_CLASS || otherKind == SAMP_ELEMENT_NPC) &&
+				 GetObjectPawnProperties(otherTarget)->elementModel == skin);
+		else if(npcTarget)
+			samePlayer = samePlayer || (otherKind == SAMP_ELEMENT_CLASS &&
+				GetObjectPawnProperties(otherTarget)->elementModel == skin);
+		if(samePlayer && properties->attachBone >= 1 &&
+		   properties->attachSlot >= 0 && properties->attachSlot < 10)
+			used[properties->attachSlot] = true;
+	}
+	for(int slot = 0; slot < 10; slot++)
+		if(!used[slot])
+			return slot;
+	return -1;
 }
 
 // Rendered basis of an instance (rows are the rotated X/Y/Z axes).
@@ -2134,7 +2427,15 @@ computeAttachedTransform(const ObjectInst *parent, const ObjectPawnProperties &p
 	rw::V3d *position, rw::Quat *rotation)
 {
 	rw::Matrix parentBasis = attachmentBasis(parent->m_rotation);
-	*position = add(parent->m_translation, basisApply(parentBasis, properties.attachOffset));
+	rw::V3d parentPosition = parent->m_translation;
+	if(properties.attachBone >= 1){
+		rw::Matrix bone;
+		if(playerBoneMatrix(parent, properties.attachBone, &bone)){
+			parentBasis = bone;
+			parentPosition = bone.pos;
+		}
+	}
+	*position = add(parentPosition, basisApply(parentBasis, properties.attachOffset));
 	rw::Quat offsetRotation = MakeObjectRotationDegrees(properties.attachRotation);
 	if(!properties.attachSyncRotation){
 		*rotation = offsetRotation;
@@ -2154,8 +2455,16 @@ computeAttachmentOffset(const ObjectInst *parent, const ObjectInst *child,
 	ObjectPawnProperties *properties)
 {
 	rw::Matrix parentBasis = attachmentBasis(parent->m_rotation);
+	rw::V3d parentPosition = parent->m_translation;
+	if(properties->attachBone >= 1){
+		rw::Matrix bone;
+		if(playerBoneMatrix(parent, properties->attachBone, &bone)){
+			parentBasis = bone;
+			parentPosition = bone.pos;
+		}
+	}
 	properties->attachOffset = basisApplyInverse(parentBasis,
-		sub(child->m_translation, parent->m_translation));
+		sub(child->m_translation, parentPosition));
 	if(!properties->attachSyncRotation){
 		properties->attachRotation = GetObjectRotationDegrees(child->m_rotation);
 		return;
@@ -2181,23 +2490,160 @@ attachmentWouldCycle(const ObjectInst *child, const ObjectInst *parent)
 }
 
 bool
-AttachObjectInstance(ObjectInst *child, ObjectInst *parent, bool syncRotation)
+AttachObjectInstance(ObjectInst *child, ObjectInst *parent, bool syncRotation,
+	int playerBone, const rw::V3d *playerScale, bool recordUndo)
 {
+	bool vehicleTarget = parent && parent->m_isVehicle;
+	bool playerTarget = IsPlayerAttachmentTarget(parent);
+	bool objectTarget = parent && !parent->m_isVehicle && GetSampElementKind(parent) == SAMP_ELEMENT_OBJECT;
 	if(child == nil || parent == nil || child == parent || child->m_isVehicle ||
-	   parent->m_isVehicle || attachmentWouldCycle(child, parent))
+	   (!vehicleTarget && !playerTarget && !objectTarget) ||
+	   (!vehicleTarget && !playerTarget && attachmentWouldCycle(child, parent)))
 		return false;
 	ObjectPawnProperties properties = *GetObjectPawnProperties(child);
 	properties.attachParent = parent->m_id;
-	properties.attachSyncRotation = syncRotation;
+	properties.attachBone = IsPlayerAttachmentTarget(parent) ?
+		(playerBone >= 1 && playerBone <= 18 ? playerBone : 2) : -1;
+	properties.attachSyncRotation = (properties.attachBone >= 1 || parent->m_isVehicle) ? true : syncRotation;
+	if(properties.attachBone >= 1){
+		if(playerScale)
+			properties.attachScale = *playerScale;
+		properties.attachSkin = GetObjectPawnProperties(parent)->elementModel;
+		properties.attachSlot = nextPlayerAttachmentSlot(parent->m_id, properties.attachSkin, child);
+		if(properties.attachSlot < 0)
+			return false;
+	}
+	computeAttachmentOffset(parent, child, &properties);
+	SetObjectPawnProperties(child, properties, recordUndo);
+	return true;
+}
+
+bool
+AttachmentTargetPickActive(void)
+{
+	return gAttachmentTargetPickActive;
+}
+
+bool
+BeginAttachmentTargetPick(void)
+{
+	gAttachmentTargetPickChildren.clear();
+	for(CPtrNode *p = selection.first; p; p = p->next){
+		ObjectInst *inst = (ObjectInst*)p->item;
+		if(inst && !inst->m_isDeleted && !inst->m_isVehicle &&
+		   GetSampElementKind(inst) == SAMP_ELEMENT_OBJECT && IsPawnObjectEditable(inst))
+			gAttachmentTargetPickChildren.push_back(inst);
+	}
+	if(gAttachmentTargetPickChildren.empty()){
+		gAttachmentTargetPickActive = false;
+		Toast(TOAST_SELECTION, _("Select one or more objects to attach first."));
+		return false;
+	}
+	const ObjectPawnProperties *properties = GetObjectPawnProperties(gAttachmentTargetPickChildren.front());
+	gAttachmentTargetPickBone = properties->attachBone >= 1 && properties->attachBone <= 18 ?
+		properties->attachBone : 2;
+	gAttachmentTargetPickScale = properties->attachScale;
+	// The direct viewport picker works with the real map targets. Close the
+	// optional preview workspace so its synthetic player never appears beside
+	// the NPC or vehicle being picked.
+	CloseAttachmentWorkspace();
+	gAttachmentTargetPickActive = true;
+	Toast(TOAST_SELECTION,
+		_("Click a ped, NPC, vehicle, or object in the viewport. Esc or right-click cancels."));
+	return true;
+}
+
+void
+GetAttachmentTargetPickOptions(int *bone, rw::V3d *scale)
+{
+	if(bone) *bone = gAttachmentTargetPickBone;
+	if(scale) *scale = gAttachmentTargetPickScale;
+}
+
+void
+SetAttachmentTargetPickOptions(int bone, const rw::V3d &scale)
+{
+	gAttachmentTargetPickBone = clamp(bone, 1, 18);
+	gAttachmentTargetPickScale = {
+		std::isfinite(scale.x) ? clamp(scale.x, 0.01f, 50.0f) : 1.0f,
+		std::isfinite(scale.y) ? clamp(scale.y, 0.01f, 50.0f) : 1.0f,
+		std::isfinite(scale.z) ? clamp(scale.z, 0.01f, 50.0f) : 1.0f
+	};
+}
+
+void
+CancelAttachmentTargetPick(void)
+{
+	gAttachmentTargetPickActive = false;
+	gAttachmentTargetPickChildren.clear();
+}
+
+int
+CompleteAttachmentTargetPick(ObjectInst *target)
+{
+	if(!gAttachmentTargetPickActive || target == nil || target->m_isDeleted)
+		return 0;
+	bool validTarget = target->m_isVehicle || IsPlayerAttachmentTarget(target) ||
+		GetSampElementKind(target) == SAMP_ELEMENT_OBJECT;
+	if(!validTarget)
+		return 0;
+
+	int attached = 0;
+	for(ObjectInst *child : gAttachmentTargetPickChildren)
+		if(child && !child->m_isDeleted && child != target &&
+		   AttachObjectInstance(child, target, true, gAttachmentTargetPickBone, &gAttachmentTargetPickScale))
+			attached++;
+	if(attached == 0)
+		return 0;
+
+	CancelAttachmentTargetPick();
+	UpdateObjectAttachments();
+	OpenAttachmentWorkspace(target, false);
+	return attached;
+}
+
+bool
+RebaseObjectAttachment(ObjectInst *child)
+{
+	if(child == nil)
+		return false;
+	ObjectInst *parent = GetAttachParent(child);
+	if(parent == nil)
+		return false;
+	// Recalculate only the offset. Bone, slot, scale and colours belong to
+	// the existing attachment and must survive a parent being recentered.
+	ObjectPawnProperties properties = *GetObjectPawnProperties(child);
 	computeAttachmentOffset(parent, child, &properties);
 	SetObjectPawnProperties(child, properties);
+	return true;
+}
+
+bool
+AttachObjectToPlayer(ObjectInst *child, int previewSkin, bool recordUndo)
+{
+	if(child == nil || child->m_isDeleted || child->m_isVehicle ||
+	   GetSampElementKind(child) != SAMP_ELEMENT_OBJECT)
+		return false;
+	int slot = nextPlayerAttachmentSlot(PAWN_ATTACH_PLAYER, clamp(previewSkin, 0, 311), child);
+	if(slot < 0)
+		return false;
+	ObjectPawnProperties properties = *GetObjectPawnProperties(child);
+	properties.attachParent = PAWN_ATTACH_PLAYER;
+	properties.attachBone = 2;	// Head, a useful starting point for a new accessory.
+	properties.attachSlot = slot;
+	properties.attachOffset = { 0.0f, 0.0f, 0.0f };
+	properties.attachRotation = { 0.0f, 0.0f, 0.0f };
+	properties.attachScale = { 1.0f, 1.0f, 1.0f };
+	properties.attachSkin = clamp(previewSkin, 0, 311);
+	properties.attachSyncRotation = true;
+	SetObjectPawnProperties(child, properties, recordUndo);
 	return true;
 }
 
 void
 DetachObjectInstance(ObjectInst *child)
 {
-	if(child == nil || GetObjectPawnProperties(child)->attachParent < 0)
+	if(child == nil || GetObjectPawnProperties(child)->attachParent == PAWN_ATTACH_NONE)
 		return;
 	ObjectPawnProperties properties = *GetObjectPawnProperties(child);
 	properties.attachParent = -1;
@@ -2225,7 +2671,9 @@ UpdateObjectAttachments(void)
 		children.clear();
 		for(CPtrNode *p = instances.first; p; p = p->next){
 			ObjectInst *inst = (ObjectInst*)p->item;
-			if(inst->m_pawnProperties && inst->m_pawnProperties->attachParent >= 0)
+			if(inst->m_pawnProperties &&
+			   (inst->m_pawnProperties->attachParent >= 0 ||
+			    inst->m_pawnProperties->attachParent == PAWN_ATTACH_PLAYER))
 				children.push_back(inst);
 		}
 		gAttachmentListDirty = false;
@@ -2239,7 +2687,7 @@ UpdateObjectAttachments(void)
 		for(size_t i = 0; i < children.size(); i++){
 			ObjectInst *child = children[i];
 			ObjectPawnProperties *properties = child->m_pawnProperties;
-			if(properties == nil || properties->attachParent < 0 || child->m_isDeleted)
+			if(properties == nil || properties->attachParent == PAWN_ATTACH_NONE || child->m_isDeleted)
 				continue;
 			ObjectInst *parent = GetAttachParent(child);
 			if(parent == nil)
@@ -2516,6 +2964,8 @@ ObjectInst::CreateRwObject(void)
 				SAPaths::PrepareEditorVehicleClump(clump, m_vehicleColor1,
 					m_vehicleColor2, &m_vehicleColorRoles, &m_numVehicleColorRoles);
 				ApplyEditorVehiclePaintjob(clump, m_objectId, m_vehiclePaintjob);
+				if(m_vehiclePlate[0])
+					ApplyEditorVehiclePlate(clump, m_vehiclePlate);
 			}
 		}
 	}
@@ -2546,10 +2996,23 @@ ObjectInst::RefreshVehicleUpgrades(void)
 }
 
 void
+ObjectInst::RefreshVehiclePlate(void)
+{
+	if(!m_isVehicle || m_rwObject == nil)
+		return;
+	if(m_vehiclePlate[0] == '\0'){
+		RefreshVehicleUpgrades();
+		return;
+	}
+	ApplyEditorVehiclePlate((rw::Clump*)m_rwObject, m_vehiclePlate);
+}
+
+void
 ObjectInst::Init(FileObjectInstance *fi)
 {
 	m_editorDocumentId = 0;
 	m_objectId = fi->objectId;
+	m_savedObjectId = fi->objectId;
 	ObjectDef *obj = GetObjectDef(m_objectId);
 	m_isVehicle = obj && obj->m_isVehicle;
 	m_vehicleStatic = true;
@@ -2697,6 +3160,11 @@ ObjectInst::Select(void)
 	m_selected = true;
 	m_selectSeq = ++selectSeq;
 	selection.InsertItem(this);
+	if(isSA()){
+		ObjectInst *target = m_isVehicle || IsPlayerAttachmentTarget(this) ? this : GetAttachParent(this);
+		if(target && (target->m_isVehicle || IsPlayerAttachmentTarget(target)))
+			gAttachmentWorkspaceSelectionPending = true;
+	}
 }
 
 void
@@ -2821,7 +3289,9 @@ ResetPawnMap(void)
 	// A new or reopened map has nothing left out yet.
 	ClearLastPawnImportReport();
 	ResetMapTextDraws();
+	ResetMapToolsLine();
 	ResetCoordinatePins();
+	ResetLayoutPaths();
 	ClearRadarArtLayers();
 	gAreaRemovals.clear();
 	ClearSelection();
@@ -2847,6 +3317,10 @@ ResetPawnMap(void)
 		inst->m_attachApplied = false;
 		if(!world)
 			continue;
+		if(inst->m_objectId != inst->m_savedObjectId){
+			applyInstanceModelId(inst, inst->m_savedObjectId);
+			changed++;
+		}
 		if(inst->m_isDeleted != inst->m_wasSavedDeleted){
 			setDeletedWithoutCascade(inst, inst->m_wasSavedDeleted);
 			changed++;
@@ -2933,6 +3407,7 @@ DeleteAllInstances(void)
 
 // Object Spawner state
 bool gPlaceMode;
+bool gPlaceRepeat;
 bool gPrefabPlaceMode;
 float gPrefabPlaceHeading;
 bool gPrefabPlaceRepeat;	// stay in placement after a click, as Shift does
@@ -3084,6 +3559,324 @@ destroyInstanceRwObject(ObjectInst *inst, ObjectDef *obj)
 	inst->m_rwObject = nil;
 }
 
+ObjectInst*
+GetAttachmentWorkspacePlayerPreview(void)
+{
+	if(!gAttachmentWorkspacePlayerMode)
+		return nil;
+	int model = GetSampElementDisplayModel(SAMP_ELEMENT_CLASS, gAttachmentWorkspacePlayerSkin);
+	if(model < 0)
+		return nil;
+	if(gAttachmentPlayerPreview == nil){
+		gAttachmentPlayerPreview = new ObjectInst;
+		memset(gAttachmentPlayerPreview, 0, sizeof(*gAttachmentPlayerPreview));
+		gAttachmentPlayerPreview->m_id = 0;
+		gAttachmentPlayerPreview->m_lodId = -1;
+		gAttachmentPlayerPreview->m_translation = TheCamera.m_target;
+		gAttachmentPlayerPreview->m_rotation = { 0.0f, 0.0f, 0.0f, 1.0f };
+		gAttachmentPlayerPreview->m_objectId = model;
+		gAttachmentPlayerPreview->m_vehicleColor1 = -1;
+		gAttachmentPlayerPreview->m_vehicleColor2 = -1;
+		gAttachmentPlayerPreview->UpdateMatrix();
+	}else if(gAttachmentPlayerPreview->m_objectId != model){
+		destroyInstanceRwObject(gAttachmentPlayerPreview,
+			GetObjectDef(gAttachmentPlayerPreview->m_objectId));
+		gAttachmentPlayerPreview->m_objectId = model;
+		gAttachmentPlayerPreview->m_translation = TheCamera.m_target;
+		gAttachmentPlayerPreview->UpdateMatrix();
+	}
+	ObjectDef *obj = GetObjectDef(model);
+	if(obj && !obj->IsLoaded())
+		RequestObject(model);
+	if(obj && obj->IsLoaded() && gAttachmentPlayerPreview->m_rwObject == nil)
+		gAttachmentPlayerPreview->CreateRwObject();
+	return gAttachmentPlayerPreview;
+}
+
+ObjectInst*
+GetAttachmentWorkspaceTarget(void)
+{
+	return gAttachmentWorkspaceActive ? gAttachmentWorkspaceTarget : nil;
+}
+
+static void
+saveAttachmentWorkspaceCamera(void)
+{
+	if(gAttachmentWorkspaceCameraSaved)
+		return;
+	gAttachmentWorkspaceSavedCameraPosition = TheCamera.m_position;
+	gAttachmentWorkspaceSavedCameraTarget = TheCamera.m_target;
+	gAttachmentWorkspaceSavedCameraUp = TheCamera.m_up;
+	gAttachmentWorkspaceSavedCameraLocalUp = TheCamera.m_localup;
+	gAttachmentWorkspaceSavedCameraFov = TheCamera.m_fov;
+	gAttachmentWorkspaceCameraSaved = true;
+}
+
+static void
+restoreAttachmentWorkspaceCamera(void)
+{
+	if(!gAttachmentWorkspaceCameraSaved)
+		return;
+	TheCamera.m_position = gAttachmentWorkspaceSavedCameraPosition;
+	TheCamera.m_target = gAttachmentWorkspaceSavedCameraTarget;
+	TheCamera.m_up = gAttachmentWorkspaceSavedCameraUp;
+	TheCamera.m_localup = gAttachmentWorkspaceSavedCameraLocalUp;
+	TheCamera.m_fov = gAttachmentWorkspaceSavedCameraFov;
+	TheCamera.update();
+	gAttachmentWorkspaceCameraSaved = false;
+	gAttachmentWorkspaceNeedsFocus = false;
+}
+
+static bool
+focusAttachmentWorkspaceTarget(int view)
+{
+	ObjectInst *target = GetAttachmentWorkspacePlayerPreview();
+	if(target == nil)
+		target = gAttachmentWorkspaceTarget;
+	if(target == nil || target->m_isDeleted)
+		return false;
+
+	ObjectDef *obj = GetObjectDef(target->m_objectId);
+	if(obj == nil)
+		return false;
+	if(!obj->IsLoaded()){
+		RequestObject(target->m_objectId);
+		return false;
+	}
+
+	rw::V3d center = target->m_translation;
+	float radius = obj->m_isPed ? 1.0f : 2.0f;
+	if(obj->m_colModel){
+		const CSphere &sphere = obj->m_colModel->boundingSphere;
+		rw::V3d::transformPoints(&center, &sphere.center, 1, &target->m_matrix);
+		float scaleX = length(target->m_matrix.right);
+		float scaleY = length(target->m_matrix.up);
+		float scaleZ = length(target->m_matrix.at);
+		radius = sphere.radius * max(scaleX, max(scaleY, scaleZ));
+	}
+	if(!std::isfinite(radius) || radius < 0.25f)
+		radius = 1.0f;
+
+	TheCamera.setTarget(center);
+	float distance = max(TheCamera.minDistToSphere(radius * 1.15f), radius * 1.5f);
+	TheCamera.setDistanceFromTarget(distance);
+	const float d = TheCamera.distanceToTarget();
+	// GTA models face local +Y; local +X is the model's right side.
+	rw::V3d forward = normalize(target->m_matrix.up);
+	rw::V3d right = normalize(target->m_matrix.right);
+	rw::V3d up = normalize(target->m_matrix.at);
+	switch(view){
+	case ATTACHMENT_VIEW_FRONT:
+		TheCamera.m_up = TheCamera.m_localup = up;
+		TheCamera.m_position = add(center, scale(forward, d));
+		break;
+	case ATTACHMENT_VIEW_BACK:
+		TheCamera.m_up = TheCamera.m_localup = up;
+		TheCamera.m_position = sub(center, scale(forward, d));
+		break;
+	case ATTACHMENT_VIEW_LEFT:
+		TheCamera.m_up = TheCamera.m_localup = up;
+		TheCamera.m_position = sub(center, scale(right, d));
+		break;
+	case ATTACHMENT_VIEW_RIGHT:
+		TheCamera.m_up = TheCamera.m_localup = up;
+		TheCamera.m_position = add(center, scale(right, d));
+		break;
+	case ATTACHMENT_VIEW_TOP:
+		TheCamera.m_up = TheCamera.m_localup = { 0.0f, 1.0f, 0.0f };
+		TheCamera.m_position = { center.x, center.y, center.z + d };
+		break;
+	default:
+		break;
+	}
+	TheCamera.update();
+	return true;
+}
+
+void
+OpenAttachmentWorkspace(ObjectInst *target, bool voidView)
+{
+	if(target && target->m_isDeleted){
+		CloseAttachmentWorkspace();
+		return;
+	}
+	if(target && GetObjectPawnProperties(target)->attachParent == PAWN_ATTACH_PLAYER){
+		OpenPlayerAttachmentWorkspace(GetObjectPawnProperties(target)->attachSkin, voidView);
+		return;
+	}
+	CancelAttachmentTargetPick();
+	if(gAttachmentWorkspaceActive && !gAttachmentWorkspacePlayerMode && gAttachmentWorkspaceTarget == target){
+		SetAttachmentWorkspaceVoid(voidView && target != nil);
+		return;
+	}
+	if(gAttachmentWorkspaceVoid)
+		restoreAttachmentWorkspaceCamera();
+	gAttachmentWorkspaceActive = true;
+	gAttachmentWorkspaceVoid = false;
+	gAttachmentWorkspacePlayerMode = false;
+	gAttachmentWorkspaceTarget = target;
+	gAttachmentWorkspaceNeedsFocus = false;
+	if(voidView && target)
+		SetAttachmentWorkspaceVoid(true);
+}
+
+void
+OpenPlayerAttachmentWorkspace(int skin, bool voidView)
+{
+	if(gAttachmentWorkspaceVoid)
+		restoreAttachmentWorkspaceCamera();
+	gAttachmentWorkspaceActive = true;
+	gAttachmentWorkspaceVoid = false;
+	gAttachmentWorkspacePlayerMode = true;
+	gAttachmentWorkspacePlayerSkin = clamp(skin, 0, 311);
+	gAttachmentWorkspacePlayerSkinSet = true;
+	gAttachmentWorkspaceTarget = GetAttachmentWorkspacePlayerPreview();
+	if(gAttachmentWorkspaceTarget){
+		RequestObject(gAttachmentWorkspaceTarget->m_objectId);
+	}
+	gAttachmentWorkspaceNeedsFocus = false;
+	if(voidView)
+		SetAttachmentWorkspaceVoid(true);
+	UpdateObjectAttachments();
+}
+
+void
+CloseAttachmentWorkspace(void)
+{
+	gAttachmentWorkspaceSelectionPending = false;
+	restoreAttachmentWorkspaceCamera();
+	gAttachmentWorkspaceActive = false;
+	gAttachmentWorkspaceVoid = false;
+	gAttachmentWorkspacePlayerMode = false;
+	gAttachmentWorkspaceTarget = nil;
+	gAttachmentWorkspaceNeedsFocus = false;
+}
+
+bool
+IsAttachmentWorkspaceActive(void)
+{
+	return gAttachmentWorkspaceActive;
+}
+
+bool
+AttachmentWorkspaceHidesWorld(void)
+{
+	return gAttachmentWorkspaceActive && gAttachmentWorkspaceVoid;
+}
+
+void
+SetAttachmentWorkspaceVoid(bool voidView)
+{
+	if(!gAttachmentWorkspaceActive || gAttachmentWorkspaceVoid == voidView)
+		return;
+	if(voidView){
+		saveAttachmentWorkspaceCamera();
+		gAttachmentWorkspaceVoid = true;
+		gAttachmentWorkspaceNeedsFocus = true;
+		gAttachmentWorkspacePendingCameraView = ATTACHMENT_VIEW_FOCUS;
+	}else{
+		gAttachmentWorkspaceVoid = false;
+		restoreAttachmentWorkspaceCamera();
+	}
+}
+
+void
+SetAttachmentWorkspaceCameraView(int view)
+{
+	if(!gAttachmentWorkspaceActive || view < ATTACHMENT_VIEW_FOCUS || view > ATTACHMENT_VIEW_TOP)
+		return;
+	gAttachmentWorkspacePendingCameraView = view;
+	gAttachmentWorkspaceNeedsFocus = true;
+}
+
+void
+UpdateAttachmentWorkspace(void)
+{
+	// Selection helpers may visit a ped or vehicle in the middle of a range.
+	// Wait for the complete selection before opening a window over the list.
+	if(gAttachmentWorkspaceSelectionPending){
+		gAttachmentWorkspaceSelectionPending = false;
+		if(selection.first && selection.first->next == nil){
+			ObjectInst *selected = (ObjectInst*)selection.first->item;
+			ObjectInst *target = selected->m_isVehicle || IsPlayerAttachmentTarget(selected) ?
+				selected : GetAttachParent(selected);
+			if(target && !target->m_isDeleted && (target->m_isVehicle || IsPlayerAttachmentTarget(target)))
+				OpenAttachmentWorkspace(target, AttachmentWorkspaceHidesWorld());
+		}
+	}
+	if(!gAttachmentWorkspaceActive)
+		return;
+	if(gAttachmentWorkspaceTarget && gAttachmentWorkspaceTarget->m_isDeleted){
+		CloseAttachmentWorkspace();
+		return;
+	}
+	if(gAttachmentWorkspacePlayerMode)
+		gAttachmentWorkspaceTarget = GetAttachmentWorkspacePlayerPreview();
+	if(gAttachmentWorkspaceTarget && !gAttachmentWorkspaceTarget->m_isDeleted){
+		ObjectDef *obj = GetObjectDef(gAttachmentWorkspaceTarget->m_objectId);
+		if(obj && !obj->IsLoaded())
+			RequestObject(gAttachmentWorkspaceTarget->m_objectId);
+	}
+	if(gAttachmentWorkspaceNeedsFocus &&
+	   focusAttachmentWorkspaceTarget(gAttachmentWorkspacePendingCameraView))
+		gAttachmentWorkspaceNeedsFocus = false;
+}
+
+int
+GetAttachmentWorkspacePlayerSkin(void)
+{
+	if(gAttachmentWorkspacePlayerSkinSet)
+		return gAttachmentWorkspacePlayerSkin;
+	for(CPtrNode *p = instances.first; p; p = p->next){
+		ObjectInst *inst = (ObjectInst*)p->item;
+		const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+		if(!inst->m_isDeleted && properties->attachParent == PAWN_ATTACH_PLAYER)
+			return properties->attachSkin;
+	}
+	return 1;
+}
+
+void
+SetAttachmentWorkspacePlayerSkin(int skin)
+{
+	gAttachmentWorkspacePlayerSkin = clamp(skin, 0, 311);
+	gAttachmentWorkspacePlayerSkinSet = true;
+	if(gAttachmentWorkspacePlayerMode){
+		gAttachmentWorkspaceTarget = GetAttachmentWorkspacePlayerPreview();
+		if(gAttachmentWorkspaceTarget){
+			RequestObject(gAttachmentWorkspaceTarget->m_objectId);
+		}
+		if(gAttachmentWorkspaceVoid){
+			gAttachmentWorkspaceNeedsFocus = true;
+			gAttachmentWorkspacePendingCameraView = ATTACHMENT_VIEW_FOCUS;
+		}
+	}
+	UpdateObjectAttachments();
+}
+
+bool
+AttachmentWorkspaceShowsInstance(const ObjectInst *inst)
+{
+	if(inst == nil)
+		return false;
+	const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+	if(!gAttachmentWorkspaceActive || !gAttachmentWorkspaceVoid)
+		return true;
+	if(properties->attachParent == PAWN_ATTACH_PLAYER)
+		return gAttachmentWorkspacePlayerMode;
+	if(inst == gAttachmentWorkspaceTarget)
+		return true;
+	for(int depth = 0; depth < 64; depth++){
+		ObjectInst *parent = GetAttachParent(inst);
+		if(parent == nil)
+			return false;
+		if(parent == gAttachmentWorkspaceTarget)
+			return true;
+		inst = parent;
+	}
+	return false;
+}
+
 // Swaps the model drawing a pickup, actor or player class. Elements have no
 // LODs or material edits, so only the RW object and sector entry change.
 static void
@@ -3106,6 +3899,90 @@ setInstanceElementModel(ObjectInst *inst, int modelId)
 		InsertInstIntoSectors(inst);
 	else
 		outOfBoundsSector.buildings.InsertItem(inst);
+}
+
+bool
+CanChangeInstanceModelId(ObjectInst *inst)
+{
+	if(inst == nil || inst->m_isDeleted || inst->m_isVehicle ||
+	   GetSampElementKind(inst) != SAMP_ELEMENT_OBJECT || !IsInstInIplMapDocument(inst) ||
+	   inst->m_lodId >= 0 || inst->m_lod != nil)
+		return false;
+	for(CPtrNode *p = instances.first; p; p = p->next){
+		ObjectInst *other = (ObjectInst*)p->item;
+		if(other != inst && !other->m_isDeleted && instanceReferencesLod(other, inst))
+			return false;
+	}
+	return true;
+}
+
+static void
+applyInstanceModelId(ObjectInst *inst, int editorModelId)
+{
+	ObjectDef *old = GetObjectDef(inst->m_objectId);
+	ObjectDef *obj = GetObjectDef(editorModelId);
+	if(old == nil || obj == nil || inst->m_objectId == editorModelId)
+		return;
+	if(!obj->IsLoaded()){
+		RequestObject(editorModelId);
+		LoadAllRequestedObjects();
+	}
+
+	RemoveInstFromSectors(inst);
+	if(inst->m_animState){
+		delete (ObjectAnimState*)inst->m_animState;
+		inst->m_animState = nil;
+	}
+	inst->m_animTime = 0.0f;
+	destroyInstanceRwObject(inst, old);
+	// Material overrides are cleared in the same undo group as the model swap.
+	// The private geometry pointers belong to the old rendered object.
+	inst->m_materialGeometryApplied = false;
+	inst->m_materialBaseGeometry = nil;
+	inst->m_materialCustomGeometry = nil;
+	inst->m_objectId = editorModelId;
+	inst->m_isBigBuilding = false;
+	if(obj->m_isBigBuilding)
+		inst->SetupBigBuilding();
+	inst->UpdateMatrix();
+	inst->CreateRwObject();
+	inst->RefreshMaterialOverrides();
+	if(obj->m_colModel)
+		InsertInstIntoSectors(inst);
+	else{
+		CPtrList *list = inst->m_isBigBuilding ? &outOfBoundsSector.bigbuildings : &outOfBoundsSector.buildings;
+		list->InsertItem(inst);
+	}
+	StampChangeSeq(inst);
+	inst->m_isDirty = true;
+}
+
+bool
+ChangeInstanceModelId(ObjectInst *inst, int editorModelId, bool recordUndo)
+{
+	if(!CanChangeInstanceModelId(inst))
+		return false;
+	ObjectDef *obj = GetObjectDef(editorModelId);
+	if(obj == nil || obj->m_isVehicle)
+		return false;
+	int oldModelId = inst->m_objectId;
+	if(oldModelId == editorModelId)
+		return true;
+
+	if(recordUndo)
+		UndoBeginGroup();
+	if(recordUndo)
+		for(int slot = 0; slot < MAX_PAWN_MATERIALS; slot++){
+			const ObjectMaterialOverride *material = GetObjectMaterialOverride((const ObjectInst*)inst, slot);
+			if(material && (material->active || material->textEnabled))
+				ClearObjectMaterialOverride(inst, slot, true);
+		}
+	applyInstanceModelId(inst, editorModelId);
+	if(recordUndo){
+		UndoRecordModelId(inst, oldModelId);
+		UndoEndGroup();
+	}
+	return true;
 }
 
 void
@@ -3738,8 +4615,14 @@ GetInstanceDiffFlags(ObjectInst *inst)
 	int flags = 0;
 	if(!inst->m_isDeleted && inst->m_wasSavedDeleted)
 		flags |= DIFF_RESTORED;
-	float dist = length(sub(inst->m_translation, inst->m_savedTranslation));
-	if(dist >= 0.001f)
+	if(inst->m_objectId != inst->m_savedObjectId)
+		flags |= DIFF_MODEL;
+	// Position edits are stored directly, so any different component is a
+	// real change. A distance tolerance loses small inspector edits (even
+	// 0.001 can round just below that threshold in float storage).
+	if(inst->m_translation.x != inst->m_savedTranslation.x ||
+	   inst->m_translation.y != inst->m_savedTranslation.y ||
+	   inst->m_translation.z != inst->m_savedTranslation.z)
 		flags |= DIFF_MOVED;
 	if(GetQuaternionSimilarity(inst->m_rotation, inst->m_savedRotation) < 0.9999f)
 		flags |= DIFF_ROTATED;
@@ -3766,7 +4649,7 @@ PawnObjectNeedsExport(const ObjectInst *inst)
 		return true;
 
 	int flags = GetInstanceDiffFlags((ObjectInst*)inst);
-	return (flags & (DIFF_DELETED | DIFF_MOVED | DIFF_ROTATED | DIFF_MATERIAL |
+	return (flags & (DIFF_DELETED | DIFF_MODEL | DIFF_MOVED | DIFF_ROTATED | DIFF_MATERIAL |
 		DIFF_PROPERTIES)) != 0;
 }
 
@@ -4148,8 +5031,49 @@ ReadPrefabEntries(const char *path, PrefabEntry *entries, int maxEntries, int *n
 				prefabNextToken(&cursor, e->vehiclePlate, sizeof(e->vehiclePlate));
 				continue;
 			}
+			if(strcmp(type, "race") == 0){
+				int mode, laps, playable;
+				bool valid = prefabNextToken(&cursor, token, sizeof(token)) && prefabParseIntToken(token, &objectIndex) &&
+					objectIndex >= 0 && objectIndex < numEntries &&
+					prefabNextToken(&cursor, token, sizeof(token)) && prefabParseIntToken(token, &mode) &&
+					prefabNextToken(&cursor, token, sizeof(token)) && prefabParseIntToken(token, &laps) &&
+					prefabNextToken(&cursor, token, sizeof(token)) && prefabParseIntToken(token, &playable);
+				if(!valid)
+					continue;
+				ObjectPawnProperties &el = entries[objectIndex].properties;
+				el.cpRaceMode = mode;
+				el.cpRaceLaps = laps;
+				el.cpRacePlayable = playable != 0;
+				continue;
+			}
+			if(strcmp(type, "move") == 0){
+				// move <index> <offset x y z> <speed> <turns> <rx ry rz>
+				float values[7];
+				int turns = 0;
+				bool valid = prefabNextToken(&cursor, token, sizeof(token)) &&
+					prefabParseIntToken(token, &objectIndex) && objectIndex >= 0 && objectIndex < numEntries;
+				for(int v = 0; valid && v < 4; v++){
+					valid = prefabNextToken(&cursor, token, sizeof(token));
+					values[v] = valid ? (float)atof(token) : 0.0f;
+				}
+				valid = valid && prefabNextToken(&cursor, token, sizeof(token)) && prefabParseIntToken(token, &turns);
+				for(int v = 4; valid && v < 7; v++){
+					valid = prefabNextToken(&cursor, token, sizeof(token));
+					values[v] = valid ? (float)atof(token) : 0.0f;
+				}
+				if(!valid)
+					continue;
+				ObjectPawnProperties &el = entries[objectIndex].properties;
+				el.moveEnabled = true;
+				el.moveOffset = { values[0], values[1], values[2] };
+				el.moveSpeed = values[3];
+				el.moveRotates = turns != 0;
+				el.moveRotation = { values[4], values[5], values[6] };
+				continue;
+			}
 			if(strcmp(type, "attach") == 0){
-				// attach <index> <parent index> <x y z> <rx ry rz> <sync>
+				// v3: attach <index> <parent index> <x y z> <rx ry rz> <sync>
+				// v4 adds bone, slot, scale, material colours and preview skin.
 				int parentIndex, sync;
 				float values[6];
 				bool valid = prefabNextToken(&cursor, token, sizeof(token)) &&
@@ -4163,13 +5087,29 @@ ReadPrefabEntries(const char *path, PrefabEntry *entries, int maxEntries, int *n
 				valid = valid && prefabNextToken(&cursor, token, sizeof(token)) &&
 					prefabParseIntToken(token, &sync);
 				if(!valid || objectIndex < 0 || objectIndex >= numEntries ||
-				   parentIndex < 0 || parentIndex >= numEntries || parentIndex == objectIndex)
+				   (parentIndex != PAWN_ATTACH_PLAYER &&
+				    (parentIndex < 0 || parentIndex >= numEntries || parentIndex == objectIndex)))
 					continue;
 				PrefabEntry *child = &entries[objectIndex];
 				child->attachParentIndex = parentIndex;
 				child->properties.attachOffset = { values[0], values[1], values[2] };
 				child->properties.attachRotation = { values[3], values[4], values[5] };
 				child->properties.attachSyncRotation = sync != 0;
+				if(prefabNextToken(&cursor, token, sizeof(token)))
+					prefabParseIntToken(token, &child->properties.attachBone);
+				if(prefabNextToken(&cursor, token, sizeof(token)))
+					prefabParseIntToken(token, &child->properties.attachSlot);
+				float scale[3] = { 1.0f, 1.0f, 1.0f };
+				for(int v = 0; v < 3; v++)
+					if(prefabNextToken(&cursor, token, sizeof(token)))
+						scale[v] = (float)atof(token);
+				child->properties.attachScale = { scale[0], scale[1], scale[2] };
+				if(prefabNextToken(&cursor, token, sizeof(token)))
+					child->properties.attachColor1 = (uint32)strtoul(token, nil, 0);
+				if(prefabNextToken(&cursor, token, sizeof(token)))
+					child->properties.attachColor2 = (uint32)strtoul(token, nil, 0);
+				if(prefabNextToken(&cursor, token, sizeof(token)))
+					prefabParseIntToken(token, &child->properties.attachSkin);
 				continue;
 			}
 			if(strcmp(type, "material") == 0){
@@ -4455,7 +5395,7 @@ setObjectPreviewError(char *error, size_t errorSize, const char *message)
 // Centre and radius of a model's visible geometry. Collision spheres are often
 // much larger than the model, which left small or thin objects lost in previews.
 static bool
-previewGeometryBounds(rw::Atomic *atm, rw::Clump *clump, rw::V3d *center, float *radius)
+previewGeometryBounds(rw::Atomic *atm, rw::Clump *clump, rw::V3d *center, float *radius, bool preciseVertices = false)
 {
 	rw::V3d boundsMin = { 1e30f, 1e30f, 1e30f }, boundsMax = { -1e30f, -1e30f, -1e30f };
 	bool haveBounds = false;
@@ -4480,8 +5420,22 @@ previewGeometryBounds(rw::Atomic *atm, rw::Clump *clump, rw::V3d *center, float 
 		clump->getFrame()->transform(&ident, rw::COMBINEREPLACE);
 		FORLIST(lnk, clump->atomics){
 			rw::Atomic *part = rw::Atomic::fromClump(lnk);
-			if(part->geometry && part->geometry->numMorphTargets > 0)
-				addSphere(*part->getWorldBoundingSphere());
+			if(part->geometry && part->geometry->numMorphTargets > 0){
+				if(preciseVertices && part->geometry->morphTargets[0].vertices){
+					// A skin's sphere is deliberately generous for animation.
+					// Frame its actual posed vertices for a readable portrait.
+					const rw::Matrix *matrix = part->getFrame()->getLTM();
+					for(int i = 0; i < part->geometry->numVertices; i++){
+						rw::V3d point;
+						rw::V3d::transformPoints(&point, &part->geometry->morphTargets[0].vertices[i], 1, matrix);
+						boundsMin.x = min(boundsMin.x, point.x); boundsMax.x = max(boundsMax.x, point.x);
+						boundsMin.y = min(boundsMin.y, point.y); boundsMax.y = max(boundsMax.y, point.y);
+						boundsMin.z = min(boundsMin.z, point.z); boundsMax.z = max(boundsMax.z, point.z);
+						haveBounds = true;
+					}
+				}else
+					addSphere(*part->getWorldBoundingSphere());
+			}
 		}
 	}
 	if(!haveBounds)
@@ -4516,8 +5470,12 @@ paintPreviewVehicle(ObjectDef *obj, rw::Clump *clump, int colour1 = -1, int colo
 	rwFree(roles);
 }
 
-// Editor previews: a mid tone background so dark and light models both read.
-static const rw::RGBA kPreviewBackground = { 86, 92, 104, 255 };
+// Preview surfaces match the active theme (the RW camera texture is opaque).
+static rw::RGBA
+previewBackground(void)
+{
+	return UiThemePreviewBackground();
+}
 
 static bool
 renderObjectToRaster(int objectId, rw::Raster *colorRaster, rw::Raster *depthRaster,
@@ -4541,7 +5499,7 @@ renderObjectToRaster(int objectId, rw::Raster *colorRaster, rw::Raster *depthRas
 	rw::V3d target = { 0.0f, 0.0f, 0.0f };
 	float radius = 5.0f;
 	// Namaka's asset index was built from collision-framed PNG captures.
-	bool haveBounds = !pngOrientation && previewGeometryBounds(atm, clump, &target, &radius);
+	bool haveBounds = !pngOrientation && previewGeometryBounds(atm, clump, &target, &radius, obj->m_isPed);
 	if(!haveBounds && obj->m_colModel){
 		target = obj->m_colModel->boundingSphere.center;
 		radius = obj->m_colModel->boundingSphere.radius;
@@ -4586,7 +5544,7 @@ renderObjectToRaster(int objectId, rw::Raster *colorRaster, rw::Raster *depthRas
 
 	// Editor thumbnails use a mid tone so dark and light models both read;
 	// PNG captures keep the background Namaka's previews were made with.
-	rw::RGBA clearCol = pngOrientation ? rw::RGBA{ 34, 34, 34, 255 } : kPreviewBackground;
+	rw::RGBA clearCol = pngOrientation ? rw::RGBA{ 34, 34, 34, 255 } : previewBackground();
 	cam->clear(&clearCol, rw::Camera::CLEARIMAGE|rw::Camera::CLEARZ);
 	cam->beginUpdate();
 
@@ -5023,6 +5981,14 @@ rw::Texture*
 GetObjectThumbnailTexture(int objectId)
 {
 	initObjectThumbnailSlots();
+	static int thumbnailTheme = -1;
+	if(thumbnailTheme != GetUiTheme()){
+		thumbnailTheme = GetUiTheme();
+		for(int i = 0; i < OBJECT_THUMBNAIL_SLOTS; i++){
+			objectThumbnailSlots[i].ready = false;
+			objectThumbnailSlots[i].failed = false;
+		}
+	}
 	if(objectId < 0 || GetObjectDef(objectId) == nil)
 		return nil;
 
@@ -5094,6 +6060,14 @@ RenderRequestedObjectThumbnails(void)
 rw::Texture*
 GetPrefabThumbnailTexture(const char *path)
 {
+	static int thumbnailTheme = -1;
+	if(thumbnailTheme != GetUiTheme()){
+		thumbnailTheme = GetUiTheme();
+		for(int i = 0; i < PREFAB_THUMBNAIL_SLOTS; i++){
+			prefabThumbnailSlots[i].ready = false;
+			prefabThumbnailSlots[i].failed = false;
+		}
+	}
 	if(path == nil || path[0] == '\0')
 		return nil;
 
@@ -5244,7 +6218,7 @@ RenderPreviewObject(int objectId)
 	camFrame->matrix.lookAt(dir, up);
 	camFrame->updateObjects();
 
-	rw::RGBA clearCol = kPreviewBackground;
+	rw::RGBA clearCol = previewBackground();
 	cam->clear(&clearCol, rw::Camera::CLEARIMAGE|rw::Camera::CLEARZ);
 	cam->beginUpdate();
 
@@ -5370,6 +6344,7 @@ coalesceUndo(UndoAction *a)
 		switch(a->type){
 		case UNDO_PROPERTIES: top->newProperties = a->newProperties; return true;
 		case UNDO_VEHICLE: top->newVehicle = a->newVehicle; return true;
+		case UNDO_MODEL_ID: top->newModelId = a->newModelId; return true;
 		case UNDO_MATERIAL:
 			if(top->materialSlot != a->materialSlot)
 				continue;
@@ -5513,6 +6488,29 @@ UndoRecordProperties(ObjectInst *inst, const ObjectPawnProperties &oldProperties
 	pushUndo(&a);
 }
 
+int
+ConvertWorldObjectsToMapObjects(const std::vector<ObjectInst*> &objects)
+{
+	if(IsIplMapDocumentOpen())
+		return 0;
+	UndoAction action = {};
+	action.type = UNDO_WORLD_CONVERSION;
+	for(ObjectInst *inst : objects){
+		if(inst == nil || inst->m_isDeleted || !IsPawnWorldObject(inst) || !IsInstInIplMapDocument(inst))
+			continue;
+		ObjectPawnProperties properties = *GetObjectPawnProperties(inst);
+		if(properties.forceWorldReplacement)
+			continue;
+		properties.forceWorldReplacement = true;
+		SetObjectPawnProperties(inst, properties, false);
+		action.convertedWorldObjects.push_back(inst);
+	}
+	int count = (int)action.convertedWorldObjects.size();
+	if(count)
+		pushUndo(&action);
+	return count;
+}
+
 VehicleState
 GetVehicleState(const ObjectInst *inst)
 {
@@ -5558,6 +6556,19 @@ UndoRecordVehicle(ObjectInst *inst, const VehicleState &before)
 }
 
 void
+UndoRecordModelId(ObjectInst *inst, int oldModelId)
+{
+	if(inst == nil)
+		return;
+	UndoAction a = {};
+	a.type = UNDO_MODEL_ID;
+	a.inst = inst;
+	a.oldModelId = oldModelId;
+	a.newModelId = inst->m_objectId;
+	pushUndo(&a);
+}
+
+void
 UndoRecordNodes(const std::vector<int> &areas, const std::vector<std::shared_ptr<void>> &before,
 	const std::vector<std::shared_ptr<void>> &after)
 {
@@ -5577,6 +6588,29 @@ UndoRecordRadarArt(const std::shared_ptr<void> &before, const std::shared_ptr<vo
 	a.radarBefore = before;
 	a.radarAfter = after;
 	pushUndo(&a);
+}
+
+void UndoRecordLayoutPaths(const std::shared_ptr<void> &before, const std::shared_ptr<void> &after)
+{
+	UndoAction a = {};
+	a.type = UNDO_LAYOUT_PATHS;
+	a.radarBefore = before;
+	a.radarAfter = after;
+	pushUndo(&a);
+}
+
+void SetLayoutObjectState(ObjectInst *inst, const rw::V3d &position, const rw::Quat &rotation, bool deleted)
+{
+	if(!inst) return;
+	RemoveInstFromSectors(inst);
+	inst->m_translation = position;
+	inst->m_rotation = rotation;
+	setDeletedWithoutCascade(inst, deleted);
+	inst->m_isDirty = true;
+	inst->UpdateMatrix();
+	updateRwFrameForInst(inst);
+	StampChangeSeq(inst);
+	if(!deleted) InsertInstIntoSectors(inst);
 }
 
 static void undoStep(void);
@@ -5644,14 +6678,27 @@ undoStep(void)
 	case UNDO_PROPERTIES:
 		SetObjectPawnProperties(a->inst, a->oldProperties, false);
 		break;
+	case UNDO_WORLD_CONVERSION:
+		for(ObjectInst *inst : a->convertedWorldObjects){
+			ObjectPawnProperties properties = *GetObjectPawnProperties(inst);
+			properties.forceWorldReplacement = false;
+			SetObjectPawnProperties(inst, properties, false);
+		}
+		break;
 	case UNDO_VEHICLE:
 		SetVehicleState(a->inst, a->oldVehicle);
+		break;
+	case UNDO_MODEL_ID:
+		ChangeInstanceModelId(a->inst, a->oldModelId, false);
 		break;
 	case UNDO_NODES:
 		SAPaths::RestoreNodeAreas(a->nodeAreas, a->nodesBefore);
 		break;
 	case UNDO_RADAR_ART:
 		RestoreRadarArtLayers(a->radarBefore);
+		break;
+	case UNDO_LAYOUT_PATHS:
+		RestoreLayoutPaths(a->radarBefore);
 		break;
 	}
 }
@@ -5698,14 +6745,27 @@ redoStep(void)
 	case UNDO_PROPERTIES:
 		SetObjectPawnProperties(a->inst, a->newProperties, false);
 		break;
+	case UNDO_WORLD_CONVERSION:
+		for(ObjectInst *inst : a->convertedWorldObjects){
+			ObjectPawnProperties properties = *GetObjectPawnProperties(inst);
+			properties.forceWorldReplacement = true;
+			SetObjectPawnProperties(inst, properties, false);
+		}
+		break;
 	case UNDO_VEHICLE:
 		SetVehicleState(a->inst, a->newVehicle);
+		break;
+	case UNDO_MODEL_ID:
+		ChangeInstanceModelId(a->inst, a->newModelId, false);
 		break;
 	case UNDO_NODES:
 		SAPaths::RestoreNodeAreas(a->nodeAreas, a->nodesAfter);
 		break;
 	case UNDO_RADAR_ART:
 		RestoreRadarArtLayers(a->radarAfter);
+		break;
+	case UNDO_LAYOUT_PATHS:
+		RestoreLayoutPaths(a->radarAfter);
 		break;
 	}
 }
@@ -6368,7 +7428,7 @@ ExportPrefabEx(const char *path, int origin, const char *tags)
 		return 0;
 	}
 
-	fprintf(f, "HAUMEA_PREFAB 3\n");
+	fprintf(f, "HAUMEA_PREFAB 4\n");
 	fprintf(f, "game %d\n", (int)params.map);
 	// Before count, where older readers skip what they don't know.
 	if(tags && tags[0]){
@@ -6499,6 +7559,10 @@ ExportPrefabEx(const char *path, int origin, const char *tags)
 				properties->cpRaceType, properties->cpOrder);
 			pawnWriteQuotedString(f, properties->cpRace);
 			fputc('\n', f);
+			// race <index> <mode> <laps> <playable>
+			if(properties->cpKind == SAMP_CHECKPOINT_RACE)
+				fprintf(f, "race %d %d %d %d\n", i, properties->cpRaceMode, properties->cpRaceLaps,
+					properties->cpRacePlayable ? 1 : 0);
 		}
 		if(properties->elementKind == SAMP_ELEMENT_AREA){
 			// area <index> <shape> <radius> <size x> <size y> <size z> <height> <points> x y ...
@@ -6557,14 +7621,26 @@ ExportPrefabEx(const char *path, int origin, const char *tags)
 		for(int j = 0; npcVehicle && j < numInsts; j++)
 			if(insts[j] == npcVehicle)
 				fprintf(f, "npcveh %d %d %d\n", i, j, inst->m_pawnProperties->npcSeat);
+		int parentIndex = -1;
 		ObjectInst *parent = GetAttachParent(inst);
-		for(int j = 0; parent && j < numInsts; j++)
-			if(insts[j] == parent)
-				fprintf(f, "attach %d %d %f %f %f %f %f %f %d\n", i, j,
-					properties->attachOffset.x, properties->attachOffset.y,
-					properties->attachOffset.z, properties->attachRotation.x,
-					properties->attachRotation.y, properties->attachRotation.z,
-					properties->attachSyncRotation ? 1 : 0);
+		if(properties->attachParent == PAWN_ATTACH_PLAYER)
+			parentIndex = PAWN_ATTACH_PLAYER;
+		else
+			for(int j = 0; parent && j < numInsts; j++)
+				if(insts[j] == parent){ parentIndex = j; break; }
+		if(parentIndex != -1)
+			fprintf(f, "attach %d %d %f %f %f %f %f %f %d %d %d %f %f %f 0x%08X 0x%08X %d\n", i, parentIndex,
+				properties->attachOffset.x, properties->attachOffset.y,
+				properties->attachOffset.z, properties->attachRotation.x,
+				properties->attachRotation.y, properties->attachRotation.z,
+				properties->attachSyncRotation ? 1 : 0, properties->attachBone, properties->attachSlot,
+				properties->attachScale.x, properties->attachScale.y, properties->attachScale.z,
+				properties->attachColor1, properties->attachColor2, properties->attachSkin);
+		// move <index> <offset x y z> <speed> <turns> <rx ry rz>
+		if(properties->moveEnabled)
+			fprintf(f, "move %d %f %f %f %f %d %f %f %f\n", i, properties->moveOffset.x, properties->moveOffset.y,
+				properties->moveOffset.z, properties->moveSpeed, properties->moveRotates ? 1 : 0,
+				properties->moveRotation.x, properties->moveRotation.y, properties->moveRotation.z);
 	}
 
 	fclose(f);
@@ -7362,6 +8438,9 @@ static void
 pawnWriteObjectCall(FILE *f, const ObjectInst *inst, PawnCodeFormat format,
 	const char *handle)
 {
+	// A SetPlayerAttachedObject entry is a model/slot call, not a CreateObject.
+	if(IsPlayerAttachedObject(inst))
+		return;
 	if(GetSampElementKind(inst) != SAMP_ELEMENT_OBJECT){
 		pawnWriteElementCall(f, inst, format, handle);
 		return;
@@ -7441,6 +8520,18 @@ pawnWriteObjectCall(FILE *f, const ObjectInst *inst, PawnCodeFormat format,
 		fputs(");", f);
 	}
 	pawnWriteTrailingTags(f, name, worldTag, properties);
+}
+
+static void
+pawnWritePlayerAttachedObject(FILE *f, const ObjectInst *inst, const char *playerVar)
+{
+	const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+	fprintf(f, "\tSetPlayerAttachedObject(%s, %d, %d, %d, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, 0x%08X, 0x%08X);\n",
+		playerVar, properties->attachSlot, PawnModelId(inst->m_objectId), properties->attachBone,
+		properties->attachOffset.x, properties->attachOffset.y, properties->attachOffset.z,
+		properties->attachRotation.x, properties->attachRotation.y, properties->attachRotation.z,
+		properties->attachScale.x, properties->attachScale.y, properties->attachScale.z,
+		properties->attachColor1, properties->attachColor2);
 }
 
 // The table behind <prefix>_AddSound and the code that plays each game
@@ -7722,9 +8813,20 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 		fprintf(f, "// NPCs that walk their path again: call %s_OnNPCFinishMovePath(npcid, pathid)\n"
 			"// from OnNPCFinishMovePath(npcid, pathid), or they stop at the end.\n", prefix);
 	int numCheckpoints = 0;
-	for(size_t i = 0; i < insts.size(); i++)
-		if(!insts[i]->m_isDeleted && GetSampElementKind(insts[i]) == SAMP_ELEMENT_CHECKPOINT)
+	// Playable races (haumea_races.inc), by name; their checkpoints are
+	// written for the include in either format, not as markers.
+	std::vector<std::string> playableRaces;
+	for(size_t i = 0; i < insts.size(); i++){
+		if(insts[i]->m_isDeleted || GetSampElementKind(insts[i]) != SAMP_ELEMENT_CHECKPOINT)
+			continue;
+		const ObjectPawnProperties *properties = GetObjectPawnProperties(insts[i]);
+		if(properties->cpKind == SAMP_CHECKPOINT_RACE && properties->cpRacePlayable && properties->cpRace[0]){
+			if(std::find(playableRaces.begin(), playableRaces.end(), properties->cpRace) == playableRaces.end())
+				playableRaces.push_back(properties->cpRace);
+		}else
 			numCheckpoints++;
+	}
+	std::sort(playableRaces.begin(), playableRaces.end());
 	if(numCheckpoints > 0 && format != PAWN_CODE_STREAMER)
 		fprintf(f, "// %d checkpoint(s) not written: map checkpoints need the streamer (natively a player\n"
 			"// has one checkpoint at a time, set with SetPlayerCheckpoint). Save as streamer code.\n",
@@ -7758,6 +8860,14 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 		"\n#tryinclude <open.mp>\n#if !defined _INC_open_mp\n\t#include <a_samp>\n#endif\n");
 	if(format == PAWN_CODE_STREAMER || !streamedZones.empty())
 		fprintf(f, "#include <streamer>\n");
+	if(!playableRaces.empty()){
+		fprintf(f, "\n// Races: StartMapRace(playerid, %s_race_<name>) starts one for a player. They need\n"
+			"// haumea_races.inc in your includes (Haumea Studio writes it), included before your callbacks.\n"
+			"#tryinclude <haumea_races>\n"
+			"#if !defined %s_RACE_BASE\n\t#define %s_RACE_BASE (0)\n#endif\n", prefix, prefix, prefix);
+		for(size_t r = 0; r < playableRaces.size(); r++)
+			fprintf(f, "#define %s_race_%s (%s_RACE_BASE + %d)\n", prefix, playableRaces[r].c_str(), prefix, (int)r + 1);
+	}
 	fprintf(f, "\n");
 	// Weapon names only open.mp defines, for player classes on SA-MP 0.3.7.
 	std::vector<int> openMpWeapons;
@@ -7802,11 +8912,26 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 	}
 
 	// Attachments whose parent is part of this export. Both objects need a
-	// variable, and the attach calls go last so every parent exists.
+	// variable, and the attach calls go last so every parent exists. Player
+	// bone slots do not create an object-pool handle.
 	std::unordered_map<const ObjectInst*, const ObjectInst*> attachParents;
+	std::vector<ObjectInst*> playerAttachments;
 	std::unordered_set<const ObjectInst*> exported(insts.begin(), insts.end());
 	for(size_t i = 0; i < insts.size(); i++){
-		ObjectInst *parent = insts[i]->m_isDeleted ? nil : GetAttachParent(insts[i]);
+		ObjectInst *inst = insts[i];
+		if(inst->m_isDeleted)
+			continue;
+		if(IsPlayerAttachedObject(inst)){
+			if(inst->m_pawnProperties->attachParent == PAWN_ATTACH_PLAYER){
+				playerAttachments.push_back(inst);
+				continue;
+			}
+			ObjectInst *parent = GetInstanceByID(inst->m_pawnProperties->attachParent);
+			if(parent && exported.count(parent))
+				playerAttachments.push_back(inst);
+			continue;
+		}
+		ObjectInst *parent = GetAttachParent(inst);
 		if(parent && exported.count(parent))
 			attachParents[insts[i]] = parent;
 	}
@@ -7823,6 +8948,13 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 		needsHandle.insert(it->first);
 		needsHandle.insert(it->second);
 	}
+	std::vector<ObjectInst*> movers;
+	for(ObjectInst *inst : insts)
+		if(!inst->m_isDeleted && !inst->m_isVehicle && GetSampElementKind(inst) == SAMP_ELEMENT_OBJECT &&
+		   !IsPlayerAttachedObject(inst) && GetObjectPawnProperties(inst)->moveEnabled){
+			movers.push_back(inst);
+			needsHandle.insert(inst);
+		}
 
 	// Objects are written group by group, in order of first appearance.
 	std::vector<std::string> groups;
@@ -7855,9 +8987,9 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 				  properties->actorHealth != 100.0f)));
 			// Whether a later call uses the variable; a generated one is only
 			// made then, a hand-written one is kept anyway.
-			bool usedLater = (inst->m_isVehicle && (vehicleNeedsHandle(inst) || npcVehicles.count(inst))) ||
+			bool usedLater = (inst->m_isVehicle && (vehicleNeedsHandle(inst) || npcVehicles.count(inst) || needsHandle.count(inst))) ||
 				kind == SAMP_ELEMENT_GANGZONE || nativeActorExtras || kind == SAMP_ELEMENT_NPC ||
-				(kind == SAMP_ELEMENT_OBJECT && !inst->m_isVehicle &&
+				(kind == SAMP_ELEMENT_OBJECT && !inst->m_isVehicle && !IsPlayerAttachedObject(inst) &&
 				 (HasObjectMaterialOverrides(inst) || needsHandle.count(inst)));
 			char handle[128];
 			handle[0] = '\0';
@@ -7871,7 +9003,7 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 					// path points are written with their path
 			else if(properties->name[0] && usedHandles.count(properties->name) == 0)
 				strncpy(handle, properties->name, sizeof(handle)-1);
-			else if(inst->m_isVehicle && (vehicleNeedsHandle(inst) || npcVehicles.count(inst)))
+			else if(inst->m_isVehicle && (vehicleNeedsHandle(inst) || npcVehicles.count(inst) || needsHandle.count(inst)))
 				snprintf(handle, sizeof(handle), "%s_vehicle_%d", prefix, generatedHandles++);
 			else if(kind == SAMP_ELEMENT_GANGZONE)
 				snprintf(handle, sizeof(handle), "%s_zone_%d", prefix, generatedHandles++);
@@ -7879,7 +9011,7 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 				snprintf(handle, sizeof(handle), "%s_actor_%d", prefix, generatedHandles++);
 			else if(kind == SAMP_ELEMENT_NPC)
 				snprintf(handle, sizeof(handle), "%s_npc_%d", prefix, generatedHandles++);
-			else if(kind == SAMP_ELEMENT_OBJECT && !inst->m_isVehicle &&
+			else if(kind == SAMP_ELEMENT_OBJECT && !inst->m_isVehicle && !IsPlayerAttachedObject(inst) &&
 				(HasObjectMaterialOverrides(inst) || needsHandle.count(inst) || properties->name[0]))
 				snprintf(handle, sizeof(handle), "%s_obj_%d", prefix, generatedHandles++);
 			if(handle[0]){
@@ -7998,7 +9130,7 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 	for(size_t i = 0; i < insts.size() && format == PAWN_CODE_STREAMER; i++){
 		const ObjectPawnProperties *properties = GetObjectPawnProperties(insts[i]);
 		if(insts[i]->m_isDeleted || properties->elementKind != SAMP_ELEMENT_CHECKPOINT ||
-		   properties->cpKind != SAMP_CHECKPOINT_RACE)
+		   properties->cpKind != SAMP_CHECKPOINT_RACE || properties->cpRacePlayable)
 			continue;
 		if(races.find(properties->cpRace) == races.end())
 			raceNames.push_back(properties->cpRace);
@@ -8015,11 +9147,13 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 			for(size_t j = 0; j < race.size(); j++){
 				const ObjectPawnProperties *properties = GetObjectPawnProperties(race[j]);
 				const rw::V3d &p = race[j]->m_translation;
-				rw::V3d next = { 0.0f, 0.0f, 0.0f };	// the last one points nowhere
+				rw::V3d next = { 0.0f, 0.0f, 0.0f };	// the last one points nowhere, a circuit's at the first
 				if(j + 1 < race.size())
 					next = race[j + 1]->m_translation;
+				else if(properties->cpRaceMode == SAMP_RACE_CIRCUIT && race.size() >= 2)
+					next = race[0]->m_translation;
 				fprintf(f, "\tCreateDynamicRaceCP(%d, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %.2f, %d, %d, -1, ",
-					properties->cpRaceType, p.x, p.y, p.z, next.x, next.y, next.z, properties->cpSize,
+					GetRaceCheckpointShownType(race[j]), p.x, p.y, p.z, next.x, next.y, next.z, properties->cpSize,
 					properties->virtualWorld, race[j]->m_area > 0 ? race[j]->m_area : -1);
 				pawnWriteDistance(f, properties->streamDistance, "STREAMER_RACE_CP_SD");
 				pawnWriteAreaArg(f, properties);
@@ -8028,6 +9162,32 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 			}
 		}
 		fputc('\n', f);
+	}
+	if(!playableRaces.empty()){
+		// MapRace_Create(raceid, name[], mode, laps, world, interior);
+		// MapRace_AddCheckpoint(raceid, x, y, z, radius, type), in order.
+		fputs("\t// ---- races (haumea_races.inc) ----\n#if defined _haumea_races_included\n", f);
+		for(const std::string &name : playableRaces){
+			std::vector<ObjectInst*> race;
+			GetRaceCheckpoints(name.c_str(), race);
+			race.erase(std::remove_if(race.begin(), race.end(), [&](const ObjectInst *c){
+				return std::find(insts.begin(), insts.end(), c) == insts.end(); }), race.end());
+			if(race.empty())
+				continue;
+			const ObjectPawnProperties *first = GetObjectPawnProperties(race[0]);
+			bool circuit = first->cpRaceMode == SAMP_RACE_CIRCUIT;
+			fprintf(f, "\tMapRace_Create(%s_race_%s, \"%s\", %s, %d, %d, %d);\n", prefix, name.c_str(), name.c_str(),
+				circuit ? "MAPRACE_CIRCUIT" : "MAPRACE_POINT_TO_POINT", circuit ? first->cpRaceLaps : 1,
+				first->virtualWorld, race[0]->m_area > 0 ? race[0]->m_area : -1);
+			for(ObjectInst *c : race){
+				const ObjectPawnProperties *properties = GetObjectPawnProperties(c);
+				const rw::V3d &p = c->m_translation;
+				fprintf(f, "\tMapRace_AddCheckpoint(%s_race_%s, %.6f, %.6f, %.6f, %.2f, %d);", prefix, name.c_str(),
+					p.x, p.y, p.z, std::max(properties->cpSize, 0.25f), properties->cpRaceType);
+				pawnWriteTrailingTags(f, "checkpoint", "", properties);
+			}
+		}
+		fputs("#endif\n\n", f);
 	}
 	for(size_t g = 0; g < groups.size(); g++){
 		for(size_t i = 0; i < insts.size(); i++){
@@ -8074,19 +9234,54 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 	}
 	if(!attachParents.empty()){
 		fputs("\n\t// ---- attachments ----\n", f);
-		const char *attachName = format == PAWN_CODE_STREAMER
-			? "AttachDynamicObjectToObject" : "AttachObjectToObject";
 		for(size_t i = 0; i < insts.size(); i++){
 			std::unordered_map<const ObjectInst*, const ObjectInst*>::iterator it =
 				attachParents.find(insts[i]);
 			if(it == attachParents.end())
 				continue;
 			const ObjectPawnProperties *properties = GetObjectPawnProperties(insts[i]);
-			fprintf(f, "\t%s(%s, %s, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f, %s);\n", attachName,
+			bool vehicle = it->second->m_isVehicle;
+			const char *attachName = vehicle ? (format == PAWN_CODE_STREAMER ?
+				"AttachDynamicObjectToVehicle" : "AttachObjectToVehicle") :
+				(format == PAWN_CODE_STREAMER ? "AttachDynamicObjectToObject" : "AttachObjectToObject");
+			fprintf(f, "\t%s(%s, %s, %.6f, %.6f, %.6f, %.6f, %.6f, %.6f", attachName,
 				handles[it->first].c_str(), handles[it->second].c_str(),
 				properties->attachOffset.x, properties->attachOffset.y, properties->attachOffset.z,
 				properties->attachRotation.x, properties->attachRotation.y,
-				properties->attachRotation.z, properties->attachSyncRotation ? "true" : "false");
+				properties->attachRotation.z);
+			if(!vehicle)
+				fprintf(f, ", %s", properties->attachSyncRotation ? "true" : "false");
+			fputs(");\n", f);
+		}
+	}
+	if(!movers.empty()){
+		// MoveObject(objectid, X, Y, Z, Speed, RotX = -1000.0, RotY = -1000.0, RotZ = -1000.0)
+		fputs("\n\t// ---- moving objects ----\n", f);
+		for(ObjectInst *inst : movers){
+			const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+			rw::V3d to = add(inst->m_translation, properties->moveOffset);
+			fprintf(f, "\t%s(%s, %.6f, %.6f, %.6f, %.6f", format == PAWN_CODE_STREAMER ? "MoveDynamicObject" : "MoveObject",
+				handles[inst].c_str(), to.x, to.y, to.z, properties->moveSpeed);
+			if(properties->moveRotates)
+				fprintf(f, ", %.6f, %.6f, %.6f", properties->moveRotation.x, properties->moveRotation.y,
+					properties->moveRotation.z);
+			fputs(");\n", f);
+		}
+	}
+	if(!playerAttachments.empty()){
+		bool wroteNpc = false;
+		for(ObjectInst *inst : playerAttachments){
+			const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+			ObjectInst *parent = properties->attachParent >= 0 ?
+				GetInstanceByID(properties->attachParent) : nil;
+			if(parent == nil || GetSampElementKind(parent) != SAMP_ELEMENT_NPC ||
+			   handles.find(parent) == handles.end())
+				continue;
+			if(!wroteNpc){
+				fputs("\n\t// ---- NPC attached objects (open.mp) ----\n", f);
+				wroteNpc = true;
+			}
+			pawnWritePlayerAttachedObject(f, inst, handles[parent].c_str());
 		}
 	}
 	// NPCs get in their vehicles once both exist, before any recording starts.
@@ -8178,6 +9373,30 @@ pawnWriteCode(FILE *f, const char *path, PawnCodeFormat format, bool selectedOnl
 			fprintf(f, ", %s);\n", properties->npcPathReversed ? "true" : "false");
 	}
 	fprintf(f, "}\n");
+	bool playerAttachmentHelper = false;
+	for(ObjectInst *inst : playerAttachments){
+		const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+		ObjectInst *parent = properties->attachParent >= 0 ? GetInstanceByID(properties->attachParent) : nil;
+		if(parent == nil || GetSampElementKind(parent) == SAMP_ELEMENT_CLASS)
+			playerAttachmentHelper = true;
+	}
+	if(playerAttachmentHelper){
+		fprintf(f, "\n// Call %s_ApplyPlayerAttachments(playerid) from OnPlayerSpawn.\n"
+			"stock %s_ApplyPlayerAttachments(playerid)\n{\n", prefix, prefix);
+		for(ObjectInst *inst : playerAttachments){
+			const ObjectPawnProperties *properties = GetObjectPawnProperties(inst);
+			ObjectInst *parent = properties->attachParent >= 0 ? GetInstanceByID(properties->attachParent) : nil;
+			if(parent && GetSampElementKind(parent) != SAMP_ELEMENT_CLASS)
+				continue;
+			if(parent){
+				fprintf(f, "\tif(GetPlayerSkin(playerid) == %d){\n", GetObjectPawnProperties(parent)->elementModel);
+				pawnWritePlayerAttachedObject(f, inst, "playerid");
+				fputs("\t}\n", f);
+			}else
+				pawnWritePlayerAttachedObject(f, inst, "playerid");
+		}
+		fputs("}\n", f);
+	}
 
 	if(hasPlayerElements){
 		fprintf(f, "\nstock %s_ShowForPlayer(playerid)\n{\n", prefix);
@@ -8340,6 +9559,13 @@ struct PawnImportEntry
 	// A streamer item's areaid: the dynamic area's create entry plus one (the
 	// latest area with that variable before the item), 0 for none.
 	int areaEntry;
+	// MoveObject on its variable: where to, how fast, and the turn when all
+	// three angles are given (the client turns only then, reSA-MP
+	// MoveObjectRuntimeToTarget).
+	bool moves;
+	float moveTo[3], moveRotation[3];
+	bool moveRotates;
+	float moveSpeed;
 };
 
 static std::string pawnTrimString(const std::string &value);
@@ -8389,9 +9615,13 @@ struct PawnElementSetterEntry
 
 struct PawnAttachImportEntry
 {
-	int child, parent;	// indices into the create entries
+	int child, parent;	// indices into the create entries; player uses PAWN_ATTACH_PLAYER
 	float x, y, z, rx, ry, rz;
 	bool syncRotation;
+	bool toVehicle;
+	int bone, slot;
+	rw::V3d scale;
+	uint32 color1, color2;
 };
 
 struct PawnRemoveEntry
@@ -8457,6 +9687,196 @@ pawnTrimString(const std::string &value)
 	return value.substr(first, last-first);
 }
 
+// Numeric #defines and consts of the map being imported (pawnCollectNumericDefines),
+// so arguments such as BASE_Z + 2.5 import.
+static std::map<std::string, double> gPawnNumericDefines;
+
+struct PawnExpression
+{
+	const std::string &s;
+	const std::map<std::string, double> &names;
+	size_t pos;
+	bool valid;
+
+	PawnExpression(const std::string &text, const std::map<std::string, double> &values)
+		: s(text), names(values), pos(0), valid(true) {}
+
+	void skipSpace(void) { while(pos < s.size() && isspace((unsigned char)s[pos])) pos++; }
+	bool take(char c)
+	{
+		skipSpace();
+		// "==" and "<=" aren't arithmetic; leave them for the caller to reject.
+		if(pos < s.size() && s[pos] == c && !(pos + 1 < s.size() && s[pos+1] == '=')){
+			pos++;
+			return true;
+		}
+		return false;
+	}
+	double atom(int depth)
+	{
+		skipSpace();
+		if(depth > 32 || pos >= s.size()){
+			valid = false;
+			return 0;
+		}
+		if(take('+')) return atom(depth + 1);
+		if(take('-')) return -atom(depth + 1);
+		if(take('(')){
+			double value = sum(depth + 1);
+			if(!take(')'))
+				valid = false;
+			return value;
+		}
+		size_t start = pos;
+		if(isalpha((unsigned char)s[pos]) || s[pos] == '_' || s[pos] == '@'){
+			while(pos < s.size() && (isalnum((unsigned char)s[pos]) || s[pos] == '_' || s[pos] == '@')) pos++;
+			std::string name = s.substr(start, pos - start);
+			// A tag (Float:x); "::" isn't one.
+			if(pos < s.size() && s[pos] == ':' && !(pos + 1 < s.size() && s[pos+1] == ':')){
+				pos++;
+				return atom(depth + 1);
+			}
+			std::map<std::string, double>::const_iterator it = names.find(name);
+			if(it != names.end())
+				return it->second;
+			valid = false;
+			return 0;
+		}
+		if(isdigit((unsigned char)s[pos]) || s[pos] == '.'){
+			std::string number;
+			if(s[pos] == '0' && pos + 1 < s.size() && (s[pos+1] == 'x' || s[pos+1] == 'X')){
+				pos += 2;
+				while(pos < s.size() && (isxdigit((unsigned char)s[pos]) || s[pos] == '_'))
+					if(s[pos++] != '_') number += s[pos-1];
+				if(number.empty() || number.size() > 8){
+					valid = false;
+					return 0;
+				}
+				return (double)(uint32)strtoul(number.c_str(), nil, 16);
+			}
+			while(pos < s.size() && (isdigit((unsigned char)s[pos]) || s[pos] == '.' || s[pos] == '_' ||
+			      ((s[pos] == 'e' || s[pos] == 'E') && pos + 1 < s.size() &&
+			       (isdigit((unsigned char)s[pos+1]) || s[pos+1] == '-' || s[pos+1] == '+')) ||
+			      ((s[pos] == '-' || s[pos] == '+') && (s[pos-1] == 'e' || s[pos-1] == 'E'))))
+				if(s[pos++] != '_') number += s[pos-1];
+			char *end = nil;
+			double value = strtod(number.c_str(), &end);
+			if(end == number.c_str() || *end != '\0'){
+				valid = false;
+				return 0;
+			}
+			return value;
+		}
+		valid = false;
+		return 0;
+	}
+	double product(int depth)
+	{
+		double value = atom(depth);
+		for(;;){
+			if(take('*'))
+				value *= atom(depth);
+			else if(take('/')){
+				double divisor = atom(depth);
+				if(divisor == 0)
+					valid = false;
+				else
+					value /= divisor;
+			}else if(take('%')){
+				double divisor = atom(depth);
+				if(divisor == 0)
+					valid = false;
+				else
+					value = fmod(value, divisor);
+			}else
+				return value;
+		}
+	}
+	double sum(int depth)
+	{
+		double value = product(depth);
+		for(;;){
+			if(take('+'))
+				value += product(depth);
+			else if(take('-'))
+				value -= product(depth);
+			else
+				return value;
+		}
+	}
+	bool read(double *out)
+	{
+		double value = sum(0);
+		skipSpace();
+		if(!valid || pos != s.size() || !std::isfinite(value))
+			return false;
+		*out = value;
+		return true;
+	}
+};
+
+static bool
+pawnEvaluateExpression(const std::string &text, double *out)
+{
+	PawnExpression expression(text, gPawnNumericDefines);
+	return expression.read(out);
+}
+
+// "#define NAME expr" and "const [Float:]NAME = expr;" whose value is a
+// number, in source order so later ones can use earlier ones. Variables
+// (new) aren't followed: their value depends on where the code runs.
+static void
+pawnCollectNumericDefines(const std::string &source, std::map<std::string, double> &out)
+{
+	size_t start = 0;
+	while(start < source.size()){
+		size_t end = source.find('\n', start);
+		if(end == std::string::npos)
+			end = source.size();
+		std::string line = pawnTrimString(source.substr(start, end - start));
+		start = end + 1;
+		size_t comment = line.find("//");
+		if(comment != std::string::npos)
+			line = pawnTrimString(line.substr(0, comment));
+		std::string name, value;
+		if(line.compare(0, 7, "#define") == 0 && line.size() > 8 && isspace((unsigned char)line[7])){
+			size_t i = 7;
+			while(i < line.size() && isspace((unsigned char)line[i])) i++;
+			size_t nameStart = i;
+			while(i < line.size() && (isalnum((unsigned char)line[i]) || line[i] == '_' || line[i] == '@')) i++;
+			// "#define NAME(%0)" is a macro, not a value.
+			if(i == nameStart || (i < line.size() && line[i] == '('))
+				continue;
+			name = line.substr(nameStart, i - nameStart);
+			value = line.substr(i);
+		}else{
+			size_t i = 0;
+			if(line.compare(0, 7, "static ") == 0) i = 7;
+			if(line.compare(i, 6, "const ") != 0)
+				continue;
+			i += 6;
+			std::string rest = line.substr(i);
+			size_t eq = rest.find('=');
+			size_t semi = rest.find(';');
+			if(eq == std::string::npos || (semi != std::string::npos && semi < eq))
+				continue;
+			name = pawnTrimString(rest.substr(0, eq));
+			size_t colon = name.find(':');
+			if(colon != std::string::npos)
+				name = pawnTrimString(name.substr(colon + 1));
+			value = rest.substr(eq + 1, semi == std::string::npos ? std::string::npos : semi - eq - 1);
+			if(name.empty() || name.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_@") != std::string::npos)
+				continue;
+		}
+		double number;
+		PawnExpression expression(pawnTrimString(value), out);
+		if(expression.read(&number))
+			out[name] = number;
+		else
+			out.erase(name);
+	}
+}
+
 static bool
 pawnParseDouble(const std::string &value, double *out)
 {
@@ -8486,10 +9906,12 @@ pawnParseDouble(const std::string &value, double *out)
 	char *end = nil;
 	const char *start = token.c_str();
 	double parsed = strtod(start, &end);
-	if(end == start || !std::isfinite((float)parsed))
+	if(end != start)
+		while(*end && isspace((unsigned char)*end)) end++;
+	// Not a plain number: arithmetic or a named constant (BASE_Z + 2.5).
+	if((end == start || *end != '\0') && !pawnEvaluateExpression(token, &parsed))
 		return false;
-	while(*end && isspace((unsigned char)*end)) end++;
-	if(*end != '\0')
+	if(!std::isfinite((float)parsed))
 		return false;
 	if(out) *out = parsed;
 	return true;
@@ -9173,6 +10595,15 @@ pawnParseElementInt(const std::string &value, int *out)
 		{ "MAPICON_LOCAL", 0 }, { "MAPICON_GLOBAL", 1 },
 		{ "MAPICON_LOCAL_CHECKPOINT", 2 }, { "MAPICON_GLOBAL_CHECKPOINT", 3 },
 		{ "INVALID_PLAYER_ID", 0xFFFF }, { "INVALID_VEHICLE_ID", 0xFFFF },
+		{ "BONE_SPINE", 1 }, { "BONE_HEAD", 2 },
+		{ "BONE_LEFT_UPPER_ARM", 3 }, { "BONE_RIGHT_UPPER_ARM", 4 },
+		{ "BONE_LEFT_HAND", 5 }, { "BONE_RIGHT_HAND", 6 },
+		{ "BONE_LEFT_THIGH", 7 }, { "BONE_RIGHT_THIGH", 8 },
+		{ "BONE_LEFT_FOOT", 9 }, { "BONE_RIGHT_FOOT", 10 },
+		{ "BONE_RIGHT_CALF", 11 }, { "BONE_LEFT_CALF", 12 },
+		{ "BONE_LEFT_FOREARM", 13 }, { "BONE_RIGHT_FOREARM", 14 },
+		{ "BONE_LEFT_CLAVICLE", 15 }, { "BONE_RIGHT_CLAVICLE", 16 },
+		{ "BONE_NECK", 17 }, { "BONE_JAW", 18 },
 		{ "NO_TEAM", 255 },
 	};
 	for(size_t i = 0; i < sizeof(constants)/sizeof(constants[0]); i++)
@@ -9285,11 +10716,16 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 	// Texture Studio's "tmpobjid = CreateObject(...)" chains resolve per object.
 	std::map<std::string, int> handleEntries;
 	std::map<std::string, int> npcPathPoints;	// points read so far, by path
+	// MapRace_Create calls by their raceid as written: the race's name and settings.
+	struct MapRaceImport { char name[PAWN_OBJECT_NAME_LEN]; int mode, laps, world, interior; };
+	std::map<std::string, MapRaceImport> mapRaces;
 	std::map<int, int> npcNodePoints;	// NPC_SetNodePoint so far, by node
 	enum PawnCallKind {
 		PAWN_CALL_CREATE,
 		PAWN_CALL_CREATE_EX,
 		PAWN_CALL_ATTACH,
+		PAWN_CALL_ATTACH_VEHICLE,
+		PAWN_CALL_PLAYER_ATTACHED,
 		PAWN_CALL_VEHICLE_STATIC,
 		PAWN_CALL_VEHICLE_STATIC_EX,
 		PAWN_CALL_VEHICLE_DYNAMIC,
@@ -9340,6 +10776,9 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 		PAWN_CALL_ADD_PLAYER_ZONE,	// Haumea_<map>_AddPlayerZone, generated with the map
 		PAWN_CALL_ADD_STREAMED_ZONE,	// Haumea_<map>_AddStreamedZone, generated with the map
 		PAWN_CALL_NPC_MOVE_REPEAT,	// Haumea_<map>_MoveByPathRepeat, generated with the map
+		PAWN_CALL_MOVE,	// MoveObject, MoveDynamicObject, MovePlayerObject
+		PAWN_CALL_MAPRACE_CREATE,	// haumea_races.inc
+		PAWN_CALL_MAPRACE_CHECKPOINT,
 	};
 	struct PawnCallName { const char *name; int offset; bool streamer; PawnCallKind kind; };
 	static const PawnCallName callNames[] = {
@@ -9357,9 +10796,16 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 		{ "SetDynamicObjectMaterial", 0, true, PAWN_CALL_MATERIAL },
 		{ "SetObjectMaterial", 0, false, PAWN_CALL_MATERIAL },
 		{ "RemoveBuildingForPlayer", 1, false, PAWN_CALL_REMOVE },
+		{ "AttachDynamicObjectToVehicle", 0, true, PAWN_CALL_ATTACH_VEHICLE },
+		{ "AttachPlayerObjectToVehicle", 1, false, PAWN_CALL_ATTACH_VEHICLE },
+		{ "AttachObjectToVehicle", 0, false, PAWN_CALL_ATTACH_VEHICLE },
+		{ "SetPlayerAttachedObject", 0, false, PAWN_CALL_PLAYER_ATTACHED },
 		{ "AttachPlayerObjectToObject", 1, false, PAWN_CALL_ATTACH },
 		{ "AttachDynamicObjectToObject", 0, true, PAWN_CALL_ATTACH },
 		{ "AttachObjectToObject", 0, false, PAWN_CALL_ATTACH },
+		{ "MoveDynamicObject", 0, true, PAWN_CALL_MOVE },
+		{ "MovePlayerObject", 1, false, PAWN_CALL_MOVE },
+		{ "MoveObject", 0, false, PAWN_CALL_MOVE },
 		{ "CreateDynamicObjectEx", 0, true, PAWN_CALL_CREATE_EX },
 		{ "CreateDynamicObject", 0, true, PAWN_CALL_CREATE },
 		{ "CreatePlayerObject", 1, false, PAWN_CALL_CREATE },
@@ -9382,6 +10828,8 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 		{ "GangZoneShowForAll", 0, false, PAWN_CALL_GANGZONE_SHOW },
 		{ "CreateDynamicMapIcon", 0, true, PAWN_CALL_MAPICON },
 		{ "CreateDynamicRaceCP", 0, true, PAWN_CALL_RACE_CHECKPOINT },
+		{ "MapRace_Create", 0, false, PAWN_CALL_MAPRACE_CREATE },	// haumea_races.inc
+		{ "MapRace_AddCheckpoint", 0, false, PAWN_CALL_MAPRACE_CHECKPOINT },
 		{ "CreateDynamicCircle", 0, true, PAWN_CALL_AREA },
 		{ "CreateDynamicCylinder", 0, true, PAWN_CALL_AREA },
 		{ "CreateDynamicSphere", 0, true, PAWN_CALL_AREA },
@@ -9498,7 +10946,9 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 		if(call->kind == PAWN_CALL_ATTACH){
 			// AttachObjectToObject(obj, attachto, x, y, z, rx, ry, rz, sync = 1)
 			char child[64], parent[64];
-			PawnAttachImportEntry attach;
+			PawnAttachImportEntry attach = {};
+			attach.bone = -1;
+			attach.scale = { 1.0f, 1.0f, 1.0f };
 			int sync = 1;
 			bool valid = (int)args.size() >= offset + 8 &&
 				pawnParseToken(args[offset], child, sizeof(child)) &&
@@ -9519,6 +10969,123 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 			attach.child = handleEntries[child];
 			attach.parent = handleEntries[parent];
 			attach.syncRotation = sync != 0;
+			attachments.push_back(attach);
+			continue;
+		}
+		if(call->kind == PAWN_CALL_MAPRACE_CREATE){
+			// MapRace_Create(raceid, name[], mode = MAPRACE_POINT_TO_POINT, laps = 1, world = -1, interior = -1)
+			MapRaceImport race = { {}, SAMP_RACE_POINT_TO_POINT, 1, -1, -1 };
+			bool valid = (int)args.size() >= offset + 2 && pawnParseString(args[offset + 1], race.name, sizeof(race.name)) &&
+				IsValidPawnObjectName(race.name);
+			if(valid && (int)args.size() > offset + 2){
+				std::string mode = pawnStripTag(args[offset + 2]);
+				race.mode = mode == "MAPRACE_CIRCUIT" ? SAMP_RACE_CIRCUIT : mode == "MAPRACE_POINT_TO_POINT" ?
+					SAMP_RACE_POINT_TO_POINT : -1;
+				if(race.mode < 0 && !pawnParseElementInt(mode, &race.mode))
+					valid = false;
+			}
+			if(valid && (int)args.size() > offset + 3) valid = pawnParseElementInt(args[offset + 3], &race.laps);
+			if(valid && (int)args.size() > offset + 4) valid = pawnParseElementInt(args[offset + 4], &race.world);
+			if(valid && (int)args.size() > offset + 5) valid = pawnParseElementInt(args[offset + 5], &race.interior);
+			if(!valid){
+				if(numSkipped) (*numSkipped)++;
+				continue;
+			}
+			mapRaces[pawnTrimString(args[offset])] = race;
+			continue;
+		}
+		if(call->kind == PAWN_CALL_MOVE){
+			// MoveObject(obj, x, y, z, speed, rx = -1000.0, ry = -1000.0, rz = -1000.0)
+			char target[64];
+			float to[3], speed, rot[3] = { -1000.0f, -1000.0f, -1000.0f };
+			bool valid = (int)args.size() >= offset + 5 &&
+				pawnParseToken(args[offset], target, sizeof(target)) &&
+				pawnParseFloat(args[offset + 1], &to[0]) && pawnParseFloat(args[offset + 2], &to[1]) &&
+				pawnParseFloat(args[offset + 3], &to[2]) && pawnParseFloat(args[offset + 4], &speed) &&
+				handleEntries.find(target) != handleEntries.end();
+			for(int k = 0; valid && k < 3 && (int)args.size() > offset + 5 + k; k++)
+				valid = pawnParseFloat(args[offset + 5 + k], &rot[k]);
+			PawnImportEntry *entry = valid ? &entries[handleEntries[target]] : nil;
+			if(entry == nil || entry->isVehicle || entry->elementKind != SAMP_ELEMENT_OBJECT || speed <= 0.0f){
+				if(numSkipped) (*numSkipped)++;
+				continue;
+			}
+			entry->moves = true;
+			memcpy(entry->moveTo, to, sizeof(to));
+			entry->moveSpeed = speed;
+			entry->moveRotates = rot[0] > -999.0f && rot[1] > -999.0f && rot[2] > -999.0f;
+			memcpy(entry->moveRotation, rot, sizeof(rot));
+			continue;
+		}
+		if(call->kind == PAWN_CALL_ATTACH_VEHICLE){
+			// AttachObjectToVehicle(obj, vehicle, x, y, z, rx, ry, rz)
+			char child[64], parent[64];
+			PawnAttachImportEntry attach = {};
+			attach.bone = -1;
+			attach.scale = { 1.0f, 1.0f, 1.0f };
+			bool valid = args.size() >= (size_t)offset + 8 &&
+				pawnParseToken(args[offset], child, sizeof(child)) &&
+				pawnParseToken(args[offset + 1], parent, sizeof(parent)) &&
+				pawnParseFloat(args[offset + 2], &attach.x) && pawnParseFloat(args[offset + 3], &attach.y) &&
+				pawnParseFloat(args[offset + 4], &attach.z) && pawnParseFloat(args[offset + 5], &attach.rx) &&
+				pawnParseFloat(args[offset + 6], &attach.ry) && pawnParseFloat(args[offset + 7], &attach.rz) &&
+				handleEntries.find(child) != handleEntries.end() &&
+				handleEntries.find(parent) != handleEntries.end() &&
+				entries[handleEntries[parent]].isVehicle;
+			if(!valid){
+				if(numSkipped) (*numSkipped)++;
+				continue;
+			}
+			attach.child = handleEntries[child];
+			attach.parent = handleEntries[parent];
+			attach.syncRotation = true;
+			attach.toVehicle = true;
+			attachments.push_back(attach);
+			continue;
+		}
+		if(call->kind == PAWN_CALL_PLAYER_ATTACHED){
+			// SetPlayerAttachedObject(playerid, slot, model, bone, offset, rotation, scale, colours)
+			PawnAttachImportEntry attach = {};
+			attach.bone = -1;
+			attach.scale = { 1.0f, 1.0f, 1.0f };
+			int slot, model, bone;
+			uint32 color1 = 0, color2 = 0;
+			bool valid = args.size() >= 13 && pawnParseElementInt(args[1], &slot) &&
+				pawnParseElementInt(args[2], &model) && pawnParseElementInt(args[3], &bone) &&
+				pawnParseFloat(args[4], &attach.x) && pawnParseFloat(args[5], &attach.y) &&
+				pawnParseFloat(args[6], &attach.z) && pawnParseFloat(args[7], &attach.rx) &&
+				pawnParseFloat(args[8], &attach.ry) && pawnParseFloat(args[9], &attach.rz) &&
+				pawnParseFloat(args[10], &attach.scale.x) && pawnParseFloat(args[11], &attach.scale.y) &&
+				pawnParseFloat(args[12], &attach.scale.z);
+			if(valid && args.size() >= 14)
+				valid = pawnParseMaterialColor(args[13], &color1);
+			if(valid && args.size() >= 15)
+				valid = pawnParseMaterialColor(args[14], &color2);
+			if(!valid || model < 0 || bone < 1 || bone > 18 || slot < 0 || slot > 9){
+				if(numSkipped) (*numSkipped)++;
+				continue;
+			}
+			PawnImportEntry entry = {};
+			entry.objectId = EditorModelId(model);
+			entry.interior = -1;
+			entry.world = 0;
+			entry.elementKind = SAMP_ELEMENT_OBJECT;
+			InitObjectPawnProperties(&entry.element);
+			attach.child = (int)entries.size();
+			attach.parent = PAWN_ATTACH_PLAYER;
+			attach.syncRotation = true;
+			attach.bone = bone;
+			attach.slot = slot;
+			attach.color1 = color1;
+			attach.color2 = color2;
+			attach.toVehicle = false;
+			char player[64];
+			if(pawnParseToken(args[0], player, sizeof(player))){
+				std::map<std::string, int>::const_iterator target = handleEntries.find(player);
+				if(target != handleEntries.end() && entries[target->second].elementKind == SAMP_ELEMENT_NPC)
+					attach.parent = target->second;
+			}
+			entries.push_back(entry);
 			attachments.push_back(attach);
 			continue;
 		}
@@ -9979,7 +11546,8 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 		   call->kind == PAWN_CALL_MAPICON || call->kind == PAWN_CALL_AUDIO_STREAM ||
 		   call->kind == PAWN_CALL_ADD_SOUND || call->kind == PAWN_CALL_CHECKPOINT ||
 		   call->kind == PAWN_CALL_ADD_PLAYER_ZONE || call->kind == PAWN_CALL_ADD_STREAMED_ZONE ||
-		   call->kind == PAWN_CALL_RACE_CHECKPOINT || call->kind == PAWN_CALL_AREA){
+		   call->kind == PAWN_CALL_RACE_CHECKPOINT || call->kind == PAWN_CALL_AREA ||
+		   call->kind == PAWN_CALL_MAPRACE_CHECKPOINT){
 			PawnImportEntry entry = {};
 			entry.interior = -1;
 			entry.world = -1;
@@ -10203,6 +11771,32 @@ pawnParseSource(const std::string &rawSource, std::vector<PawnImportEntry> &entr
 				optInt(5, &entry.interior);
 				optDistance(7, &entry.streamDistance);
 				break;
+			case PAWN_CALL_MAPRACE_CHECKPOINT: {
+				// MapRace_AddCheckpoint(raceid, x, y, z, radius = 5.0, type = MAPRACE_AUTO_GROUND)
+				std::map<std::string, MapRaceImport>::const_iterator race = mapRaces.find(pawnTrimString(arg(0)));
+				entry.elementKind = SAMP_ELEMENT_CHECKPOINT;
+				el.cpKind = SAMP_CHECKPOINT_RACE;
+				el.cpSize = 5.0f;
+				el.cpRaceType = SAMP_RACE_CP_AUTO_GROUND;
+				valid = n >= o + 4 && race != mapRaces.end() && pawnParseFloat(arg(1), &entry.x) &&
+					pawnParseFloat(arg(2), &entry.y) && pawnParseFloat(arg(3), &entry.z);
+				optFloat(4, &el.cpSize);
+				if(valid && n > o + 5){
+					std::string type = pawnStripTag(arg(5));
+					if(type == "MAPRACE_AUTO_GROUND") el.cpRaceType = SAMP_RACE_CP_AUTO_GROUND;
+					else if(type == "MAPRACE_AUTO_AIR") el.cpRaceType = SAMP_RACE_CP_AUTO_AIR;
+					else valid = pawnParseElementInt(type, &el.cpRaceType);
+				}
+				if(valid){
+					snprintf(el.cpRace, sizeof(el.cpRace), "%s", race->second.name);
+					el.cpRaceMode = race->second.mode;
+					el.cpRaceLaps = race->second.laps;
+					el.cpRacePlayable = true;
+					entry.world = race->second.world;
+					entry.interior = race->second.interior;
+				}
+				break;
+			}
 			case PAWN_CALL_RACE_CHECKPOINT:
 				// CreateDynamicRaceCP(type, x, y, z, nextx, nexty, nextz, size, worldid,
 				//     interiorid, playerid, streamdistance)
@@ -10568,8 +12162,14 @@ readMapThumbnailObjects(const char *path, std::vector<ThumbnailObject> &out)
 	std::vector<PawnAttachImportEntry> attachments;
 	std::vector<PawnElementSetterEntry> setters;
 	int skipped = 0;
-	pawnParseSource(DecodePawnFileText(source, nil), entries, removals, vehicleInteriors, materials,
+	std::string decoded = DecodePawnFileText(source, nil);
+	// This map's constants for the parse, then the open map's back.
+	std::map<std::string, double> openMapDefines;
+	openMapDefines.swap(gPawnNumericDefines);
+	pawnCollectNumericDefines(decoded, gPawnNumericDefines);
+	pawnParseSource(decoded, entries, removals, vehicleInteriors, materials,
 		attachments, setters, &skipped);
+	gPawnNumericDefines.swap(openMapDefines);
 	struct Sized { float radius; ThumbnailObject object; };
 	std::vector<Sized> found;
 	for(const PawnImportEntry &e : entries){
@@ -10618,6 +12218,8 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 	gPawnStringDefines.clear();
 	gPawnUnresolvedMacros.clear();
 	pawnCollectStringDefines(source, gPawnStringDefines);
+	gPawnNumericDefines.clear();
+	pawnCollectNumericDefines(source, gPawnNumericDefines);
 	if(numSkipped)
 		*numSkipped = 0;
 	if(!isSA()){
@@ -10823,6 +12425,14 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 				properties.drawDistance = e.drawDistance;
 				properties.streamDistance = e.streamDistance;
 				properties.virtualWorld = e.world;
+				if(e.moves && e.elementKind == SAMP_ELEMENT_OBJECT && !e.isVehicle){
+					properties.moveEnabled = true;
+					properties.moveOffset = { e.moveTo[0] - e.x, e.moveTo[1] - e.y, e.moveTo[2] - e.z };
+					properties.moveSpeed = e.moveSpeed;
+					properties.moveRotates = e.moveRotates;
+					if(e.moveRotates)
+						properties.moveRotation = { e.moveRotation[0], e.moveRotation[1], e.moveRotation[2] };
+				}
 				SetObjectPawnProperties(inst, properties, false);
 			}
 			createdForEntry[i] = inst;
@@ -10864,18 +12474,29 @@ ImportPawnSource(const std::string &rawSource, const char *path, int *numSkipped
 	for(size_t i = 0; i < attachments.size(); i++){
 		const PawnAttachImportEntry &attach = attachments[i];
 		ObjectInst *child = createdForEntry[attach.child];
-		ObjectInst *parent = createdForEntry[attach.parent];
-		if(child == nil || parent == nil || child == parent ||
-		   child->m_isVehicle || parent->m_isVehicle){
+		ObjectInst *parent = attach.parent >= 0 ? createdForEntry[attach.parent] : nil;
+		bool playerTarget = attach.parent == PAWN_ATTACH_PLAYER;
+		bool validParent = attach.toVehicle ? parent && parent->m_isVehicle :
+			playerTarget || (attach.bone >= 1 ? IsPlayerAttachmentTarget(parent) :
+				parent && !parent->m_isVehicle && GetSampElementKind(parent) == SAMP_ELEMENT_OBJECT);
+		if(child == nil || child->m_isVehicle || !validParent || parent == child){
 			skipped++;
 			report.unresolvedLinks++;
 			continue;
 		}
 		ObjectPawnProperties properties = *GetObjectPawnProperties(child);
-		properties.attachParent = parent->m_id;
+		properties.attachParent = playerTarget ? PAWN_ATTACH_PLAYER : parent->m_id;
 		properties.attachOffset = { attach.x, attach.y, attach.z };
 		properties.attachRotation = { attach.rx, attach.ry, attach.rz };
-		properties.attachSyncRotation = attach.syncRotation;
+		properties.attachSyncRotation = attach.toVehicle || attach.bone >= 1 ? true : attach.syncRotation;
+		properties.attachBone = attach.bone;
+		properties.attachSlot = attach.slot;
+		properties.attachScale = attach.scale;
+		properties.attachColor1 = attach.color1;
+		properties.attachColor2 = attach.color2;
+		properties.attachSkin = playerTarget ? 1 :
+			parent && GetSampElementKind(parent) == SAMP_ELEMENT_CLASS ?
+				GetObjectPawnProperties(parent)->elementModel : 0;
 		SetObjectPawnProperties(child, properties, false);
 	}
 	for(size_t i = 0; i < setters.size(); i++){
@@ -11231,11 +12852,21 @@ ImportPrefabAtEx(const char *path, rw::V3d spawnPos, float heading, const char *
 		ObjectPawnProperties properties = entries[i].properties;
 		if(properties.name[0] && FindObjectByPawnName(properties.name, created[i]))
 			properties.name[0] = '\0';
+		// A turned prefab turns where its objects move to.
+		if(properties.moveEnabled && heading != 0.0f){
+			float r = heading * (float)M_PI / 180.0f, c = cosf(r), s = sinf(r);
+			rw::V3d o = properties.moveOffset;
+			properties.moveOffset = { o.x * c - o.y * s, o.x * s + o.y * c, o.z };
+			if(properties.moveRotates)
+				properties.moveRotation.z += heading;
+		}
 		if(properties.elementKind == SAMP_ELEMENT_NPC &&
 		   FindNpcByName(properties.npcName, created[i]))
 			MakeUniqueNpcName(properties.npcName, properties.npcName, sizeof(properties.npcName));
 		int parentIndex = entries[i].attachParentIndex;
-		if(parentIndex >= 0 && created[parentIndex] && !created[parentIndex]->m_isVehicle)
+		if(parentIndex == PAWN_ATTACH_PLAYER)
+			properties.attachParent = PAWN_ATTACH_PLAYER;
+		else if(parentIndex >= 0 && parentIndex < numEntries && created[parentIndex])
 			properties.attachParent = created[parentIndex]->m_id;
 		else
 			properties.attachParent = -1;

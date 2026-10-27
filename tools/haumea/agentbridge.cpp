@@ -824,6 +824,37 @@ parseFloat(const std::string &text, float *value)
 	return true;
 }
 
+static bool
+parseFloatVector3(const std::string &text, rw::V3d *value)
+{
+	const char *cursor = text.c_str();
+	float values[3];
+	for(int i = 0; i < 3; i++){
+		while(isspace((unsigned char)*cursor) || *cursor == '[' || *cursor == ',') cursor++;
+		char *end = nil;
+		values[i] = strtof(cursor, &end);
+		if(end == cursor)
+			return false;
+		cursor = end;
+	}
+	while(isspace((unsigned char)*cursor) || *cursor == ',' || *cursor == ']') cursor++;
+	if(*cursor != '\0')
+		return false;
+	*value = { values[0], values[1], values[2] };
+	return true;
+}
+
+static bool
+parseUint32Field(const std::string &text, uint32 *value)
+{
+	char *end = nil;
+	unsigned long long parsed = strtoull(text.c_str(), &end, 0);
+	if(end == text.c_str() || *end != '\0' || parsed > 0xFFFFFFFFULL)
+		return false;
+	*value = (uint32)parsed;
+	return true;
+}
+
 static ObjectDef*
 resolveObject(const std::string &text, int *objectId)
 {
@@ -1488,6 +1519,12 @@ jsonFloat(float value)
 }
 
 static std::string
+jsonVector3(const rw::V3d &value)
+{
+	return "[" + jsonFloat(value.x) + "," + jsonFloat(value.y) + "," + jsonFloat(value.z) + "]";
+}
+
+static std::string
 jsonColor(uint32 rgba)
 {
 	char text[16];
@@ -1523,9 +1560,25 @@ agentPropertiesJson(ObjectInst *inst)
 		add("area", str(p.areaName));
 	switch(kind){
 	case SAMP_ELEMENT_OBJECT:
-		if(p.attachParent >= 0){
-			add("attach_to", std::to_string(p.attachParent));
+		if(p.attachParent >= 0 || p.attachParent == PAWN_ATTACH_PLAYER){
+			add("attach_to", p.attachParent == PAWN_ATTACH_PLAYER ? str("player") : std::to_string(p.attachParent));
 			add("attach_sync_rotation", p.attachSyncRotation ? "true" : "false");
+			if(p.attachBone >= 1){
+				add("attach_bone", std::to_string(p.attachBone));
+				add("attach_slot", std::to_string(p.attachSlot));
+				add("attach_offset", jsonVector3(p.attachOffset));
+				add("attach_rotation", jsonVector3(p.attachRotation));
+				add("attach_scale", jsonVector3(p.attachScale));
+				add("attach_color1", jsonColor(p.attachColor1));
+				add("attach_color2", jsonColor(p.attachColor2));
+				add("attach_skin", std::to_string(p.attachSkin));
+			}
+		}
+		if(p.moveEnabled){
+			add("move_offset", jsonVector3(p.moveOffset));
+			add("move_speed", jsonFloat(p.moveSpeed));
+			if(p.moveRotates)
+				add("move_rotation", jsonVector3(p.moveRotation));
 		}
 		break;
 	case AGENT_KIND_VEHICLE:
@@ -1617,6 +1670,10 @@ agentPropertiesJson(ObjectInst *inst)
 			add("race_type", std::to_string(p.cpRaceType));
 			add("race", str(p.cpRace));
 			add("order", std::to_string(p.cpOrder));
+			add("race_mode", p.cpRaceMode == SAMP_RACE_CIRCUIT ? "\"circuit\"" : "\"point_to_point\"");
+			if(p.cpRaceMode == SAMP_RACE_CIRCUIT)
+				add("race_laps", std::to_string(p.cpRaceLaps));
+			add("race_playable", p.cpRacePlayable ? "true" : "false");
 		}
 		break;
 	case SAMP_ELEMENT_AREA:{
@@ -1744,6 +1801,15 @@ struct AgentInstanceEdit
 	int respawnDelay;
 	bool setAttach;
 	int32 attachTo;
+	bool setAttachBone;
+	bool setAttachSlot;
+	bool setAttachOffset;
+	bool setAttachRotation;
+	bool setAttachScale;
+	bool setAttachColor1;
+	bool setAttachColor2;
+	bool setAttachSkin;
+	bool syncRace;	// race_mode/laps/playable: copied to the race's other checkpoints
 	bool setPaintjob;
 	int paintjob;
 	bool setPlate;
@@ -1814,13 +1880,74 @@ applyAgentProperty(ObjectInst *inst, int kind, ObjectPawnProperties &p, AgentIns
 	}
 	if(key == "attach_to"){
 		if(!only({ SAMP_ELEMENT_OBJECT })) return false;
-		if(!parseInt(value, &i)) return fail("expects an instance id, or -1 to detach");
+		if(lowercase(value.c_str()) == "player")
+			i = PAWN_ATTACH_PLAYER;
+		else if(!parseInt(value, &i) || i < PAWN_ATTACH_NONE) return fail("expects an instance id, player, or -1 to detach");
 		edit.setAttach = true; edit.attachTo = i; return true;
 	}
 	if(key == "attach_sync_rotation"){
 		if(!only({ SAMP_ELEMENT_OBJECT })) return false;
 		if(!parseBoolField(value, &b)) return fail("expects true or false");
 		p.attachSyncRotation = b; return true;
+	}
+	if(key == "attach_bone"){
+		if(!only({ SAMP_ELEMENT_OBJECT })) return false;
+		if(!parseInt(value, &i) || i < 1 || i > 18) return fail("expects a player bone id from 1 to 18");
+		p.attachBone = i; edit.setAttachBone = true; return true;
+	}
+	if(key == "attach_slot"){
+		if(!only({ SAMP_ELEMENT_OBJECT })) return false;
+		if(!parseInt(value, &i) || i < 0 || i > 9) return fail("expects a player slot from 0 to 9");
+		p.attachSlot = i; edit.setAttachSlot = true; return true;
+	}
+	if(key == "move_offset" || key == "move_rotation"){
+		if(!only({ SAMP_ELEMENT_OBJECT })) return false;
+		if(lowercase(value.c_str()) == "none"){
+			if(key == "move_offset") p.moveEnabled = false;
+			else p.moveRotates = false;
+			return true;
+		}
+		rw::V3d vector;
+		if(!parseFloatVector3(value, &vector)) return fail("expects three numbers, e.g. [0.0, 0.0, 3.0], or none");
+		if(!p.moveEnabled && p.moveSpeed <= 0.0f) p.moveSpeed = 2.0f;
+		p.moveEnabled = true;
+		if(key == "move_offset") p.moveOffset = vector;
+		else{ p.moveRotation = vector; p.moveRotates = true; }
+		return true;
+	}
+	if(key == "move_speed"){
+		if(!only({ SAMP_ELEMENT_OBJECT })) return false;
+		if(!parseFloat(value, &f) || f <= 0.0f || f > 1000.0f) return fail("expects metres a second, above 0");
+		p.moveEnabled = true; p.moveSpeed = f; return true;
+	}
+	if(key == "attach_offset" || key == "attach_rotation" || key == "attach_scale"){
+		if(!only({ SAMP_ELEMENT_OBJECT })) return false;
+		rw::V3d vector;
+		if(!parseFloatVector3(value, &vector)) return fail("expects three numbers, e.g. [0.0, 0.0, 0.0]");
+		if(key == "attach_offset"){
+			p.attachOffset = vector; edit.setAttachOffset = true;
+		}else if(key == "attach_rotation"){
+			p.attachRotation = vector; edit.setAttachRotation = true;
+		}else{
+			if(vector.x <= 0.0f || vector.y <= 0.0f || vector.z <= 0.0f ||
+			   vector.x > 50.0f || vector.y > 50.0f || vector.z > 50.0f)
+				return fail("scale values must be above 0 and at most 50");
+			p.attachScale = vector; edit.setAttachScale = true;
+		}
+		return true;
+	}
+	if(key == "attach_color1" || key == "attach_color2"){
+		if(!only({ SAMP_ELEMENT_OBJECT })) return false;
+		uint32 color;
+		if(!parseUint32Field(value, &color)) return fail("expects a 32-bit colour, e.g. 0xFFFFFFFF");
+		if(key == "attach_color1"){ p.attachColor1 = color; edit.setAttachColor1 = true; }
+		else { p.attachColor2 = color; edit.setAttachColor2 = true; }
+		return true;
+	}
+	if(key == "attach_skin"){
+		if(!only({ SAMP_ELEMENT_OBJECT })) return false;
+		if(!parseInt(value, &i) || i < 0 || i > 311) return fail("expects a skin id from 0 to 311");
+		p.attachSkin = i; edit.setAttachSkin = true; return true;
 	}
 	if(key == "color1" || key == "color2"){
 		if(!only({ AGENT_KIND_VEHICLE })) return false;
@@ -2017,8 +2144,29 @@ applyAgentProperty(ObjectInst *inst, int kind, ObjectPawnProperties &p, AgentIns
 	}
 	if(key == "race_type"){
 		if(!only({ SAMP_ELEMENT_CHECKPOINT })) return false;
-		if(!parseInt(value, &i) || i < 0 || i > 8) return fail("expects a race checkpoint type 0-8 (0 normal, 1 finish)");
+		if(!parseInt(value, &i) || i < 0 || i > SAMP_RACE_CP_AUTO_AIR)
+			return fail("expects a race checkpoint type 0-10 (0 normal, 1 finish, 9 automatic, 10 automatic air)");
 		p.cpRaceType = i; return true;
+	}
+	if(key == "race_mode" || key == "race_laps" || key == "race_playable"){
+		// The whole race's settings: set here, then copied to its other
+		// checkpoints after the edit (agentSyncRaceSettings).
+		if(!only({ SAMP_ELEMENT_CHECKPOINT })) return false;
+		if(key == "race_mode"){
+			std::string mode = lowercase(value.c_str());
+			if(mode == "circuit") p.cpRaceMode = SAMP_RACE_CIRCUIT;
+			else if(mode == "point_to_point") p.cpRaceMode = SAMP_RACE_POINT_TO_POINT;
+			else return fail("expects point_to_point or circuit");
+		}else if(key == "race_laps"){
+			if(!parseInt(value, &i) || i < 1 || i > SAMP_RACE_MAX_LAPS) return fail("expects 1-999 laps");
+			p.cpRaceLaps = i;
+		}else{
+			if(!parseBoolField(value, &b)) return fail("expects true or false");
+			p.cpRacePlayable = b;
+		}
+		p.cpKind = SAMP_CHECKPOINT_RACE;
+		edit.syncRace = true;
+		return true;
 	}
 	if(key == "race"){
 		if(!only({ SAMP_ELEMENT_CHECKPOINT })) return false;
@@ -2187,24 +2335,67 @@ applyAgentProperties(ObjectInst *inst, const std::vector<std::string> &lines, si
 		   lines[i].substr(eq + 1), error))
 			return false;
 	}
+	ObjectPawnProperties requested = p;
 	// A new animation plays at SA-MP's usual speed unless one was given.
 	if((kind == SAMP_ELEMENT_ACTOR || kind == SAMP_ELEMENT_NPC) && p.animName[0] && p.animDelta <= 0.0f)
 		p.animDelta = 4.1f;
 	ObjectInst *parent = nil;
 	if(edit.setAttach && edit.attachTo >= 0){
 		parent = GetInstanceByID(edit.attachTo);
-		if(parent == nil || parent->m_isDeleted || parent == inst || parent->m_isVehicle ||
-		   GetSampElementKind(parent) != SAMP_ELEMENT_OBJECT){
-			*error = "attach_to: not an object in the map";
+		bool validTarget = parent && !parent->m_isDeleted && parent != inst &&
+			(parent->m_isVehicle || IsPlayerAttachmentTarget(parent) ||
+			 GetSampElementKind(parent) == SAMP_ELEMENT_OBJECT);
+		if(!validTarget){
+			*error = "attach_to: not an object, player, NPC or vehicle in the map";
 			return false;
 		}
 	}
+	int32 attachmentTargetId = edit.setAttach ? edit.attachTo : p.attachParent;
+	ObjectInst *currentTarget = attachmentTargetId >= 0 ? GetInstanceByID(attachmentTargetId) : nil;
+	bool playerAttachment = attachmentTargetId == PAWN_ATTACH_PLAYER ||
+		IsPlayerAttachmentTarget(currentTarget);
+	if((edit.setAttachBone || edit.setAttachSlot || edit.setAttachScale || edit.setAttachColor1 ||
+	    edit.setAttachColor2 || edit.setAttachSkin) && !playerAttachment){
+		*error = "player bone, slot, scale, colour and skin properties need a player or NPC target";
+		return false;
+	}
 	SetObjectPawnProperties(inst, p, true);
+	if(edit.syncRace){
+		const ObjectPawnProperties *set = GetObjectPawnProperties(inst);
+		SetRaceSettings(set->cpRace, set->cpRaceMode, set->cpRaceLaps, set->cpRacePlayable);
+	}
 	if(edit.setAttach){
-		if(parent){
-			if(!AttachObjectInstance(inst, parent, p.attachSyncRotation)){
-				*error = "attach_to: attaching would make a cycle";
+		if(edit.attachTo == PAWN_ATTACH_PLAYER){
+			if(!AttachObjectToPlayer(inst, requested.attachSkin)){
+				*error = "attach_to: the player already has 10 attached objects";
 				return false;
+			}
+			ObjectPawnProperties attached = *GetObjectPawnProperties(inst);
+			if(edit.setAttachBone) attached.attachBone = requested.attachBone;
+			if(edit.setAttachSlot) attached.attachSlot = requested.attachSlot;
+			if(edit.setAttachOffset) attached.attachOffset = requested.attachOffset;
+			if(edit.setAttachRotation) attached.attachRotation = requested.attachRotation;
+			if(edit.setAttachScale) attached.attachScale = requested.attachScale;
+			if(edit.setAttachColor1) attached.attachColor1 = requested.attachColor1;
+			if(edit.setAttachColor2) attached.attachColor2 = requested.attachColor2;
+			if(edit.setAttachSkin) attached.attachSkin = requested.attachSkin;
+			SetObjectPawnProperties(inst, attached, true);
+		}else if(parent){
+			if(!AttachObjectInstance(inst, parent, p.attachSyncRotation)){
+				*error = "attach_to: this object can't attach to that target";
+				return false;
+			}
+			if(playerAttachment){
+				ObjectPawnProperties attached = *GetObjectPawnProperties(inst);
+				if(edit.setAttachBone) attached.attachBone = requested.attachBone;
+				if(edit.setAttachSlot) attached.attachSlot = requested.attachSlot;
+				if(edit.setAttachOffset) attached.attachOffset = requested.attachOffset;
+				if(edit.setAttachRotation) attached.attachRotation = requested.attachRotation;
+				if(edit.setAttachScale) attached.attachScale = requested.attachScale;
+				if(edit.setAttachColor1) attached.attachColor1 = requested.attachColor1;
+				if(edit.setAttachColor2) attached.attachColor2 = requested.attachColor2;
+				if(edit.setAttachSkin) attached.attachSkin = requested.attachSkin;
+				SetObjectPawnProperties(inst, attached, true);
 			}
 		}else
 			DetachObjectInstance(inst);
@@ -2684,7 +2875,21 @@ handleMapTool(const std::string &requestId, const std::vector<std::string> &line
 		p.rotate = vec("rotate", { 0.0f, 0.0f, 0.0f });
 		p.centre = vec("centre", TheCamera.m_target);
 		p.angle = num("angle", 360.0f);
+		p.rows = (int)num("rows", 1.0f);
+		p.rowOffset = vec("row_offset", { 5.0f, 0.0f, 0.0f });
 		result = MapToolsArray(p, &error);
+	}else if(op == "duplicate"){
+		// Like Ctrl+D with the Tools window's duplicate offset, set here for this one.
+		MapCloneOffset saved = MapToolsCloneOffset();
+		MapCloneOffset &o = MapToolsCloneOffset();
+		rw::V3d move = vec("offset", { 0.0f, 0.0f, 0.0f }), turn = vec("rotate", { 0.0f, 0.0f, 0.0f });
+		o = MapCloneOffset();
+		o.enabled = true;
+		o.local = flag("local", false);
+		float values[6] = { move.x, move.y, move.z, turn.x, turn.y, turn.z };
+		memcpy(o.fixed, values, sizeof(values));
+		result = MapToolsDuplicate(&error);
+		o = saved;
 	}else if(op == "mirror"){
 		int axis = axisOf("axis", 0);
 		// around: selection (its centre), origin, or the mirror's coordinate.
@@ -2734,7 +2939,7 @@ handleMapTool(const std::string &requestId, const std::vector<std::string> &line
 			flag("on_ground", true), &error);
 	}else{
 		writeError(requestId, "unknown maptool operation (array, mirror, align, distribute, "
-			"snap_rotations, drop, relative, lay_along, radar_art)");
+			"snap_rotations, drop, relative, lay_along, radar_art, duplicate)");
 		return;
 	}
 	if(result < 0){
@@ -3553,7 +3758,7 @@ handleRequest(const std::vector<std::string> &lines)
 				continue;
 			int category = GetObjectCategory(id);
 			std::string flags, cities, zones;
-			struct { bool on; const char *name; } fl[] = { { m->dynamic, "dynamic" }, { m->breakable, "breakable" },
+			struct { bool on; const char *name; } fl[] = { { m->dynamic, "dynamic" }, { m->explosive, "explosive" }, { m->breakable, "breakable" },
 				{ m->timed, "timed" }, { m->animated, "animated" }, { m->upgrade, "upgrade" },
 				{ m->building, "building" }, { m->interior, "interior" }, { m->alpha, "alpha" },
 				{ m->twoSided, "two_sided" }, { m->isLod, "lod" }, { m->hasLod, "has_lod" } };
@@ -3594,7 +3799,9 @@ handleRequest(const std::vector<std::string> &lines)
 			snprintf(head, sizeof(head), "%s{\"model\":%d,\"txd\":\"", i ? "," : "", r.model);
 			json += head + jsonEscapeBytes(r.txd.c_str()) + "\",\"texture\":\"" + jsonEscapeBytes(r.texture.c_str()) +
 				"\",\"samp\":" + (r.samp ? "true" : "false") + ",\"custom\":" + (r.custom ? "true" : "false") +
-				",\"tstudio_index\":" + std::to_string(r.tstudioIndex) + "}";
+				",\"tstudio_index\":" + std::to_string(r.tstudioIndex) +
+				(r.tiles ? std::string(",\"tiles\":\"") + (r.tiles == 3 ? "both" : r.tiles == 1 ? "across" : "down") + "\"" :
+					std::string()) + "}";
 		}
 		writeResponse(requestId, true, json + "]");
 		return;

@@ -17,9 +17,6 @@ msgstr "Não foi possível preservar o rascunho do código. Salve o script antes
 msgid "Could not save the script."
 msgstr "Não foi possível salvar o script."
 
-msgid "Edit Pawn code. Ctrl+S saves the script; Ctrl+F searches."
-msgstr "Edite código Pawn. Ctrl+S salva o script; Ctrl+F pesquisa."
-
 msgid "Find"
 msgstr "Localizar"
 

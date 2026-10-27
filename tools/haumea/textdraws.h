@@ -8,6 +8,11 @@
 // SA-MP textdraws: designed on the client's 640x448 canvas and written to the
 // map as TextDrawCreate / CreatePlayerTextDraw calls.
 
+enum TextDrawCodeTarget {
+	TEXTDRAW_CODE_SAMP,
+	TEXTDRAW_CODE_OPENMP,
+};
+
 enum {
 	TD_FONT_BECKETT,	// 0..3 are text fonts
 	TD_FONT_AHARONI,
@@ -46,6 +51,9 @@ struct TextDraw
 	// A shape's settings, on each of the sprites it is made of, so it can be
 	// changed after it is added: "rounded x y w h ..." (textdraws_ui.cpp).
 	std::string shape;
+	// Preview source for a server sprite whose registration is built dynamically
+	// by Pawn. Relative to the server's artwork folder; Pawn still uses mdl-ID.
+	std::string serverTxd;
 };
 
 // A ruler guide on a board: a line at x (vertical) or y, saved with the file.
@@ -75,8 +83,12 @@ bool TextDrawFileHasUnsavedChanges(void);
 void NewTextDrawFile(void);
 bool OpenTextDrawFile(const char *path, std::string *error);
 bool SaveTextDrawFile(const char *path, std::string *error);	// nil or "": its own path
+TextDrawCodeTarget GetTextDrawCodeTarget(void);
+void SetTextDrawCodeTarget(TextDrawCodeTarget target);
+void TextDrawCodeTargetChanged(void);	// marks the file unsaved without adding an undo step
 // The file's code (UTF-8), with the function prefix its path gives.
 std::string BuildTextDrawFileCode(const char *path);
+std::string BuildTextDrawFileCode(const char *path, TextDrawCodeTarget target);
 std::string TextDrawFilePrefix(const char *path);	// Haumea_<name>
 
 // Undo for the textdraw file, apart from the map's.
@@ -110,6 +122,7 @@ bool InTextDrawMode(void);
 bool TextDrawModeHidesWorld(void);	// false for the frame the still frame is taken in
 void EnterTextDrawMode(void);
 void ExitTextDrawMode(void);
+void DrawTextDrawsToolbar(void);
 void DrawTextDrawsWindow(void);
 float TextDrawCanvasToScreen(float at, bool vertical, bool ruler);	// for UI scripts
 float TextDrawCanvasZoom(void);	// 1 when it fits
@@ -118,6 +131,7 @@ void DrawTextDrawsOverlay(void);	// the canvas
 // Each line's text colours as RRGGBBAA, after the ~colour~, ~h~ and ~n~
 // tokens (tests: --textdraw-colours).
 std::string DescribeTextDrawColours(const TextDraw &td);
+bool TextDrawSpriteTextureAvailable(const TextDraw &td);
 void TextDrawsBeforeWorldRender(void);	// model previews, offscreen
 void TextDrawsAfterWorldRender(void);	// takes the still frame
 bool TextDrawModeShortcut(int action);	// true when the mode handled it

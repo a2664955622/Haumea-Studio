@@ -1,12 +1,16 @@
-# Actor: Place from the SA-MP tab, then skin, health, Invulnerable and an
+# Actor: Place from the feature dropdown, then skin, health, Invulnerable and an
 # animation through Object Info; Ctrl+S, reopen, check the code.
 # needs: game (animation libraries)
 open "$UI_FIXTURES/ui_floor.pwn"
 shortcut window_browser
 wait 5
-click_item 'Object Browser' 'SA-MP'
-wait 5
+click_item 'Object Browser' '##browser_source'
+wait 3
+click_item '*' 'Characters'
+wait 3
 click_item 'Object Browser' '##place Actor'
+wait 3
+click_item 'Object Browser' '##element_place'
 wait 3
 click_world 2000 -3000 4
 wait 5
@@ -20,9 +24,13 @@ set_item '*' 'ID' "280"
 wait 3
 close_popup
 wait 3
+click_item 'Object Info' 'Advanced'
+wait 3
 click_item 'Object Info' 'Invulnerable'
 wait 2
 set_item 'Object Info' 'Health' "50"
+wait 3
+click_item 'Object Info' 'Animation'
 wait 3
 click_item 'Object Info' 'Library'
 wait 3

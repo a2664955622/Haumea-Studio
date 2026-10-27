@@ -1,0 +1,21 @@
+# A one-shot effect can be replayed without editing or duplicating its object.
+open "$UI_FIXTURES/ui_particle_burst.pwn"
+camera 2000 -3020 15 2000 -3000 5
+wait 120
+assert particles.model 18670 == 1
+assert particles.model_live 18670 == 0
+click_object model=18670
+shortcut window_object_info
+wait 5
+click_item 'Object Info' 'Replay particles'
+wait 2
+assert particles.model_live 18670 > 0
+assert objects == 1
+wait 120
+assert particles.model_live 18670 == 0
+click_object model=18670 right
+click_item '*' 'Replay particles'
+wait 2
+assert particles.model_live 18670 > 0
+assert objects == 1
+assert pawn_count 'CreateObject(18670,' == 1

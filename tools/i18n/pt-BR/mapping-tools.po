@@ -1,0 +1,201 @@
+# Mapping tools: editable paths, pivots, bounds and duplicate cleanup.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#, c-format
+msgid "%d attached or referenced objects excluded from cleanup."
+msgstr "%d objetos vinculados ou referenciados excluídos da limpeza."
+
+#, c-format
+msgid "%d duplicates in %d groups"
+msgstr "%d duplicados em %d grupos"
+
+#, c-format
+msgid "%d objects along this path"
+msgstr "%d objetos ao longo deste caminho"
+
+msgid "Active object"
+msgstr "Objeto ativo"
+
+msgid "Around X"
+msgstr "Ao redor de X"
+
+msgid "Around Y"
+msgstr "Ao redor de Y"
+
+msgid "Around Z"
+msgstr "Ao redor de Z"
+
+msgid "Bank"
+msgstr "Inclinação lateral"
+
+msgid "Center Parent"
+msgstr "Centralizar objeto pai"
+
+msgid "Closed"
+msgstr "Fechado"
+
+msgid "Control point"
+msgstr "Ponto de controle"
+
+msgid "Create a path, then drag its points or segment midpoints in the 3D view."
+msgstr "Crie um caminho e arraste seus pontos ou os pontos médios dos segmentos na vista 3D."
+
+msgid "Curve"
+msgstr "Curva"
+
+msgid "Curve handles"
+msgstr "Alças da curva"
+
+msgid "Custom point"
+msgstr "Ponto personalizado"
+
+msgid "Delete path"
+msgstr "Excluir caminho"
+
+msgid "Deletes the guide and keeps its generated objects."
+msgstr "Exclui a guia e mantém os objetos gerados."
+
+msgid "Detach objects"
+msgstr "Desvincular objetos"
+
+msgid "Drag to bend this segment. Shift drags vertically."
+msgstr "Arraste para curvar este segmento. Shift arrasta na vertical."
+
+msgid "Drag to move. Shift drags vertically; use the gizmo for an exact axis."
+msgstr "Arraste para mover. Shift arrasta na vertical; use o manipulador para mover em um eixo exato."
+
+msgid "Duplicate cleanup"
+msgstr "Limpar duplicados"
+
+msgid "Edit in view"
+msgstr "Editar na vista"
+
+msgid "Find duplicates"
+msgstr "Encontrar duplicados"
+
+msgid "Follow curve rotation"
+msgstr "Seguir rotação da curva"
+
+msgid "Frame path"
+msgstr "Enquadrar caminho"
+
+msgid "Generate objects"
+msgstr "Gerar objetos"
+
+msgid "Incoming"
+msgstr "Entrada"
+
+msgid "Individual origins"
+msgstr "Origens individuais"
+
+msgid "Insert midpoint"
+msgstr "Inserir ponto médio"
+
+msgid "Keeps objects with different runtime settings, textures, or named variables separate."
+msgstr "Mantém separados os objetos com configurações, texturas ou variáveis nomeadas diferentes."
+
+msgid "Keeps the objects where they are and stops the path moving them."
+msgstr "Mantém os objetos onde estão e impede que o caminho os mova."
+
+msgid "Match properties and materials"
+msgstr "Comparar propriedades e materiais"
+
+#, c-format
+msgid "Model %d: keep #%d, %d duplicates"
+msgstr "Modelo %d: manter #%d, %d duplicados"
+
+msgid "Moves the attachment root to its family's bounding-box centre while keeping every child's world position and rotation."
+msgstr "Move a raiz do vínculo para o centro dos limites do conjunto, mantendo a posição e a rotação globais de cada filho."
+
+msgid "Object bounds"
+msgstr "Limites dos objetos"
+
+msgid "Objects along path"
+msgstr "Objetos ao longo do caminho"
+
+msgid "Off keeps the curve's height, so lifting a point also lifts its objects."
+msgstr "Desativado mantém a altura da curva: elevar um ponto também eleva seus objetos."
+
+msgid "Outgoing"
+msgstr "Saída"
+
+msgid "Paths & curves"
+msgstr "Caminhos e curvas"
+
+msgid "Pivot"
+msgstr "Pivô"
+
+msgid "Pivot mode"
+msgstr "Modo do pivô"
+
+msgid "Pivot position"
+msgstr "Posição do pivô"
+
+msgid "Plane"
+msgstr "Plano"
+
+msgid "Point position"
+msgstr "Posição do ponto"
+
+msgid "Position tolerance"
+msgstr "Tolerância de posição"
+
+msgid "Properties and materials were ignored. Overlapping objects may be intentional."
+msgstr "As propriedades e os materiais foram ignorados. A sobreposição pode ser intencional."
+
+msgid "Ramp / helix"
+msgstr "Rampa / hélice"
+
+msgid "Rebuild objects"
+msgstr "Reconstruir objetos"
+
+#, c-format
+msgid "Remove %d duplicates, keeping one object per group? Undo restores them."
+msgstr "Remover %d duplicados e manter um objeto por grupo? Desfazer os restaura."
+
+msgid "Remove duplicates"
+msgstr "Remover duplicados"
+
+msgid "Remove point"
+msgstr "Remover ponto"
+
+msgid "Rise"
+msgstr "Elevação"
+
+msgid "Select a parent with attached objects, or one of its children."
+msgstr "Selecione um pai com objetos vinculados ou um de seus filhos."
+
+msgid "Select duplicates"
+msgstr "Selecionar duplicados"
+
+msgid "Show paths"
+msgstr "Mostrar caminhos"
+
+msgid "Shows collision bounding boxes without the collision mesh. Collisions takes precedence when both are enabled."
+msgstr "Mostra os limites de colisão sem a malha. Colisões tem prioridade quando ambos estão ativados."
+
+msgid "Smooth curve"
+msgstr "Curva suave"
+
+msgid "The attachment contains read-only objects."
+msgstr "O vínculo contém objetos somente leitura."
+
+msgid "The layout is limited to 2,000 objects. Increase spacing for a longer path."
+msgstr "O layout é limitado a 2.000 objetos. Aumente o espaçamento para caminhos mais longos."
+
+msgid "The map changed. Find duplicates again before removing objects."
+msgstr "O mapa mudou. Busque os duplicados novamente antes de remover objetos."
+
+msgid "Turns"
+msgstr "Voltas"
+
+msgid "Use active pin"
+msgstr "Usar pin ativo"
+
+msgid "Use selection"
+msgstr "Usar seleção"
+
+msgid "Point settings"
+msgstr "Configurações do ponto"

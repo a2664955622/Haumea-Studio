@@ -25,16 +25,16 @@ To install Haumea, see [Install](../README.md#install). Haumea opens on the **st
 - **Workspaces** you used, newest first, with when you last opened them. **Pin** (the star) keeps
   one at the top; the folder button opens it in your file manager, and × takes it off the list (the
   folder stays). **New workspace** makes a server folder with `gamemodes`, `filterscripts` and
-  `scriptfiles`; **Open folder as workspace** uses one you already have.
+  `scriptfiles`; **Open folder...** uses one you already have.
 - **Maps** in the selected workspace that you opened before, with a picture of each. Double-click
   one, or select it and press **Open map**. **Open workspace** opens it with a new map.
 - **GTA San Andreas**: the game folder, with the SA-MP client version found there and the
   workspace's 0.3.DL custom models. A new game folder loads after a restart.
-- **Continue without a workspace**, or **Skip** to keep what is open.
+- **Continue without workspace**, or **Skip** to keep what is open.
 
 The first start asks for the game folder here before anything loads. Type each path or use
-**Browse...** (on Linux that needs `zenity` or `kdialog`). Tick **Open the last workspace
-automatically** to skip the screen; **File → Switch Workspace** shows it again. Both folders can
+**Browse...** (on Linux that needs `zenity` or `kdialog`). Tick **Open last workspace at startup**
+to skip the screen; **File → Switch Workspace** shows it again. Both folders can
 also be changed in **File → Workspace** or **Preferences → Workspace**. The window title shows
 the workspace.
 
@@ -54,21 +54,27 @@ Choose **Map**, **TextDraws** or **Code** in the top bar to switch editors. Your
 textdraw file and code document stay open while you switch. **Windows** contains the panels
 and utilities for the editor.
 
+**Preferences → General → Theme** chooses the dark or light interface. Panels keep
+their docking support; **Windows → Panel layout → Reset Panel Layout** restores
+the browser on the left and Object Info on the right. The toolbar shows the active
+virtual world and interior, and the status bar shows FPS.
+
 The yellow **New!** balloons introduce TextDraws and Code. Opening an editor or dismissing
 its balloon clears that hint, including after a restart.
 
 ## Moving around
 
-Hold the right mouse button in the 3D view to look around, and while it's held fly with
+Hold and drag the right mouse button in the 3D view to look around, and while it's held fly with
 `W`/`A`/`S`/`D` (`Shift` faster, `Alt` slower). The cursor hides while you look and comes
 back where it was. Middle-drag pans and the wheel zooms. The look button can be changed in
 **Preferences → Camera**.
 
-How far you see is set in the **View** window (**Windows → View**): **World draw distance**
-for the game's buildings, **Map draw distance** for your map's own objects (they show that
-far whatever their model's draw distance), and **Fog** (Game is as thick as in game, Light
-only far out). **Focus my map** dims the game's buildings. Player view (`P`) always uses the
-game's distances.
+**Preferences → Performance → Stream distance** sets one range from 50 to 5,000 metres
+for all objects, including Player view (`P`). Model settings, weather and time of day
+do not shorten it. **Distance fog** blends the outer half of that range into the horizon.
+**VSync** matches the display refresh rate; turn it off for uncapped FPS, or enable
+**Limit frame rate** to choose a cap. Windows in the background run at up to 30 FPS.
+The map's exported stream and draw distances keep their own values.
 
 ## Placing objects
 
@@ -76,7 +82,8 @@ game's distances.
    a range (`1337, 19000-19100`). Every model, the game's and SA-MP's, is filed in a
    category by what the game's own files say about it (its name, IDE file, collision
    size), and **Favourites** keeps the ones you use often.
-2. Click **Place**, then click in the world. `Esc` stops placing.
+2. Click **Place**, then click in the world. **Keep placing** repeats without returning
+   to the browser; holding `Shift` while clicking also repeats. `Esc` stops placing.
 3. Click an object to select it. Drag the gizmo to move it (`W`) or rotate it (`E`), or type
    exact values in **Object Info** (`Ctrl+2`). `G` drops it to the ground, `F` focuses the
    camera on it, and `Ctrl+D` duplicates it.
@@ -104,32 +111,68 @@ own settings, then position. World & streaming, attachment, materials (textures,
 and text) and group & note follow, closed until you need them. Select several objects to
 change a field on all of them at once.
 
-## SA-MP elements
+To turn original GTA geometry into scripted objects without moving it, use
+**Convert to map object** in Object Info or the object's right-click menu. This preserves
+its position, rotation and materials; saving writes `RemoveBuildingForPlayer` and a
+replacement using the map's Native or Streamer format. The action applies to the selection
+and undoes in one step. To convert every occurrence of a model, use **Find instances**,
+choose the scope, press **Select all**, then **Convert to map object** in Object Info.
 
-The browser's **SA-MP** tab places everything else a server map needs:
+For an object in the active map, edit **Model ID** in Object Info to replace its
+model, with undo and redo. Objects linked to an LOD cannot change model this way.
 
-| Players | World |
+## Particle objects
+
+![Particle preview in Grove Street](images/particle-preview.png)
+
+The Object Browser's **Effects and particles** category includes all 81 SA-MP particle
+objects (IDs 18668–18748). Place them like ordinary objects: fire, smoke, sparks, fountains
+and other effects animate in the viewport. A small emitter icon lets you select, move,
+rotate, duplicate or delete an effect even when its particles are transparent.
+
+**View → Particle effects** turns the preview on or off and remembers the choice. Hiding
+or deleting an object removes its particles immediately; undo restores its emitter.
+**Replay particles** in Object Info or the right-click menu restarts selected emitters,
+including one-shot bursts such as explosions and camera flashes.
+Saving keeps ordinary `CreateObject` / `CreateDynamicObject` calls, so no editor simulation
+code is added to the server script.
+
+The preview reads `models/effects.fxp` and `models/effectsPC.txd` from your chosen game.
+It uses the effect's emission, lifetime, speed, colour, size and sprite definitions.
+Screen refraction/heat haze, scene collisions and trails are not reproduced; this is an
+editor preview, so use **Test in game** to check those effects in the client. The common
+render distance also applies to particles, with a bounded particle budget for dense scenes.
+
+## Characters, paths and other map elements
+
+Use the feature dropdown at the top of the Object Browser:
+
+| Feature | Elements |
 | --- | --- |
-| Actors, player classes (spawn points) | Pickups, 3D text labels, gang zones |
-| NPCs and NPC path points (open.mp only) | Map icons, sound places, checkpoints (streamer only) |
+| Characters | Actors, player classes (spawn points), NPCs (open.mp only) |
+| Paths | NPC path points (open.mp only) |
+| Markers | Pickups, map icons, checkpoints (streamer only) |
+| Text & audio | 3D text labels and sound places |
+| Zones | Gang zones and dynamic areas |
+
+Choose a type, configure its skin, path or other options in the setup panel,
+then click **Place** and click in the world. Choosing a type alone does not start
+placement. Each character type remembers its own skin choice.
 
 Players never see 3D text labels, gang zones, map icons, sound places and path points as
 objects, so the editor shows each as a small coloured icon (a T, a speaker, a pin, a square,
 a node) that keeps its size on screen; click it to select it.
 
-Each row shows how many the map has; click the count to select them all. Elements are saved
-as native or streamer calls (`CreateActor`, `CreateDynamicPickup`, ...) and read back from
+Elements are saved as native or streamer calls (`CreateActor`, `CreateDynamicPickup`, ...) and read back from
 existing scripts. Gang zones and native map icons are shown to a player by the map's
 `_ShowForPlayer(playerid)` function.
 
 A **sound place** plays an audio stream (a URL) or a game sound (picked from a list) to players
 who come within its radius.
 
-<img src="images/samp-elements.png" alt="The SA-MP tab" width="360">
-
 ## NPCs (open.mp only)
 
-open.mp NPCs are bot players. Place one from the SA-MP tab, then set its name, skin, weapon,
+open.mp NPCs are bot players. Place one from **Characters**, then set its name, skin, weapon,
 health and armour in Object Info. Under **Movement** pick what it does:
 
 - **Follow a path**: place NPC path points first, clicking one after another, then pick the
@@ -181,8 +224,10 @@ and Map Check notes a font that isn't installed at all.
 
 ## Custom models (SA-MP 0.3.DL and open.mp)
 
-**File → Import → Custom Model** puts a DFF and TXD in the workspace's `models` folder and
-`artconfig.txt`, so 0.3.DL and open.mp players download them. Custom models appear under
+**File → Import → Custom Model** puts a DFF and TXD in the workspace's server artwork folder and
+`artconfig.txt`, so 0.3.DL and open.mp players download them. Haumea reads `artwork.models_path`
+from open.mp's `config.json`, or `artpath` from SA-MP's `server.cfg`; the default is `models`.
+Custom models appear under
 **Custom models** in the browser and keep their negative IDs in the saved map.
 
 ## TextDraws
@@ -204,7 +249,35 @@ A map saved by an earlier build may still hold textdraws. Opening it offers **Mo
 separate file** (`<map>_textdraws.pwn`); save the map afterwards to take them out of it. If you
 keep them in the map, they show on the canvas but are read-only and are saved back unchanged.
 
-![The TextDraw designer](images/textdraws.png)
+The editor opens docked to the right with its own saved layout. Drag its tab to move or
+undock it. **Canvas** in the top bar holds screen shape, background, HUD, grid, snapping,
+rulers and guides. **Compare** opens **Screen previews**, a window you can move, resize or
+dock. **…** in the file toolbar contains **Save As**, recent files and the code target.
+Use **Content**, **Layout** and **Style** for the selection; **Code settings** contains its
+Pawn variable and scope, and **Arrange** contains grouping and alignment tools.
+
+![The TextDraw designer](images/textdraw-editor.png)
+
+### Server TXD sprites (0.3.DL)
+
+1. Open the **server folder as your workspace**. Its artwork folder can contain subfolders,
+   such as `models/txd`; Haumea lists their `.txd` files too.
+2. In **TextDraws**, add or select a **Sprite**, then open **Browse sprites… → Sprite TXD → Server TXDs**.
+   Choose the server's TXD. Use **Refresh** if you added files while the editor was open.
+3. Check **Model ID**. Haumea fills it from recognized `AddSimpleModel` registrations.
+   If your gamemode builds registrations through variables or helper functions, enter the
+   negative ID your server uses, such as `-2018`.
+4. Click a texture thumbnail, then save the textdraw file.
+
+For example, if the server registers `-2018` with `txd/interface.txd` and that TXD contains
+`logo`, the exported sprite is `mdl-2018:logo`. The name after the colon is the **texture inside
+the TXD**, without a file extension. The server must register that model ID and its TXD for
+players to download it. The sprite needs a 0.3.DL-compatible client.
+
+You can browse the server TXD directly without importing or placing a 3D model in Haumea.
+The `.xml` companion remembers the selected TXD path for previews, including when Haumea
+cannot read a dynamically built registration. Keep it beside the Pawn file when sharing the
+design, and open it with the same server workspace.
 
 ### TextDraw colour tokens
 
@@ -253,8 +326,60 @@ puts its objects in a group named after the prefab.
 
 **Tools** also has tools for layouts: **Array** (copies in a line or a ring), **Mirror**,
 **Align & distribute**, **Drop & copy as Pawn** (drop to the ground, copy as attachments or
-offsets), and **Along a line** (lay objects along a path you click). Exact moves and turns
+offsets), and **Along a line** (lay objects along a path you click). Numbered rings mark each clicked
+point; a cyan target and connecting segment show where the next click will land.
+Right-click or Esc finishes picking, and **Clear** removes the picked points. Exact moves and turns
 are in Object Info's Delta mode.
+
+### Editable 3D paths and curves
+
+Open **Tools → Paths & curves**, choose **Line**, **Curve**, **Loop** or **Ramp / helix**,
+then choose **New path**. The guide starts around the camera target. Loop and ramp presets
+have a radius and an axis; ramps also have a number of turns and a rise along that axis.
+Choose **Frame path** to bring the guide into view.
+
+- Enable **Edit in view** and drag a control point to reshape the path. **Shift-drag moves
+  vertically**, so you can grab the middle of a curve and lift it into an arch. Selecting a
+  point also shows the XYZ move gizmo for movement along an exact axis.
+- The small markers between points are segment midpoints. Dragging one inserts a control
+  point without first changing the curve's shape, then bends the segment as you move it.
+- Smooth curves have incoming and outgoing handles. Automatic handles follow neighbouring
+  points; dragging a handle switches that point to manual control. **Curve handles** also
+  lets you type their offsets. Open **Point settings** to add, remove or edit points numerically.
+- Under **Objects along path**, choose a model (or **Use selection**), set the spacing and
+  choose **Generate objects**. The objects stay linked and follow later edits to the guide.
+  **Advanced → Follow curve rotation** carries orientation through vertical loops, including upside-down
+  sections; **Bank** adjusts sideways tilt. Leave **On ground** off to retain the curve's height.
+
+Each edit, including changes to its generated objects, is one undo step. **Detach objects**
+keeps the objects and stops the path controlling them. **Delete path** removes the guide and
+keeps its objects. Layouts are limited to 2,000 objects per path; increase spacing for longer
+paths. The editable guide and its links are saved in the map's XML companion. Pawn contains
+the generated objects, so the server does not need the guide to display the map.
+
+![Editable 3D curve with a raised midpoint and linked objects](images/editable-3d-curve.png)
+
+### Pivots, bounds and duplicate cleanup
+
+**Tools → Pivot** chooses **Active object**, **Selection centre**, **Individual origins** or
+**Custom point**. Active object uses the first selected object's origin. Selection centre
+rotates the selection around its bounding-box centre; individual origins rotate each object
+in place. A custom point can be typed, copied from the camera target or selection centre, or
+taken from the active coordinate pin. Local/world axes still apply.
+
+**Center Parent** moves an attachment's root object to the whole family's bounding-box centre,
+recalculates child offsets and preserves every child's world position and rotation. Select the
+parent or one of its children. The operation is one undo step.
+
+**Windows → View → Object bounds** shows collision bounding boxes without the full collision
+mesh. **Collisions** shows both when enabled.
+
+**Tools → Duplicate cleanup → Find duplicates** compares placed objects by model, position,
+rotation, interior and virtual world. By default it also compares runtime properties and
+materials, and keeps distinct named variables separate. Choose a result row or **Select
+duplicates** to review the copies; **Remove duplicates** keeps one per group and can be undone.
+Attached objects, objects controlled by live layouts, and objects referenced by other elements are excluded. A map change requires
+a fresh scan before removal.
 
 **Coordinate pin** in Tools is an alignment reference. **Place pin** adds another pin;
 **Clear pin** removes only the active one. Drag a pin's head to move it, its base ring to

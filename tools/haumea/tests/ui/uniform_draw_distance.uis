@@ -1,0 +1,91 @@
+# needs: game
+# Every model uses the Performance distance, regardless of IDE, weather or time.
+open "$UI_FIXTURES/ui_floor.pwn"
+shortcut window_browser
+wait 80
+assert window 'Object Browser'
+set_item 'Object Browser' '##search_objects' '3555' tab
+wait 15
+click_item 'Object Browser' '##tile'
+wait 5
+click_item 'Object Browser' 'Place'
+wait 3
+click_world 2000 -3000 4
+wait 10
+key Esc
+assert objects == 3
+# Add a prop whose model normally stops at 40 m, alongside the 80 m building.
+set_item 'Object Browser' '##search_objects' '1271' tab
+wait 10
+click_item 'Object Browser' '##tile'
+wait 3
+click_item 'Object Browser' 'Place'
+wait 3
+click_world 2003 -3000 4
+wait 5
+key Esc
+camera 2000 -3150 25 2000 -3000 4
+wait 5
+click 800 150 right
+wait 5
+assert selected == 0
+assert render_far_clip == 1000
+assert render_fog_start == 500
+assert vsync == 0
+assert frame_limit == 0
+camera 2000 -3550 25 2000 -3000 4
+wait 30
+assert rendered.map_model 3555 == 1
+assert rendered.map_model 1271 == 1
+assert rendered.map_model 3563 == 0
+assert rendered.lod_overlaps == 0
+shortcut window_preferences
+wait 8
+click_item 'Preferences' 'Performance'
+wait 5
+assert item 'Preferences' '##stream_distance'
+set_item 'Preferences' '##stream_distance' '600' tab ctrl
+wait 5
+assert render_far_clip == 600
+assert render_fog_start == 300
+assert fog_enabled == 1
+click_item 'Preferences' 'Distance fog'
+wait 3
+assert fog_enabled == 0
+click_item 'Preferences' 'Distance fog'
+wait 3
+assert fog_enabled == 1
+click_item 'Preferences' 'VSync'
+wait 3
+assert vsync == 1
+click_item 'Preferences' 'VSync'
+click_item 'Preferences' 'Limit frame rate'
+wait 3
+set_item 'Preferences' '##frame_limit' '60' tab ctrl
+wait 3
+assert frame_limit == 60
+click_item 'Preferences' 'Limit frame rate'
+wait 3
+assert frame_limit == 0
+shortcut window_preferences
+wait 3
+camera 2000 -3650 25 2000 -3000 4
+wait 20
+assert rendered.map_model 3555 == 0
+assert rendered.map_model 1271 == 0
+# Fog and weather cannot change the common range.
+shortcut window_time_weather
+wait 5
+set_item 'Time & Weather' '##Hour' '0' tab
+click_item 'Time & Weather' '##Weather'
+wait 3
+click_item '*' '9 - FOGGY SF'
+wait 5
+assert render_far_clip == 600
+assert render_fog_start == 300
+shortcut window_time_weather
+camera 2000 -3550 25 2000 -3000 4
+wait 20
+assert rendered.map_model 3555 == 1
+assert rendered.map_model 1271 == 1
+assert rendered.map_model 3563 == 0

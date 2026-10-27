@@ -1,0 +1,67 @@
+# A 0.001 Z edit can round below 0.001 in float storage. Every stored
+# position change must export the original removal and its replacement.
+open "$UI_FIXTURES/ui_map.pwn"
+click_world 1479.554688 -1639.609375 13.648438
+wait 5
+assert selected.model == 4206
+assert selected_world == 1
+shortcut window_object_info
+wait 5
+assert pawn_lacks 'RemoveBuildingForPlayer(playerid, 4206'
+assert pawn_lacks 'CreateObject(4206,'
+set_item 'Object Info' 'Position/#2' "13.649438"
+wait 5
+assert selected.z > 13.6494
+assert pawn_count 'RemoveBuildingForPlayer(playerid, 4206' == 1
+assert pawn_contains 'CreateObject(4206, 1479.554688, -1639.609375, 13.649438'
+assert pawn_contains 'CreateDynamicObject(4206, 1479.554688, -1639.609375, 13.649438' streamer
+
+move 800 400
+key Ctrl+Z
+wait 5
+assert pawn_lacks 'RemoveBuildingForPlayer(playerid, 4206'
+assert pawn_lacks 'CreateObject(4206,'
+key Ctrl+Y
+wait 5
+assert pawn_count 'RemoveBuildingForPlayer(playerid, 4206' == 1
+assert pawn_contains 'CreateObject(4206, 1479.554688, -1639.609375, 13.649438'
+
+# Typing the exact original position is a no-op; smaller real edits count.
+set_item 'Object Info' 'Position/#2' "13.648438"
+wait 5
+assert pawn_lacks 'RemoveBuildingForPlayer(playerid, 4206'
+set_item 'Object Info' 'Position/#2' "13.648439"
+wait 5
+assert pawn_count 'RemoveBuildingForPlayer(playerid, 4206' == 1
+assert pawn_contains 'CreateObject(4206, 1479.554688, -1639.609375, 13.648439'
+set_item 'Object Info' 'Position/#2' "13.648438"
+wait 5
+assert pawn_lacks 'RemoveBuildingForPlayer(playerid, 4206'
+
+# Check both horizontal axes too, at large positive and negative coordinates.
+set_item 'Object Info' 'Position/#0' "1479.555188"
+wait 5
+assert pawn_count 'RemoveBuildingForPlayer(playerid, 4206' == 1
+set_item 'Object Info' 'Position/#0' "1479.554688"
+wait 5
+assert pawn_lacks 'RemoveBuildingForPlayer(playerid, 4206'
+set_item 'Object Info' 'Position/#1' "-1639.609875"
+wait 5
+assert pawn_count 'RemoveBuildingForPlayer(playerid, 4206' == 1
+set_item 'Object Info' 'Position/#1' "-1639.609375"
+wait 5
+assert pawn_lacks 'RemoveBuildingForPlayer(playerid, 4206'
+
+# Saving and reopening retains the replacement, in the actual Pawn file too.
+set_item 'Object Info' 'Position/#2' "13.649438"
+wait 5
+move 800 400
+key Ctrl+S
+wait 5
+assert file_contains "$UI_FIXTURES/ui_map.pwn" 'RemoveBuildingForPlayer(playerid, 4206'
+assert file_contains "$UI_FIXTURES/ui_map.pwn" 'CreateObject(4206, 1479.554688, -1639.609375, 13.649438'
+reopen
+wait 8
+assert pawn_count 'RemoveBuildingForPlayer(playerid, 4206' == 1
+assert pawn_contains 'CreateObject(4206, 1479.554688, -1639.609375, 13.649438'
+assert objects == 4

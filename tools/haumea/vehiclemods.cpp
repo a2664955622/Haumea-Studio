@@ -64,6 +64,129 @@ GetVehiclePaintjobCount(int vehicleModel)
 	return n;
 }
 
+
+// GTA Reversed CCustomCarPlateMgr::CreatePlateTexture copies eight 8x16
+// glyphs from this 4-column charset into a 64x16 plate texture.
+static void
+editorVehiclePlateGlyph(unsigned char character, int *column, int *row)
+{
+	static const char *rows[] = {
+		"ABCD", "EFGH", "IJKL", "MNOP", "QRST",
+		"UVWX", "YZ01", "2345", "6789"
+	};
+	if(character >= 'a' && character <= 'z')
+		character = (unsigned char)(character - 'a' + 'A');
+	for(int y = 0; y < (int)(sizeof(rows)/sizeof(rows[0])); y++)
+		for(int x = 0; x < 4; x++)
+			if(rows[y][x] == character){
+				*column = x;
+				*row = y;
+				return;
+			}
+	// GTA's final atlas row starts with the blank/fallback glyph.
+	*column = 0;
+	*row = 9;
+}
+
+static rw::Texture*
+createEditorVehiclePlateTexture(rw::Texture *charset, const char *text)
+{
+	if(charset == nil || charset->raster == nil || text == nil)
+		return nil;
+	rw::Image *charsetImage = charset->raster->toImage();
+	if(charsetImage == nil)
+		return nil;
+	if(charsetImage->depth != 32)
+		charsetImage->convertTo32();
+	if(charsetImage->pixels == nil || charsetImage->bpp != 4 ||
+	   charsetImage->width < 32 || charsetImage->height < 160 ||
+	   charsetImage->stride < charsetImage->width * 4){
+		charsetImage->destroy();
+		return nil;
+	}
+
+	rw::Image *plateImage = rw::Image::create(64, 16, 32);
+	if(plateImage == nil){
+		charsetImage->destroy();
+		return nil;
+	}
+	plateImage->allocate();
+	if(plateImage->pixels == nil){
+		plateImage->destroy();
+		charsetImage->destroy();
+		return nil;
+	}
+	memset(plateImage->pixels, 0, plateImage->stride * plateImage->height);
+
+	size_t textLength = strlen(text);
+	for(int i = 0; i < 8; i++){
+		int column, row;
+		editorVehiclePlateGlyph(i < (int)textLength ? (unsigned char)text[i] : 0,
+			&column, &row);
+		for(int y = 0; y < 16; y++){
+			const uint8 *source = charsetImage->pixels +
+				(row * 16 + y) * charsetImage->stride + column * 8 * 4;
+			uint8 *destination = plateImage->pixels +
+				y * plateImage->stride + i * 8 * 4;
+			memcpy(destination, source, 8 * 4);
+		}
+	}
+
+	rw::Raster *raster = rw::Raster::createFromImage(plateImage);
+	plateImage->destroy();
+	charsetImage->destroy();
+	if(raster == nil)
+		return nil;
+	rw::Texture *texture = rw::Texture::create(raster);
+	if(texture == nil){
+		raster->destroy();
+		return nil;
+	}
+	strncpy(texture->name, "carplate", sizeof(texture->name));
+	texture->filterAddressing = (rw::Texture::CLAMP << 12) |
+		(rw::Texture::CLAMP << 8) | rw::Texture::NEAREST;
+	return texture;
+}
+
+void
+ApplyEditorVehiclePlate(rw::Clump *clump, const char *plateText)
+{
+	if(clump == nil || plateText == nil || plateText[0] == '\0')
+		return;
+	int vehicleTxdSlot = FindTxdSlot("vehicle");
+	if(vehicleTxdSlot < 0)
+		return;
+	if(!IsTxdLoaded(vehicleTxdSlot))
+		LoadTxd(vehicleTxdSlot);
+	rw::Texture *charset = FindTextureInTxd(vehicleTxdSlot, "platecharset");
+	rw::Texture *plateback = FindTextureInTxd(vehicleTxdSlot, "plateback1");
+	rw::Texture *plateTexture = createEditorVehiclePlateTexture(charset, plateText);
+
+	FORLIST(lnk, clump->atomics){
+		rw::Atomic *atomic = rw::Atomic::fromClump(lnk);
+		if(atomic == nil || atomic->geometry == nil)
+			continue;
+		rw::Geometry *geometry = atomic->geometry;
+		for(int i = 0; i < geometry->matList.numMaterials; i++){
+			rw::Material *material = geometry->matList.materials[i];
+			if(material == nil || material->texture == nil)
+				continue;
+			const char *name = material->texture->name;
+			if(plateTexture && rw::strcmp_ci(name, "carplate") == 0)
+				material->setTexture(plateTexture);
+			else if(plateback &&
+			   (rw::strcmp_ci(name, "carpback") == 0 ||
+			    rw::strcmp_ci(name, "plateback1") == 0)){
+				// GTA Reversed uses plateback1 for the default/SF region.
+				// The editor has no active game weather region to select another.
+				material->setTexture(plateback);
+			}
+		}
+	}
+	if(plateTexture)
+		plateTexture->destroy();
+}
+
 static rw::Frame*
 findFrameCB(rw::Frame *frame, void *data)
 {

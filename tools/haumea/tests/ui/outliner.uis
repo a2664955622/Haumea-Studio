@@ -27,6 +27,7 @@ click_item 'Map Objects' 'car (infernus)'
 release Shift
 wait 3
 assert selected == 3
+assert no_window 'Attachment Workspace'
 
 # Rename the variable in its row, with the shortcut over the list
 click_item 'Map Objects' 'bin (BinNt07_LA)'

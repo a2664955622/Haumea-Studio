@@ -19,6 +19,8 @@ assert textdraw.0.size_y < 0
 drag_item '*' 'hit' 60 0
 wait 5
 assert textdraw.0.x > 440
+click_item 'TextDraws' 'Arrange'
+wait 3
 click_item 'TextDraws' 'Locked'
 wait 5
 assert textdraw.0.locked == 1
@@ -26,19 +28,26 @@ drag_item '*' 'hit' 100 60
 wait 5
 assert textdraw.0.x < 480
 assert no_item '*' 'resize'
-click_item 'TextDraws' 'Save As...'
+click_item 'TextDraws' '###File options'
+wait 3
+click_item '*' 'Save As...'
 wait 5
 click_item 'Save TextDraws As' 'Save'
 wait 5
 assert file_contains "$UI_FIXTURES/ui_map_textdraws.pwn.xml" 'locked="true"'
 # The game's HUD and SA-MP's chat under the textdraws.
+click_item '*' 'Canvas'
+wait 3
 click_item '*' 'Game HUD'
+close_popup
 wait 5
 assert textdraws == 1
 # The Log keeps what was said, the save included.
 key Escape
 wait 3
 click_item '*' 'Windows'
+wait 3
+click_item '*' 'Review'
 wait 3
 click_item '*' 'Log'
 wait 5

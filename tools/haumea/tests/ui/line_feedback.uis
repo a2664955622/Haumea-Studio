@@ -1,0 +1,96 @@
+# Every click has a visible numbered marker, even with object previews off.
+open "$UI_FIXTURES/ui_map.pwn"
+camera 2015 -3035 25 2015 -3000 5
+shortcut window_tools
+wait 8
+click_object model=1271
+wait 5
+assert selected == 1
+camera 2020 -3035 25 2020 -3000 5
+wait 3
+click_item 'Tools' 'Along a line'
+wait 5
+set_item 'Tools' 'Model' '1271' tab
+click_item 'Tools' 'Pick points'
+move 500 450
+wait 5
+assert line.picking == 1
+assert line.cursor == 1
+assert line.points == 0
+# Picking on the selected object's gizmo must record a point, not start a drag.
+click 640 400
+wait 5
+assert line.points == 1
+assert line.markers == 1
+assert selected == 1
+assert selected.x == 2020
+assert selected.y == -3000
+assert selected.z == 5
+click 520 450
+wait 5
+assert line.points == 2
+assert line.markers == 2
+assert objects == 4
+scroll_until 'Tools' 'Preview'
+click_item 'Tools' 'Preview'
+wait 5
+assert line.markers == 2
+assert line.cursor == 0
+move 500 450
+wait 5
+assert line.cursor == 1
+click right
+wait 5
+assert line.picking == 0
+assert line.cursor == 0
+assert line.markers == 2
+# Applying the stored points still makes one undoable group.
+scroll_until 'Tools' 'Apply'
+click_item 'Tools' 'Apply'
+wait 5
+assert objects > 4
+move 500 450
+shortcut undo
+wait 5
+assert objects == 4
+assert line.points == 2
+scroll_until 'Tools' 'Pick points'
+click_item 'Tools' 'Pick points'
+move 500 450
+wait 3
+assert line.picking == 1
+shortcut window_tools
+wait 5
+assert line.picking == 0
+assert line.markers == 0
+shortcut window_tools
+wait 5
+assert line.points == 2
+assert line.markers == 2
+click_item 'Tools' 'Clear'
+wait 5
+assert line.points == 0
+assert line.markers == 0
+click_item 'Tools' 'Pick points'
+click 500 450
+wait 4
+assert line.markers == 1
+key Escape
+wait 3
+assert line.picking == 0
+assert line.markers == 1
+click_item 'Tools' 'Pick points'
+wait 3
+click_item '*' 'TextDraws'
+wait 5
+assert line.picking == 0
+assert line.markers == 0
+click_item '*' 'Map'
+wait 5
+assert line.picking == 0
+assert line.markers == 1
+reopen
+wait 5
+assert line.points == 0
+assert line.markers == 0
+assert objects == 4

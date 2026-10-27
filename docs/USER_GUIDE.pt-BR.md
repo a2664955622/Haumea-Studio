@@ -209,7 +209,15 @@ Um mapa salvo por uma versão anterior ainda pode ter textdraws. Ao abri-lo, o H
 tirá-los dele. Se você os mantiver no mapa, eles aparecem na tela mas são somente leitura e são
 salvos de volta sem mudanças.
 
-![O editor de TextDraws](images/textdraws.png)
+O painel abre encaixado à direita, com seu próprio layout salvo. Arraste a aba para movê-lo
+ou desencaixá-lo. **Tela** na barra superior reúne formato da tela, fundo, HUD, grade,
+alinhamento, réguas e guias. **Comparar** abre **Prévias de tela**, uma janela que pode ser
+movida, redimensionada ou encaixada. **…** na barra de arquivos contém **Salvar como**,
+arquivos recentes e o servidor de destino do código. Use as abas de conteúdo, layout e
+estilo para editar a seleção; **Opções de código** contém variável e escopo do Pawn, e
+**Organizar** reúne agrupamento e alinhamento.
+
+![O editor de TextDraws](images/textdraw-editor.png)
 
 ### Códigos de cor dos TextDraws
 
@@ -244,7 +252,9 @@ de você clicar. **Como grupo** coloca os objetos dele num grupo com o nome do p
 **Ferramentas** também tem ferramentas de arranjo: **Matriz** (cópias em linha ou em círculo),
 **Espelhar**, **Alinhar e distribuir**, **Pôr no chão e copiar como Pawn** (pôr no chão, copiar
 como anexos ou deslocamentos) e **Ao longo de uma linha** (distribuir objetos por um caminho que
-você clica). Movimentos e giros exatos ficam no modo Delta das Informações do objeto.
+você clica). Anéis numerados marcam cada ponto; um alvo ciano e um segmento mostram onde
+o próximo clique será colocado. Clique com o botão direito ou pressione Esc para terminar;
+**Limpar** remove os pontos. Movimentos e giros exatos ficam no modo Delta das Informações do objeto.
 
 **Pin de coordenadas**, em Ferramentas, serve como referência de alinhamento.
 **Posicionar pin** adiciona outro pin; **Limpar pin** remove só o ativo. Arraste a cabeça

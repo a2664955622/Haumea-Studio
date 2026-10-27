@@ -32,7 +32,7 @@ click_item 'Object Browser' 'Back to models'
 wait 3
 assert discovery_highlights == 0
 click_object model=1271 right
-click_item '*' 'Similar models'
+click_item '*' 'Find similar models'
 wait 5
 assert item 'Object Browser' 'Reference ID'
 assert item 'Object Browser' 'Match'

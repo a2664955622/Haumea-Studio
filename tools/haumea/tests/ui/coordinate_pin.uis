@@ -1,5 +1,7 @@
 # Reference pin must measure without changing objects or the editing selection.
 open "$UI_FIXTURES/ui_map.pwn"
+shortcut window_tools
+wait 5
 click_object model=1271
 wait 5
 click_item 'Tools' 'Coordinate pin'

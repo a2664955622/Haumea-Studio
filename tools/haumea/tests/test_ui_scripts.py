@@ -168,6 +168,12 @@ def run_script(name):
     started = time.monotonic()
     work = tempfile.mkdtemp(dir=tmp)
     env = editor_env(work, virtual_display=True)	# start_xvfb below
+    # Scripts open the panels they use. Pin that starting state explicitly
+    # instead of depending on the editor's defaults or one-time migrations.
+    config = Path(env['XDG_CONFIG_HOME'], 'haumea')
+    config.mkdir(parents=True, exist_ok=True)
+    (config / 'savesettings.txt').write_text(
+        'settings_version 8\nshow_browser_window 0\nshow_instance_window 0\n')
     # A copy, so scripts can save over the maps they open.
     shutil.copytree(UI / 'fixtures', Path(work, 'fixtures'))
     env['UI_FIXTURES'] = str(Path(work, 'fixtures'))

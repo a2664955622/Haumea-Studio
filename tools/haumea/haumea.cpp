@@ -1,5 +1,7 @@
 #include "haumea.h"
+#include "particles.h"
 #include "coordinatepin.h"
+#include "layoutpaths.h"
 #include "alignmentmath.h"
 #include "i18n.h"
 #include "crashreports.h"
@@ -26,6 +28,7 @@
 #include <GLFW/glfw3.h>
 #endif
 #include <chrono>
+#include <thread>
 #include <limits.h>
 #include <algorithm>
 #include <stdlib.h>
@@ -45,6 +48,8 @@ SaveDestination gSaveDestination = SAVE_DESTINATION_MODLOADER;
 
 int gGizmoMode = GIZMO_TRANSLATE;
 int gGizmoSpace = GIZMO_WORLD;
+int gGizmoPivot = GIZMO_PIVOT_ACTIVE;
+rw::V3d gGizmoCustomPivot = {0,0,0};
 bool gGizmoEnabled = true;
 bool gGizmoHovered = false;
 bool gGizmoUsing = false;
@@ -92,15 +97,11 @@ bool gRenderWater = true;
 bool gRenderPostFX = true;
 bool gEnableFog = true;
 int gFogMode = FOG_LIGHT;
-float gWorldDrawDistance = 1000.0f;
-float gMapDrawDistance = 2000.0f;
+float gStreamDistance = 1000.0f;
+bool gVSync = false;
+int gFrameLimit = 0;
 bool gFocusMyMap;
 
-float
-GetMapDrawDistance(void)
-{
-	return max(gMapDrawDistance, gWorldDrawDistance);
-}
 bool gEnableTimecycleBoxes = true;
 bool gUseBlurAmb = gRenderPostFX;
 bool gOverrideBlurAmb = true;
@@ -115,6 +116,7 @@ bool gDrawTarget = false;
 int gSelectionHighlightOpacity = 25;
 bool gOutlineMapObjects;
 bool gOutlineSelection = true;	// outline selected and hovered objects
+bool gPreviewObjectMoves = true;	// RenderObjectMovePreviews
 bool gFlyAcceleration = true;
 float gFlySpeed = 2.0f;
 float gFlyFastMul = 2.0f;
@@ -125,6 +127,7 @@ bool gCameraLooking;
 
 // non-rendering things
 bool gRenderCollision;
+bool gRenderBounds;
 bool gRenderZones;
 bool gRenderMapZones;
 bool gRenderNavigZones;
@@ -945,6 +948,20 @@ NormalizeOr(const rw::V3d &v, const rw::V3d &fallback)
 	if(len < 0.0001f)
 		return fallback;
 	return scale(v, 1.0f / len);
+}
+
+void
+ComputeGizmoRotation(const rw::V3d &position, const rw::Quat &rotation,
+	const rw::Quat &leaderBefore, const rw::Quat &leaderAfter, const rw::V3d &pivot,
+	bool individual, bool local, rw::V3d *newPosition, rw::Quat *newRotation)
+{
+	rw::Quat delta = NormalizeQuatOrIdentity(rw::mult(rw::conj(leaderBefore), leaderAfter));
+	*newPosition = individual ? position : add(pivot, rw::rotate(sub(position, pivot), rw::conj(delta)));
+	if(individual && local){
+		rw::Quat localDelta = rw::mult(leaderAfter, rw::conj(leaderBefore));
+		*newRotation = NormalizeQuatOrIdentity(rw::mult(localDelta, rotation));
+	}else
+		*newRotation = NormalizeQuatOrIdentity(rw::mult(rotation, delta));
 }
 
 static float
@@ -1789,7 +1806,12 @@ handleBrushTool(void)
 static void
 updateRectSelectEarly(void)
 {
-	if(CoordinatePinOwnsMouse()){
+	if(AttachmentTargetPickActive()){
+		gRectSelectActive = false;
+		sRectSelectDragging = false;
+		return;
+	}
+	if(CoordinatePinOwnsMouse() || LayoutPathsOwnsMouse() || MapToolsPickingLine()){
 		gRectSelectActive = false;
 		sRectSelectDragging = false;
 		return;
@@ -1892,7 +1914,12 @@ rectSelectHighlightInst(ObjectInst *inst, void *data)
 static void
 handleRectSelect(void)
 {
-	if(CoordinatePinOwnsMouse()){
+	if(AttachmentTargetPickActive()){
+		gRectSelectActive = false;
+		sRectSelectDragging = false;
+		return;
+	}
+	if(CoordinatePinOwnsMouse() || LayoutPathsOwnsMouse() || MapToolsPickingLine()){
 		gRectSelectActive = false;
 		sRectSelectDragging = false;
 		return;
@@ -1977,10 +2004,37 @@ handleRectSelect(void)
 void
 handleTool(void)
 {
+	if(AttachmentTargetPickActive()){
+		ImGuiIO &io = ImGui::GetIO();
+		if(!io.WantCaptureMouse){
+			if(CPad::IsMButtonClicked(3) || CPad::IsMButtonClicked(2) || ShortcutPressed(SC_CANCEL)){
+				CancelAttachmentTargetPick();
+				Toast(TOAST_SELECTION, _("Attachment target selection cancelled."));
+			}else if(CPad::IsMButtonClicked(1)){
+				int32 code = pick();
+				if(code < 0){
+					Toast(TOAST_SELECTION, _("Target picking failed. Click again or cancel."));
+				}else{
+					int attached = CompleteAttachmentTargetPick(GetInstanceByID(code));
+					if(attached > 0)
+						Toast(TOAST_SPAWN, _("Attached %d object(s) to the selected target."), attached);
+					else
+						Toast(TOAST_SELECTION,
+							_("That target can't accept the selected objects. Click another target or cancel."));
+				}
+			}
+		}
+		return;
+	}
+	if(MapToolsHandleViewportClick()) return;
+	if(LayoutPathsHandleViewport()) return;
 	if(CoordinatePinHandleViewport()) return;
 	// Don't process viewport clicks when ImGui wants the mouse
 	ImGuiIO &io = ImGui::GetIO();
-	if(io.WantCaptureMouse || gGizmoHovered || gGizmoUsing || gRectSelectActive)
+	// The gizmo reserves left clicks; a stationary right-click still opens
+	// the object's menu, including when it is already selected.
+	bool gizmoContextClick = gGizmoHovered && CPad::IsMButtonClicked(3);
+	if(((io.WantCaptureMouse || gGizmoHovered) && !gizmoContextClick) || gGizmoUsing || gRectSelectActive)
 		return;
 
 	// Prefab placement mode intercepts all clicks
@@ -2017,8 +2071,8 @@ handleTool(void)
 		if(CPad::IsMButtonClicked(1)){
 			rw::V3d pos = GetPlacementPosition();
 			SpawnPlaceObject(pos);
-			// Shift+click = keep placing, plain click = single place
-			if(!CPad::IsKeyDown(KEY_LSHIFT) && !CPad::IsKeyDown(KEY_RSHIFT))
+			// Shift+click or Keep placing = stay in placement mode.
+			if(!gPlaceRepeat && !CPad::IsKeyDown(KEY_LSHIFT) && !CPad::IsKeyDown(KEY_RSHIFT))
 				gPlaceMode = false;
 			return;
 		}
@@ -2032,11 +2086,8 @@ handleTool(void)
 	// The Nodes window's add and link tools
 	if(SAPaths::HandleNodesViewportClick())
 		return;
-	// Tools > Along a line, picking its points
 	// A dynamic area's handles and polygon corners
 	if(DynamicAreaHandleViewport())
-		return;
-	if(MapToolsHandleViewportClick())
 		return;
 
 	// Brush mode intercepts all clicks (click-to-place + drag-to-paint)
@@ -3046,6 +3097,9 @@ dogizmo(void)
 {
 	gGizmoHovered = false;
 	gGizmoUsing = false;
+	if(AttachmentTargetPickActive()) return;
+	if(MapToolsPickingLine()) return;
+	if(LayoutPathsGizmo()) return;
 	if(CoordinatePinOwnsMouse()) return;
 
 	if(!gGizmoEnabled)
@@ -3124,6 +3178,7 @@ dogizmo(void)
 
 	static bool wasDragging = false;
 	static rw::V3d dragStartLeaderPos;
+	static rw::V3d dragStartPivot;
 	static rw::Quat dragStartLeaderRot;
 	static bool dragStartFollowGround;
 	static bool dragStartAlignToSurface;
@@ -3142,6 +3197,14 @@ dogizmo(void)
 
 	// Build object matrix from instance
 	rw::convMatrix(&gizobj, &inst->m_matrix);
+	rw::V3d pivot = gGizmoPivot==GIZMO_PIVOT_CENTRE ? MapToolsSelectionCentre() :
+		gGizmoPivot==GIZMO_PIVOT_CUSTOM ? gGizmoCustomPivot : inst->m_translation;
+	// A rotated bounding box can have a different centre. Keep the chosen
+	// pivot fixed throughout the gesture instead of chasing the changing box.
+	if(wasDragging)
+		pivot = gGizmoMode==GIZMO_ROTATE ? dragStartPivot :
+			add(dragStartPivot, sub(inst->m_translation, dragStartLeaderPos));
+	gizobj.pos.x=pivot.x;gizobj.pos.y=pivot.y;gizobj.pos.z=pivot.z;
 
 	cam = (rw::Camera*)rw::engine->currentCamera;
 	fview = (float*)&cam->devView;
@@ -3177,6 +3240,7 @@ dogizmo(void)
 
 	// Capture start state when drag begins
 	if(isUsing && !wasDragging){
+		dragStartPivot=pivot;
 		dragStartLeaderPos = inst->m_translation;
 		dragStartLeaderRot = NormalizeQuatOrIdentity(inst->m_rotation);
 		dragStartFollowGround = gGizmoMode == GIZMO_TRANSLATE && gDragFollowGround;
@@ -3232,6 +3296,7 @@ dogizmo(void)
 		newLeaderPos.x = gizobj.pos.x;
 		newLeaderPos.y = gizobj.pos.y;
 		newLeaderPos.z = gizobj.pos.z;
+		newLeaderPos=add(dragStartLeaderPos,sub(newLeaderPos,dragStartPivot));
 
 		if(gGizmoMode == GIZMO_TRANSLATE){
 			rw::Quat newLeaderRot = inst->m_rotation;
@@ -3261,6 +3326,7 @@ dogizmo(void)
 			}
 
 			// Pass 1: compute new positions and rotations from snapshot
+			if(gGizmoPivot==GIZMO_PIVOT_CUSTOM)gGizmoCustomPivot=add(dragStartPivot,totalDelta);
 			// (don't update matrices yet, so raycasts see old collision state)
 			for(int i = 0; i < (int)dragTransforms.size(); i++){
 				ObjectInst *obj = dragTransforms[i].inst;
@@ -3311,20 +3377,12 @@ dogizmo(void)
 			inst->m_matrix.at.z = gizobj.at.z;
 			rw::Quat newLeaderRot = QuatFromMatrix(inst->m_matrix);
 
-			// Stored instance quaternions are conjugated relative to world-space rotation.
-			// To apply the leader's world-space delta to the rest of the selection, the
-			// stored-space delta must be built as conj(start) * new, not new * conj(start).
-			rw::Quat deltaQ = NormalizeQuatOrIdentity(rw::mult(rw::conj(dragStartLeaderRot), newLeaderRot));
-
-			// Apply to all affected objects: orbit positions around leader, compose rotations.
-			// conj(deltaQ) is the world-space delta; right-multiplying oldRot by deltaQ
-			// applies that world delta under this codebase's conj(m_rotation) convention.
-			rw::Quat worldQ = rw::conj(deltaQ);
 			for(int i = 0; i < (int)dragTransforms.size(); i++){
 				ObjectInst *obj = dragTransforms[i].inst;
-				rw::V3d offset = sub(dragTransforms[i].oldPos, dragStartLeaderPos);
-				obj->m_translation = add(dragStartLeaderPos, rw::rotate(offset, worldQ));
-				obj->m_rotation = NormalizeQuatOrIdentity(rw::mult(dragTransforms[i].oldRot, deltaQ));
+				ComputeGizmoRotation(dragTransforms[i].oldPos, dragTransforms[i].oldRot,
+					dragStartLeaderRot, newLeaderRot, dragStartPivot,
+					gGizmoPivot==GIZMO_PIVOT_INDIVIDUAL, gGizmoSpace==GIZMO_LOCAL,
+					&obj->m_translation, &obj->m_rotation);
 				obj->m_isDirty = true;
 				obj->UpdateMatrix();
 				updateRwFrame(obj);
@@ -3376,11 +3434,16 @@ renderWorld(void)
 
 	rw::SetRenderState(rw::FOGENABLE, gEnableFog);
 	RenderOpaque();
+	RenderAttachmentWorkspacePreview();
 	if(gRenderWater)
-		WaterLevel::Render();
+		if(!AttachmentWorkspaceHidesWorld())
+			WaterLevel::Render();
 	RenderTransparent();
+	RenderAttachmentBoneMarker();
 	if(gRenderLightEffects)
 		Effects::RenderLights();
+	ParticlePreview::Render(timeStep);
+	RenderObjectMovePreviews();
 
 	if(gPlaceMode && GetSpawnObjectId() >= 0){
 		ImGuiIO &io = ImGui::GetIO();
@@ -3424,7 +3487,7 @@ renderWorld(void)
 
 	if(gDrawTarget)
 		TheCamera.DrawTarget();
-	if(gRenderCollision)
+	if(gRenderCollision || gRenderBounds)
 		RenderEverythingCollisions();
 	if(gRenderTimecycleBoxes)
 		Timecycle::RenderBoxes();
@@ -3460,6 +3523,7 @@ renderWorld(void)
 void
 Draw(void)
 {
+	const auto frameStart = std::chrono::steady_clock::now();
 	static rw::RGBA clearcol = { 0x80, 0x80, 0x80, 0xFF };
 
 	SyncEditorWindowSize();
@@ -3486,28 +3550,19 @@ Draw(void)
 
 	UpdateDayNightBalance();
 
-	// Player view keeps the game's far clip; the editor's view reaches the
-	// View settings' distances. Fog ends where the view does: Game fog starts
-	// where the game's does (10 m on a clear midday), Light only well out.
-	float farPlane = max(Timecycle::currentColours.farClp, 500.0f);
-	float world = Timecycle::currentColours.farClp;
-	if(!gPlayerView){
-		farPlane = GetMapDrawDistance();
-		world = gWorldDrawDistance;
-	}
-	float fogStart = Timecycle::currentColours.fogSt;
-	if(gFogMode == FOG_LIGHT)
-		fogStart = max(fogStart, world*0.6f);
-	fogStart = min(fogStart, farPlane*0.95f);
+	// Fade the outer half of the common range into the horizon. Fog follows
+	// the distance slider, independent of weather, model and local zones.
+	TheCamera.m_rwcam->setFarPlane(gStreamDistance);
+	TheCamera.m_rwcam->fogPlane = gStreamDistance*0.5f;
+	TheCamera.m_rwcam_viewer->setFarPlane(gStreamDistance);
+	TheCamera.m_rwcam_viewer->fogPlane = gStreamDistance*0.5f;
 	gEnableFog = gFogMode != FOG_OFF;
-	TheCamera.m_rwcam->setFarPlane(farPlane);
-	TheCamera.m_rwcam->fogPlane = fogStart;
-	TheCamera.m_rwcam_viewer->setFarPlane(5000.0f);
-	TheCamera.m_rwcam_viewer->fogPlane = fogStart;
 
 	CPad::UpdatePads();
-	// TextDraw mode: no world, no camera moves, no map editing.
+	// TextDraw mode hides the world; the attachment workspace can render its
+	// isolated target and attached objects against the empty clear colour.
 	bool noWorld = TextDrawModeHidesWorld();
+	bool attachmentVoid = AttachmentWorkspaceHidesWorld();
 	bool noMapEditing = InTextDrawMode();
 	if(!noMapEditing){
 		updateRectSelectEarly();
@@ -3574,6 +3629,7 @@ Draw(void)
 	}
 
 	LoadAllRequestedObjects();
+	UpdateAttachmentWorkspace();
 	// Attached objects follow last frame's edits before the scene is listed.
 	UpdateObjectAttachments();
 	// .rec playback poses its elements for this frame.
@@ -3583,7 +3639,7 @@ Draw(void)
 	TestServerUpdate();
 	AnimUpdate(timeStep);
 	PlayerViewUpdate();
-	if(!noWorld)
+	if(!noWorld || attachmentVoid)
 		BuildRenderList();
 
 	// Has to be called for highlighting some objects
@@ -3598,8 +3654,24 @@ Draw(void)
 
 	DefinedState();
 	Scene.camera->clear(&clearcol, rw::Camera::CLEARIMAGE|rw::Camera::CLEARZ);
-	if(!noWorld)
+	if(!noWorld && !attachmentVoid)
 		renderWorld();
+	else if(attachmentVoid){
+		rw::RGBAf oldAmbient = pAmbient->color;
+		rw::RGBAf oldDirect = pDirect->color;
+		uint32 oldDirectFlags = pDirect->getFlags();
+		pAmbient->setColor(0.72f, 0.72f, 0.72f);
+		pDirect->setColor(0.52f, 0.52f, 0.52f);
+		pDirect->setFlags(rw::Light::LIGHTATOMICS);
+		RenderOpaque();
+		RenderAttachmentWorkspacePreview();
+		RenderTransparent();
+		RenderAttachmentBoneMarker();
+		RenderAttachmentWorkspaceGrid();
+		pDirect->setFlags(oldDirectFlags);
+		pDirect->setColor(oldDirect.red, oldDirect.green, oldDirect.blue);
+		pAmbient->setColor(oldAmbient.red, oldAmbient.green, oldAmbient.blue);
+	}
 	rw::SetRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);	// don't mess up GUI
 	TextDrawsAfterWorldRender();
 	AgentBridgeCaptureAfterWorldRender();
@@ -3611,10 +3683,14 @@ Draw(void)
 	AgentBridgeCaptureAfterUiRender();
 
 	Scene.camera->endUpdate();
-	Scene.camera->showRaster(rw::Raster::FLIPWAITVSYNCH);
+	Scene.camera->showRaster(gVSync ? rw::Raster::FLIPWAITVSYNCH : 0);
 #if defined(_WIN32) && defined(RW_D3D9)
 	RenderDetachedEditorWindows();
 #endif
+	if(gFrameLimit > 0){
+		auto budget = std::chrono::duration<double>(1.0/gFrameLimit);
+		std::this_thread::sleep_until(frameStart + std::chrono::duration_cast<std::chrono::steady_clock::duration>(budget));
+	}
 	frameCounter++;
 }
 

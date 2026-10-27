@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "haumea.h"
 #include "coordinatepin.h"
+#include "layoutpaths.h"
+#include "mapcleanup.h"
 #include "alignmentmath.h"
 #include "i18n.h"
 #include "maptools.h"
 #include "shortcuts.h"
 
 #include <math.h>
+#include <random>
 #include <stdio.h>
 #include <string.h>
 #include <algorithm>
@@ -122,6 +125,8 @@ groupCentre(const std::vector<ObjectInst*> &objs)
 	return scale(add(gmin, gmax), 0.5f);
 }
 
+rw::V3d MapToolsSelectionCentre() { return groupCentre(selectedObjects()); }
+
 // A world rotation of degrees around X, then Y, then Z.
 static rw::Quat
 worldRotation(const rw::V3d &degrees)
@@ -164,6 +169,39 @@ needSelection(const std::vector<ObjectInst*> &objs, int minimum, std::string *er
 	return false;
 }
 
+int MapToolsCenterParent(std::string *error)
+{
+	auto selected = selectedObjects();
+	if(!needSelection(selected, 1, error)) return -1;
+	ObjectInst *parent = selected[0];
+	for(int depth=0; depth<256 && GetAttachParent(parent); depth++) parent=GetAttachParent(parent);
+	std::vector<ObjectInst*> family = { parent }, direct;
+	for(CPtrNode *it=instances.first; it; it=it->next){
+		auto *o=(ObjectInst*)it->item;
+		if(o->m_isDeleted || o==parent) continue;
+		ObjectInst *ancestor=GetAttachParent(o);
+		if(ancestor==parent) direct.push_back(o);
+		for(int depth=0; ancestor && depth<256; depth++,ancestor=GetAttachParent(ancestor))
+			if(ancestor==parent){ family.push_back(o); break; }
+	}
+	if(direct.empty() || !IsPawnObjectEditable(parent)){
+		if(error) *error=N_("Select a parent with attached objects, or one of its children.");
+		return -1;
+	}
+	for(auto *o:family) if(!IsPawnObjectEditable(o)){
+		if(error) *error=N_("The attachment contains read-only objects.");
+		return -1;
+	}
+	rw::V3d centre=groupCentre(family);
+	UndoBeginGroup();
+	placeObject(parent,centre,parent->m_rotation);
+	// Children have not moved: recompute the direct children's offsets before
+	// UpdateObjectAttachments runs, preserving the whole descendant tree in world space.
+	for(auto *child:direct) RebaseObjectAttachment(child);
+	UndoEndGroup();
+	return (int)family.size();
+}
+
 static void
 reselect(const std::vector<ObjectInst*> &objs)
 {
@@ -175,6 +213,14 @@ reselect(const std::vector<ObjectInst*> &objs)
 
 // ---- array ----------------------------------------------------------------
 
+// Copies made, not counting the selection: count, or a grid of rows lines
+// of count + 1 less the selection itself.
+static int
+arrayCopies(const MapArrayParams &params)
+{
+	return params.radial || params.rows <= 1 ? params.count : (params.count + 1) * params.rows - 1;
+}
+
 static bool
 arrayCopyTransform(const MapArrayParams &params, const rw::V3d &centre, int k,
 	rw::V3d *pos, rw::Quat *rot)
@@ -184,8 +230,10 @@ arrayCopyTransform(const MapArrayParams &params, const rw::V3d &centre, int k,
 			params.angle / params.count;
 		turnAround(params.centre, worldRotation({ 0.0f, 0.0f, step * k }), pos, rot);
 	}else{
-		turnAround(centre, worldRotation(scale(params.rotate, (float)k)), pos, rot);
-		*pos = add(*pos, scale(params.offset, (float)k));
+		int rows = std::max(1, params.rows);
+		int column = rows > 1 ? k % (params.count + 1) : k, row = rows > 1 ? k / (params.count + 1) : 0;
+		turnAround(centre, worldRotation(scale(params.rotate, (float)column)), pos, rot);
+		*pos = add(*pos, add(scale(params.offset, (float)column), scale(params.rowOffset, (float)row)));
 	}
 	return true;
 }
@@ -199,7 +247,11 @@ arrayCheck(const MapArrayParams &params, const std::vector<ObjectInst*> &objs, s
 		if(error) *error = N_("make at least one copy");
 		return false;
 	}
-	if((long long)params.count * objs.size() > MAX_TOOL_OBJECTS){
+	if(!params.radial && (params.rows < 1 || params.rows > 500)){
+		if(error) *error = "rows is 1 to 500";
+		return false;
+	}
+	if((long long)arrayCopies(params) * objs.size() > MAX_TOOL_OBJECTS){
 		if(error) *error = "that would make more than " + std::to_string((int)MAX_TOOL_OBJECTS) + " objects";
 		return false;
 	}
@@ -216,7 +268,7 @@ MapToolsArrayPreview(const MapArrayParams &params, std::vector<rw::V3d> &positio
 	if(!arrayCheck(params, objs, error))
 		return false;
 	rw::V3d centre = groupCentre(objs);
-	for(int k = 1; k <= params.count; k++)
+	for(int k = 1; k <= arrayCopies(params); k++)
 		for(size_t i = 0; i < objs.size(); i++){
 			rw::V3d pos = objs[i]->m_translation;
 			rw::Quat rot = objs[i]->m_rotation;
@@ -237,7 +289,7 @@ MapToolsArray(const MapArrayParams &params, std::string *error)
 	std::vector<ObjectInst*> all = originals;
 	int made = 0;
 	UndoBeginGroup();
-	for(int k = 1; k <= params.count; k++){
+	for(int k = 1; k <= arrayCopies(params); k++){
 		// A copy of the originals in place, then moved to copy k.
 		reselect(originals);
 		if(DuplicateSelected() <= 0)
@@ -257,6 +309,89 @@ MapToolsArray(const MapArrayParams &params, std::string *error)
 	if(made == 0 && error)
 		*error = N_("could not copy the selection");
 	return made > 0 ? made : -1;
+}
+
+// ---- duplicate offset -----------------------------------------------------
+
+static MapCloneOffset gCloneOffset;
+
+MapCloneOffset &
+MapToolsCloneOffset(void)
+{
+	return gCloneOffset;
+}
+
+int
+MapToolsDuplicate(std::string *error)
+{
+	UndoBeginGroup();
+	int made = DuplicateSelected();
+	std::vector<ObjectInst*> copies = selectedObjects();
+	const MapCloneOffset &o = gCloneOffset;
+	if(made > 0 && o.enabled && !copies.empty()){
+		// One sample for the whole duplicate, so a group stays together.
+		static std::mt19937 random(std::random_device{}());
+		float v[6];
+		for(int i = 0; i < 6; i++){
+			float lo = std::min(o.low[i], o.high[i]), hi = std::max(o.low[i], o.high[i]);
+			v[i] = !o.random ? o.fixed[i] : lo == hi ? lo : std::uniform_real_distribution<float>(lo, hi)(random);
+			if(!std::isfinite(v[i]))
+				v[i] = 0.0f;
+		}
+		rw::V3d move = { v[0], v[1], v[2] };
+		rw::Quat turn = worldRotation({ v[3], v[4], v[5] });
+		if(o.local){
+			// The first object's axes: its world rotation is its stored one conjugated.
+			rw::Quat axes = rw::conj(copies[0]->m_rotation);
+			move = rw::rotate(move, axes);
+			turn = rw::normalize(rw::mult(axes, rw::mult(turn, rw::conj(axes))));
+		}
+		rw::V3d centre = groupCentre(copies);
+		for(ObjectInst *inst : copies){
+			rw::V3d pos = inst->m_translation;
+			rw::Quat rot = inst->m_rotation;
+			turnAround(centre, turn, &pos, &rot);
+			placeObject(inst, add(pos, move), rot);
+		}
+		reselect(copies);
+	}
+	UndoEndGroup();
+	if(made <= 0 && error)
+		*error = N_("could not copy the selection");
+	return made > 0 ? made : -1;
+}
+
+static void
+cloneOffsetSection(void)
+{
+	MapCloneOffset &o = gCloneOffset;
+	ImGui::Checkbox(_("Offset each duplicate"), &o.enabled);
+	ImGui::SetItemTooltip(_("Duplicate (Ctrl+D) moves and turns the copies by this much."));
+	if(!o.enabled)
+		return;
+	int mode = o.random ? 1 : 0;
+	static const char *modes[] = { N_("Fixed"), N_("Random") };
+	if(UiCombo(_("Mode##cloneoffset"), &mode, modes, IM_ARRAYSIZE(modes)))
+		o.random = mode == 1;
+	ImGui::SetItemTooltip(_("Random: a new amount within the ranges each time."));
+	ImGui::Checkbox(_("Along the object's own axes"), &o.local);
+	ImGui::SetItemTooltip(_("Off: world X, Y and Z. On: the first selected object's axes."));
+	if(!o.random){
+		ImGui::InputFloat3(_("Move##cloneoffset"), o.fixed, "%.3f");
+		ImGui::InputFloat3(_("Turn##cloneoffset"), o.fixed + 3, "%.2f");
+	}else{
+		static const char *labels[6] = { "X", "Y", "Z", "RX", "RY", "RZ" };
+		for(int i = 0; i < 6; i++){
+			ImGui::PushID(i);
+			float range[2] = { o.low[i], o.high[i] };
+			if(ImGui::InputFloat2(labels[i], range, i < 3 ? "%.3f" : "%.2f")){
+				o.low[i] = range[0];
+				o.high[i] = range[1];
+			}
+			ImGui::PopID();
+		}
+		ImGui::TextDisabled(_("From and to: metres for X, Y and Z, degrees for the turns."));
+	}
 }
 
 // ---- mirror ---------------------------------------------------------------
@@ -719,36 +854,126 @@ MapToolsLayAlong(const std::vector<rw::V3d> &points, int model, float spacing,
 // ---- UI ----------------------------------------------------------------------
 
 static bool gPicking;
-static std::vector<rw::V3d> gPickedLine;
-static int gPanelFrame = -100;	// when the panel was last drawn
+static std::vector<rw::V3d> gPickedLine, gLinePoints;
+static int gPanelFrame = -100, gLinePanelFrame = -100;
+static MapToolsLineFeedback gLineFeedback;
+
+const MapToolsLineFeedback &
+GetMapToolsLineFeedback()
+{
+	return gLineFeedback;
+}
+
+bool
+MapToolsPickingLine()
+{
+	if(gPicking && ImGui::GetFrameCount() - gPanelFrame > 2)
+		gPicking = false;
+	return gPicking;
+}
+
+void
+ResetMapToolsLine()
+{
+	gPicking = false;
+	gPickedLine.clear();
+	gLinePoints.clear();
+	gLineFeedback = {};
+	gLinePanelFrame = gPanelFrame = -100;
+}
+
+// The cursor indicator and the actual click share the same surface query.
+static rw::V3d
+linePickPosition()
+{
+	Ray ray;
+	ray.start = TheCamera.m_position;
+	ray.dir = normalize(TheCamera.m_mouseDir);
+	rw::V3d hit;
+	if(GetVisibleInstUnderRay(ray, &hit) == nil){
+		float t = fabsf(ray.dir.z) < 0.001f ? 50.0f : (TheCamera.m_target.z - ray.start.z) / ray.dir.z;
+		hit = add(ray.start, scale(ray.dir, clamp(t, 1.0f, 5000.0f)));
+	}
+	return hit;
+}
 
 bool
 MapToolsHandleViewportClick(void)
 {
-	// Picking stops when the Tools window closes.
-	if(gPicking && ImGui::GetFrameCount() - gPanelFrame > 2)
-		gPicking = false;
-	if(!gPicking)
+	if(!MapToolsPickingLine())
 		return false;
-	if(CPad::IsMButtonClicked(1)){
-		Ray ray;
-		ray.start = TheCamera.m_position;
-		ray.dir = normalize(TheCamera.m_mouseDir);
-		rw::V3d hit;
-		if(GetVisibleInstUnderRay(ray, &hit) == nil){
-			// The plane at the camera target's height, as placing does.
-			float t = fabsf(ray.dir.z) < 0.001f ? 50.0f : (TheCamera.m_target.z - ray.start.z) / ray.dir.z;
-			t = clamp(t, 1.0f, 5000.0f);
-			hit = add(ray.start, scale(ray.dir, t));
-		}
-		gPickedLine.push_back(hit);
-		return true;
-	}
 	if(CPad::IsMButtonClicked(3) || CPad::IsMButtonClicked(2) || ShortcutPressed(SC_CANCEL)){
 		gPicking = false;
 		return true;
 	}
-	return true;	// nothing else is clicked while picking
+	if(!ImGui::GetIO().WantCaptureMouse && CPad::IsMButtonClicked(1))
+		gPickedLine.push_back(linePickPosition());
+	return true;
+}
+
+void
+MapToolsLineOverlay(bool enabled)
+{
+	gLineFeedback = {};
+	if(!enabled){
+		gPicking = false;
+		return;
+	}
+	if(ImGui::GetFrameCount() != gLinePanelFrame)
+		return;
+	gLineFeedback.points = (int)gLinePoints.size();
+	gLineFeedback.picking = MapToolsPickingLine();
+	ImGuiViewport *viewport = ImGui::GetMainViewport();
+	ImDrawList *draw = ImGui::GetBackgroundDrawList(viewport);
+	float ui = GetUiScale();
+	const ImU32 yellow = IM_COL32(255, 218, 60, 255), cyan = IM_COL32(80, 225, 255, 255);
+	const ImU32 dark = IM_COL32(15, 20, 24, 240);
+	auto project = [](rw::V3d position, ImVec2 *point){
+		rw::V3d screen;
+		float w, h;
+		if(!Sprite::CalcScreenCoors(position, &screen, &w, &h, false)) return false;
+		*point = EditorUiPoint(screen.x, screen.y);
+		return true;
+	};
+	auto segment = [&](rw::V3d a, rw::V3d b, ImU32 colour){
+		ImVec2 from, to;
+		if(project(a, &from) && project(b, &to)){
+			draw->AddLine(from, to, dark, 4 * ui);
+			draw->AddLine(from, to, colour, 2 * ui);
+		}
+	};
+	for(size_t i = 1; i < gLinePoints.size(); i++)
+		segment(gLinePoints[i - 1], gLinePoints[i], yellow);
+	for(size_t i = 0; i < gLinePoints.size(); i++){
+		ImVec2 point;
+		if(!project(gLinePoints[i], &point)) continue;
+		if(point.x < viewport->Pos.x || point.y < viewport->Pos.y ||
+		   point.x > viewport->Pos.x + viewport->Size.x || point.y > viewport->Pos.y + viewport->Size.y) continue;
+		draw->AddCircleFilled(point, 7 * ui, dark);
+		draw->AddCircle(point, 6 * ui, yellow, 0, 2 * ui);
+		draw->AddCircleFilled(point, 2 * ui, yellow);
+		char number[24];
+		snprintf(number, sizeof(number), "%d", (int)i + 1);
+		ImVec2 label(point.x + 10 * ui, point.y - ImGui::GetFontSize() - 6 * ui);
+		ImVec2 size = ImGui::CalcTextSize(number);
+		draw->AddRectFilled(ImVec2(label.x - 3 * ui, label.y - 2 * ui),
+			ImVec2(label.x + size.x + 3 * ui, label.y + size.y + 2 * ui), dark, 3 * ui);
+		draw->AddText(label, yellow, number);
+		gLineFeedback.markers++;
+	}
+	if(gLineFeedback.picking && !ImGui::GetIO().WantCaptureMouse){
+		gLineFeedback.cursor = linePickPosition();
+		ImVec2 cursor;
+		if(project(gLineFeedback.cursor, &cursor)){
+			gLineFeedback.cursorVisible = true;
+			if(!gLinePoints.empty()) segment(gLinePoints.back(), gLineFeedback.cursor, cyan);
+			draw->AddCircleFilled(cursor, 9 * ui, dark);
+			draw->AddCircle(cursor, 8 * ui, cyan, 0, 2 * ui);
+			draw->AddLine(ImVec2(cursor.x - 12 * ui, cursor.y), ImVec2(cursor.x + 12 * ui, cursor.y), cyan, ui);
+			draw->AddLine(ImVec2(cursor.x, cursor.y - 12 * ui), ImVec2(cursor.x, cursor.y + 12 * ui), cyan, ui);
+			ImGui::SetMouseCursor(ImGuiMouseCursor_None);
+		}
+	}
 }
 
 static void
@@ -803,6 +1028,13 @@ arraySection(const std::vector<ObjectInst*> &objs)
 		ImGui::InputFloat3(_("Rotate"), &params.rotate.x, "%.2f");
 		ImGui::SetItemTooltip(_("How much each copy turns from the one before, in degrees\n"
 			"around the world X, Y and Z axes, about the selection's centre."));
+		ImGui::InputInt(_("Rows"), &params.rows);
+		params.rows = clamp(params.rows, 1, 500);
+		ImGui::SetItemTooltip(_("Repeats the whole line for a grid. 1 is a single line."));
+		if(params.rows > 1){
+			ImGui::InputFloat3(_("Row offset"), &params.rowOffset.x, "%.3f");
+			ImGui::SetItemTooltip(_("How far each row moves from the one before, in metres."));
+		}
 	}else{
 		ImGui::InputFloat3(_("Centre"), &params.centre.x, "%.3f");
 		ImGui::SetItemTooltip(_("The point the copies go around (a vertical axis)."));
@@ -970,6 +1202,7 @@ dropSection(const std::vector<ObjectInst*> &objs)
 static void
 lineSection(void)
 {
+	gLinePanelFrame = ImGui::GetFrameCount();
 	static int source = 0;	// 0 = picked, else NPC path source-1
 	static int model = 1228;	// roadworkbarrier1
 	static float spacing = 3.0f, heading = 0.0f;
@@ -993,13 +1226,22 @@ lineSection(void)
 	ImGui::SetItemTooltip(_("Points you click in the world, or an NPC path's points in order."));
 	std::vector<rw::V3d> points;
 	if(source == 0){
-		if(ImGui::Button(gPicking ? _("Stop picking") : _("Pick points")))
+		if(ImGui::Button(gPicking ? _("Stop picking") : _("Pick points"))){
 			gPicking = !gPicking;
+			if(gPicking){
+				SpawnExitPlaceMode();
+				ExitPrefabPlaceMode();
+				ExitBrushMode();
+				gRectSelectActive = false;
+			}
+		}
 		ImGui::SetItemTooltip(_("Click points in the world one after another.\n"
 			"Right-click or Esc stops."));
 		ImGui::SameLine();
 		if(ImGui::Button(_("Clear")))
 			gPickedLine.clear();
+		ImGui::SameLine();
+		ImGui::TextDisabled(_("%d points"), (int)gPickedLine.size());
 		points = gPickedLine;
 	}else{
 		std::vector<ObjectInst*> pathPoints;
@@ -1048,14 +1290,7 @@ lineSection(void)
 			error, N_("Along a line"));
 	}
 	ImGui::EndDisabled();
-	// The line, and a box for each object when previewing.
-	rw::RGBA lineCol = { 255, 200, 40, 230 };
-	for(size_t i = 0; i + 1 < points.size(); i++)
-		RenderLine(points[i], points[i + 1], lineCol, lineCol);
-	for(size_t i = 0; i < points.size() && source == 0; i++){
-		const rw::V3d &p = points[i];
-		RenderLine({ p.x, p.y, p.z }, { p.x, p.y, p.z + 2.0f }, lineCol, lineCol);
-	}
+	gLinePoints = points;
 	if(preview && ok && GetObjectDef(model))
 		for(size_t i = 0; i < positions.size(); i++)
 			drawBox(model, positions[i], MakeObjectRotationDegrees(degrees[i]), { 90, 200, 255, 220 });
@@ -1071,10 +1306,39 @@ MapToolsPanel(void)
 		CoordinatePinPanel();
 		if(CoordinatePinOwnsMouse()) gPicking = false;
 	}
+	if(ImGui::CollapsingHeader(L("Paths & curves"))){
+		ImGui::PushID("layout_paths");
+		LayoutPathsPanel();
+		ImGui::PopID();
+	}
+	if(ImGui::CollapsingHeader(L("Duplicate cleanup"))){
+		ImGui::PushID("duplicate_cleanup");
+		MapCleanupPanel();
+		ImGui::PopID();
+	}
+	if(ImGui::CollapsingHeader(L("Pivot"))){
+		ImGui::PushID("mapping_pivot");
+		const char *pivots[]={_("Active object"),_("Selection centre"),_("Individual origins"),_("Custom point")};
+		ImGui::Combo(L("Pivot mode"),&gGizmoPivot,pivots,4);
+		if(gGizmoPivot==GIZMO_PIVOT_CUSTOM){
+			ImGui::DragFloat3(L("Pivot position"),&gGizmoCustomPivot.x,.1f,-100000.f,100000.f,"%.3f");
+			if(ImGui::SmallButton(L("Selection centre"))) gGizmoCustomPivot=MapToolsSelectionCentre();
+			ImGui::SameLine();if(ImGui::SmallButton(L("Camera target"))) gGizmoCustomPivot=TheCamera.m_target;
+			rw::V3d pin;bool hasPin=CoordinatePinPosition(&pin);
+			ImGui::BeginDisabled(!hasPin);if(ImGui::SmallButton(L("Use active pin")))gGizmoCustomPivot=pin;ImGui::EndDisabled();
+		}
+		ImGui::BeginDisabled(objs.empty());
+		if(ImGui::Button(L("Center Parent"))){std::string error;reportResult(MapToolsCenterParent(&error),error,N_("Center Parent"));}
+		ImGui::EndDisabled();
+		ImGui::SetItemTooltip(_("Moves the attachment root to its family's bounding-box centre while keeping every child's world position and rotation."));
+		ImGui::PopID();
+	}
 	if(ImGui::CollapsingHeader(L("Array")))
 		arraySection(objs);
 	if(ImGui::CollapsingHeader(L("Mirror")))
 		mirrorSection(objs);
+	if(ImGui::CollapsingHeader(L("Duplicate offset"), gCloneOffset.enabled ? ImGuiTreeNodeFlags_DefaultOpen : 0))
+		cloneOffsetSection();
 	if(ImGui::CollapsingHeader(L("Align & distribute")))
 		alignSection(objs);
 	if(ImGui::CollapsingHeader(L("Drop & copy as Pawn")))

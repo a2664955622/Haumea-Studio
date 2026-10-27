@@ -1,0 +1,14 @@
+# A private geometry copy must preserve textures without consulting the map TXD.
+open "$UI_FIXTURES/ui_attachment_targets.pwn"
+click_object model=7
+wait 5
+assert selected.model == 7
+assert geometry_clone_textures
+click_object model=411
+wait 5
+assert selected.model == 411
+assert geometry_clone_textures
+click_object model=1271
+wait 5
+assert selected.model == 1271
+assert geometry_clone_textures

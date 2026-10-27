@@ -231,7 +231,12 @@ AddRecentTextDrawFile(const char *path)
 bool
 LoadTextDrawSetting(const char *key, const char *value)
 {
-	if(strcmp(key, "textdraw_background") == 0)
+	if(strcmp(key, "textdraw_code_target") == 0){
+		int target = TEXTDRAW_CODE_OPENMP;
+		if(sscanf(value, "%d", &target) == 1 &&
+		   (target == TEXTDRAW_CODE_SAMP || target == TEXTDRAW_CODE_OPENMP))
+			SetTextDrawCodeTarget((TextDrawCodeTarget)target);
+	}else if(strcmp(key, "textdraw_background") == 0)
 		gBackground = atoi(value) == TD_BACKGROUND_PLAIN ? TD_BACKGROUND_PLAIN : TD_BACKGROUND_STILL;
 	else if(strcmp(key, "textdraw_canvas_colour") == 0)
 		gCanvasColour = (unsigned int)strtoul(value, nil, 16);
@@ -321,6 +326,7 @@ LoadTextDrawSetting(const char *key, const char *value)
 void
 SaveTextDrawSettings(FILE *f)
 {
+	fprintf(f, "textdraw_code_target %d\n", (int)GetTextDrawCodeTarget());
 	fprintf(f, "textdraw_background %d\n", gBackground);
 	fprintf(f, "textdraw_canvas_colour %08X\n", gCanvasColour);
 	fputs("textdraw_favourite_sprites", f);
@@ -742,13 +748,24 @@ spriteTxdSlot(const std::string &name)
 }
 
 static rw::Texture*
-spriteTexture(const std::string &text)
+spriteTexture(const std::string &text, const char *serverTxd = nil)
 {
 	size_t colon = text.find(':');
 	if(colon == std::string::npos)
 		return nil;
-	int slot = spriteTxdSlot(text.substr(0, colon));
+	std::string dictionary = text.substr(0, colon);
+	int slot = -1;
+	if(serverTxd && serverTxd[0] && rw::strncmp_ci(dictionary.c_str(), "mdl-", 4) == 0)
+		slot = LoadServerTextureTxd(serverTxd);
+	if(slot < 0) slot = spriteTxdSlot(dictionary);
 	return slot >= 0 ? FindTextureInTxd(slot, text.substr(colon + 1).c_str()) : nil;
+}
+
+bool
+TextDrawSpriteTextureAvailable(const TextDraw &td)
+{
+	rw::Texture *texture = td.font == TD_FONT_SPRITE ? spriteTexture(td.text, td.serverTxd.c_str()) : nil;
+	return texture && texture->raster;
 }
 
 static void
@@ -795,23 +812,31 @@ struct Canvas {
 	ImVec2 at(float cx, float cy) const { return ImVec2(x + cx * sx, y + cy * sy); }
 };
 
-// The free area between the docked panels, under the canvas toolbar.
-static float gToolbarHeight;	// measured when the toolbar is drawn
+// The current frame's reserved bars are authoritative when a workspace changes.
+// Viewport::WorkPos still describes the preceding frame during a mode switch.
+static void
+textDrawWorkspaceArea(ImVec2 *pos, ImVec2 *size)
+{
+	ImGuiViewportP *viewport = (ImGuiViewportP*)ImGui::GetMainViewport();
+	ImRect work = viewport->GetBuildWorkRect();
+#ifdef IMGUI_HAS_DOCK
+	ImGuiDockNode *central = ImGui::DockBuilderGetCentralNode(ImHashStr("HaumeaTextDrawDockSpace"));
+	if(central && central->Size.x > 32.0f && central->Size.y > 32.0f){
+		ImRect center(central->Pos, ImVec2(central->Pos.x + central->Size.x, central->Pos.y + central->Size.y));
+		center.ClipWith(work);
+		if(center.GetWidth() > 32.0f && center.GetHeight() > 32.0f)
+			work = center;
+	}
+#endif
+	*pos = work.Min;
+	*size = work.GetSize();
+}
+
+// The free area between the docked panels, beneath the workspace bar.
 static void
 canvasArea(ImVec2 *pos, ImVec2 *size)
 {
-	ImGuiViewport *vp = ImGui::GetMainViewport();
-	*pos = vp->WorkPos;
-	*size = vp->WorkSize;
-#ifdef IMGUI_HAS_DOCK
-	ImGuiDockNode *central = ImGui::DockBuilderGetCentralNode(ImHashStr("HaumeaDockSpace"));
-	if(central && central->Size.x > 32.0f && central->Size.y > 32.0f){
-		*pos = central->Pos;
-		*size = central->Size;
-	}
-#endif
-	pos->y += gToolbarHeight;
-	size->y = std::max(32.0f, size->y - gToolbarHeight);
+	textDrawWorkspaceArea(pos, size);
 }
 
 // The screen fitted in a rectangle: its shape is the window's, as a
@@ -1309,7 +1334,7 @@ drawTextDraw(ImDrawList *dl, const Canvas &cv, const TextDraw &td)
 	}
 	if(td.font == TD_FONT_SPRITE){
 		// A negative width or height mirrors it, as in game (e.g. LD_DRV:tvcorn's four corners).
-		rw::Texture *tex = spriteTexture(td.text);
+		rw::Texture *tex = spriteTexture(td.text, td.serverTxd.c_str());
 		ImVec2 uv0(x1 < x0 ? 1.0f : 0.0f, y1 < y0 ? 1.0f : 0.0f), uv1(1.0f - uv0.x, 1.0f - uv0.y);
 		if(x1 < x0) std::swap(x0, x1);
 		if(y1 < y0) std::swap(y0, y1);
@@ -3303,28 +3328,37 @@ drawScreen(ImDrawList *dl, const Canvas &cv)
 			drawTextDraw(dl, cv, tds[i]);
 }
 
-// Small views of the board on other screen shapes, in the canvas's corner.
+// A regular window: comparisons can be moved, resized or docked beside the canvas.
 static void
-drawCompare(ImDrawList *dl)
+drawCompare(void)
 {
 	ImVec2 pos, size;
 	canvasArea(&pos, &size);
-	static const int shapes[] = { TD_SCREEN_4_3, TD_SCREEN_16_9, TD_SCREEN_21_9 };
-	float h = std::max(60.0f, size.y * 0.18f), pad = ImGui::GetFontSize() * 0.5f;
-	float x = pos.x + size.x - pad;
-	for(int k = IM_ARRAYSIZE(shapes) - 1; k >= 0; k--){
-		float w = h * gScreenAspects[shapes[k]];
-		x -= w;
-		ImVec2 p(x, pos.y + size.y - pad - h);
-		Canvas cv = fitCanvas(p, ImVec2(w, h), gScreenAspects[shapes[k]]);
-		dl->AddRectFilled(ImVec2(p.x - 3, p.y - 3 - ImGui::GetFontSize()), ImVec2(p.x + w + 3, p.y + h + 3),
-			IM_COL32(20, 22, 26, 230), 4.0f);
-		dl->PushClipRect(cv.at(0, 0), cv.at(640, 448), true);
-		drawScreen(dl, cv);
-		dl->PopClipRect();
-		dl->AddText(ImVec2(p.x, p.y - ImGui::GetFontSize() - 1), IM_COL32(220, 220, 220, 255), gScreenNames[shapes[k]]);
-		x -= pad * 2.0f;
+	ImGui::SetNextWindowSize(ImVec2(560 * GetUiScale(), 210 * GetUiScale()), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowPos(ImVec2(pos.x + 20, pos.y + std::max(0.0f, size.y - 230 * GetUiScale())), ImGuiCond_FirstUseEver);
+	bool open = gCompare;
+	if(ImGui::Begin(L("Screen previews###td_compare"), &open)){
+		static const int shapes[] = { TD_SCREEN_4_3, TD_SCREEN_16_9, TD_SCREEN_21_9 };
+		float available = ImGui::GetContentRegionAvail().x;
+		int columns = available >= ImGui::GetFontSize() * 30.0f ? 3 : 1;
+		float width = (available - ImGui::GetStyle().ItemSpacing.x * (columns - 1)) / columns;
+		for(int k = 0; k < IM_ARRAYSIZE(shapes); k++){
+			if(k % columns) ImGui::SameLine();
+			ImGui::BeginGroup();
+			ImGui::TextUnformatted(gScreenNames[shapes[k]]);
+			ImVec2 p = ImGui::GetCursorScreenPos();
+			float h = width / gScreenAspects[shapes[k]];
+			Canvas cv = fitCanvas(p, ImVec2(width, h), gScreenAspects[shapes[k]]);
+			ImDrawList *dl = ImGui::GetWindowDrawList();
+			dl->PushClipRect(p, ImVec2(p.x + width, p.y + h), true);
+			drawScreen(dl, cv);
+			dl->PopClipRect();
+			ImGui::Dummy(ImVec2(width, h));
+			ImGui::EndGroup();
+		}
 	}
+	ImGui::End();
+	if(open != gCompare){ gCompare = open; SaveEditorSettings(); }
 }
 
 // The canvas: the still frame or a plain colour where the world was, the
@@ -3760,7 +3794,7 @@ DrawTextDrawsOverlay(void)
 	}
 	dl->PopClipRect();
 	if(gCompare)
-		drawCompare(dl);
+		drawCompare();
 }
 
 // ---- Window ----
@@ -3834,6 +3868,7 @@ colourEdit(const char *label, unsigned int *rgba)
 	bool changed = false;
 	float c[4] = { (*rgba >> 24 & 0xFF) / 255.0f, (*rgba >> 16 & 0xFF) / 255.0f,
 		(*rgba >> 8 & 0xFF) / 255.0f, (*rgba & 0xFF) / 255.0f };
+	ImGui::TextUnformatted(label, ImGui::FindRenderedTextEnd(label));
 	ImGui::PushID(label);
 	ImGuiID id = ImGui::GetID("##edit");
 	if(gPicked && gPickFor == id){
@@ -3842,7 +3877,7 @@ colourEdit(const char *label, unsigned int *rgba)
 		gPicking = false;
 		changed = true;
 	}
-	float w = ImGui::CalcItemWidth() - ImGui::GetFrameHeight() - ImGui::GetStyle().ItemInnerSpacing.x;
+	float w = ImGui::GetContentRegionAvail().x - ImGui::GetFrameHeight() - ImGui::GetStyle().ItemInnerSpacing.x;
 	ImGui::SetNextItemWidth(std::max(ImGui::GetFontSize() * 4.0f, w));
 	if(ImGui::ColorEdit4("##edit", c, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf)){
 		*rgba = (unsigned int)(c[0] * 255.0f + 0.5f) << 24 | (unsigned int)(c[1] * 255.0f + 0.5f) << 16 |
@@ -3909,8 +3944,6 @@ colourEdit(const char *label, unsigned int *rgba)
 		}
 		ImGui::EndPopup();
 	}
-	ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
-	ImGui::TextUnformatted(label, ImGui::FindRenderedTextEnd(label));
 	ImGui::PopID();
 	return changed;
 }
@@ -4018,36 +4051,76 @@ toggleFavSprite(const std::string &sprite)
 	SaveEditorSettings();
 }
 
-// The TXDs SA-MP can draw from, searched by name; a texture filter; and
-// favourites (right-click a sprite) gathered in their own list at the top.
+// A favourite may refer to a dynamically registered server model. Reuse the
+// document's TXD binding so choosing it does not lose the preview source.
+static std::string
+favouriteServerTxd(const std::string &sprite)
+{
+	size_t colon = sprite.find(':');
+	if(colon == std::string::npos || rw::strncmp_ci(sprite.c_str(), "mdl-", 4) != 0) return "";
+	std::string dictionary = sprite.substr(0, colon);
+	for(const TextDraw &td : GetTextDraws())
+		if(!td.serverTxd.empty() && rw::strcmp_ci(td.text.substr(0, td.text.find(':')).c_str(), dictionary.c_str()) == 0)
+			return td.serverTxd;
+	return ServerTexturePathForModel(-atoi(dictionary.c_str()+4));
+}
+
+// TXDs from the server's configured artwork folder and the installed game.
 static void
 spritePicker(TextDraw &td)
 {
-	static std::string txdName;
+	static std::string txdName, serverFile, lastText, lastFile, lastVariable;
+	static int modelId;
+	static bool initialized;
 	static const std::string FAVOURITES = "\x01" "favourites";
-	if(txdName.empty()){
+	static std::string listedRoot;
+	static std::vector<std::string> serverFiles;
+	std::string root = GetCustomModelsDir() ? GetCustomModelsDir() : "";
+	if(listedRoot != root){
+		listedRoot = root;
+		ListServerTextureFiles(serverFiles);
+		initialized = false;
+	}
+	if(!initialized || lastVariable != td.name || lastText != td.text || lastFile != td.serverTxd){
+		initialized = true;
 		size_t colon = td.text.find(':');
 		txdName = colon == std::string::npos ? "LD_BEAT" : td.text.substr(0, colon);
+		modelId = rw::strncmp_ci(txdName.c_str(), "mdl-", 4) == 0 ? -atoi(txdName.c_str()+4) : 0;
+		serverFile = td.serverTxd.empty() ? ServerTexturePathForModel(modelId) : td.serverTxd;
 	}
 	std::vector<std::string> txds;
 	listSpriteTxds(txds);
-	std::string shown = txdName == FAVOURITES ? std::string(ICON_FA_STAR " ") + _("Favourites") : txdName;
+	std::string shown = txdName == FAVOURITES ? std::string(ICON_FA_STAR " ") + _("Favourites") :
+		!serverFile.empty() ? serverFile : txdName;
 	if(ImGui::BeginCombo(L("Sprite TXD"), shown.c_str(), ImGuiComboFlags_HeightLarge)){
-		static char txdFilter[64];
+		static char txdFilter[128];
 		if(ImGui::IsWindowAppearing()){
 			txdFilter[0] = '\0';
 			ImGui::SetKeyboardFocusHere();
 		}
 		ImGui::SetNextItemWidth(-FLT_MIN);
 		ImGui::InputTextWithHint("##txd_filter", _("Search TXDs"), txdFilter, sizeof(txdFilter));
-		if(ImGui::Selectable((std::string(ICON_FA_STAR " ") + _("Favourites")).c_str(), txdName == FAVOURITES))
-			txdName = FAVOURITES;
+		if(ImGui::Selectable((std::string(ICON_FA_STAR " ") + _("Favourites")).c_str(), txdName == FAVOURITES)){
+			txdName = FAVOURITES; serverFile.clear(); modelId = 0;
+		}
 		std::string want = lowered(txdFilter);
-		// The open map's custom models first: their TXDs as mdl-<id>.
+		ImGui::SeparatorText(_("Server TXDs"));
+		if(ImGui::SmallButton(L("Refresh"))) ListServerTextureFiles(serverFiles);
+		if(root.empty()) ImGui::TextWrapped(_("Open a server workspace to browse its textures."));
+		else ImGui::SetItemTooltip("%s", root.c_str());
+		for(const std::string &file : serverFiles){
+			if(!want.empty() && lowered(file).find(want) == std::string::npos) continue;
+			if(ImGui::Selectable(file.c_str(), file == serverFile)){
+				serverFile = file;
+				modelId = ServerTextureModelId(file);
+				txdName = modelId ? "mdl" + std::to_string(modelId) : "";
+			}
+		}
+		if(!root.empty() && serverFiles.empty()) ImGui::TextDisabled(_("No server TXDs found."));
+		// Keep the ID entries too, for projects already using mdl-ID references.
 		std::vector<int> customs;
 		ListCustomSimpleModels(customs);
-		if(!customs.empty())
-			ImGui::SeparatorText(_("Custom models (0.3.DL)"));
+		if(!customs.empty()) ImGui::SeparatorText(_("Custom models (0.3.DL)"));
 		for(int id : customs){
 			char key[32], label[160];
 			snprintf(key, sizeof(key), "mdl%d", id);
@@ -4055,73 +4128,87 @@ spritePicker(TextDraw &td)
 			const char *file = obj && obj->m_txdSlot >= 0 ? GetCustomModelTxdName(obj->m_txdSlot) : "";
 			snprintf(label, sizeof(label), "%s  (%s)", key, file ? file : "");
 			if(want.empty() || lowered(label).find(want) != std::string::npos)
-				if(ImGui::Selectable(label, rw::strcmp_ci(key, txdName.c_str()) == 0))
-					txdName = key;
+				if(ImGui::Selectable(label, rw::strcmp_ci(key, txdName.c_str()) == 0)){
+					txdName = key; modelId = id; serverFile = ServerTexturePathForModel(id);
+				}
 		}
-		if(!customs.empty())
-			ImGui::SeparatorText(_("The game's"));
-		for(size_t i = 0; i < txds.size(); i++)
-			if(want.empty() || lowered(txds[i]).find(want) != std::string::npos)
-				if(ImGui::Selectable(txds[i].c_str(), rw::strcmp_ci(txds[i].c_str(), txdName.c_str()) == 0))
-					txdName = txds[i];
+		ImGui::SeparatorText(_("The game's"));
+		for(const std::string &name : txds)
+			if(want.empty() || lowered(name).find(want) != std::string::npos)
+				if(ImGui::Selectable(name.c_str(), rw::strcmp_ci(name.c_str(), txdName.c_str()) == 0)){
+					txdName = name; serverFile.clear(); modelId = 0;
+				}
 		ImGui::EndCombo();
 	}
-	ImGui::SetItemTooltip("%s", _("The game's TXDs, and the custom models' of the open map (AddSimpleModel):\n"
-		"those are mdl-<id> (mdl-2018 for -2018), for players on 0.3.DL or open.mp."));
-	if(customSpriteTxdSlot(txdName) != -2 || customSpriteTxdSlot(td.text.substr(0, td.text.find(':'))) != -2){
+	ImGui::SetItemTooltip("%s", root.empty() ? _("Open a server workspace to browse its textures.") : root.c_str());
+	bool server = !serverFile.empty() || rw::strncmp_ci(txdName.c_str(), "mdl-", 4) == 0;
+	bool validModel = modelId <= -1000 && modelId >= -30000;
+	if(server){
+		ImGui::SetNextItemWidth(ImGui::GetFontSize()*10.0f);
+		if(ImGui::InputInt(L("Model ID"), &modelId, 0, 0)){
+			validModel = modelId <= -1000 && modelId >= -30000;
+			if(validModel){
+				txdName = "mdl" + std::to_string(modelId);
+				if(!serverFile.empty() && td.serverTxd == serverFile && td.text.find(':') != std::string::npos){
+					td.text = txdName + td.text.substr(td.text.find(':'));
+					TextDrawsChanged();
+				}
+			}
+		}
+		ImGui::SetItemTooltip(_("Use the model ID registered by AddSimpleModel on your server (-1000 to -30000)."));
 		UiBadge("0.3.DL", _("A custom model's texture: players on 0.3.DL and open.mp download it;\n"
 			"0.3.7 players see nothing there."));
-		if(customSpriteTxdSlot(td.text.substr(0, td.text.find(':'))) == -1)
-			ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.3f, 1.0f), "%s", _("The open map has no custom model with that ID."));
+		if(!validModel) ImGui::TextWrapped(_("Enter the registered model ID before choosing a texture."));
+		if(serverFile.empty()) ImGui::TextWrapped(_("Choose the server TXD for this model ID."));
 	}
 	static char filter[64];
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	ImGui::InputTextWithHint("##sprite_filter", _("Search sprites in it"), filter, sizeof(filter));
 	std::string want = lowered(filter);
-	// The sprites to show: the TXD's, or the favourites.
 	std::vector<std::pair<std::string, rw::Texture*>> sprites;
 	if(txdName == FAVOURITES){
 		for(const std::string &f : gFavSprites)
-			sprites.push_back(std::make_pair(f, spriteTexture(f)));
+			sprites.push_back(std::make_pair(f, spriteTexture(f, favouriteServerTxd(f).c_str())));
 	}else{
-		int slot = spriteTxdSlot(txdName);
+		int slot = serverFile.empty() ? spriteTxdSlot(txdName) : LoadServerTextureTxd(serverFile);
 		int count = slot >= 0 ? GetTxdTextureCount(slot) : 0;
 		for(int i = 0; i < count; i++)
-			if(rw::Texture *tex = GetTxdTexture(slot, i))
-				sprites.push_back(std::make_pair(txdName + ":" + tex->name, tex));
+			if(rw::Texture *tex = GetTxdTexture(slot, i)) sprites.push_back(std::make_pair(
+				txdName.empty() ? tex->name : txdName + ":" + tex->name, tex));
+		if(!serverFile.empty() && slot < 0) ImGui::TextWrapped(_("The selected server TXD could not be loaded."));
 	}
-	ImGui::BeginChild("sprites", ImVec2(0, ImGui::GetFontSize() * 9.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY);
-	float cell = ImGui::GetFontSize() * 3.0f;
-	int perRow = std::max(1, (int)(gridWidth() / (cell + 4.0f))), shownCount = 0;
+	ImGui::BeginChild("sprites", ImVec2(0, ImGui::GetFontSize()*9.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY);
+	float cell = ImGui::GetFontSize()*3.0f;
+	int perRow = std::max(1, (int)(gridWidth()/(cell+4.0f))), shownCount = 0;
 	for(size_t i = 0; i < sprites.size(); i++){
 		const std::string &name = sprites[i].first;
-		if(!want.empty() && lowered(name).find(want) == std::string::npos)
-			continue;
-		if(shownCount++ % perRow)
-			ImGui::SameLine();
+		if(!want.empty() && lowered(name).find(want) == std::string::npos) continue;
+		if(shownCount++ % perRow) ImGui::SameLine();
 		ImGui::PushID((int)i);
 		bool fav = isFavSprite(name);
 		ImVec2 at = ImGui::GetCursorScreenPos();
+		ImGui::BeginDisabled(server && !validModel);
 		bool picked = sprites[i].second ? ImGui::ImageButton("##s", (ImTextureID)sprites[i].second, ImVec2(cell, cell)) :
-			ImGui::Button("?##s", ImVec2(cell + ImGui::GetStyle().FramePadding.x * 2.0f, cell + ImGui::GetStyle().FramePadding.y * 2.0f));
+			ImGui::Button("?##s", ImVec2(cell + ImGui::GetStyle().FramePadding.x*2.0f, cell + ImGui::GetStyle().FramePadding.y*2.0f));
 		if(picked){
+			std::string source = txdName == FAVOURITES ? favouriteServerTxd(name) : serverFile;
 			td.text = name;
+			td.serverTxd = source;
 			TextDrawsChanged();
 		}
-		if(fav)
-			ImGui::GetWindowDrawList()->AddText(ImVec2(at.x + 2.0f, at.y + 1.0f), IM_COL32(255, 210, 60, 255), ICON_FA_STAR);
+		if(fav) ImGui::GetWindowDrawList()->AddText(ImVec2(at.x+2.0f, at.y+1.0f), IM_COL32(255, 210, 60, 255), ICON_FA_STAR);
 		if(ImGui::BeginPopupContextItem()){
-			if(ImGui::MenuItem(fav ? L("Remove from favourites") : L("Add to favourites")))
-				toggleFavSprite(name);
+			if(ImGui::MenuItem(fav ? L("Remove from favourites") : L("Add to favourites"))) toggleFavSprite(name);
 			ImGui::EndPopup();
 		}
+		ImGui::EndDisabled();
 		ImGui::SetItemTooltip("%s%s", name.c_str(), fav ? "" : _("\nRight-click to keep it in Favourites"));
 		ImGui::PopID();
 	}
-	if(shownCount == 0)
-		ImGui::TextDisabled("%s", txdName == FAVOURITES ? _("No favourites yet: right-click a sprite to add it.") :
-			_("No sprites match."));
+	if(shownCount == 0) ImGui::TextDisabled("%s", txdName == FAVOURITES ?
+		_("No favourites yet: right-click a sprite to add it.") : _("No sprites match."));
 	ImGui::EndChild();
+	lastText = td.text; lastFile = td.serverTxd; lastVariable = td.name;
 }
 
 // Models for a model preview: objects, vehicles or skins by name or ID,
@@ -4197,6 +4284,25 @@ modelBrowser(int *model)
 	return picked;
 }
 
+// Stack labels above fields so they stay readable in a narrow dock.
+static const char *propertyLabel(const char *label)
+{
+	ImGui::TextUnformatted(label, ImGui::FindRenderedTextEnd(label));
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	static std::string id;
+	const char *hash = strstr(label, "###");
+	id = hash ? hash : std::string("###") + label;
+	return id.c_str();
+}
+
+static void
+flowNext(float width, float gap = -1.0f)
+{
+	ImGui::SameLine(0.0f, gap < 0.0f ? ImGui::GetStyle().ItemSpacing.x : gap);
+	if(ImGui::GetContentRegionAvail().x < width)
+		ImGui::NewLine();
+}
+
 // The panel's settings for what is selected. With several, a change goes to
 // all of them: the edited one's value is shown, positions move by the same step.
 static void
@@ -4218,7 +4324,7 @@ properties(void)
 		// Not a textdraw: its file, its place and how much of it shows.
 		char path[1024];
 		snprintf(path, sizeof(path), "%s", td.text.c_str());
-		if(ImGui::InputTextWithHint(L("Image file"), _("full path to a PNG, BMP or TGA"), path, sizeof(path),
+		if(ImGui::InputTextWithHint(propertyLabel(L("Image file")), _("full path to a PNG, BMP or TGA"), path, sizeof(path),
 			ImGuiInputTextFlags_EnterReturnsTrue)){
 			setImageFile(td, path);
 			changed = true;
@@ -4239,16 +4345,16 @@ properties(void)
 			}
 		}
 		float pos[2] = { td.x, td.y }, size[2] = { td.sizeX, td.sizeY };
-		if(ImGui::DragFloat2(L("Position"), pos, 0.5f, -640.0f, 1280.0f, "%.1f")){
+		if(ImGui::DragFloat2(propertyLabel(L("Position")), pos, 0.5f, -640.0f, 1280.0f, "%.1f")){
 			td.x = pos[0]; td.y = pos[1];
 			changed = true;
 		}
-		if(ImGui::DragFloat2(L("Size"), size, 0.5f, -1280.0f, 1280.0f, "%.1f")){
+		if(ImGui::DragFloat2(propertyLabel(L("Size")), size, 0.5f, -1280.0f, 1280.0f, "%.1f")){
 			td.sizeX = size[0]; td.sizeY = size[1];
 			changed = true;
 		}
 		int opacity = (int)((td.colour & 0xFF) * 100 / 255);
-		if(ImGui::SliderInt(L("Opacity"), &opacity, 0, 100, "%d%%")){
+		if(ImGui::SliderInt(propertyLabel(L("Opacity")), &opacity, 0, 100, "%d%%")){
 			td.colour = (td.colour & 0xFFFFFF00u) | (unsigned int)(opacity * 255 / 100);
 			changed = true;
 		}
@@ -4263,35 +4369,34 @@ properties(void)
 
 	if(ImGui::BeginTabBar("##td_props")){
 		if(ImGui::BeginTabItem(L("Content"))){
-			if(!many){
-				ImGui::InputText(L("Variable"), td.name, sizeof(td.name));
-				if(ImGui::IsItemDeactivatedAfterEdit()) changed = true;
-				ImGui::SetItemTooltip("%s", _("The Pawn variable. Empty or not a plain name makes one up."));
-			}
-			int scope = td.perPlayer ? 1 : 0;
-			const char *scopes[] = { _("To everyone (TextDrawCreate)"), _("Per player (CreatePlayerTextDraw)") };
-			if(ImGui::Combo(L("Shown"), &scope, scopes, IM_ARRAYSIZE(scopes)))
-				all([&](TextDraw &t){ t.perPlayer = scope == 1; });
 			static const char *fonts[] = { N_("0 Beckett (gothic)"), N_("1 Aharoni"), N_("2 Bank Gothic (capitals)"),
 				N_("3 Pricedown (capitals)"), N_("4 Sprite"), N_("5 Model preview") };
 			const char *fontNames[IM_ARRAYSIZE(fonts)];
 			for(int i = 0; i < IM_ARRAYSIZE(fonts); i++)
 				fontNames[i] = _(fonts[i]);
 			int font = td.font;
-			if(ImGui::Combo(L("Font"), &font, fontNames, IM_ARRAYSIZE(fonts)))
+			if(isText && ImGui::Combo(propertyLabel(L("Font")), &font, fontNames, 4))
 				all([&](TextDraw &t){ t.font = font; });
 			if(td.font == TD_FONT_SPRITE && !many){
 				char buf[256];
 				snprintf(buf, sizeof(buf), "%s", td.text.c_str());
-				if(ImGui::InputText(L("Sprite"), buf, sizeof(buf))){
+				if(ImGui::InputText(propertyLabel(L("Sprite")), buf, sizeof(buf))){
+					std::string before = td.text.substr(0, td.text.find(':'));
 					td.text = buf;
+					if(before != td.text.substr(0, td.text.find(':'))) td.serverTxd.clear();
 					changed = true;
 				}
-				spritePicker(td);
+				if(ImGui::Button(L("Browse sprites..."), ImVec2(-FLT_MIN, 0)))
+					ImGui::OpenPopup("##sprite_browser");
+				ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize()*30, ImGui::GetFontSize()*24), ImGuiCond_Appearing);
+				if(ImGui::BeginPopup("##sprite_browser")){
+					spritePicker(td);
+					ImGui::EndPopup();
+				}
 			}else if(isText){
 				char buf[1024];
 				snprintf(buf, sizeof(buf), "%s", td.text.c_str());
-				if(ImGui::InputTextMultiline(L("Text"), buf, sizeof(buf), ImVec2(-FLT_MIN, ImGui::GetFontSize() * 3.5f))){
+				if(ImGui::InputTextMultiline(propertyLabel(L("Text")), buf, sizeof(buf), ImVec2(-FLT_MIN, ImGui::GetFontSize() * 3.5f))){
 					std::string text = buf;
 					all([&](TextDraw &t){
 						if(t.font < TD_FONT_SPRITE)
@@ -4301,32 +4406,45 @@ properties(void)
 				ImGui::SetItemTooltip("%s", _("~n~ new line, ~r~ ~g~ ~b~ ~y~ ~p~ ~w~ ~l~ colours, ~h~ lighter, _ blank"));
 			}else if(td.font == TD_FONT_PREVIEW){
 				int model = td.previewModel;
-				if(ImGui::InputInt(L("Model"), &model))
+				if(ImGui::InputInt(propertyLabel(L("Model")), &model))
 					all([&](TextDraw &t){ t.previewModel = model; });
 				if(modelBrowser(&model))
 					all([&](TextDraw &t){ t.previewModel = model; });
 				float rot[3] = { td.previewRotX, td.previewRotY, td.previewRotZ };
-				if(ImGui::DragFloat3(L("Rotation"), rot, 1.0f, -360.0f, 360.0f, "%.1f"))
+				if(ImGui::DragFloat3(propertyLabel(L("Rotation")), rot, 1.0f, -360.0f, 360.0f, "%.1f"))
 					all([&](TextDraw &t){ t.previewRotX = rot[0]; t.previewRotY = rot[1]; t.previewRotZ = rot[2]; });
 				float zoom = td.previewZoom;
-				if(ImGui::DragFloat(L("Zoom"), &zoom, 0.01f, 0.1f, 10.0f, "%.2f"))
+				if(ImGui::DragFloat(propertyLabel(L("Zoom")), &zoom, 0.01f, 0.1f, 10.0f, "%.2f"))
 					all([&](TextDraw &t){ t.previewZoom = zoom; });
 				int cols[2] = { td.previewColour1, td.previewColour2 };
-				if(ImGui::InputInt2(L("Vehicle colours"), cols))
+				if(ImGui::InputInt2(propertyLabel(L("Vehicle colours")), cols))
 					all([&](TextDraw &t){ t.previewColour1 = cols[0]; t.previewColour2 = cols[1]; });
 			}
 			unsigned int colour = td.colour;
 			if(colourEdit(td.font == TD_FONT_SPRITE ? L("Tint") : L("Colour"), &colour))
 				all([&](TextDraw &t){ t.colour = colour; });
-			bool selectable = td.selectable;
-			if(ImGui::Checkbox(L("Selectable"), &selectable))
-				all([&](TextDraw &t){ t.selectable = selectable; });
-			ImGui::SetItemTooltip("%s", _("Players can click it while SelectTextDraw is on (OnPlayerClickTextDraw)."));
+			if(ImGui::CollapsingHeader(L("Code settings"))){
+				if(!many){
+					ImGui::InputText(propertyLabel(L("Variable")), td.name, sizeof(td.name));
+					if(ImGui::IsItemDeactivatedAfterEdit()) changed = true;
+					ImGui::SetItemTooltip("%s", _("The Pawn variable. Empty or not a plain name makes one up."));
+				}
+				int scope = td.perPlayer ? 1 : 0;
+				const char *scopes[] = { _("To everyone (TextDrawCreate)"), _("Per player (CreatePlayerTextDraw)") };
+				if(ImGui::Combo(propertyLabel(L("Shown")), &scope, scopes, IM_ARRAYSIZE(scopes)))
+					all([&](TextDraw &t){ t.perPlayer = scope == 1; });
+				if(ImGui::Combo(propertyLabel(L("Type")), &font, fontNames, IM_ARRAYSIZE(fonts)))
+					all([&](TextDraw &t){ t.font = font; });
+				bool selectable = td.selectable;
+				if(ImGui::Checkbox(L("Selectable"), &selectable))
+					all([&](TextDraw &t){ t.selectable = selectable; });
+				ImGui::SetItemTooltip("%s", _("Players can click it while SelectTextDraw is on (OnPlayerClickTextDraw)."));
+			}
 			ImGui::EndTabItem();
 		}
 		if(ImGui::BeginTabItem(L("Layout"))){
 			float pos[2] = { td.x, td.y };
-			if(ImGui::DragFloat2(L("Position"), pos, 0.5f, -100.0f, 740.0f, "%.2f")){
+			if(ImGui::DragFloat2(propertyLabel(L("Position")), pos, 0.5f, -100.0f, 740.0f, "%.2f")){
 				float dx = pos[0] - td.x, dy = pos[1] - td.y;
 				for(int i : gSel)
 					moveBy(tds[i], dx, dy);
@@ -4335,7 +4453,7 @@ properties(void)
 			ImGui::SetItemTooltip("%s", _("On the 640x448 canvas every resolution is scaled to."));
 			if(!many){
 				float size[2] = { td.sizeX, td.sizeY };
-				if(ImGui::DragFloat2(L("Text size"), size, 0.5f, -1280.0f, 1280.0f, "%.2f")){
+				if(ImGui::DragFloat2(propertyLabel(L("Text size")), size, 0.5f, -1280.0f, 1280.0f, "%.2f")){
 					td.sizeX = size[0]; td.sizeY = size[1];
 					changed = true;
 				}
@@ -4345,11 +4463,11 @@ properties(void)
 			}
 			if(isText){
 				float letter[2] = { td.letterX, td.letterY };
-				if(ImGui::DragFloat2(L("Letter size"), letter, 0.005f, td.useBox ? -50.0f : 0.0f, 50.0f, "%.3f"))
+				if(ImGui::DragFloat2(propertyLabel(L("Letter size")), letter, 0.005f, td.useBox ? -50.0f : 0.0f, 50.0f, "%.3f"))
 					all([&](TextDraw &t){ t.letterX = letter[0]; t.letterY = letter[1]; });
 				int align = td.alignment - 1;
 				const char *aligns[] = { _("Left"), _("Centre"), _("Right") };
-				if(ImGui::Combo(L("Alignment"), &align, aligns, IM_ARRAYSIZE(aligns)))
+				if(ImGui::Combo(propertyLabel(L("Alignment")), &align, aligns, IM_ARRAYSIZE(aligns)))
 					all([&](TextDraw &t){ t.alignment = align + 1; });
 				bool proportional = td.proportional;
 				if(ImGui::Checkbox(L("Proportional"), &proportional))
@@ -4369,9 +4487,9 @@ properties(void)
 						all([&](TextDraw &t){ t.boxColour = boxColour; });
 				}
 				int shadow = td.shadow, outline = td.outline;
-				if(ImGui::SliderInt(L("Shadow"), &shadow, 0, 10))
+				if(ImGui::SliderInt(propertyLabel(L("Shadow")), &shadow, 0, 10))
 					all([&](TextDraw &t){ t.shadow = shadow; });
-				if(ImGui::SliderInt(L("Outline"), &outline, 0, 10))
+				if(ImGui::SliderInt(propertyLabel(L("Outline")), &outline, 0, 10))
 					all([&](TextDraw &t){ t.outline = outline; });
 			}
 			unsigned int back = td.backgroundColour;
@@ -4620,20 +4738,20 @@ shapeFields(ShapeSettings &sh, bool placed)
 		if(gShapeOrder[k] == sh.kind)
 			at = k;
 	}
-	ImGui::PushItemWidth(ImGui::GetFontSize() * 10.0f);
-	if(ImGui::Combo(L("Shape"), &at, names, NUM_SHAPES)){
+	ImGui::PushItemWidth(-FLT_MIN);
+	if(ImGui::Combo(propertyLabel(L("Shape")), &at, names, NUM_SHAPES)){
 		shapeDefaults(sh, gShapeOrder[at]);
 		changed = true;
 	}
 	if(placed){
 		float pos[2] = { sh.x, sh.y };
-		if(ImGui::DragFloat2(L("Position"), pos, 0.5f, -640.0f, 1280.0f, "%.1f")){
+		if(ImGui::DragFloat2(propertyLabel(L("Position")), pos, 0.5f, -640.0f, 1280.0f, "%.1f")){
 			sh.x = pos[0]; sh.y = pos[1];
 			changed = true;
 		}
 	}
 	float size[2] = { sh.w, sh.h };
-	if(ImGui::DragFloat2(L("Size"), size, 0.5f, 1.0f, 640.0f, "%.1f")){
+	if(ImGui::DragFloat2(propertyLabel(L("Size")), size, 0.5f, 1.0f, 640.0f, "%.1f")){
 		sh.w = std::max(1.0f, size[0]);
 		sh.h = std::max(1.0f, size[1]);
 		changed = true;
@@ -4642,30 +4760,30 @@ shapeFields(ShapeSettings &sh, bool placed)
 		"Alt sizes it from the centre, Ctrl stops snapping."));
 	int k = sh.kind;
 	if(k == SHAPE_ROUNDED_BOX)
-		changed |= ImGui::DragFloat(L("Corner radius"), &sh.radius, 0.25f, 0.0f, 200.0f, "%.1f");
+		changed |= ImGui::DragFloat(propertyLabel(L("Corner radius")), &sh.radius, 0.25f, 0.0f, 200.0f, "%.1f");
 	if(k == SHAPE_ROUNDED_BOX || k == SHAPE_PILL || k == SHAPE_CIRCLE)
-		changed |= ImGui::DragFloat(L("Border"), &sh.thickness, 0.1f, 0.0f, 100.0f, "%.1f");
+		changed |= ImGui::DragFloat(propertyLabel(L("Border")), &sh.thickness, 0.1f, 0.0f, 100.0f, "%.1f");
 	if(k == SHAPE_OUTLINE)
-		changed |= ImGui::DragFloat(L("Line width"), &sh.thickness, 0.1f, 0.5f, 100.0f, "%.1f");
+		changed |= ImGui::DragFloat(propertyLabel(L("Line width")), &sh.thickness, 0.1f, 0.5f, 100.0f, "%.1f");
 	if(k == SHAPE_PLUS)
-		changed |= ImGui::DragFloat(L("Arm width"), &sh.thickness, 0.1f, 0.5f, 200.0f, "%.1f");
+		changed |= ImGui::DragFloat(propertyLabel(L("Arm width")), &sh.thickness, 0.1f, 0.5f, 200.0f, "%.1f");
 	if(k == SHAPE_RING){
-		changed |= ImGui::DragFloat(L("Dot size"), &sh.thickness, 0.25f, 1.0f, 60.0f, "%.1f");
-		changed |= ImGui::SliderInt(L("Dots"), &sh.segments, 3, 120);
+		changed |= ImGui::DragFloat(propertyLabel(L("Dot size")), &sh.thickness, 0.25f, 1.0f, 60.0f, "%.1f");
+		changed |= ImGui::SliderInt(propertyLabel(L("Dots")), &sh.segments, 3, 120);
 		ImGui::SetItemTooltip("%s", _("Each dot is a textdraw: SA-MP allows 2048 global and 256 per player."));
 	}
 	if(k == SHAPE_BAR){
-		changed |= ImGui::SliderInt(L("Segments"), &sh.segments, 1, 40);
+		changed |= ImGui::SliderInt(propertyLabel(L("Segments")), &sh.segments, 1, 40);
 		ImGui::SetItemTooltip("%s", _("1 for a solid bar. Each segment is a textdraw."));
 		if(sh.segments > 1)
-			changed |= ImGui::DragFloat(L("Gap"), &sh.thickness, 0.1f, 0.0f, 50.0f, "%.1f");
+			changed |= ImGui::DragFloat(propertyLabel(L("Gap")), &sh.thickness, 0.1f, 0.0f, 50.0f, "%.1f");
 	}
 	if(k == SHAPE_GRADIENT){
-		changed |= ImGui::SliderInt(L("Bands"), &sh.segments, 2, 128);
+		changed |= ImGui::SliderInt(propertyLabel(L("Bands")), &sh.segments, 2, 128);
 		ImGui::SetItemTooltip("%s", _("More bands blend more smoothly. Each band is a textdraw."));
 	}
 	if(k == SHAPE_TRIANGLE){
-		changed |= ImGui::SliderInt(L("Steps"), &sh.segments, 1, 64);
+		changed |= ImGui::SliderInt(propertyLabel(L("Steps")), &sh.segments, 1, 64);
 		ImGui::SetItemTooltip("%s", _("Textdraws can't be turned, so a triangle is boxes in steps.\n"
 			"More steps make a smoother edge. Each step is a textdraw."));
 	}
@@ -4681,10 +4799,10 @@ shapeFields(ShapeSettings &sh, bool placed)
 			dirs[0] = _("Points right"); dirs[1] = _("Points left");
 			dirs[2] = _("Points up"); dirs[3] = _("Points down");
 		}
-		changed |= ImGui::Combo(L("Direction"), &sh.dir, dirs, 4);
+		changed |= ImGui::Combo(propertyLabel(L("Direction")), &sh.dir, dirs, 4);
 	}
 	if(k == SHAPE_BAR || k == SHAPE_RING)
-		changed |= ImGui::SliderInt(L("Value"), &sh.value, 0, 100, "%d%%");
+		changed |= ImGui::SliderInt(propertyLabel(L("Value")), &sh.value, 0, 100, "%d%%");
 	ImGui::PopItemWidth();
 	changed |= colourEdit(k == SHAPE_GRADIENT ? L("From") : L("Colour"), &sh.colour);
 	if(shapeOpaque(sh))
@@ -4700,8 +4818,8 @@ shapeFields(ShapeSettings &sh, bool placed)
 	}
 	if((k == SHAPE_ROUNDED_BOX || k == SHAPE_PILL || k == SHAPE_CIRCLE) && sh.thickness > 0.0f)
 		changed |= colourEdit(L("Border colour"), &sh.back);
-	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10.0f);
-	changed |= ImGui::DragFloat(L("Shadow"), &sh.shadow, 0.1f, -20.0f, 20.0f, "%.1f");
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	changed |= ImGui::DragFloat(propertyLabel(L("Shadow")), &sh.shadow, 0.1f, -20.0f, 20.0f, "%.1f");
 	ImGui::SetItemTooltip("%s", _("A copy of the shape under it, this far down and right. 0 for none."));
 	if(sh.shadow != 0.0f)
 		changed |= colourEdit(L("Shadow colour"), &sh.shadowColour);
@@ -4733,9 +4851,9 @@ addShape(void)
 }
 
 static void
-shapeButton(void)
+shapeButton(float width)
 {
-	if(ImGui::Button(LI(ICON_FA_PLUS, "Shape##add")))
+	if(ImGui::Button(LI(ICON_FA_PLUS, "Shape##add"), ImVec2(width, ImGui::GetFrameHeight()*1.25f)))
 		ImGui::OpenPopup("##shape");
 	ImGui::SetItemTooltip("%s", _("Boxes, circles, outlines, triangles, arrows, gradients, bars and rings, made\n"
 		"of sprite textdraws and added as a group. Select it later to change it."));
@@ -5136,156 +5254,123 @@ guidesButton(void)
 	ImGui::EndPopup();
 }
 
-static void
-drawToolbar(void)
+// Shares the workspace bar so the canvas gets all the remaining height.
+void
+DrawTextDrawsToolbar(void)
 {
-	ImGuiViewport *vp = ImGui::GetMainViewport();
-	ImVec2 pos = vp->WorkPos, size = vp->WorkSize;
-#ifdef IMGUI_HAS_DOCK
-	ImGuiDockNode *central = ImGui::DockBuilderGetCentralNode(ImHashStr("HaumeaDockSpace"));
-	if(central && central->Size.x > 32.0f && central->Size.y > 32.0f){
-		pos = central->Pos;
-		size = central->Size;
+	float controls = ImGui::GetFrameHeight() * 3.0f + ImGui::GetFontSize() * 10.0f +
+		ImGui::GetStyle().ItemSpacing.x * 6.0f;
+	float boards = ImGui::GetContentRegionAvail().x - controls;
+	if(boards > ImGui::GetFontSize() * 5.0f){
+		ImGui::BeginChild("##boards_area", ImVec2(boards, ImGui::GetFrameHeight()), ImGuiChildFlags_None,
+			ImGuiWindowFlags_NoScrollbar);
+		boardTabs();
+		ImGui::EndChild();
+	}else{
+		if(ImGui::SmallButton(ICON_FA_LAYER_GROUP "##boards_menu"))
+			ImGui::OpenPopup("##boards_popup");
+		ImGui::SetItemTooltip("%s", boardLabel(gBoard));
+		ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 16.0f, 0), ImGuiCond_Appearing);
+		if(ImGui::BeginPopup("##boards_popup")){
+			boardTabs();
+			ImGui::EndPopup();
+		}
 	}
-#endif
-	KeepNextEditorOverlayOnMainWindow();
-	ImGui::SetNextWindowPos(pos);
-	ImGui::SetNextWindowSize(ImVec2(size.x, 0.0f));
-	ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
-		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav |
-		ImGuiWindowFlags_NoMove;
-#ifdef IMGUI_HAS_DOCK
-	flags |= ImGuiWindowFlags_NoDocking;
-#endif
-	if(!ImGui::Begin("##textdraw_toolbar", nil, flags)){
-		ImGui::End();
-		return;
-	}
-	ImGui::AlignTextToFramePadding();
-	ImGui::TextColored(ImVec4(0.95f, 0.75f, 0.20f, 1.0f), "%s", TI(ICON_FA_FONT, "TextDraw mode"));
-	ImGui::SameLine();
-	ImGui::Text("%s%s", GetTextDrawFileName(), TextDrawFileHasUnsavedChanges() ? " *" : "");
-	ImGui::SameLine();
-	ImGui::BeginChild("##boards_area", ImVec2(std::max(60.0f, ImGui::GetContentRegionAvail().x), ImGui::GetFrameHeight()), ImGuiChildFlags_None,
-		ImGuiWindowFlags_NoScrollbar);
-	boardTabs();
-	ImGui::EndChild();
 
-	// Second row: the screen, the background, the HUD, then the grid and the zoom.
-	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 5.5f);
-	const char *screens[NUM_TD_SCREENS];
-	for(int i = 0; i < NUM_TD_SCREENS; i++)
-		screens[i] = i == TD_SCREEN_WINDOW ? _(gScreenNames[i]) : gScreenNames[i];
-	if(ImGui::Combo("##screen", &gScreen, screens, NUM_TD_SCREENS)){
-		gZoom = 1.0f; gPanX = gPanY = 0.0f;
-		SaveEditorSettings();
-	}
-	ImGui::SetItemTooltip("%s", _("The player's screen shape. Textdraws stretch with it; the chat doesn't."));
-	ImGui::SameLine();
-	if(ImGui::Checkbox(L("Compare"), &gCompare))
-		SaveEditorSettings();
-	ImGui::SetItemTooltip("%s", _("Small views of this board at 4:3, 16:9 and 21:9 in the corner."));
-	ImGui::SameLine();
-	if(ImGui::Checkbox(L("Pixel-exact"), &gPixelExact))
-		SaveEditorSettings();
-	ImGui::SetItemTooltip("%s", _("Draws the screen at the player's resolution and scales that to the canvas, so\n"
-		"seams and gaps between textdraws show as they do in game. Zoom in to see\n"
-		"single pixels."));
-	if(gPixelExact){
-		ImGui::SameLine();
-		char res[NUM_HUD_RESOLUTIONS][24];
-		const char *resNames[NUM_HUD_RESOLUTIONS];
-		for(int i = 0; i < NUM_HUD_RESOLUTIONS; i++){
-			snprintf(res[i], sizeof(res[i]), "%d x %d", gHudResolutions[i].w, gHudResolutions[i].h);
-			resNames[i] = res[i];
-		}
-		ImGui::SetNextItemWidth(ImGui::GetFontSize() * 7.0f);
-		if(ImGui::Combo("##exact_res", &gHud.resolution, resNames, NUM_HUD_RESOLUTIONS))
-			SaveEditorSettings();
-		ImGui::SetItemTooltip("%s", _("The player's screen (the same one the chat and outlines use)."));
-	}
-	ImGui::SameLine();
-	ImGui::TextDisabled("|");
-	ImGui::SameLine();
-	int background = gBackground;
-	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 7.0f);
-	const char *backgrounds[] = { _("Plain"), _("Still frame") };
-	if(ImGui::Combo("##background", &background, backgrounds, IM_ARRAYSIZE(backgrounds))){
-		gBackground = background;
-		if(gBackground == TD_BACKGROUND_STILL && gStillFrame == nil)
-			gStillPending = true;	// taken from the world on the next frame
-		SaveEditorSettings();
-	}
-	ImGui::SetItemTooltip("%s", _("Still frame: the world as the camera saw it when TextDraw mode started."));
-	if(gBackground == TD_BACKGROUND_STILL){
-		ImGui::SameLine();
-		stillFramePlaces();
-	}
-	if(gBackground == TD_BACKGROUND_PLAIN){
-		ImGui::SameLine();
-		float c[4] = { (gCanvasColour >> 24 & 0xFF) / 255.0f, (gCanvasColour >> 16 & 0xFF) / 255.0f,
-			(gCanvasColour >> 8 & 0xFF) / 255.0f, 1.0f };
-		if(ImGui::ColorEdit3("##canvas", c, ImGuiColorEditFlags_NoInputs)){
-			gCanvasColour = (unsigned int)(c[0] * 255.0f + 0.5f) << 24 | (unsigned int)(c[1] * 255.0f + 0.5f) << 16 |
-				(unsigned int)(c[2] * 255.0f + 0.5f) << 8 | 0xFF;
-			SaveEditorSettings();
-		}
-	}
-	ImGui::SameLine();
-	hudSettings();
-	ImGui::SameLine();
-	ImGui::TextDisabled("|");
-	ImGui::SameLine();
-	if(ImGui::Checkbox(L("Grid"), &gGrid))
-		SaveEditorSettings();
-	if(gGrid){
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(ImGui::GetFontSize() * 3.0f);
-		if(ImGui::DragFloat("##grid", &gGridSize, 0.5f, 1.0f, 200.0f, "%.0f"))
-			gGridSize = std::max(1.0f, gGridSize);
-		if(ImGui::IsItemDeactivatedAfterEdit())
-			SaveEditorSettings();
-		ImGui::SetItemTooltip("%s", _("Grid spacing, in canvas units (640 x 448)"));
-	}
-	ImGui::SameLine();
-	if(ImGui::Checkbox(L("Snap"), &gSnap))
-		SaveEditorSettings();
-	ImGui::SetItemTooltip("%s", _("Dragged textdraws snap to the screen's edges and centre, to the others,\n"
-		"to the grid and to guides. Hold Ctrl while dragging to place freely."));
-	ImGui::SameLine();
-	if(ImGui::Checkbox(L("Rulers"), &gRulers))
-		SaveEditorSettings();
-	ImGui::SetItemTooltip("%s", _("Rulers along the canvas, in canvas units. Drag from one to make a guide,\n"
-		"and drag a guide back onto a ruler to remove it. Guides are saved with the file."));
-	if(gRulers){
-		ImGui::SameLine();
-		guidesButton();
-	}
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 3.0f);
-	if(ImGui::DragFloat("##nudge", &gNudge, 0.05f, 0.01f, 100.0f, ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT " %.2f"))
-		gNudge = std::max(0.01f, gNudge);
-	if(ImGui::IsItemDeactivatedAfterEdit())
-		SaveEditorSettings();
-	ImGui::SetItemTooltip("%s", _("How far the arrow keys move the selection; Shift moves ten times as far."));
-	ImGui::SameLine();
-	if(ImGui::Checkbox(L("Click through locked"), &gClickThroughLocked))
-		SaveEditorSettings();
-	ImGui::SetItemTooltip("%s", _("Clicks on a locked textdraw go to what is under it.\n"
-		"Alt+click picks the next one down under the cursor."));
-	ImGui::SameLine();
-	ImGui::TextDisabled("|");
-	ImGui::SameLine();
-	if(ImGui::SmallButton("-##zoom")){ gZoom = std::max(0.25f, gZoom / 1.25f); }
-	ImGui::SameLine();
+	if(ImGui::SmallButton("-##zoom")) gZoom = std::max(0.25f, gZoom / 1.25f);
 	ImGui::Text("%.0f%%", gZoom * 100.0f);
 	ImGui::SetItemTooltip("%s", _("The wheel zooms round the cursor, the middle button pans.\nCtrl+wheel sizes the interface instead."));
-	ImGui::SameLine();
-	if(ImGui::SmallButton("+##zoom")){ gZoom = std::min(MAX_ZOOM, gZoom * 1.25f); }
-	ImGui::SameLine();
+	if(ImGui::SmallButton("+##zoom")) gZoom = std::min(MAX_ZOOM, gZoom * 1.25f);
 	if(ImGui::SmallButton(L("Fit"))){ gZoom = 1.0f; gPanX = gPanY = 0.0f; }
-	gToolbarHeight = ImGui::GetWindowSize().y;
-	ImGui::End();
+	if(ImGui::Button(LI(ICON_FA_GEAR, "Canvas")))
+		ImGui::OpenPopup("##canvas_settings");
+	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 24.0f, 0), ImGuiCond_Appearing);
+	if(ImGui::BeginPopup("##canvas_settings")){
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		const char *screens[NUM_TD_SCREENS];
+		for(int i = 0; i < NUM_TD_SCREENS; i++)
+			screens[i] = i == TD_SCREEN_WINDOW ? _(gScreenNames[i]) : gScreenNames[i];
+		if(ImGui::Combo("##screen", &gScreen, screens, NUM_TD_SCREENS)){
+			gZoom = 1.0f; gPanX = gPanY = 0.0f;
+			SaveEditorSettings();
+		}
+		ImGui::SetItemTooltip("%s", _("The player's screen shape. Textdraws stretch with it; the chat doesn't."));
+		if(ImGui::Checkbox(L("Compare"), &gCompare))
+			SaveEditorSettings();
+		ImGui::SetItemTooltip("%s", _("Open movable previews at 4:3, 16:9 and 21:9. Dock them beside the canvas to compare."));
+		if(ImGui::Checkbox(L("Pixel-exact"), &gPixelExact))
+			SaveEditorSettings();
+		ImGui::SetItemTooltip("%s", _("Draws the screen at the player's resolution and scales that to the canvas, so\n"
+			"seams and gaps between textdraws show as they do in game. Zoom in to see\n"
+			"single pixels."));
+		if(gPixelExact){
+			char res[NUM_HUD_RESOLUTIONS][24];
+			const char *resNames[NUM_HUD_RESOLUTIONS];
+			for(int i = 0; i < NUM_HUD_RESOLUTIONS; i++){
+				snprintf(res[i], sizeof(res[i]), "%d x %d", gHudResolutions[i].w, gHudResolutions[i].h);
+				resNames[i] = res[i];
+			}
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			if(ImGui::Combo("##exact_res", &gHud.resolution, resNames, NUM_HUD_RESOLUTIONS))
+				SaveEditorSettings();
+			ImGui::SetItemTooltip("%s", _("The player's screen (the same one the chat and outlines use)."));
+		}
+		int background = gBackground;
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		const char *backgrounds[] = { _("Plain"), _("Still frame") };
+		if(ImGui::Combo("##background", &background, backgrounds, IM_ARRAYSIZE(backgrounds))){
+			gBackground = background;
+			if(gBackground == TD_BACKGROUND_STILL && gStillFrame == nil)
+				gStillPending = true;	// taken from the world on the next frame
+			SaveEditorSettings();
+		}
+		ImGui::SetItemTooltip("%s", _("Still frame: the world as the camera saw it when TextDraw mode started."));
+		if(gBackground == TD_BACKGROUND_STILL){
+			stillFramePlaces();
+		}
+		if(gBackground == TD_BACKGROUND_PLAIN){
+			float c[4] = { (gCanvasColour >> 24 & 0xFF) / 255.0f, (gCanvasColour >> 16 & 0xFF) / 255.0f,
+				(gCanvasColour >> 8 & 0xFF) / 255.0f, 1.0f };
+			if(ImGui::ColorEdit3("##canvas", c, ImGuiColorEditFlags_NoInputs)){
+				gCanvasColour = (unsigned int)(c[0] * 255.0f + 0.5f) << 24 | (unsigned int)(c[1] * 255.0f + 0.5f) << 16 |
+					(unsigned int)(c[2] * 255.0f + 0.5f) << 8 | 0xFF;
+				SaveEditorSettings();
+			}
+		}
+		hudSettings();
+		if(ImGui::Checkbox(L("Grid"), &gGrid))
+			SaveEditorSettings();
+		if(gGrid){
+			ImGui::SetNextItemWidth(ImGui::GetFontSize() * 3.0f);
+			if(ImGui::DragFloat("##grid", &gGridSize, 0.5f, 1.0f, 200.0f, "%.0f"))
+				gGridSize = std::max(1.0f, gGridSize);
+			if(ImGui::IsItemDeactivatedAfterEdit())
+				SaveEditorSettings();
+			ImGui::SetItemTooltip("%s", _("Grid spacing, in canvas units (640 x 448)"));
+		}
+		if(ImGui::Checkbox(L("Snap"), &gSnap))
+			SaveEditorSettings();
+		ImGui::SetItemTooltip("%s", _("Dragged textdraws snap to the screen's edges and centre, to the others,\n"
+			"to the grid and to guides. Hold Ctrl while dragging to place freely."));
+		if(ImGui::Checkbox(L("Rulers"), &gRulers))
+			SaveEditorSettings();
+		ImGui::SetItemTooltip("%s", _("Rulers along the canvas, in canvas units. Drag from one to make a guide,\n"
+			"and drag a guide back onto a ruler to remove it. Guides are saved with the file."));
+		if(gRulers){
+			guidesButton();
+		}
+		ImGui::SetNextItemWidth(ImGui::GetFontSize() * 3.0f);
+		if(ImGui::DragFloat("##nudge", &gNudge, 0.05f, 0.01f, 100.0f, ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT " %.2f"))
+			gNudge = std::max(0.01f, gNudge);
+		if(ImGui::IsItemDeactivatedAfterEdit())
+			SaveEditorSettings();
+		ImGui::SetItemTooltip("%s", _("How far the arrow keys move the selection; Shift moves ten times as far."));
+		if(ImGui::Checkbox(L("Click through locked"), &gClickThroughLocked))
+			SaveEditorSettings();
+		ImGui::SetItemTooltip("%s", _("Clicks on a locked textdraw go to what is under it.\n"
+			"Alt+click picks the next one down under the cursor."));
+		ImGui::EndPopup();
+	}
 }
 
 bool
@@ -5374,51 +5459,56 @@ TextDrawModeShortcut(int action)
 static void
 fileBar(void)
 {
-	char label[64];
-	snprintf(label, sizeof(label), ICON_FA_FILE "###New");
-	if(iconButton(label, _("New textdraw file")))
-		RequestTextDrawFileClose(newFile);
-	ImGui::SameLine();
-	if(iconButton(ICON_FA_FOLDER_OPEN "###Open...", _("Open a textdraw file")))
-		RequestTextDrawFileClose(showOpenDialog);
-	ImGui::SameLine();
-	if(iconButton(ICON_FA_FLOPPY_DISK "###Save", ShortcutLabel(SC_SAVE_MAP)))
-		saveOrAsk();
-	ImGui::SameLine();
-	if(iconButton(ICON_FA_FILE_EXPORT "###Save As...", _("Save As...")))
-		showFileDialog(true);
-	ImGui::SameLine();
-	ImGui::BeginDisabled(gRecent.empty());
-	if(iconButton(ICON_FA_CLOCK_ROTATE_LEFT "##recent", _("Recent textdraw files")))
-		ImGui::OpenPopup("recent");
-	ImGui::EndDisabled();
-	if(ImGui::BeginPopup("recent")){
-		static std::string chosen;
-		for(size_t i = 0; i < gRecent.size(); i++){
-			ImGui::PushID((int)i);
-			const char *name = gRecent[i].c_str() + gRecent[i].find_last_of("/\\") + 1;
-			if(ImGui::MenuItem(name)){
-				chosen = gRecent[i];
-				RequestTextDrawFileClose([]{ openFile(chosen.c_str()); });
+	const char *icons[] = { ICON_FA_FILE "###New", ICON_FA_FOLDER_OPEN "###Open...",
+		ICON_FA_FLOPPY_DISK "###Save", ICON_FA_ROTATE_LEFT "###Undo", ICON_FA_ROTATE_RIGHT "###Redo",
+		"...###File options" };
+	const char *tips[] = { _("New textdraw file"), _("Open a textdraw file"), ShortcutLabel(SC_SAVE_MAP),
+		ShortcutLabel(SC_UNDO), ShortcutLabel(SC_REDO), _("File options") };
+	float gap = ImGui::GetStyle().ItemSpacing.x;
+	float width = std::max(1.0f, (ImGui::GetContentRegionAvail().x - gap * 5.0f) / 6.0f);
+	for(int i = 0; i < 6; i++){
+		if(i) ImGui::SameLine();
+		if(ImGui::Button(icons[i], ImVec2(width, 0))){
+			switch(i){
+			case 0: RequestTextDrawFileClose(newFile); break;
+			case 1: RequestTextDrawFileClose(showOpenDialog); break;
+			case 2: saveOrAsk(); break;
+			case 3: UndoTextDraws(); break;
+			case 4: RedoTextDraws(); break;
+			case 5: ImGui::OpenPopup("##file_options"); break;
 			}
-			ImGui::SetItemTooltip("%s", gRecent[i].c_str());
-			ImGui::PopID();
 		}
-		ImGui::Separator();
-		if(ImGui::MenuItem(L("Clear list"))){
-			gRecent.clear();
-			SaveEditorSettings();
+		ImGui::SetItemTooltip("%s", tips[i]);
+	}
+	if(ImGui::BeginPopup("##file_options")){
+		if(ImGui::MenuItem(L("Save As..."))) showFileDialog(true);
+		if(ImGui::BeginMenu(L("Recent textdraw files"), !gRecent.empty())){
+			static std::string chosen;
+			for(size_t i = 0; i < gRecent.size(); i++){
+				ImGui::PushID((int)i);
+				const char *name = gRecent[i].c_str() + gRecent[i].find_last_of("/\\") + 1;
+				if(ImGui::MenuItem(name)){
+					chosen = gRecent[i];
+					RequestTextDrawFileClose([]{ openFile(chosen.c_str()); });
+				}
+				ImGui::SetItemTooltip("%s", gRecent[i].c_str());
+				ImGui::PopID();
+			}
+			if(ImGui::MenuItem(L("Clear list"))){ gRecent.clear(); SaveEditorSettings(); }
+			ImGui::EndMenu();
 		}
+		ImGui::SeparatorText(_("Code target"));
+		TextDrawCodeTarget target = GetTextDrawCodeTarget();
+		if(ImGui::MenuItem("SA-MP 0.3.7", nil, target == TEXTDRAW_CODE_SAMP) && target != TEXTDRAW_CODE_SAMP){
+			SetTextDrawCodeTarget(TEXTDRAW_CODE_SAMP); TextDrawCodeTargetChanged(); SaveEditorSettings();
+		}
+		if(ImGui::MenuItem("open.mp", nil, target == TEXTDRAW_CODE_OPENMP) && target != TEXTDRAW_CODE_OPENMP){
+			SetTextDrawCodeTarget(TEXTDRAW_CODE_OPENMP); TextDrawCodeTargetChanged(); SaveEditorSettings();
+		}
+		ImGui::SetItemTooltip("%s", _("Generated Pawn code targets only the selected server."));
 		ImGui::EndPopup();
 	}
-	ImGui::SameLine(0.0f, ImGui::GetFontSize());
-	if(iconButton(ICON_FA_ROTATE_LEFT "###Undo", ShortcutLabel(SC_UNDO)))
-		UndoTextDraws();
-	ImGui::SameLine();
-	if(iconButton(ICON_FA_ROTATE_RIGHT "###Redo", ShortcutLabel(SC_REDO)))
-		RedoTextDraws();
-	ImGui::TextDisabled(TextDrawFileHasUnsavedChanges() ? _("Unsaved changes - %s") : _("Saved - %s"),
-		GetTextDrawFileName());
+	ImGui::TextWrapped("%s%s", GetTextDrawFileName(), TextDrawFileHasUnsavedChanges() ? " *" : "");
 	if(GetTextDrawFilePath()[0])
 		ImGui::SetItemTooltip(_("%s\nInclude it in your gamemode and call %s_CreateTextDraws()\n"
 			"from OnGameModeInit and %s_ShowTextDraws(playerid)."), GetTextDrawFilePath(),
@@ -5506,7 +5596,7 @@ layers(void)
 	std::vector<TextDraw> &tds = GetTextDraws();
 	ImGuiIO &io = ImGui::GetIO();
 	static std::vector<std::string> folded;
-	ImGui::BeginChild("list", ImVec2(0, ImGui::GetFontSize() * 11.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeY);
+	ImGui::BeginChild("list", ImVec2(0, ImGui::GetFontSize() * 8.0f), ImGuiChildFlags_ResizeY);
 	std::string openGroup;	// the group the rows above belong to
 	bool any = false;
 	int dropAt = -1;
@@ -5546,7 +5636,8 @@ layers(void)
 			for(int k = 0; k < (int)tds.size(); k++)
 				if(onBoard(tds[k]) && tds[k].group == td.group)
 					all &= isSelected(k);
-			if(ImGui::Selectable(header, all, ImGuiSelectableFlags_AllowOverlap | ImGuiSelectableFlags_AllowDoubleClick)){
+			if(ImGui::Selectable(header, all, ImGuiSelectableFlags_AllowOverlap | ImGuiSelectableFlags_AllowDoubleClick,
+			ImVec2(std::max(1.0f, ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x * 0.5f), 0))){
 				if(io.MousePos.x < ImGui::GetItemRectMin().x + ImGui::GetFontSize()){
 					if(isFolded) folded.erase(std::find(folded.begin(), folded.end(), td.group));
 					else folded.push_back(td.group);
@@ -5606,7 +5697,8 @@ layers(void)
 		}
 		ImGui::SameLine();
 		std::string label = layerLabel(td) + "##td" + std::to_string(i);
-		if(ImGui::Selectable(label.c_str(), isSelected(i), ImGuiSelectableFlags_AllowOverlap | ImGuiSelectableFlags_AllowDoubleClick)){
+		if(ImGui::Selectable(label.c_str(), isSelected(i), ImGuiSelectableFlags_AllowOverlap | ImGuiSelectableFlags_AllowDoubleClick,
+			ImVec2(std::max(1.0f, ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x * 0.5f), 0))){
 			bool doubleClick = ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
 			if(!td.group.empty() && doubleClick && td.group != gIsolatedGroup){
 				gIsolatedGroup = td.group;
@@ -5733,20 +5825,23 @@ static void
 selectionActions(void)
 {
 	std::vector<TextDraw> &tds = GetTextDraws();
+	if(gSel.empty())
+		return;
 	if(ImGui::Button(LI(ICON_FA_COPY, "Duplicate")))
 		appendCopies(selectedCopies(), 10.0f);
 	ImGui::SetItemTooltip("%s", ShortcutLabel(SC_DUPLICATE));
-	ImGui::SameLine();
+	flowNext(ImGui::GetFontSize() * 6.0f);
 	if(ImGui::Button(LI(ICON_FA_TRASH, "Delete")))
 		deleteSelected();
 	ImGui::SetItemTooltip("%s", ShortcutLabel(SC_DELETE));
 	if(gSel.empty())
 		return;
-	ImGui::SameLine();
+	if(!ImGui::CollapsingHeader(L("Arrange")))
+		return;
 	if(ImGui::Button(L("Up")))
 		restackSelected(true);
 	ImGui::SetItemTooltip("%s", _("Drawn later, so over the others."));
-	ImGui::SameLine();
+	flowNext(ImGui::GetFontSize() * 6.0f);
 	if(ImGui::Button(L("Down")))
 		restackSelected(false);
 	ImGui::SetItemTooltip("%s", _("Drawn earlier, so under the others."));
@@ -5759,7 +5854,7 @@ selectionActions(void)
 		TextDrawsChanged();
 	}
 	ImGui::SetItemTooltip("%s", _("Can't be dragged or resized on the canvas. The fields here still change it."));
-	ImGui::SameLine();
+	flowNext(ImGui::GetFontSize() * 6.0f);
 	if(ImGui::Button(LI(ICON_FA_LAYER_GROUP, "Group")))
 		groupSelected(newGroupName().c_str());
 	ImGui::SetItemTooltip("%s", _("Gives them one group name and keeps them together in the list.\n"
@@ -5773,15 +5868,14 @@ selectionActions(void)
 	float sp = ImGui::GetStyle().ItemSpacing.x;
 	for(int k = 0; k < 6; k++){
 		if(k)
-			ImGui::SameLine(0.0f, k == 3 ? sp * 3.0f : sp * 0.5f);
+			flowNext(ImGui::GetFrameHeight(), k == 3 ? sp : sp * 0.5f);
 		char id[16];
 		snprintf(id, sizeof(id), "##align%d", k);
 		if(arrangeButton(id, k, _(alignTips[k])))
 			alignSelected(k);
 	}
-	ImGui::SameLine(0.0f, sp * 3.0f);
 	const char *tos[] = { _("To the selection"), _("To the key one"), _("To the screen") };
-	ImGui::SetNextItemWidth(ImGui::GetFontSize() * 8.0f);
+	ImGui::SetNextItemWidth(-FLT_MIN);
 	ImGui::Combo("##alignto", &gAlignTo, tos, IM_ARRAYSIZE(tos));
 	ImGui::SetItemTooltip("%s", _("What aligning lines them up with. The key one is the one clicked last\n"
 		"(outlined thicker), and it stays put. One on its own aligns to the screen.\n"
@@ -5791,31 +5885,31 @@ selectionActions(void)
 	ImGui::BeginDisabled(units.size() < (fixedGap ? 2u : 3u));
 	if(arrangeButton("##spaceacross", GLYPH_SPACE_ACROSS, _("Space evenly across")))
 		distributeSelected(true, fixedGap ? gap : -1.0f);
-	ImGui::SameLine(0.0f, sp * 0.5f);
+	flowNext(ImGui::GetFrameHeight(), sp * 0.5f);
 	if(arrangeButton("##spacedown", GLYPH_SPACE_DOWN, _("Space evenly down")))
 		distributeSelected(false, fixedGap ? gap : -1.0f);
 	ImGui::EndDisabled();
-	ImGui::SameLine();
+	flowNext(ImGui::GetFontSize() * 6.0f);
 	ImGui::Checkbox(L("Gap"), &fixedGap);
 	ImGui::SetItemTooltip("%s", _("Off: the outer ones stay and the gaps between come out equal.\n"
 		"On: each is this far from the one before, from the first."));
 	if(fixedGap){
-		ImGui::SameLine();
+		flowNext(ImGui::GetFontSize() * 6.0f);
 		ImGui::SetNextItemWidth(ImGui::GetFontSize() * 3.5f);
 		ImGui::DragFloat("##gap", &gap, 0.25f, 0.0f, 640.0f, "%.1f");
 	}
-	ImGui::SameLine(0.0f, sp * 3.0f);
+	flowNext(ImGui::GetFrameHeight(), sp);
 	ImGui::BeginDisabled(units.size() < 2);
 	if(arrangeButton("##samewidth", GLYPH_SAME_WIDTH, _("Same width as the key one")))
 		matchSize(true);
-	ImGui::SameLine(0.0f, sp * 0.5f);
+	flowNext(ImGui::GetFrameHeight(), sp * 0.5f);
 	if(arrangeButton("##sameheight", GLYPH_SAME_HEIGHT, _("Same height as the key one")))
 		matchSize(false);
 	ImGui::EndDisabled();
-	ImGui::SameLine(0.0f, sp * 3.0f);
+	flowNext(ImGui::GetFrameHeight(), sp);
 	if(arrangeButton("##flipacross", GLYPH_FLIP_ACROSS, _("Flip across: sprites mirror, shapes point the other way")))
 		flipSelected(true);
-	ImGui::SameLine(0.0f, sp * 0.5f);
+	flowNext(ImGui::GetFrameHeight(), sp * 0.5f);
 	if(arrangeButton("##flipdown", GLYPH_FLIP_DOWN, _("Flip upside down")))
 		flipSelected(false);
 }
@@ -5828,19 +5922,7 @@ DrawTextDrawsWindow(void)
 		return;
 	UpdateTextDrawsUndo();
 	validateSelection();
-	drawToolbar();
 	ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 24.0f, ImGui::GetFontSize() * 38.0f), ImGuiCond_FirstUseEver);
-	{
-		// Under the canvas toolbar the first time, not over it (its two rows,
-		// before it has been measured).
-		ImVec2 pos, size;
-		canvasArea(&pos, &size);
-		float rows = ImGui::GetFrameHeightWithSpacing() * 2.0f + ImGui::GetStyle().WindowPadding.y * 2.0f;
-		if(gToolbarHeight < rows)
-			pos.y += rows - gToolbarHeight;
-		ImGui::SetNextWindowPos(ImVec2(pos.x + ImGui::GetFontSize() * 0.5f, pos.y + ImGui::GetFontSize() * 0.5f),
-			ImGuiCond_FirstUseEver);
-	}
 	// ###textdraws, not LI(): the ID the window has always had, so saved layouts stay.
 	char title[64];
 	snprintf(title, sizeof(title), ICON_FA_FONT " %s###textdraws", _("TextDraws"));
@@ -5862,19 +5944,23 @@ DrawTextDrawsWindow(void)
 			OfferMoveMapTextDraws(GetPawnMapPath());
 	}
 
-	ImGui::SeparatorText(_("Add"));
-	if(ImGui::Button(LI(ICON_FA_PLUS, "Text##add"))) addTextDraw(TD_FONT_AHARONI);
-	ImGui::SameLine();
-	if(ImGui::Button(LI(ICON_FA_PLUS, "Box##add"))) addTextDraw(-1);
-	ImGui::SameLine();
-	if(ImGui::Button(LI(ICON_FA_PLUS, "Sprite##add"))) addTextDraw(TD_FONT_SPRITE);
-	ImGui::SameLine();
-	if(ImGui::Button(LI(ICON_FA_PLUS, "Model##add"))) addTextDraw(TD_FONT_PREVIEW);
-	if(ImGui::Button(LI(ICON_FA_PLUS, "Image##add"))) addTextDraw(TD_FONT_REFERENCE);
+	ImGui::Spacing();
+	float cell = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x * 2.0f) / 3.0f;
+	const char *addNames[] = { N_("Text"), N_("Box"), N_("Sprite"), N_("Model"), N_("Image") };
+	const char *addIcons[] = { ICON_FA_FONT, ICON_FA_SQUARE, ICON_FA_VECTOR_SQUARE, ICON_FA_CUBE, ICON_FA_FILE };
+	const int addKinds[] = { TD_FONT_AHARONI, -1, TD_FONT_SPRITE, TD_FONT_PREVIEW, TD_FONT_REFERENCE };
+	for(int i = 0; i < 5; i++){
+		if(i % 3) ImGui::SameLine();
+		char label[160];
+		snprintf(label, sizeof(label), "%s %s###add_%d", addIcons[i], _(addNames[i]), i);
+		if(ImGui::Button(label, ImVec2(cell, ImGui::GetFrameHeight()*1.25f)))
+			addTextDraw(addKinds[i]);
+	}
 	ImGui::SetItemTooltip("%s", _("A picture to build on: a mock-up or a screenshot (PNG, BMP or TGA).\n"
 		"It is a layer like the others, only the editor shows it; the eyedropper picks its colours."));
 	ImGui::SameLine();
-	shapeButton();
+	shapeButton(cell);
+	ImGui::Spacing();
 
 	char layersTitle[96];
 	snprintf(layersTitle, sizeof(layersTitle), _("Layers - %s"), boardLabel(gBoard));
@@ -5883,11 +5969,14 @@ DrawTextDrawsWindow(void)
 	selectionActions();
 
 	if(gSelected >= 0){
-		ImGui::Separator();
-		// A whole shape: its settings, with the sprites it is made of folded away.
+		ImGui::Spacing();
+		ImGui::BeginChild("##td_inspector", ImVec2(0, 0), ImGuiChildFlags_None);
 		if(!shapePanel() || ImGui::CollapsingHeader(L("The sprites it is made of")))
 			properties();
-	}else
-		ImGui::TextDisabled("%s", _("Click a textdraw, or drag a box round several. Alt+click picks the one under it."));
+		ImGui::EndChild();
+	}else{
+		ImGui::Spacing();
+		ImGui::TextWrapped("%s", _("Click a textdraw, or drag a box round several. Alt+click picks the one under it."));
+	}
 	ImGui::End();
 }

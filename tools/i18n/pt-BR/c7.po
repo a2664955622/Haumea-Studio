@@ -125,11 +125,6 @@ msgstr "%d objeto(s) do mundo selecionado(s) serão substituídos no mapa."
 msgid "%d selected, %d of this kind"
 msgstr "%d selecionados, %d deste tipo"
 
-#: tools/haumea/gui.cpp:12091
-#, c-format
-msgid "%d selected: drag the gizmo (%s move, %s rotate), %s drops to ground, %s focuses, %s duplicates, %s deletes. Settings are in Object Info (%s)."
-msgstr "%d selecionado(s): arraste o gizmo (%s move, %s gira), %s põe no chão, %s foca, %s duplica, %s exclui. As configurações ficam em Informações do objeto (%s)."
-
 #: tools/haumea/gui.cpp:11569
 #, c-format
 msgid "%d shown"
@@ -183,15 +178,6 @@ msgstr ""
 "%s\n"
 "Clique duas vezes para colocar"
 
-#: tools/haumea/gui.cpp:12196
-#, c-format
-msgid ""
-"%s\n"
-"Maps, custom models and the test server use this server folder."
-msgstr ""
-"%s\n"
-"Mapas, modelos personalizados e o servidor de teste usam esta pasta do servidor."
-
 #: tools/haumea/gui.cpp:8192
 #, c-format
 msgid "%s  (%d points)"
@@ -221,11 +207,6 @@ msgstr "%s já usa este nome."
 #, c-format
 msgid "%s isn't next to the editor. It ships with every release, and is in the source at https://github.com/itsneufox/Haumea-Studio."
 msgstr "%s não está junto do editor. Ele vem com toda versão e está no código-fonte em https://github.com/itsneufox/Haumea-Studio."
-
-#: tools/haumea/gui.cpp:12098
-#, c-format
-msgid "%s picks an object to place, %s lists what is in the map, click an object to select it, %s saves. %s lists every shortcut."
-msgstr "%s escolhe um objeto para colocar, %s lista o que há no mapa, clique num objeto para selecioná-lo, %s salva. %s lista todos os atalhos."
 
 #: tools/haumea/gui.cpp:12112
 #, c-format
@@ -313,15 +294,6 @@ msgstr "1  Sempre presente, não pode ser coletado por script"
 msgid "1  Finish"
 msgstr "1  Chegada"
 
-#: tools/haumea/gui.cpp:12198
-msgid "1.  Set your server folder: File > Workspace."
-msgstr "1.  Defina a pasta do servidor: Arquivo > Workspace."
-
-#: tools/haumea/gui.cpp:12195
-#, c-format
-msgid "1.  Workspace: %s"
-msgstr "1.  Workspace: %s"
-
 #: tools/haumea/gui.cpp:8007
 msgid "11  Blows up vehicles"
 msgstr "11  Explode veículos"
@@ -354,15 +326,6 @@ msgstr "2  Nada"
 msgid "2  Respawns 30 s after pickup"
 msgstr "2  Reaparece 30 s após a coleta"
 
-#: tools/haumea/gui.cpp:12199
-#, c-format
-msgid ""
-"2.  Place objects from the Object Browser (%s); pickups, actors, sounds\n"
-"     and more are on its SA-MP tab."
-msgstr ""
-"2.  Coloque objetos pelo Navegador de objetos (%s); pickups, atores, sons\n"
-"     e mais ficam na aba SA-MP dele."
-
 #: tools/haumea/gui.cpp:8010
 msgid "22  Respawns after death"
 msgstr "22  Reaparece após a morte"
@@ -383,10 +346,6 @@ msgstr "3  Reaparece após a morte"
 msgid "3-24 characters: letters, digits and [ ] ( ) $ @ . _ ="
 msgstr "3 a 24 caracteres: letras, dígitos e [ ] ( ) $ @ . _ ="
 
-#: tools/haumea/gui.cpp:12201
-msgid "3.  NPCs: place an NPC and NPC path points there too."
-msgstr "3.  NPCs: coloque um NPC e pontos de caminho de NPC por lá também."
-
 #: tools/haumea/gui.cpp:11270
 msgid "3D text labels"
 msgstr "3D text labels"
@@ -399,27 +358,13 @@ msgstr "4  Chegada aérea"
 msgid "4  Disappears 15-20 s after creation"
 msgstr "4  Some 15-20 s após ser criado"
 
-#: tools/haumea/gui.cpp:12204
-msgid "4.  Textdraws: Windows > TextDraws. They go in a file of their own."
-msgstr "4.  Textdraws: Janelas > TextDraws. Ficam num arquivo próprio."
-
 #: tools/haumea/gui.cpp:8232
 msgid "5  Air (rotates and stops)"
 msgstr "5  Aéreo (gira e para)"
 
-#: tools/haumea/gui.cpp:12205
-#, c-format
-msgid "5.  Test in game (%s) and Map check (%s) before you ship it."
-msgstr "5.  Teste no jogo (%s) e Verificação do mapa (%s) antes de publicar."
-
 #: tools/haumea/gui.cpp:8232
 msgid "6  Air (grows, shrinks, disappears)"
 msgstr "6  Aéreo (cresce, encolhe, some)"
-
-#: tools/haumea/gui.cpp:12207
-#, c-format
-msgid "6.  %s saves the map."
-msgstr "6.  %s salva o mapa."
 
 #: tools/haumea/gui.cpp:8233
 msgid "7  Air (swings down and up)"
@@ -494,10 +439,6 @@ msgstr "Adicionar pontos"
 #: tools/haumea/gui.cpp:9594 tools/haumea/gui.cpp:10197
 msgid "Add to Favourites"
 msgstr "Adicionar aos favoritos"
-
-#: tools/haumea/gui.cpp:10332
-msgid "AddPlayerClass: a spawn point with a skin and weapons"
-msgstr "AddPlayerClass: um ponto de spawn com skin e armas"
 
 #: tools/haumea/gui.cpp:11849
 msgid "Added"
@@ -584,10 +525,6 @@ msgstr "Ammu-Nation"
 #: tools/haumea/gui.cpp:8274
 msgid "Ammu-Nation interior (0.3.7-R2)"
 msgstr "Interior da Ammu-Nation (0.3.7-R2)"
-
-#: tools/haumea/gui.cpp:10342
-msgid "An audio stream or game sound players hear near this place"
-msgstr "Um audio stream ou som do jogo que os jogadores ouvem perto deste lugar"
 
 #: tools/haumea/gui.cpp:8727
 msgid "An on-foot recording: the NPC has to be on foot."
@@ -1010,15 +947,6 @@ msgstr ""
 "Clique no mundo para adicionar pontos ao fim deste caminho.\n"
 "Shift+clique continua colocando."
 
-#: tools/haumea/gui.cpp:10180
-#, c-format
-msgid ""
-"Click in the world to place it (%s to stop).\n"
-"Double-clicking a tile does the same."
-msgstr ""
-"Clique no mundo para colocá-lo (%s para parar).\n"
-"Clicar duas vezes num bloco faz o mesmo."
-
 #: tools/haumea/gui.cpp:10095
 msgid ""
 "Click in the world to place it. Q/E (or , and .) and the wheel turn it, Shift\n"
@@ -1196,22 +1124,6 @@ msgstr "Batida B"
 msgid "Crash C"
 msgstr "Batida C"
 
-#: tools/haumea/gui.cpp:10339
-msgid "Create3DTextLabel / CreateDynamic3DTextLabel"
-msgstr "Create3DTextLabel / CreateDynamic3DTextLabel"
-
-#: tools/haumea/gui.cpp:10331
-msgid "CreateActor / CreateDynamicActor: a ped that stands or plays an animation"
-msgstr "CreateActor / CreateDynamicActor: um ped parado ou fazendo uma animação"
-
-#: tools/haumea/gui.cpp:10344
-msgid "CreateDynamicCP / CreateDynamicRaceCP: a checkpoint, or a race of them"
-msgstr "CreateDynamicCP / CreateDynamicRaceCP: um checkpoint, ou uma corrida deles"
-
-#: tools/haumea/gui.cpp:10346
-msgid "CreateDynamicCuboid and the other shapes: items limited to it are shown only to players inside"
-msgstr "CreateDynamicCuboid e as outras formas: itens limitados a ela só aparecem para jogadores dentro"
-
 #: tools/haumea/gui.cpp:9235
 msgid ""
 "CreateObject DrawDistance / streamer drawdistance. 0 uses the default\n"
@@ -1219,10 +1131,6 @@ msgid ""
 msgstr ""
 "DrawDistance do CreateObject / drawdistance do streamer. 0 usa o padrão\n"
 "(a distância do próprio modelo no nativo, STREAMER_OBJECT_DD no streamer)."
-
-#: tools/haumea/gui.cpp:10338
-msgid "CreatePickup / CreateDynamicPickup"
-msgstr "CreatePickup / CreateDynamicPickup"
 
 #: tools/haumea/gui.cpp:8965 tools/haumea/radarart.cpp:916
 msgid "CreatePlayerGangZone is an open.mp native; SA-MP 0.3.7 has no per-player zones."
@@ -1343,10 +1251,6 @@ msgstr "Cifrão"
 msgid "Door buzzer"
 msgstr "Campainha da porta"
 
-#: tools/haumea/gui.cpp:9531
-msgid "Double-click to place again."
-msgstr "Clique duas vezes para colocar de novo."
-
 #: tools/haumea/gui.cpp:7408
 msgid "Dragging"
 msgstr "Arrastar"
@@ -1359,11 +1263,6 @@ msgstr "Distância de desenho"
 #, c-format
 msgid "Draw distance %.0f"
 msgstr "Distância de desenho %.0f"
-
-#: tools/haumea/gui.cpp:10167
-#, c-format
-msgid "Draw distance %.0f  |  LOD %s"
-msgstr "Distância de desenho %.0f  |  LOD %s"
 
 #: tools/haumea/radarart.cpp:898
 msgid "Draws the footprints' edge cells in their own colour."
@@ -1413,11 +1312,6 @@ msgstr "Áreas dinâmicas"
 #: tools/haumea/gui.cpp:9114
 msgid "Edit all selected"
 msgstr "Editar todos os selecionados"
-
-#: tools/haumea/gui.cpp:12070
-#, c-format
-msgid "Editing %s: drag a textdraw to move it, its corner to resize it. %s saves the textdraws, %s goes back to the map."
-msgstr "Editando %s: arraste um textdraw para movê-lo, o canto dele para redimensionar. %s salva os textdraws, %s volta ao mapa."
 
 #: tools/haumea/gui.cpp:8272
 msgid "Electricity"
@@ -1688,10 +1582,6 @@ msgstr "Gang zone %.0f x %.0f"
 msgid "Gang zones"
 msgstr "Gang zones"
 
-#: tools/haumea/gui.cpp:10340
-msgid "GangZoneCreate: a coloured square on the radar"
-msgstr "GangZoneCreate: um quadrado colorido no radar"
-
 #: tools/haumea/gui.cpp:8253
 msgid "Garage door opening"
 msgstr "Porta da garagem abrindo"
@@ -1932,15 +1822,6 @@ msgstr "Casa (verde)"
 msgid "Houses"
 msgstr "Casas"
 
-#: tools/haumea/gui.cpp:7418
-#, c-format
-msgid ""
-"How close another object has to be for object snap (%s, the\n"
-"crosshair button on the toolbar) to line them up."
-msgstr ""
-"Quão perto outro objeto precisa estar para o encaixe em objetos (%s, o\n"
-"botão de mira na barra de ferramentas) alinhá-los."
-
 #: tools/haumea/gui.cpp:8759
 msgid "How close the NPC has to get before it heads for the next point."
 msgstr "Quão perto o NPC precisa chegar antes de seguir para o próximo ponto."
@@ -1968,11 +1849,6 @@ msgstr "Quanto o campo de visão muda a cada passo da roda do mouse."
 #: tools/haumea/gui.cpp:8067 tools/haumea/interiors.cpp:283
 msgid "ID"
 msgstr "ID"
-
-#: tools/haumea/gui.cpp:10156
-#, c-format
-msgid "ID %d  |  TXD %s"
-msgstr "ID %d  |  TXD %s"
 
 #: tools/haumea/gui.cpp:10578 tools/haumea/objfilters.cpp:423
 msgid "IDE"
@@ -2202,11 +2078,6 @@ msgstr "Verificação do mapa"
 msgid "Map Objects"
 msgstr "Objetos do mapa"
 
-#: tools/haumea/gui.cpp:9504
-#, c-format
-msgid "Map Objects (%s): everything placed in this map."
-msgstr "Objetos do mapa (%s): tudo o que foi colocado neste mapa."
-
 #: tools/haumea/gui.cpp:7535
 #, c-format
 msgid "Map check before saving: %s. %s opens the list."
@@ -2225,10 +2096,6 @@ msgstr "Map icon %d  %s"
 #: tools/haumea/gui.cpp:11271
 msgid "Map icons"
 msgstr "Map icons"
-
-#: tools/haumea/gui.cpp:9502
-msgid "Map objects"
-msgstr "Objetos do mapa"
 
 #: tools/haumea/gui.cpp:8257
 msgid "Map: place a marker"
@@ -2324,11 +2191,6 @@ msgstr "Modo"
 msgid "Model"
 msgstr "Modelo"
 
-#: tools/haumea/gui.cpp:10398
-#, c-format
-msgid "Model %d is not loaded"
-msgstr "O modelo %d não está carregado"
-
 #: tools/haumea/gui.cpp:8506
 #, c-format
 msgid "Model %d is not loaded; the pickup is drawn as model %d."
@@ -2419,14 +2281,6 @@ msgstr "Caminho de NPC %s"
 msgid "NPC paths"
 msgstr "Caminhos de NPC"
 
-#: tools/haumea/gui.cpp:10335
-msgid "NPC_AddPointToPath: click point after point; NPCs walk the path"
-msgstr "NPC_AddPointToPath: clique ponto após ponto; os NPCs andam pelo caminho"
-
-#: tools/haumea/gui.cpp:10333
-msgid "NPC_Create + NPC_Spawn: a bot player"
-msgstr "NPC_Create + NPC_Spawn: um jogador bot"
-
 #: tools/haumea/gui.cpp:8658
 msgid "NPC_MoveByPath: once spawned, the NPC moves along this path once."
 msgstr "NPC_MoveByPath: após o spawn, o NPC percorre este caminho uma vez."
@@ -2459,10 +2313,6 @@ msgstr "NPCs"
 msgid "Name"
 msgstr "Nome"
 
-#: tools/haumea/gui.cpp:10419
-msgid "Name a race to place race checkpoints that point at each other."
-msgstr "Dê nome a uma corrida para colocar race checkpoints que apontam uns para os outros."
-
 #: tools/haumea/interiors.cpp:271
 msgid "Name, key or ID"
 msgstr "Nome, chave ou ID"
@@ -2493,21 +2343,9 @@ msgstr ""
 "por vez (SetPlayerCheckpoint / SetPlayerRaceCheckpoint). Salve o mapa\n"
 "como código streamer para mantê-los."
 
-#: tools/haumea/gui.cpp:10418
-msgid "New checkpoints go on the end of this race."
-msgstr "Novos checkpoints vão para o fim desta corrida."
-
 #: tools/haumea/gui.cpp:7406
 msgid "New objects sit on the ground under the cursor."
 msgstr "Novos objetos ficam no chão sob o cursor."
-
-#: tools/haumea/gui.cpp:7404
-msgid "New objects sit on top of the object under the cursor."
-msgstr "Novos objetos ficam em cima do objeto sob o cursor."
-
-#: tools/haumea/gui.cpp:10411
-msgid "New points go on the end of this path."
-msgstr "Novos pontos vão para o fim deste caminho."
 
 #: tools/haumea/testserver.cpp:1312
 msgid "Nickname"
@@ -2533,10 +2371,6 @@ msgstr "Nenhuma biblioteca de animação encontrada (anim/ped.ifp, anim/anim.img
 msgid "No changes requiring Pawn export."
 msgstr "Nenhuma mudança que exija exportação Pawn."
 
-#: tools/haumea/gui.cpp:9169
-msgid "No dynamic areas: place one from the SA-MP tab."
-msgstr "Nenhuma dynamic area: coloque uma pela aba SA-MP."
-
 #: tools/haumea/gui.cpp:10551
 #, c-format
 msgid "No favourites yet. Pick an object and click %s to keep it here."
@@ -2553,10 +2387,6 @@ msgstr "Nenhum objeto está num grupo."
 #: tools/haumea/gui.cpp:7450
 msgid "No object selected"
 msgstr "Nenhum objeto selecionado"
-
-#: tools/haumea/gui.cpp:8665
-msgid "No points yet: place NPC path points from the SA-MP tab."
-msgstr "Ainda sem pontos: coloque pontos de caminho de NPC pela aba SA-MP."
 
 #: tools/haumea/gui.cpp:10122
 msgid "No prefabs yet: select objects and use File > Export > Selection as Prefab."
@@ -2581,10 +2411,10 @@ msgstr "Nenhum: a skin fica parada."
 #: tools/haumea/gui.cpp:8799
 msgid ""
 "Normal shows an arrow to the next checkpoint; Finish a flag.\n"
-"The Air types are rings for planes."
+"The Air types are rings for planes. Automatic is Normal until the race's end, then Finish."
 msgstr ""
 "Normal mostra uma seta para o próximo checkpoint; Chegada, uma bandeira.\n"
-"Os tipos Aéreo são anéis para aviões."
+"Os tipos Aéreo são anéis para aviões. Automático é Normal até o fim da corrida, depois Chegada."
 
 #: tools/haumea/gui.cpp:8025
 msgid "North"
@@ -2605,11 +2435,6 @@ msgstr "Observação"
 #: tools/haumea/gui.cpp:7555
 msgid "Notes"
 msgstr "Notas"
-
-#: tools/haumea/gui.cpp:9511
-#, c-format
-msgid "Nothing copied yet: select objects and press %s"
-msgstr "Nada copiado ainda: selecione objetos e pressione %s"
 
 #: tools/haumea/gui.cpp:11747
 msgid "Nothing matches."
@@ -2679,10 +2504,6 @@ msgid ""
 msgstr ""
 "Os objetos são girados, não invertidos: rampas e escadas sobem do lado\n"
 "espelhado, mas um modelo assimétrico nos dois sentidos mantém sua esquerda e direita."
-
-#: tools/haumea/gui.cpp:10213
-msgid "Objects you place show up here. Search above, or start with a category:"
-msgstr "Os objetos que você coloca aparecem aqui. Busque acima ou comece por uma categoria:"
 
 #: tools/haumea/gui.cpp:8735
 msgid ""
@@ -2784,19 +2605,6 @@ msgstr "COLOCAR"
 msgid "PREFAB"
 msgstr "PREFAB"
 
-#: tools/haumea/gui.cpp:10187
-msgid ""
-"Paint copies onto surfaces: click for one, drag to paint.\n"
-"Spacing and alignment are in the Tools window."
-msgstr ""
-"Pinta cópias nas superfícies: clique para uma, arraste para pintar.\n"
-"Espaçamento e alinhamento ficam na janela Ferramentas."
-
-#: tools/haumea/gui.cpp:12076
-#, c-format
-msgid "Painting %s: click or drag on a surface. %s stops."
-msgstr "Pintando %s: clique ou arraste numa superfície. %s para."
-
 #: tools/haumea/gui.cpp:7448
 #, c-format
 msgid "Painting: %s"
@@ -2813,11 +2621,6 @@ msgstr "Paraquedas abrindo"
 #: tools/haumea/gui.cpp:9506
 msgid "Paste"
 msgstr "Colar"
-
-#: tools/haumea/gui.cpp:9513
-#, c-format
-msgid "Paste copied objects in front of the camera (%s)."
-msgstr "Cola os objetos copiados na frente da câmera (%s)."
 
 #: tools/haumea/gui.cpp:9509 tools/haumea/gui.cpp:12308
 #, c-format
@@ -2903,19 +2706,6 @@ msgstr "Pickups"
 msgid "Place"
 msgstr "Colocar"
 
-#: tools/haumea/gui.cpp:10327
-msgid "Place, then click in the world. Esc stops."
-msgstr "Clique em Colocar e depois no mundo. Esc para."
-
-#: tools/haumea/gui.cpp:7402
-msgid "Placing"
-msgstr "Colocação"
-
-#: tools/haumea/gui.cpp:12081 tools/haumea/gui.cpp:12086
-#, c-format
-msgid "Placing %s: click to place, Shift+click to keep going. Right-click or %s stops."
-msgstr "Colocando %s: clique para colocar, Shift+clique para continuar. Botão direito ou %s para."
-
 #: tools/haumea/gui.cpp:8278
 msgid "Plane interior hum (0.3.7-R2)"
 msgstr "Zumbido dentro do avião (0.3.7-R2)"
@@ -2959,10 +2749,6 @@ msgstr "Visão do jogador ligada: o que um jogador na câmera veria"
 #: tools/haumea/gui.cpp:8947
 msgid "PlayerPlaySound. Any ID from the game's data/AudioEvents.txt works."
 msgstr "PlayerPlaySound. Qualquer ID de data/AudioEvents.txt do jogo funciona."
-
-#: tools/haumea/gui.cpp:10424
-msgid "Players"
-msgstr "Jogadores"
 
 #: tools/haumea/gui.cpp:8470
 #, c-format
@@ -3390,14 +3176,6 @@ msgstr "Escola"
 msgid "Seagulls"
 msgstr "Gaivotas"
 
-#: tools/haumea/gui.cpp:10539
-msgid "Search favourites   (Ctrl+F)"
-msgstr "Buscar favoritos   (Ctrl+F)"
-
-#: tools/haumea/gui.cpp:10470 tools/haumea/gui.cpp:10582
-msgid "Search name, ID or IDs (1337, 19000-19100)   (Ctrl+F)"
-msgstr "Buscar nome, ID ou IDs (1337, 19000-19100)   (Ctrl+F)"
-
 #: tools/haumea/gui.cpp:11534
 msgid "Search name, model, ID, kind, variable"
 msgstr "Buscar nome, modelo, ID, tipo, variável"
@@ -3439,14 +3217,6 @@ msgstr "Selecionar os pontos do caminho"
 msgid "Select them"
 msgstr "Selecioná-los"
 
-#: tools/haumea/gui.cpp:10378
-msgid "Select them all, to edit them together in Object Info."
-msgstr "Selecionar todos, para editá-los juntos em Informações do objeto."
-
-#: tools/haumea/gui.cpp:9318
-msgid "Select two objects to attach them."
-msgstr "Selecione dois objetos para anexá-los."
-
 #: tools/haumea/gui.cpp:8404
 msgid "Select vehicle"
 msgstr "Selecionar veículo"
@@ -3486,10 +3256,6 @@ msgstr "Registro do servidor"
 #: tools/haumea/testserver.cpp:1306
 msgid "Server package"
 msgstr "Pacote do servidor"
-
-#: tools/haumea/gui.cpp:10341
-msgid "SetPlayerMapIcon / CreateDynamicMapIcon"
-msgstr "SetPlayerMapIcon / CreateDynamicMapIcon"
 
 #: tools/haumea/gui.cpp:8851
 msgid "Shape"
@@ -3851,10 +3617,6 @@ msgstr "Texto"
 msgid "TextDraws"
 msgstr "TextDraws"
 
-#: tools/haumea/gui.cpp:9312 tools/haumea/gui.cpp:9315
-msgid "That would attach an object to itself"
-msgstr "Isso anexaria um objeto a ele mesmo"
-
 #: tools/haumea/gui.cpp:8031
 msgid "The Truth"
 msgstr "The Truth"
@@ -3900,10 +3662,6 @@ msgstr "O mapa inclui o streamer para as áreas dele."
 msgid "The mirror's %s coordinate."
 msgstr "A coordenada %s do espelho."
 
-#: tools/haumea/gui.cpp:10405
-msgid "The model of new pickups."
-msgstr "O modelo dos novos pickups."
-
 #: tools/haumea/maptools.cpp:966
 msgid "The model's length, so the pieces just touch."
 msgstr "O comprimento do modelo, para as peças se encostarem."
@@ -3936,21 +3694,9 @@ msgstr ""
 "O servidor cria no máximo 1024 gang zones. Use células maiores, menos cores\n"
 "ou zonas streamed."
 
-#: tools/haumea/gui.cpp:10426
-msgid ""
-"The skin of new actors, player classes and NPCs.\n"
-"Skins are also in the Objects tab's Skins category."
-msgstr ""
-"A skin dos novos atores, classes de jogador e NPCs.\n"
-"As skins também estão na categoria Skins da aba Objetos."
-
 #: tools/haumea/gui.cpp:8021
 msgid "Thermal goggles"
 msgstr "Óculos térmicos"
-
-#: tools/haumea/gui.cpp:12191
-msgid "This map is empty. Maps are saved as Pawn (.pwn) files."
-msgstr "Este mapa está vazio. Os mapas são salvos como arquivos Pawn (.pwn)."
 
 #: tools/haumea/gui.cpp:8263
 msgid "Throw a satchel"
@@ -4215,14 +3961,6 @@ msgstr ""
 msgid "Which coordinate flips: X mirrors east and west."
 msgstr "Qual coordenada é invertida: X espelha leste e oeste."
 
-#: tools/haumea/gui.cpp:7412
-msgid ""
-"While dragging on the ground, turn the object to match the slope.\n"
-"Following the ground is the mountain button on the toolbar."
-msgstr ""
-"Ao arrastar no chão, gira o objeto para acompanhar a inclinação.\n"
-"Seguir o chão é o botão da montanha na barra de ferramentas."
-
 #: tools/haumea/gui.cpp:8025
 msgid "White square"
 msgstr "Quadrado branco"
@@ -4230,14 +3968,6 @@ msgstr "Quadrado branco"
 #: tools/haumea/testserver.cpp:1315
 msgid "Wine prefix"
 msgstr "Prefixo do Wine"
-
-#: tools/haumea/gui.cpp:7423 tools/haumea/gui.cpp:7427
-msgid ""
-"With the magnet on the toolbar, hold Shift while dragging to move\n"
-"and rotate in these steps."
-msgstr ""
-"Com o ímã da barra de ferramentas, segure Shift ao arrastar para mover\n"
-"e girar nestes passos."
 
 #: tools/haumea/gui.cpp:8032
 msgid "Woozie"
