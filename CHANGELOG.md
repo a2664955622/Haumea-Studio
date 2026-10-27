@@ -32,6 +32,9 @@
   A pixel-exact canvas renders at the player's resolution before scaling for editing.
 - Model previews now match the game's placement, orientation and mirroring more closely,
   including planes, skins and negative preview sizes.
+- Text in another script (Chinese, Japanese, Korean, Russian and so on) previews with Haumea's
+  own font, one character to a cell, standing in for a client with a CJK font patch; the game
+  itself draws those bytes from its Latin glyphs unless the client is patched.
 
 ### Finding objects and measuring
 
